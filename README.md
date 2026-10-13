@@ -13,8 +13,9 @@ Anbieter und Tarifmodelle hinweg. Alles wird über eine öffentliche API und ein
 | **Start-Scope** | Wien, Niederösterreich, Oberösterreich, Burgenland |
 | **Ziel-Scope** | Österreich → DACH → Italien |
 | **Stack** | ASP.NET Core / C# / .NET 10 · Angular 22 / TypeScript · PostgreSQL (PostGIS + TimescaleDB) |
-| **Zugriff** | öffentliche Lese-API ohne Login; Nutzerverwaltung mit rollenbasierten Berechtigungen (RBAC) für Pflege/Admin; API-Keys und OpenAPI 3.1 für KI-Agenten und Integrationen |
-| **Betrieb** | Docker Compose, Konfiguration über `.env`, Web-App + API auf einem HTTP-Port (Default 5005); Reverse Proxy/TLS außerhalb der App |
+| **Zugriff** | anonym ist nur die Karte nutzbar (Ladepunkte mit Basisdaten und aktuellem Status, eigener Standort); alle erweiterten Funktionen und persönlichen Einstellungen setzen ein Benutzerkonto voraus (kostenlose Selbstregistrierung); rollenbasierte Berechtigungen (RBAC) für Pflege/Admin; API-Keys und OpenAPI 3.1 für KI-Agenten und Integrationen |
+| **Karte** | MapLibre GL JS mit OpenStreetMap-Vektorkacheln, eigener Standort, Routing über selbst gehostete OSM-Engine (geplant) |
+| **Betrieb** | Docker Compose, Konfiguration über `.env`, Web-App + API auf einem HTTPS-Port (Default 5005, self-signed Zertifikat); gültiges Zertifikat über externen Loadbalancer |
 | **Lizenz** | noch offen – Vorschlag siehe [docs/09-roadmap.md](docs/09-roadmap.md) |
 
 ## Dokumentation
@@ -37,10 +38,10 @@ Anbieter und Tarifmodelle hinweg. Alles wird über eine öffentliche API und ein
 ```bash
 cp .env.example .env        # POSTGRES_PASSWORD und JWT_SIGNING_KEY setzen (openssl rand -hex 32)
 docker compose up -d --build
-curl http://localhost:5005/api/v1/health   # {"status":"ok","db":"ok"}
+curl -k https://localhost:5005/api/v1/health   # {"status":"ok","db":"ok"}
 ```
 
-Web-App: `http://localhost:5005` · OpenAPI 3.1: `/openapi/v1.json` · Scalar UI: `/scalar`. Build- und Testbefehle stehen in [CLAUDE.md](CLAUDE.md#befehle).
+Web-App: `https://localhost:5005` (self-signed Zertifikat, Ausnahme im Browser bestätigen) · OpenAPI 3.1: `/openapi/v1.json` · Scalar UI: `/scalar`. Build- und Testbefehle stehen in [CLAUDE.md](CLAUDE.md#befehle).
 
 ## Repository-Struktur
 

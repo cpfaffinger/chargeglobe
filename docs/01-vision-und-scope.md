@@ -7,15 +7,37 @@ Eine **offene, quellenübergreifende Datenbank aller öffentlichen E-Ladepunkte*
 1. **Inventar** führt: Standort, Betreiber, Ladepunkte, Stecker, Leistung – mit vollständiger **Provenienz** (aus welcher Quelle stammt welches Attribut, wann wurde es zuletzt bestätigt),
 2. **Belegung** zyklisch abfragt und **je Ladepunkt** eine Statushistorie führt (nicht nur je Ladesäule),
 3. **Preise je Ladepunkt** über verschiedene Apps/Ladekarten (EMPs) und Tarifmodelle hinweg trackt und vergleichbar macht,
-4. all das über eine **öffentliche API** und ein **Web-Frontend** bereitstellt,
+4. all das über eine **öffentliche API** und ein **Web-Frontend mit Karte** bereitstellt,
 5. über ein **generisches Provider-Interface mit Anti-Corruption-Layer** beliebige weitere Quellen aufnehmen kann,
 6. für **Menschen und KI-Agenten gleichermaßen nutzbar** ist: eine vollständig per OpenAPI 3.1 beschriebene API, Nutzerverwaltung mit rollenbasierten Berechtigungen (RBAC) und API-Keys mit denselben Berechtigungen.
+
+## Anforderungen an Web-App und Betrieb
+
+| Nr. | Anforderung | Umsetzung |
+|---|---|---|
+| R1 | **Kartenansicht** aller Ladepunkte ohne nutzungsabhängige Kosten und ohne Lizenzrisiko (kein Google Maps) | MapLibre GL JS + OpenStreetMap-Vektorkacheln (OpenFreeMap, bei Bedarf selbst gehostet) – [ADR-0007](adr/0007-karte-standort-routing.md) |
+| R2 | **Eigener Standort** des Betrachters auf der Karte | Browser-Geolocation, nur im Browser verarbeitet, nicht gespeichert – [ADR-0007](adr/0007-karte-standort-routing.md) |
+| R3 | **Routenfindung** in der Karte auf Straßendaten | selbst gehostete OSM-Routing-Engine (Valhalla) hinter `POST /routes` – [ADR-0007](adr/0007-karte-standort-routing.md) |
+| R4 | **Benutzerkonten**: ohne Anmeldung nur die Karte; alle erweiterten Funktionen und Customizings nur für angemeldete Nutzer | Selbstregistrierung, Rolle `User`, Permission-Modell – [ADR-0005](adr/0005-identity-rbac-openapi.md) |
+| R5 | **Zentraler Mail-Service** mit konfigurierbarem SMTP-Server (Host, Port, Benutzer, `plain`/`starttls`/`ssl`, Absenderadresse) | Outbox + SMTP-Versand, Konfiguration im Config-Service – [ADR-0008](adr/0008-zentraler-mail-service-smtp.md) |
+| R6 | **HTTPS-only** am App-Port mit dauerhaft self-signed Zertifikat; gültiges Zertifikat liefert der externe Loadbalancer | nginx im `web`-Container – [ADR-0009](adr/0009-https-only-self-signed.md) |
+
+**Abgrenzung anonym / angemeldet (R4):**
+
+| | anonym | angemeldet (Rolle `User`) |
+|---|---|---|
+| Karte mit Ladepunkten, Basisdaten (Betreiber, Stecker, Leistung), aktueller Status | ja | ja |
+| eigener Standort auf der Karte | ja | ja |
+| Belegungshistorie, Auslastungsprofil, Preisvergleich über EMPs, Provenienz | nein | ja |
+| Routenfindung | nein | ja |
+| Customizings: Favoriten, gespeicherte Filter, Standard-Kartenausschnitt, eigene Ladekarten für den Preisvergleich | nein | ja |
+| API-Keys für Skripte und Agenten | nein | ja |
 
 ## Nicht-Ziele (vorerst)
 
 - Kein Starten/Stoppen von Ladevorgängen, keine Abrechnung, kein eigener EMP-Betrieb.
-- Keine Routenplanung (kann später als Consumer der API entstehen).
-- Keine Endnutzer-Features wie Favoriten oder Benachrichtigungen im MVP. Nutzerkonten existieren von Anfang an, aber nur für Pflege, Administration und API-Zugang (RBAC); das Lesen der Daten bleibt anonym.
+- Keine Ladeplanung für Langstrecken (Ladestopps nach Fahrzeugmodell und Akkustand); Routenfindung selbst ist Teil der App (R3).
+- Keine Benachrichtigungen (Alerts bei frei werdendem Ladepunkt oder Preisänderung) im MVP.
 
 ## Begriffe
 
