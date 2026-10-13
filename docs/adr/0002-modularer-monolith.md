@@ -6,7 +6,7 @@
 Open-Source-Projekt, kleines Team, Datenmengen im Bereich von Millionen Zeilen/Tag, aber keine harten Latenzanforderungen. Hauptkomplexität liegt in Quellen-Adaptern und Datenqualität, nicht in Skalierung.
 
 ## Entscheidung
-Eine Solution mit klar getrennten Projekten (Domain, Application, Infrastructure, Providers.*, Api, Crawler, Worker). Drei Prozessrollen (Api, Crawler ×N, Worker ×M) aus einem Compose-Stack, eine Datenbank. Kein Message-Broker; Domain-Events über Outbox-Tabelle, Arbeitsverteilung über Lease-/Queue-Tabellen in Postgres ([ADR-0006](0006-konfiguration-env-minimal-config-service.md)).
+Eine Solution mit klar getrennten Projekten (Domain, Application, Infrastructure, Providers.*, Api, Jobs). Drei Prozessrollen (Api, Crawler ×N, Worker ×M; Crawler und Worker sind Rollen des Projekts `ChargeGlobe.Jobs`) aus einem Compose-Stack, eine Datenbank. Kein Message-Broker; Domain-Events über Outbox-Tabelle, Arbeitsverteilung über Lease-/Queue-Tabellen in Postgres ([ADR-0006](0006-konfiguration-env-minimal-config-service.md)).
 
 ## Konsequenzen
 - Einfaches lokales Setup (`docker compose up`), niedrige Einstiegshürde für Contributors.

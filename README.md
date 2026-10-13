@@ -9,7 +9,7 @@ Anbieter und Tarifmodelle hinweg. Alles wird über eine öffentliche API und ein
 
 | | |
 |---|---|
-| **Status** | Konzeptphase (Oktober 2026) |
+| **Status** | Lauffähiges Skelett (API-Healthcheck, Jobs-Heartbeat, Angular-Startseite, Compose-Stack); Fachfunktionen folgen laut [Roadmap](docs/09-roadmap.md) |
 | **Start-Scope** | Wien, Niederösterreich, Oberösterreich, Burgenland |
 | **Ziel-Scope** | Österreich → DACH → Italien |
 | **Stack** | ASP.NET Core / C# / .NET 10 · Angular 22 / TypeScript · PostgreSQL (PostGIS + TimescaleDB) |
@@ -32,25 +32,42 @@ Anbieter und Tarifmodelle hinweg. Alles wird über eine öffentliche API und ein
 | [09 – Roadmap](docs/09-roadmap.md) | Phasen, Meilensteine, offene Entscheidungen |
 | [ADRs](docs/adr/) | Architekturentscheidungen |
 
-## Geplante Repository-Struktur
+## Schnellstart
+
+```bash
+cp .env.example .env        # POSTGRES_PASSWORD und JWT_SIGNING_KEY setzen (openssl rand -hex 32)
+docker compose up -d --build
+curl http://localhost:5005/api/v1/health   # {"status":"ok","db":"ok"}
+```
+
+Web-App: `http://localhost:5005` · OpenAPI 3.1: `/openapi/v1.json` · Scalar UI: `/scalar`. Build- und Testbefehle stehen in [CLAUDE.md](CLAUDE.md#befehle).
+
+## Repository-Struktur
+
+Einträge mit „(geplant)“ existieren noch nicht.
 
 ```
 chargeglobe/
-├─ docs/                         # dieses Konzept
+├─ docs/                         # Konzept und Architektur
+├─ ChargeGlobe.sln
 ├─ src/
 │  ├─ ChargeGlobe.Domain/        # Entitäten, Value Objects (EvseId, …), Domain-Events, Permission-Katalog
 │  ├─ ChargeGlobe.Application/   # Use Cases, Ingest-Pipeline, Identity Resolution, Merge, Autorisierung
 │  ├─ ChargeGlobe.Infrastructure/# EF Core + Npgsql + PostGIS, Timescale, ASP.NET Core Identity, Repositories
 │  ├─ ChargeGlobe.Providers.Abstractions/  # Provider-Interfaces (ACL-Vertrag)
-│  ├─ ChargeGlobe.Providers.*/   # je Quelle ein Adapter (EControl, OpenChargeMap, Osm, Evn, …)
+│  ├─ ChargeGlobe.Providers.*/   # (geplant) je Quelle ein Adapter (EControl, OpenChargeMap, Osm, Evn, …)
 │  ├─ ChargeGlobe.Api/           # ASP.NET Core, OpenAPI 3.1, Auth (JWT + API-Keys), RBAC, Rate Limiting, Caching
-│  ├─ ChargeGlobe.Crawler/       # Lease-Scheduler + Provider-Abrufe → raw_snapshot, ingest_queue (skalierbar)
-│  ├─ ChargeGlobe.Worker/        # Ingest-Queue-Verarbeitung, Merge, Aggregate, Reconcile (skalierbar)
+│  ├─ ChargeGlobe.Jobs/          # ein Host für beide Rollen (--role crawler|worker), Image chargeglobe-jobs, skalierbar
+│  │                             #   crawler: Lease-Scheduler + Provider-Abrufe → raw_snapshot, ingest_queue
+│  │                             #   worker: Ingest-Queue-Verarbeitung, Merge, Aggregate, Reconcile
 │  └─ web/                       # Angular-App (Karte, Ladepunkt-Detail, Historie, Preise, Login, Admin: Nutzer/Rollen/API-Keys)
 ├─ tests/
-│  ├─ ChargeGlobe.Providers.Tests/   # Replay-Tests mit aufgezeichneten, anonymisierten Antworten
-│  └─ ChargeGlobe.IntegrationTests/  # Testcontainers (Postgres/PostGIS/Timescale)
-├─ fixtures/                     # aufgezeichnete Beispiel-Responses je Provider (sanitisiert)
-├─ docker-compose.yml            # db · api · worker · web, gesteuert über .env
-└─ .env.example
+│  ├─ ChargeGlobe.Api.Tests/         # API-Tests (WebApplicationFactory) inkl. Application/Infrastructure
+│  ├─ ChargeGlobe.Domain.Tests/
+│  ├─ ChargeGlobe.Jobs.Tests/
+│  ├─ ChargeGlobe.Providers.Tests/   # (geplant) Replay-Tests mit aufgezeichneten, anonymisierten Antworten
+│  └─ ChargeGlobe.IntegrationTests/  # (geplant) Testcontainers (Postgres/PostGIS/Timescale)
+├─ fixtures/                     # (geplant) aufgezeichnete Beispiel-Responses je Provider (sanitisiert)
+├─ docker-compose.yml            # db · api · crawler · worker · web, gesteuert über .env
+└─ .env.example                  # vollständige Liste aller Variablen
 ```

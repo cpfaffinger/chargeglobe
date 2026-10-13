@@ -29,8 +29,8 @@
                  └───────────────┬──────────────────────────────────────────────────────┘
                                  │ HTTP (Polly: Retry, Circuit Breaker, Rate Limiter)
 ┌────────────────────────────────▼──────────────────────────┐  ┌────────────────────────┐
-│ crawler ×N (ChargeGlobe.Crawler)                           │  │ worker ×M              │
-│  ┌───────────────┐  ┌──────────────────┐  ┌─────────────┐ │  │ (ChargeGlobe.Worker)   │
+│ crawler ×N (ChargeGlobe.Jobs --role crawler)               │  │ worker ×M              │
+│  ┌───────────────┐  ┌──────────────────┐  ┌─────────────┐ │  │ (Jobs --role worker)   │
 │  │ Lease-Scheduler│→│ Provider-Adapter │→ │ ACL / Mapper│ │  │  Ingest-Queue →        │
 │  │ (poll_plan,    │  │ (IInventorySource│  │ (Raw→Ingest-│─┼─▶│  Identity Resolution   │
 │  │  SKIP LOCKED)  │  │  IStatusSource   │  │  Modell)    │ │  │  Merge (Precedence)    │
@@ -58,6 +58,8 @@
 ```
 
 ## Module (Projekte in der Solution)
+
+Die Solution `ChargeGlobe.sln` liegt im Repo-Root, Projekte unter `src/`, Testprojekte unter `tests/` (`ChargeGlobe.Api.Tests` deckt Api, Application und Infrastructure ab, dazu `ChargeGlobe.Domain.Tests` und `ChargeGlobe.Jobs.Tests`).
 
 ### `ChargeGlobe.Domain`
 Reine C#-Klassen ohne Infrastruktur-Abhängigkeiten.
@@ -91,8 +93,11 @@ Use Cases und die Ingest-Pipeline:
 ### `ChargeGlobe.Infrastructure`
 EF Core DbContext, Migrationen, PostGIS-Mapping (NetTopologySuite), Timescale-Hypertables via Raw-SQL-Migrationen, Repositories, Outbox für Domain-Events, Identity-Stores.
 
-### `ChargeGlobe.Crawler` (Container `crawler`, N Instanzen)
-Generic Host, zustandslos, holt Daten von den Quellen:
+### `ChargeGlobe.Jobs`
+Ein Generic-Host-Projekt und ein Image (`chargeglobe-jobs`) für beide Hintergrund-Rollen. Die Rolle wird beim Start über `--role crawler|worker` gewählt (fehlende oder unbekannte Rolle bricht den Start ab); die Anzahl der Instanzen je Rolle steht in `.env` (`CRAWLER_REPLICAS`, `WORKER_REPLICAS`) und wird von Compose per `deploy.replicas` umgesetzt. Jede Instanz loggt beim Start und danach alle 60 s einen Heartbeat mit Rolle und Instanz-ID (Hostname des Containers). Eine Instanz je Rolle reicht für Phase 1.
+
+#### Rolle `crawler` (Container `crawler`, N Instanzen)
+Zustandslos, holt Daten von den Quellen:
 
 - **Lease-Scheduler**: `poll_plan` (Provider × Region/Kachel × Jobtyp × Intervall × `next_run_at`) liegt in Postgres. Jede Instanz holt fällige Pläne mit `SELECT … FOR UPDATE SKIP LOCKED`, setzt `leased_by`/`lease_until` und führt sie aus; abgelaufene Leases werden von jeder Instanz übernommen. Damit verteilen sich N Instanzen ohne Koordinator.
 - **Rate-Limits je Provider sind clusterweit**: Token-Bucket-Zustand in Postgres (`provider_rate_budget`), nicht pro Prozess, damit N Crawler zusammen das Limit einhalten.
@@ -100,14 +105,12 @@ Generic Host, zustandslos, holt Daten von den Quellen:
 - Ergebnis jedes Jobs: `raw_snapshot` + bereits gemapptes Ingest-Modell als Nachricht in `ingest_queue` (Postgres-Tabelle, JSONB). Crawler schreiben nie in kanonische Tabellen.
 - Health/Metriken je Provider und Instanz (OpenTelemetry → Prometheus/Grafana): Requests, Fehlerquote, 429s, Datenfrische, Lease-Alter.
 
-### `ChargeGlobe.Worker` (Container `worker`, M Instanzen)
-Generic Host, zustandslos, verarbeitet `ingest_queue` (ebenfalls `SKIP LOCKED`, Batches je Provider):
+#### Rolle `worker` (Container `worker`, M Instanzen)
+Zustandslos, verarbeitet `ingest_queue` (ebenfalls `SKIP LOCKED`, Batches je Provider):
 
 - Identity Resolution, Merge, Change Detection, Status-Intervalle, Konflikt-Queue (siehe `Application`).
 - Periodische Aufgaben mit Single-Runner-Lease (`job_lease`-Tabelle): `Reconcile`, Continuous-Aggregate-Refresh, Retention, Statistiken, Permission-/Settings-Katalog-Abgleich.
 - **Adaptive Intervalle**: schreibt nach jedem Statuswechsel das neue Intervall in `poll_plan` zurück; der Crawler liest es beim nächsten Lease.
-
-Beide Hosts teilen sich das Image `chargeglobe-jobs` und werden über `--role crawler|worker` gestartet; die Anzahl steht in `.env` (`CRAWLER_REPLICAS`, `WORKER_REPLICAS`) und wird von Compose per `deploy.replicas` umgesetzt. Eine Instanz je Rolle reicht für Phase 1.
 
 ### Zentraler Config-Service (Application + Infrastructure + Api + web)
 - **Katalog im Code**: `SettingDefinition` je Einstellung (Key wie `providers.econtrol.status_interval`, Typ, Default, Beschreibung, Validierung, Scope `global | provider:<key> | region:<code>`), analog zum Permission-Katalog. Der Katalog ist die vollständige Liste fachlicher Einstellungen.
@@ -127,7 +130,7 @@ ASP.NET Core Minimal APIs, Versionierung `/api/v1`, OpenAPI 3.1 (eingebaute Gene
 
 ## Infrastruktur & Betrieb
 
-- **Ein Compose-Stack für alles**: `docker compose up -d` startet `db` (`timescale/timescaledb-ha:pg17`, enthält PostGIS), `api`, `crawler` (×N), `worker` (×M) und `web` (Angular-Build, statisch ausgeliefert; `/api` wird containerintern an `api` weitergereicht).
+- **Ein Compose-Stack für alles**: `docker compose up -d` startet `db` (`timescale/timescaledb-ha:pg17`, enthält PostGIS), `api`, `crawler` (×N), `worker` (×M) und `web` (nginx, liefert den Angular-Build statisch aus; `/api`, `/openapi` und `/scalar` werden containerintern an `api:8080` weitergereicht). Nur `web` veröffentlicht einen Port; Compose-Projektname ist `chargeglobe`.
 - **`.env` minimal, aber vollständig dokumentiert**: `.env.example` enthält jede verfügbare Variable mit Default und Kommentar. Vorgesehener Umfang:
 
   | Variable | Default | Zweck |
@@ -137,14 +140,14 @@ ASP.NET Core Minimal APIs, Versionierung `/api/v1`, OpenAPI 3.1 (eingebaute Gene
   | `JWT_SIGNING_KEY` | – | Secret für Access-Tokens |
   | `ADMIN_EMAIL`, `ADMIN_INITIAL_PASSWORD` | – | Seed des ersten Admin-Users (nur beim ersten Start) |
   | `CRAWLER_REPLICAS`, `WORKER_REPLICAS` | `1`, `1` | Anzahl Instanzen |
-  | `LOG_LEVEL` | `Information` | Serilog-Minimum |
+  | `LOG_LEVEL` | `Information` | Minimum-Log-Level aller .NET-Container |
   | `PUBLIC_BASE_URL` | `http://localhost:5005` | für Links in API-Antworten/E-Mails |
 
   Provider-Keys (z. B. E-Control-API-Key) werden **nicht** in `.env` gepflegt, sondern verschlüsselt im Config-Service (Data-Protection-API, Schlüssel im `db`-Volume), damit `.env` klein bleibt und Keys über das Admin-UI rotiert werden können.
 - **Oberkante der App ist ein HTTP-Port** (`CHARGEGLOBE_PORT`, Default `5005`), unter dem Web-App und `/api` erreichbar sind. TLS, Reverse Proxy, Caddy oder Let's Encrypt sind **nicht** Teil der App; das übernimmt eine getrennte Komponente vor dem Port. Ein Snakeoil-Zertifikat ist zulässig, falls ein Service eines verlangt, aber nicht vorgesehen.
 - **Server**: Dev-Deployment auf einem Debian-Host mit Docker unter `/opt/chargeglobe` (Zugangsdaten in `CLAUDE.local.md`, nicht im Repo). Andere Dienste auf dem Host werden nicht berührt; eigener Compose-Projektname, nur der eine Port wird exponiert.
 - Seed-Skript lädt Region-Polygone und den ersten E-Control-Import.
-- **Qualitätssicherung**: keine GitHub-CI (nicht im Scope). Vor jedem Merge laufen lokal Build, Unit-Tests, Provider-Replay-Tests, Integrationstests (Testcontainers) und Angular-Tests; Ziel 100 % Statement Coverage (siehe `CLAUDE.md`, Workflow). Docker-Images werden beim Deploy auf dem Server gebaut.
+- **Qualitätssicherung**: keine GitHub-CI (nicht im Scope). Vor jedem Merge laufen lokal Build, Unit-Tests, Provider-Replay-Tests, Integrationstests (Testcontainers) und Angular-Tests (Karma/Jasmine); Ziel 100 % Statement Coverage (siehe `CLAUDE.md`, Workflow und Befehle). Coverlet ist über `coverlet.runsettings` konfiguriert (nur `ChargeGlobe.*`, ohne Testprojekte und Source-Generator-Code); ReportGenerator fasst die Berichte der Testprojekte zusammen. Docker-Images werden beim Deploy auf dem Server gebaut.
 - **Konfiguration**: Infrastruktur über `.env` (siehe oben), alles Fachliche über den Config-Service; `appsettings.json` enthält nur statische Framework-Defaults (Logging-Format, Kestrel) und keine Umgebungswerte.
 - **Observability**: Serilog (strukturiert), OpenTelemetry Traces/Metrics, Dashboards als Code (`deploy/grafana`).
 - **Backups**: `pg_dump` der kanonischen Tabellen + Timescale-Compression/Retention-Policies (Observations 180 Tage roh, Intervalle unbegrenzt, Raw-Snapshots 30 Tage).
