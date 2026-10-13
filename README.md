@@ -1,0 +1,56 @@
+# chargeglobe
+
+**Offene Datenbank für öffentliche E-Ladepunkte – mit Belegungshistorie und Preisvergleich über Apps/Tarife hinweg.**
+
+chargeglobe sammelt Ladestationen aus allen erreichbaren Quellen (amtliche Verzeichnisse, Open Data, Web-Karten und
+App-Backends von Betreibern und Ladekarten-Anbietern), führt sie unter einer gemeinsamen Identität (EVSE-ID) zusammen,
+fragt zyklisch den Status jedes einzelnen Ladepunkts ab und protokolliert Preise je Ladepunkt über verschiedene
+Anbieter und Tarifmodelle hinweg. Alles wird über eine öffentliche API und ein Web-Frontend bereitgestellt.
+
+| | |
+|---|---|
+| **Status** | Konzeptphase (Oktober 2026) |
+| **Start-Scope** | Wien, Niederösterreich, Oberösterreich, Burgenland |
+| **Ziel-Scope** | Österreich → DACH → Italien |
+| **Stack** | ASP.NET Core / C# / .NET 10 · Angular 22 / TypeScript · PostgreSQL (PostGIS + TimescaleDB) |
+| **Zugriff** | öffentliche Lese-API ohne Login; Nutzerverwaltung mit rollenbasierten Berechtigungen (RBAC) für Pflege/Admin; API-Keys und OpenAPI 3.1 für KI-Agenten und Integrationen |
+| **Betrieb** | Docker Compose, Konfiguration über `.env`, Web-App + API auf einem HTTP-Port (Default 5005); Reverse Proxy/TLS außerhalb der App |
+| **Lizenz** | noch offen – Vorschlag siehe [docs/09-roadmap.md](docs/09-roadmap.md) |
+
+## Dokumentation
+
+| Dokument | Inhalt |
+|---|---|
+| [01 – Vision & Scope](docs/01-vision-und-scope.md) | Ziele, Nicht-Ziele, Begriffe (Ladesäule vs. Ladepunkt vs. Stecker), Regionen |
+| [02 – Architektur](docs/02-architektur.md) | Technisches Konzept: Modularer Monolith, Crawler-Worker, API, Frontend, Infrastruktur |
+| [03 – Datenmodell](docs/03-datenmodell.md) | Kanonisches Modell (an OCPI 2.2.1 angelehnt), Identität über EVSE-ID, Status- und Preishistorie, SQL-Skizze |
+| [04 – Provider-Interface & Anti-Corruption-Layer](docs/04-provider-interface-acl.md) | Wie neue Anbieter angebunden werden: Interfaces, Capabilities, Mapping, Tests |
+| [05 – Crawling-Konzept](docs/05-crawling-konzept.md) | Quellen-Tiers, Polling-Strategie, Rate-Limits, Merge-Regeln, App-Analyse-Methodik, Compliance |
+| [06 – API](docs/06-api.md) | Öffentliche REST-API (v1): Ladepunkte, Historie, Belegung, Preise, Provenienz |
+| [07 – Bestandsanalyse Apps/Anbieter Österreich](docs/07-bestandsanalyse-apps-at.md) | EVN, ÖAMTC ePower, Verbund/SMATRICS, Electroverse, Tesla, Wien Energie, Linz AG, Energie AG, Energie Burgenland, … |
+| [08 – Datenquellen & Rechtsrahmen](docs/08-datenquellen-und-recht.md) | E-Control Ladestellenverzeichnis, AFIR/NAP, Open Data, DE/CH/IT, rechtliche Leitplanken |
+| [09 – Roadmap](docs/09-roadmap.md) | Phasen, Meilensteine, offene Entscheidungen |
+| [ADRs](docs/adr/) | Architekturentscheidungen |
+
+## Geplante Repository-Struktur
+
+```
+chargeglobe/
+├─ docs/                         # dieses Konzept
+├─ src/
+│  ├─ ChargeGlobe.Domain/        # Entitäten, Value Objects (EvseId, …), Domain-Events, Permission-Katalog
+│  ├─ ChargeGlobe.Application/   # Use Cases, Ingest-Pipeline, Identity Resolution, Merge, Autorisierung
+│  ├─ ChargeGlobe.Infrastructure/# EF Core + Npgsql + PostGIS, Timescale, ASP.NET Core Identity, Repositories
+│  ├─ ChargeGlobe.Providers.Abstractions/  # Provider-Interfaces (ACL-Vertrag)
+│  ├─ ChargeGlobe.Providers.*/   # je Quelle ein Adapter (EControl, OpenChargeMap, Osm, Evn, …)
+│  ├─ ChargeGlobe.Api/           # ASP.NET Core, OpenAPI 3.1, Auth (JWT + API-Keys), RBAC, Rate Limiting, Caching
+│  ├─ ChargeGlobe.Crawler/       # Lease-Scheduler + Provider-Abrufe → raw_snapshot, ingest_queue (skalierbar)
+│  ├─ ChargeGlobe.Worker/        # Ingest-Queue-Verarbeitung, Merge, Aggregate, Reconcile (skalierbar)
+│  └─ web/                       # Angular-App (Karte, Ladepunkt-Detail, Historie, Preise, Login, Admin: Nutzer/Rollen/API-Keys)
+├─ tests/
+│  ├─ ChargeGlobe.Providers.Tests/   # Replay-Tests mit aufgezeichneten, anonymisierten Antworten
+│  └─ ChargeGlobe.IntegrationTests/  # Testcontainers (Postgres/PostGIS/Timescale)
+├─ fixtures/                     # aufgezeichnete Beispiel-Responses je Provider (sanitisiert)
+├─ docker-compose.yml            # db · api · worker · web, gesteuert über .env
+└─ .env.example
+```

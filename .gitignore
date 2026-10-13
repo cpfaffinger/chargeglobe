@@ -1,0 +1,37 @@
+# secrets & local config
+.env
+.env.*
+!.env.example
+CLAUDE.local.md
+appsettings.*.local.json
+*.ppk
+*.pem
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+artifacts/
+
+# Rider / IDE
+.idea/
+*.sln.DotSettings.user
+.vscode/
+
+# Node / Angular
+node_modules/
+dist/
+.angular/
+npm-debug.log*
+yarn-error.log*
+
+# Docker / data
+data/
+pgdata/
+
+# OS
+.DS_Store
+Thumbs.db
