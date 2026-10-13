@@ -16,6 +16,9 @@ Die App wird als Docker-Compose-Stack betrieben. Betreiber müssen Infrastruktur
 - Kubernetes-HPA statt Compose-Replicas: nicht im Scope, Compose ist Vorgabe.
 
 ## Konsequenzen
-- Beim Start gleicht jeder Prozess den Settings-Katalog mit `app_setting` ab (fehlende Keys = Default, unbekannte Keys = Warnung).
-- Tests für den Config-Service prüfen, dass jede `SettingDefinition` Typ, Default und Beschreibung hat und dass `.env.example` alle in Code referenzierten Umgebungsvariablen enthält.
+- Beim Start gleicht die API den Settings-Katalog mit `app_setting` ab (fehlende Keys = Default, unbekannte Keys = Warnung). Crawler und Worker lesen nur; solange die Datenbank beim Start noch nicht migriert ist, arbeiten sie mit den Defaults und versuchen es alle 5 s erneut.
+- Der Typ einer Einstellung ist `string`, `int`, `number`, `bool`, `enum` oder `secret`; ob ein Wert ein Secret ist, steht im Katalog, nicht in der Tabelle.
+- Der Schlüsselring der Data-Protection-API liegt unverschlüsselt in der Datenbank (`data_protection_key`). Die Verschlüsselung der Secrets schützt damit API-Antworten, Logs und Auszüge von `app_setting`, nicht gegen jemanden mit Vollzugriff auf die Datenbank.
+- Laufzeit-Limits, die aus Einstellungen kommen, müssen so gebaut sein, dass eine Änderung sofort greift (Beispiel: das Auth-Rate-Limit führt den Grenzwert im Partitionsschlüssel).
+- Tests für den Config-Service prüfen, dass jede `SettingDefinition` Typ, Beschreibung und einen gültigen oder bewusst fehlenden Default hat und dass `.env.example` genau die Umgebungsvariablen enthält, die Code und `docker-compose.yml` lesen.
 - Rate-Limits sind clusterweit, nicht pro Prozess; ein einzelner Crawler darf das Budget nie allein ausschöpfen.

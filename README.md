@@ -9,7 +9,7 @@ Anbieter und Tarifmodelle hinweg. Alles wird über eine öffentliche API und ein
 
 | | |
 |---|---|
-| **Status** | Lauffähiges Grundgerüst: Compose-Stack, Benutzerkonten (Selbstregistrierung, Login, Passwort-Reset, API-Keys, Permissions), OpenAPI 3.1, Angular-Seiten für Konto und Anmeldung, Jobs-Heartbeat; Karte und Fachfunktionen folgen laut [Roadmap](docs/09-roadmap.md) |
+| **Status** | Lauffähiges Grundgerüst: Compose-Stack, Benutzerkonten (Selbstregistrierung, Login, Passwort-Reset, API-Keys, Permissions), zentraler Config-Service mit Admin-Seite, OpenAPI 3.1, Angular-Seiten für Konto und Anmeldung, Jobs-Heartbeat; Karte und Fachfunktionen folgen laut [Roadmap](docs/09-roadmap.md) |
 | **Start-Scope** | Wien, Niederösterreich, Oberösterreich, Burgenland |
 | **Ziel-Scope** | Österreich → DACH → Italien |
 | **Stack** | ASP.NET Core / C# / .NET 10 · Angular 22 / TypeScript · PostgreSQL (PostGIS + TimescaleDB) |
@@ -53,15 +53,15 @@ chargeglobe/
 ├─ ChargeGlobe.sln
 ├─ src/
 │  ├─ ChargeGlobe.Domain/        # Value Objects (EvseId), Permission-Katalog und Standardrollen; vorgesehen: Entitäten, Domain-Events
-│  ├─ ChargeGlobe.Application/   # Ports (IEmailSender, IDatabaseProbe), Mail-Vorlagen, Auth-Einstellungen; vorgesehen: Ingest-Pipeline, Merge
-│  ├─ ChargeGlobe.Infrastructure/# EF Core + Npgsql (AppDbContext, Migrationen), ASP.NET Core Identity, Identity-Services, Mail-Outbox
+│  ├─ ChargeGlobe.Application/   # Ports (IEmailSender, IAppConfig, IDatabaseProbe), Settings-Katalog, Mail-Vorlagen; vorgesehen: Ingest-Pipeline, Merge
+│  ├─ ChargeGlobe.Infrastructure/# EF Core + Npgsql (AppDbContext, Migrationen), ASP.NET Core Identity, Identity-Services, Mail-Outbox, Config-Service
 │  ├─ ChargeGlobe.Providers.Abstractions/  # Provider-Interfaces (ACL-Vertrag)
 │  ├─ ChargeGlobe.Providers.*/   # (geplant) je Quelle ein Adapter (EControl, OpenChargeMap, Osm, Evn, …)
 │  ├─ ChargeGlobe.Api/           # ASP.NET Core Minimal API, OpenAPI 3.1, Auth (JWT + API-Keys), Permission-Prüfung, Rate Limiting
 │  ├─ ChargeGlobe.Jobs/          # ein Host für beide Rollen (--role crawler|worker), Image chargeglobe-jobs, skalierbar
 │  │                             #   crawler: Lease-Scheduler + Provider-Abrufe → raw_snapshot, ingest_queue
 │  │                             #   worker: Ingest-Queue-Verarbeitung, Merge, Aggregate, Reconcile
-│  └─ web/                       # Angular-App: Startseite, Registrierung, Login, Passwort-Reset, Konto; vorgesehen: Karte, Detail, Admin
+│  └─ web/                       # Angular-App: Startseite, Registrierung, Login, Passwort-Reset, Konto, Admin-Einstellungen; vorgesehen: Karte, Detail
 ├─ tests/
 │  ├─ ChargeGlobe.Api.Tests/         # Tests ohne Datenbank (WebApplicationFactory mit Stub, Einstellungen, Mail-Vorlagen)
 │  ├─ ChargeGlobe.Domain.Tests/

@@ -49,3 +49,34 @@ form input {
   background: #eef3f7;
   border: 1px dashed #9ab;
 }
+
+app-setting-row {
+  display: block;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #ddd;
+}
+
+app-setting-row h3 {
+  margin: 0;
+  font-family: ui-monospace, monospace;
+  font-size: 1rem;
+}
+
+app-setting-row .description,
+app-setting-row .state {
+  margin: 0.25rem 0;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+app-setting-row .control {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+app-setting-row .control input:not([type='checkbox']),
+app-setting-row .control select {
+  flex: 1;
+  padding: 0.4rem;
+}

@@ -1,4 +1,5 @@
 using ChargeGlobe.Application.Health;
+using ChargeGlobe.Infrastructure.Settings;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,7 +9,7 @@ namespace ChargeGlobe.Api.Tests;
 
 /// <summary>
 /// Hosts the API in-process without a database: the probe is stubbed and the startup
-/// migration is removed. Everything that needs Postgres lives in ChargeGlobe.IntegrationTests.
+/// migration and the settings refresh are removed (settings then have their defaults). Everything that needs Postgres lives in ChargeGlobe.IntegrationTests.
 /// </summary>
 public sealed class ApiFactory : WebApplicationFactory<Program>
 {
@@ -22,6 +23,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         {
             services.RemoveAll<IDatabaseProbe>();
             services.Remove(services.Single(service => service.ImplementationType == typeof(DatabaseInitializationService)));
+            services.Remove(services.Single(service => service.ImplementationType == typeof(SettingsCacheRefresher)));
             services.AddSingleton<IDatabaseProbe>(new StubDatabaseProbe(this));
         });
     }

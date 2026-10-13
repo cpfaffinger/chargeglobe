@@ -10,6 +10,9 @@ import { AuthService } from './auth/auth.service';
       <h1><a routerLink="/">chargeglobe</a></h1>
       <nav>
         @if (auth.isAuthenticated()) {
+          @if (auth.hasPermission('settings:read')) {
+            <a routerLink="/admin/settings" id="nav-settings">Einstellungen</a>
+          }
           <a routerLink="/account" id="nav-account">Mein Konto</a>
         } @else {
           <a routerLink="/login" id="nav-login">Anmelden</a>

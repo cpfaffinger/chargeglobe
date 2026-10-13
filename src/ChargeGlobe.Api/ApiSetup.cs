@@ -2,22 +2,18 @@ using System.Threading.RateLimiting;
 using ChargeGlobe.Api.Auth;
 using ChargeGlobe.Api.Health;
 using ChargeGlobe.Api.OpenApi;
+using ChargeGlobe.Api.Settings;
 using ChargeGlobe.Application.Identity;
+using ChargeGlobe.Application.Settings;
+using ChargeGlobe.Infrastructure;
 using ChargeGlobe.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 
 namespace ChargeGlobe.Api;
-
-/// <summary>Requests per minute and IP on <c>/api/v1/auth/*</c>.</summary>
-public sealed class AuthRateLimitOptions
-{
-    public int PermitLimit { get; set; } = 20;
-}
 
 /// <summary>Applies migrations and the role/admin seed before the API accepts requests.</summary>
 public sealed class DatabaseInitializationService(IServiceScopeFactory scopeFactory) : IHostedService
@@ -40,6 +36,7 @@ public static class ApiSetup
         services.AddOpenApi(options => options.AddChargeGlobeContract());
         services.AddProblemDetails();
         services.AddHostedService<DatabaseInitializationService>();
+        services.AddSettingsCacheRefresh();
 
         // Binding errors answer 400 problem details in every environment instead of throwing.
         services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadRequest = false);
@@ -90,13 +87,14 @@ public static class ApiSetup
                     detail: "Rate limit for authentication requests from this address exceeded. Retry after the time in the Retry-After header.")
                     .ExecuteAsync(context.HttpContext);
             };
-            options.AddPolicy(AuthRateLimitPolicy, context => RateLimitPartition.GetFixedWindowLimiter(
-                context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-                _ => new FixedWindowRateLimiterOptions
-                {
-                    PermitLimit = context.RequestServices.GetRequiredService<IOptions<AuthRateLimitOptions>>().Value.PermitLimit,
-                    Window = TimeSpan.FromMinutes(1),
-                }));
+            options.AddPolicy(AuthRateLimitPolicy, context =>
+            {
+                // The limit is part of the partition key: a changed setting gets a fresh limiter at once.
+                var limit = context.RequestServices.GetRequiredService<IAppConfig>().Get<int>(SettingsCatalog.AuthRateLimitPerMinute);
+                return RateLimitPartition.GetFixedWindowLimiter(
+                    $"{context.Connection.RemoteIpAddress?.ToString() ?? "unknown"}|{limit}",
+                    _ => new FixedWindowRateLimiterOptions { PermitLimit = limit, Window = TimeSpan.FromMinutes(1) });
+            });
         });
 
         return services;
@@ -120,6 +118,7 @@ public static class ApiSetup
         app.MapHealthEndpoints();
         app.MapAuthEndpoints();
         app.MapAccountEndpoints();
+        app.MapSettingsEndpoints();
         return app;
     }
 }

@@ -2,10 +2,13 @@ using System.Data.Common;
 using ChargeGlobe.Application.Health;
 using ChargeGlobe.Application.Identity;
 using ChargeGlobe.Application.Mail;
+using ChargeGlobe.Application.Settings;
 using ChargeGlobe.Infrastructure.Health;
 using ChargeGlobe.Infrastructure.Identity;
 using ChargeGlobe.Infrastructure.Mail;
 using ChargeGlobe.Infrastructure.Persistence;
+using ChargeGlobe.Infrastructure.Settings;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,17 +19,39 @@ namespace ChargeGlobe.Infrastructure;
 
 public static class InfrastructureServiceCollectionExtensions
 {
-    public static IServiceCollection AddInfrastructure(
-        this IServiceCollection services, string connectionString, AuthSettings authSettings)
+    /// <summary>
+    /// What every process needs (api, crawler, worker): database access, the shared key ring
+    /// and the config service.
+    /// </summary>
+    public static IServiceCollection AddInfrastructureCore(this IServiceCollection services, string connectionString)
     {
         services.AddSingleton(_ => NpgsqlDataSource.Create(connectionString));
         services.AddSingleton<DbDataSource>(provider => provider.GetRequiredService<NpgsqlDataSource>());
-        services.AddSingleton<IDatabaseProbe, DatabaseProbe>();
         services.TryAddSingleton(TimeProvider.System);
-        services.AddSingleton(authSettings);
 
         services.AddDbContext<AppDbContext>((provider, options) =>
             options.UseNpgsql(provider.GetRequiredService<NpgsqlDataSource>()));
+
+        // One key ring for all containers, kept in the database so that it survives rebuilds.
+        services.AddDataProtection().SetApplicationName("chargeglobe").PersistKeysToDbContext<AppDbContext>();
+
+        services.AddScoped<AuditLog>();
+        services.AddSingleton<SettingsCache>();
+        services.AddSingleton<IAppConfig, AppConfig>();
+        return services;
+    }
+
+    /// <summary>Follows setting changes of other processes; requires the migrated database.</summary>
+    public static IServiceCollection AddSettingsCacheRefresh(this IServiceCollection services) =>
+        services.AddHostedService<SettingsCacheRefresher>();
+
+    /// <summary>Everything the API needs on top of <see cref="AddInfrastructureCore"/>.</summary>
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services, string connectionString, AuthSettings authSettings)
+    {
+        services.AddInfrastructureCore(connectionString);
+        services.AddSingleton<IDatabaseProbe, DatabaseProbe>();
+        services.AddSingleton(authSettings);
 
         services
             .AddIdentityCore<AppUser>(options =>
@@ -45,7 +70,6 @@ public static class InfrastructureServiceCollectionExtensions
             .AddTokenProvider<HashedTokenProvider>(TokenOptions.DefaultProvider);
 
         services.AddScoped<IEmailSender, OutboxEmailSender>();
-        services.AddScoped<AuditLog>();
         services.AddScoped<PermissionService>();
         services.AddScoped<AccountService>();
         services.AddScoped<SessionService>();

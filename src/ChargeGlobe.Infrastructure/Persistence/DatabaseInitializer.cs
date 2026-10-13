@@ -1,5 +1,7 @@
 using ChargeGlobe.Application.Identity;
+using ChargeGlobe.Application.Settings;
 using ChargeGlobe.Domain.Identity;
+using ChargeGlobe.Infrastructure.Settings;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -17,6 +19,7 @@ public sealed class DatabaseInitializer(
     RoleManager<AppRole> roles,
     UserManager<AppUser> users,
     AuthSettings settings,
+    SettingsCache settingsCache,
     ILogger<DatabaseInitializer> logger)
 {
     // Arbitrary, but fixed: identifies the "chargeglobe schema" lock within the database.
@@ -31,6 +34,7 @@ public sealed class DatabaseInitializer(
             await db.Database.MigrateAsync(cancellationToken);
             await SeedRolesAsync(cancellationToken);
             await SeedAdminAsync(cancellationToken);
+            await ReconcileSettingsAsync(cancellationToken);
         }
         finally
         {
@@ -72,6 +76,21 @@ public sealed class DatabaseInitializer(
         }
 
         await db.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Stored values whose key left the catalog are reported, not deleted; missing values need
+    /// no action, because the default of the catalog applies. Loads the cache of this process.
+    /// </summary>
+    private async Task ReconcileSettingsAsync(CancellationToken cancellationToken)
+    {
+        var storedKeys = await db.AppSettings.Select(setting => setting.Key).Distinct().ToListAsync(cancellationToken);
+        foreach (var key in storedKeys.Where(key => SettingsCatalog.Find(key) is null))
+        {
+            logger.LogWarning("app_setting contains the unknown key {Key}; it is ignored", key);
+        }
+
+        await settingsCache.ReloadAsync(cancellationToken);
     }
 
     /// <summary>Creates the admin from the environment, but only while the user table is empty.</summary>

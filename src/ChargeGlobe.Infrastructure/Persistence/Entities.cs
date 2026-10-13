@@ -84,6 +84,22 @@ public sealed class AuditLogEntry
     public DateTimeOffset OccurredAt { get; set; }
 }
 
+/// <summary>Stored value of a setting of the catalog (<c>SettingsCatalog</c>) for one scope.</summary>
+public sealed class AppSetting
+{
+    public required string Key { get; set; }
+
+    /// <summary><c>global</c>, <c>provider:&lt;key&gt;</c> or <c>region:&lt;code&gt;</c>.</summary>
+    public required string Scope { get; set; }
+
+    /// <summary>JSON value; for secrets the JSON string of the encrypted payload.</summary>
+    public required string Value { get; set; }
+
+    public Guid? UpdatedBy { get; set; }
+
+    public DateTimeOffset UpdatedAt { get; set; }
+}
+
 public sealed class EmailOutboxEntry
 {
     public const string Queued = "QUEUED";

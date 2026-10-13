@@ -1,3 +1,6 @@
+using System.Text.Json;
+using ChargeGlobe.Application.Identity;
+using ChargeGlobe.Application.Settings;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
 
@@ -8,24 +11,41 @@ public class HeartbeatServiceTests
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(10);
 
     [Fact]
-    public async Task Logs_a_heartbeat_at_startup_and_after_every_interval()
+    public async Task Logs_a_heartbeat_with_the_current_mail_setting_at_startup_and_after_every_interval()
     {
         var timeProvider = new FakeTimeProvider();
         var logger = new RecordingLogger();
+        var config = new StubConfig();
         using var service = new HeartbeatService(
-            new JobOptions(JobRole.Crawler, "instance-1"), timeProvider, logger);
+            new JobOptions(JobRole.Crawler, "instance-1"), timeProvider, config, logger);
 
         await service.StartAsync(CancellationToken.None);
         await logger.WaitForMessagesAsync(1, Timeout);
 
+        config.MailEnabled = true;
         timeProvider.Advance(HeartbeatService.Interval);
         await logger.WaitForMessagesAsync(2, Timeout);
 
         await service.StopAsync(CancellationToken.None);
 
         Assert.Equal(
-            ["Heartbeat role=crawler instance=instance-1", "Heartbeat role=crawler instance=instance-1"],
+            [
+                "Heartbeat role=crawler instance=instance-1 mail.enabled=False",
+                "Heartbeat role=crawler instance=instance-1 mail.enabled=True",
+            ],
             logger.Messages);
+    }
+
+    private sealed class StubConfig : IAppConfig
+    {
+        public bool MailEnabled { get; set; }
+
+        public T Get<T>(string key, string scope = SettingDefinition.GlobalScope) =>
+            key == SettingsCatalog.MailEnabled ? (T)(object)MailEnabled : throw new ArgumentException(key);
+
+        public Task SetAsync(
+            string key, string scope, JsonElement? value, Actor actor, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
     }
 
     private sealed class RecordingLogger : ILogger<HeartbeatService>

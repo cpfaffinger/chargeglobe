@@ -1,3 +1,4 @@
+using ChargeGlobe.Application.Identity;
 using ChargeGlobe.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 

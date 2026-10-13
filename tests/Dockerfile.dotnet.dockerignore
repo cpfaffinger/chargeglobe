@@ -2,6 +2,7 @@
 .git
 .env
 .env.*
+!.env.example
 CLAUDE.local.md
 **/bin
 **/obj
