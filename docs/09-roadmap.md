@@ -7,6 +7,7 @@
 - [x] Git-Repository angelegt (`origin` = github.com/cpfaffinger/chargeglobe), `CLAUDE.md` mit Arbeitsregeln
 - [x] .NET-10-SDK lokal installiert
 - [x] Solution-Skelett (.NET 10), Angular-22-Workspace, `docker-compose.yml` + `.env.example` (db/api/crawler/worker/web, HTTPS-only auf Port 5005 mit self-signed Zertifikat, `CRAWLER_REPLICAS`/`WORKER_REPLICAS`), Test-Projekte mit Coverage-Reporting
+- [ ] Compose-Testpfad `docker-compose.test.yml` + `scripts/test.sh` für Testläufe auf dem Dev-Server ([ADR-0010](adr/0010-tests-auf-dev-server-per-compose.md))
 - [ ] Zentraler Config-Service: Settings-Katalog, `app_setting`, typisierte Accessoren, LISTEN/NOTIFY-Invalidierung, `GET/PUT /settings`, generisches Admin-UI
 - [ ] Identity-Grundgerüst: ASP.NET Core Identity, Permission-Katalog, Standardrollen, Selbstregistrierung mit E-Mail-Bestätigung, Login (JWT), Passwort-Reset, API-Keys, `GET /me`, OpenAPI mit Security Schemes und `x-required-permission`; Admin-Seed-User aus `.env`; Mail-Port `IEmailSender` mit `email_outbox`
 - [ ] Mail-Service: SMTP-Versand der Outbox im Worker (MailKit), Einstellungen `mail.*` im Config-Service, `POST /mail/test`, `GET /mail/outbox`, Admin-UI ([ADR-0008](adr/0008-zentraler-mail-service-smtp.md)); setzt den Config-Service voraus

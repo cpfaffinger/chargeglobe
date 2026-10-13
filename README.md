@@ -67,8 +67,9 @@ chargeglobe/
 │  ├─ ChargeGlobe.Domain.Tests/
 │  ├─ ChargeGlobe.Jobs.Tests/
 │  ├─ ChargeGlobe.Providers.Tests/   # (geplant) Replay-Tests mit aufgezeichneten, anonymisierten Antworten
-│  └─ ChargeGlobe.IntegrationTests/  # (geplant) Testcontainers (Postgres/PostGIS/Timescale)
+│  └─ ChargeGlobe.IntegrationTests/  # (geplant) Integrationstests gegen Postgres/PostGIS/Timescale (Compose-Service test-db)
 ├─ fixtures/                     # (geplant) aufgezeichnete Beispiel-Responses je Provider (sanitisiert)
 ├─ docker-compose.yml            # db · api · crawler · worker · web, gesteuert über .env
+├─ docker-compose.test.yml       # (geplant) Testlauf statt App: test-db · test-dotnet · test-web
 └─ .env.example                  # vollständige Liste aller Variablen
 ```
