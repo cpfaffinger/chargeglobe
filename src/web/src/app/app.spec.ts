@@ -100,6 +100,31 @@ describe('App with its routes', () => {
       expect(text(root(), 'h2')).toBe('Anmelden');
     });
 
+    it('opens /admin/settings only with settings:read and shows the link only then', async () => {
+      auth.me.set(ME);
+      auth.hasPermission.and.returnValue(false);
+
+      await navigate('/admin/settings');
+
+      expect(router.url).toBe('/');
+      expect(root().querySelector('#nav-settings')).toBeNull();
+      http.expectOne('/api/v1/health');
+
+      auth.hasPermission.and.callFake((permission) => permission === 'settings:read');
+      await navigate('/admin/settings');
+
+      expect(router.url).toBe('/admin/settings');
+      expect(text(root(), 'h2')).toBe('Einstellungen');
+      expect(root().querySelector('#nav-settings')).not.toBeNull();
+      http.expectOne('/api/v1/settings').flush([]);
+    });
+
+    it('redirects anonymous visitors from /admin/settings to the login', async () => {
+      await navigate('/admin/settings');
+
+      expect(router.url).toBe('/login?returnUrl=%2Fadmin%2Fsettings');
+    });
+
     it('opens /account for signed-in users', async () => {
       auth.me.set(ME);
 

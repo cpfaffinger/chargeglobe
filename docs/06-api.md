@@ -6,7 +6,7 @@ Basis: `https://<host>:5005/api/v1` (HTTPS-only, am App-Port mit self-signed Zer
 
 | Schema | Für wen | Mechanik |
 |---|---|---|
-| anonym | nur die Karte: `GET /locations`, `GET /locations/{id}`, `GET /tiles/…`, `GET /map/config`; dazu `GET /health`, `GET /permissions`, `/auth/*` | `/auth/*`: 20 Requests je Minute und IP, danach `429` mit `Retry-After` |
+| anonym | nur die Karte: `GET /locations`, `GET /locations/{id}`, `GET /tiles/…`, `GET /map/config`; dazu `GET /health`, `GET /permissions`, `/auth/*` | `/auth/*`: Limit je Minute und IP aus der Einstellung `auth.rate_limit_per_minute` (Default 20), danach `429` mit `Retry-After` |
 | `Bearer` (JWT, HS256) | Angular-SPA, Menschen | `POST /auth/login` (E-Mail + Passwort) → Access-Token (15 min) im Body + Refresh-Token als Cookie `cg_refresh` (HttpOnly, Secure, SameSite=Strict, Pfad `/api/v1/auth`, 14 Tage); `POST /auth/refresh` tauscht das Cookie gegen ein neues Access-Token und ein neues Cookie (jedes Refresh-Token gilt einmal; ein bereits benutztes beendet alle Sitzungen des Nutzers); `POST /auth/logout` |
 | `ApiKey` | KI-Agenten, Skripte, Integrationen | Header `X-Api-Key: cg_<prefix>_<secret>`; der Key trägt eine Teilmenge der Rechte seines Eigentümers und optional ein Ablaufdatum. Verliert der Eigentümer eine Permission, verliert sie auch der Key. Vorgesehen: eigenes Rate-Limit-Tier |
 
@@ -28,8 +28,12 @@ Vorhandene Endpunkte (in Klammern die `operationId`):
 | `GET /api-keys` (`listApiKeys`) | eigene Keys inklusive widerrufener, ohne Secret | `apikey:manage` |
 | `POST /api-keys` (`createApiKey`) | Body `name`, `permissions[]` (nicht leer, ⊆ Rechte des Aufrufers), optional `expiresAt`. `201` mit dem Klartext-Key in `key` – nur in dieser Antwort. Mit Header `Idempotency-Key` legt eine Wiederholung nichts an und antwortet `200` mit dem bestehenden Key und `key: null`, weil das Secret nicht wiederherstellbar ist | `apikey:manage` |
 | `DELETE /api-keys/{id}` (`revokeApiKey`) | widerruft einen eigenen Key sofort; wiederholbar (`204`), `404` bei fremder oder unbekannter Id | `apikey:manage` |
+| `GET /settings` (`listSettings`) | zentraler Config-Service: vollständiger Katalog mit `key`, `type` (`string`/`int`/`number`/`bool`/`enum`/`secret`), `description`, `default`, `allowedValues`, `min`, `max`, `scopeKinds`, dem wirksamen globalen `value` und den gespeicherten Werten je Scope in `stored`. Secrets erscheinen als `********`, wenn gesetzt, sonst `null` | `settings:read` |
+| `GET /settings/{key}` (`getSetting`) | eine Einstellung in derselben Form; `404` bei unbekanntem Key | `settings:read` |
+| `PUT /settings/{key}` (`updateSetting`) | Body `value` und optional `scope` (Default `global`). Speichert den Wert; `value: null` (oder weggelassen) entfernt ihn, sodass der Default wieder gilt. Idempotent, wirkt ohne Neustart in allen Containern. `422` mit Feldfehlern (`value`, `scope`) bei falschem Typ, Wert außerhalb der Grenzen oder nicht unterstütztem Scope; `404` bei unbekanntem Key | `settings:manage` |
+| `GET /map/config` (`getMapConfig`) | `styleUrl`, `attribution`, `center` (`latitude`, `longitude`) und `zoom` der Basiskarte aus den Einstellungen `map.*` | `none` |
 
-Schreibende Aktionen (Registrierung, Bestätigung, Login, Passwort-Reset anfordern/ausführen, Key anlegen/widerrufen) landen mit Akteur (Nutzer bzw. API-Key) im `audit_log`.
+Schreibende Aktionen (Registrierung, Bestätigung, Login, Passwort-Reset anfordern/ausführen, Key anlegen/widerrufen, Einstellung ändern) landen mit Akteur (Nutzer bzw. API-Key) im `audit_log`; bei Einstellungen ohne den Wert.
 
 Vorgesehene Endpunkte:
 
@@ -42,7 +46,6 @@ Vorgesehene Endpunkte:
 | `GET /audit-log` | schreibende Aktionen, filterbar nach Akteur/Entität/Zeit | `audit:read` |
 | `PUT /tariffs/{id}`, `POST /tariffs` | Tarif-Pflege | `tariff:write` |
 | `POST /conflicts/{id}/resolve`, `POST /evses/{id}/merge` | Konflikt-/Match-Entscheidungen | `conflict:resolve` |
-| `GET /settings`, `GET /settings/{key}`, `PUT /settings/{key}` | zentraler Config-Service: Katalog mit Typ/Default/Beschreibung und aktuellen Werten je Scope; Secrets werden maskiert zurückgegeben | `settings:read` / `settings:manage` |
 | `POST /mail/test`, `GET /mail/outbox` | Testmail über den konfigurierten SMTP-Server senden; Zustellstatus der Outbox | `settings:manage` |
 | `POST /sources/{key}/run` | Job anstoßen | `provider:manage` |
 | `GET /jobs/instances`, `GET /jobs/queue` | laufende Crawler-/Worker-Instanzen, Leases, Queue-Tiefe | `jobs:read` |
@@ -94,7 +97,7 @@ Ohne Anmeldung sind nur die Endpunkte unter „Standorte“ (`GET /locations`, `
 | `GET /changes?since=` | Feed von Änderungen (neue/entfernte EVSEs, Preisänderungen) für Downstream-Consumer |
 
 ### Karte (anonym)
-- `GET /map/config` – Style-URL der Basiskarte, Attributionstext, Start-Ausschnitt (aus dem Config-Service, `map.*`).
+- `GET /map/config` (vorhanden) – Style-URL der Basiskarte, Attributionstext, Start-Ausschnitt (aus dem Config-Service, `map.*`).
 - `GET /tiles/{z}/{x}/{y}.mvt` (ab Phase 2) – Vector-Tiles mit Standort-Markern inkl. Status-Zusammenfassung; alternativ via pg_tileserv/Martin direkt aus Postgres.
 
 ### Routing (`route:read`)
@@ -135,7 +138,7 @@ Ohne Anmeldung sind nur die Endpunkte unter „Standorte“ (`GET /locations`, `
 ## Querschnitt
 
 - **Caching**: Listen/Status 30 s Output-Cache, Stammdaten 10 min, Historie 5 min; `ETag` überall.
-- **Rate-Limits**: `/auth/*` 20 req/min je IP, `429` als Problem Details mit `Retry-After`. Vorgesehen für die übrigen Endpunkte: anonym 60 req/min & 5.000/Tag je IP; authentifiziert nach `rate_limit_tier` (Standard 600 req/min).
+- **Rate-Limits**: `/auth/*` je IP nach `auth.rate_limit_per_minute` (Default 20 req/min), `429` als Problem Details mit `Retry-After`. Vorgesehen für die übrigen Endpunkte: anonym 60 req/min & 5.000/Tag je IP; authentifiziert nach `rate_limit_tier` (Standard 600 req/min).
 - **Attribution**: jede Antwort enthält `meta.attribution[]` mit Lizenztexten der beteiligten Quellen (Pflicht z. B. bei ODbL/CC BY).
 - **Versionierung**: Breaking Changes nur über `/api/v2`; additive Felder jederzeit.
 - **Bulk-Export**: täglicher Dump (`/exports/evses.csv.gz`, `/exports/evses.geojson.gz`, Tarife als JSON) für Forschung/Analysen – mit Lizenzhinweis.

@@ -52,7 +52,7 @@ Stack: **ASP.NET Core / C# / .NET 10 · Angular 22 / TypeScript · PostgreSQL 17
 - Die gesamte App läuft als **Docker-Compose-Stack**. Services: `db` (timescaledb-ha mit PostGIS), `api` (.NET), `crawler` (.NET, holt Daten von Quellen; skalierbar), `worker` (.NET, Ingest/Merge/Aggregation; skalierbar) – beide aus dem Projekt `ChargeGlobe.Jobs` (Image `chargeglobe-jobs`, `--role crawler|worker`), `web` (nginx: Angular-Build, statisch ausgeliefert, proxied `/api` zur API, terminiert TLS). Vorgesehen: `routing` (Valhalla, nicht exponiert).
 - **Konfiguration in zwei Schichten** ([ADR-0006](docs/adr/0006-konfiguration-env-minimal-config-service.md)):
   - **`.env` = nur Infrastruktur und Bootstrap**, so minimal wie möglich: exponierter Port, DB-Zugang, JWT-Secret, Admin-Seed, E-Mail-Bestätigung an/aus (`AUTH_REQUIRE_CONFIRMED_EMAIL`), Anzahl Crawler-/Worker-Instanzen, Log-Level, Basis-URL. **`.env.example` listet immer alle verfügbaren Variablen** mit Default und Kommentar; eine neue Variable ohne Eintrag in `.env.example` ist ein Fehler.
-  - **Zentraler Config-Service in der App** für alles Fachliche (Provider an/aus, Intervalle, Rate-Limits, Regionen, Schwellwerte, Präzedenzen): Katalog der Einstellungen mit Typ, Default und Beschreibung im Code, Werte in der DB-Tabelle `app_setting`, änderbar über API (`settings:manage`) und Admin-UI, wirksam ohne Neustart. Keine fachlichen Einstellungen in `.env` oder `appsettings.json`.
+  - **Zentraler Config-Service in der App** für alles Fachliche (Provider an/aus, Intervalle, Rate-Limits, Regionen, Schwellwerte, Präzedenzen): Katalog der Einstellungen mit Typ, Default und Beschreibung im Code, Werte in der DB-Tabelle `app_setting`, änderbar über API (`settings:manage`) und Admin-UI (`/admin/settings`), wirksam ohne Neustart in allen Containern (Zugriff im Code nur über `IAppConfig`; neue Einstellungen werden in `SettingsCatalog` ergänzt). Keine fachlichen Einstellungen in `.env` oder `appsettings.json`.
 - **Skalierung**: `crawler` und `worker` sind zustandslos und werden über `CRAWLER_REPLICAS` / `WORKER_REPLICAS` in `.env` (Compose `deploy.replicas`) vervielfacht; Arbeitsverteilung über Lease-/Queue-Tabellen in Postgres (`FOR UPDATE SKIP LOCKED`), kein Message-Broker.
 - **Oberkante der App ist ein exponierter HTTPS-Port** (`CHARGEGLOBE_PORT`, Default `5005`, in `.env` änderbar), unter dem die Web-App inkl. `/api` erreichbar ist. Der Port spricht **ausschließlich HTTPS** mit einem **dauerhaft self-signed Zertifikat**, das der `web`-Container beim ersten Start erzeugt (Volume `tls`); HTTP-Requests werden umgeleitet. Die App sendet kein HSTS (`Strict-Transport-Security`); das wäre Sache des externen Loadbalancers. Intern (nginx → `api:8080`) bleibt es bei HTTP ([ADR-0009](docs/adr/0009-https-only-self-signed.md)).
 - **Nicht im Scope:** öffentlich gültige Zertifikate, Let's Encrypt, Caddy. Das übernimmt der externe Loadbalancer (nginx) außerhalb dieses Repos.
@@ -96,7 +96,8 @@ cp .env.example .env                        # POSTGRES_PASSWORD, JWT_SIGNING_KEY
 docker compose up -d --build
 curl -k https://localhost:5005/api/v1/health   # {"status":"ok","db":"ok"}; -k wegen self-signed Zertifikat
 curl -k https://localhost:5005/api/v1/permissions   # Permission-Katalog (anonym)
-docker compose logs crawler worker          # Heartbeats beider Rollen
+curl -k https://localhost:5005/api/v1/map/config    # Kartenkonfiguration aus dem Config-Service (anonym)
+docker compose logs crawler worker          # Heartbeats beider Rollen (alle 30 s, mit aktuellem Wert von mail.enabled)
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select template_key, status from email_outbox"
 docker compose down                         # Volumes pgdata und tls (Zertifikat) bleiben erhalten
 
@@ -121,4 +122,4 @@ Vor einem neuen lokalen Coverage-Lauf alte Ergebnisse löschen (`tests/*/TestRes
 
 ## Nächste Schritte (Stand jetzt)
 
-Siehe `docs/09-roadmap.md`, Phase 0: zentraler Config-Service inklusive der Einstellungen `mail.*` und `map.*` ([ADR-0006](docs/adr/0006-konfiguration-env-minimal-config-service.md)), danach SMTP-Versand der Outbox ([ADR-0008](docs/adr/0008-zentraler-mail-service-smtp.md)) und die Karte mit MapLibre/Geolocation ([ADR-0007](docs/adr/0007-karte-standort-routing.md)); außerdem Lizenz festlegen, E-Control-API-Key beantragen.
+Siehe `docs/09-roadmap.md`, Phase 0: SMTP-Versand der Outbox im Worker inklusive `POST /mail/test` und `GET /mail/outbox` ([ADR-0008](docs/adr/0008-zentraler-mail-service-smtp.md)), danach die Karte mit MapLibre/Geolocation ([ADR-0007](docs/adr/0007-karte-standort-routing.md)); außerdem Lizenz festlegen, E-Control-API-Key beantragen.

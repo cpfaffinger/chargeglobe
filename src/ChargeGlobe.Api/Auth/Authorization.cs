@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using ChargeGlobe.Application.Identity;
 using ChargeGlobe.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Policy;

@@ -19,6 +19,8 @@ RUN dotnet tool restore && dotnet restore
 
 COPY src/ src/
 COPY tests/ tests/
+# Read by the test that keeps .env.example complete (ADR-0006).
+COPY .env.example docker-compose.yml ./
 RUN dotnet build --no-restore
 
 ENTRYPOINT ["sh", "tests/run-dotnet-tests.sh"]

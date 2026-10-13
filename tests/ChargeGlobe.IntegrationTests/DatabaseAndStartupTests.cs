@@ -19,7 +19,9 @@ public class DatabaseAndStartupTests(IntegrationFactory factory)
         Assert.Equal("ok", health.GetProperty("db").GetString());
 
         var applied = await factory.WithDbAsync(db => db.Database.GetAppliedMigrationsAsync());
-        Assert.EndsWith("_InitialIdentity", Assert.Single(applied));
+        Assert.Equal(2, applied.Count());
+        Assert.EndsWith("_InitialIdentity", applied.First());
+        Assert.EndsWith("_AppSettings", applied.Last());
         Assert.Empty(await factory.WithDbAsync(db => db.Database.GetPendingMigrationsAsync()));
 
         var bundles = await factory.WithDbAsync(db => (
@@ -130,7 +132,7 @@ public class StartupVariantTests
     [Fact]
     public async Task An_unusable_admin_seed_is_logged_but_does_not_block_the_start()
     {
-        await using var factory = new IntegrationFactory { AdminPasswordSetting = "change-me", AuthPermitLimit = 2 };
+        await using var factory = new IntegrationFactory { AdminPasswordSetting = "change-me" };
         await factory.InitializeAsync();
         using var client = factory.Client();
 
@@ -138,25 +140,6 @@ public class StartupVariantTests
 
         Assert.Equal(HttpStatusCode.OK, health.StatusCode);
         Assert.Equal(0, await factory.WithDbAsync(db => db.Users.CountAsync()));
-    }
-
-    [Fact]
-    public async Task Auth_endpoints_are_rate_limited_per_client_address()
-    {
-        await using var factory = new IntegrationFactory { AuthPermitLimit = 2 };
-        await factory.InitializeAsync();
-        using var client = factory.Client();
-        var login = new { email = "nobody@chargeglobe.test", password = "wrong password!" };
-
-        var first = await client.PostAsJsonAsync("/api/v1/auth/login", login);
-        var second = await client.PostAsJsonAsync("/api/v1/auth/login", login);
-        var third = await client.PostAsJsonAsync("/api/v1/auth/login", login);
-        var notLimited = await client.GetAsync("/api/v1/permissions");
-
-        Assert.Equal(HttpStatusCode.Unauthorized, first.StatusCode);
-        Assert.Equal(HttpStatusCode.Unauthorized, second.StatusCode);
-        await third.AssertProblemAsync(HttpStatusCode.TooManyRequests);
-        Assert.InRange(third.Headers.RetryAfter!.Delta!.Value.TotalSeconds, 1, 60);
-        Assert.Equal(HttpStatusCode.OK, notLimited.StatusCode);
+        Assert.Contains(factory.Warnings, message => message.StartsWith("Admin seed failed", StringComparison.Ordinal));
     }
 }

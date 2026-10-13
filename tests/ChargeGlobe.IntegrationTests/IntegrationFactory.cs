@@ -2,12 +2,12 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using ChargeGlobe.Api;
 using ChargeGlobe.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Npgsql;
 
 namespace ChargeGlobe.IntegrationTests;
@@ -32,7 +32,8 @@ public class IntegrationFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
     public string? AdminPasswordSetting { get; init; } = AdminPassword;
 
-    public int AuthPermitLimit { get; init; } = 100_000;
+    /// <summary>Messages logged by the API with level Warning or higher.</summary>
+    public System.Collections.Concurrent.ConcurrentQueue<string> Warnings { get; } = new();
 
     public string ConnectionString =>
         new NpgsqlConnectionStringBuilder(ServerConnectionString) { Database = _databaseName }.ConnectionString;
@@ -53,7 +54,10 @@ public class IntegrationFactory : WebApplicationFactory<Program>, IAsyncLifetime
         GC.SuppressFinalize(this);
     }
 
-    /// <summary>Client without cookie handling: tests pass the refresh cookie explicitly.</summary>
+    /// <summary>
+    /// Client without cookie handling: tests pass the refresh cookie explicitly. Every client
+    /// appears under its own address (X-Forwarded-For), so each has its own auth rate limit.
+    /// </summary>
     public HttpClient Client(string? accessToken = null, string? apiKey = null)
     {
         var client = CreateClient(new WebApplicationFactoryClientOptions
@@ -62,6 +66,8 @@ public class IntegrationFactory : WebApplicationFactory<Program>, IAsyncLifetime
             HandleCookies = false,
             AllowAutoRedirect = false,
         });
+        client.DefaultRequestHeaders.Add(
+            "X-Forwarded-For", $"10.{Random.Shared.Next(256)}.{Random.Shared.Next(256)}.{Random.Shared.Next(256)}");
         if (accessToken is not null)
         {
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
@@ -129,8 +135,7 @@ public class IntegrationFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("AUTH_REQUIRE_CONFIRMED_EMAIL", RequireConfirmedEmail ? "true" : "false");
         builder.UseSetting("ADMIN_EMAIL", AdminEmailSetting);
         builder.UseSetting("ADMIN_INITIAL_PASSWORD", AdminPasswordSetting);
-        builder.ConfigureServices(services =>
-            services.Configure<AuthRateLimitOptions>(options => options.PermitLimit = AuthPermitLimit));
+        builder.ConfigureLogging(logging => logging.AddProvider(new WarningCollector(Warnings)));
     }
 
     private static async Task ExecuteOnServerAsync(string sql)
@@ -140,6 +145,30 @@ public class IntegrationFactory : WebApplicationFactory<Program>, IAsyncLifetime
         await connection.OpenAsync();
         await using var command = new NpgsqlCommand(sql, connection);
         await command.ExecuteNonQueryAsync();
+    }
+}
+
+/// <summary>Collects warnings and errors, so that tests can assert on what the API logged.</summary>
+internal sealed class WarningCollector(System.Collections.Concurrent.ConcurrentQueue<string> messages) : ILoggerProvider, ILogger
+{
+    public ILogger CreateLogger(string categoryName) => this;
+
+    public IDisposable? BeginScope<TState>(TState state)
+        where TState : notnull => null;
+
+    public bool IsEnabled(LogLevel logLevel) => logLevel >= LogLevel.Warning;
+
+    public void Log<TState>(
+        LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+    {
+        if (IsEnabled(logLevel))
+        {
+            messages.Enqueue(formatter(state, exception));
+        }
+    }
+
+    public void Dispose()
+    {
     }
 }
 

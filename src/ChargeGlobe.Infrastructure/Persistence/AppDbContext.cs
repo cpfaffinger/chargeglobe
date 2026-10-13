@@ -1,11 +1,12 @@
 using System.Text.Json;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace ChargeGlobe.Infrastructure.Persistence;
 
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
-    : IdentityDbContext<AppUser, AppRole, Guid>(options)
+    : IdentityDbContext<AppUser, AppRole, Guid>(options), IDataProtectionKeyContext
 {
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
 
@@ -18,6 +19,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<AuditLogEntry> AuditLog => Set<AuditLogEntry>();
 
     public DbSet<EmailOutboxEntry> EmailOutbox => Set<EmailOutboxEntry>();
+
+    public DbSet<AppSetting> AppSettings => Set<AppSetting>();
+
+    /// <summary>Key ring of the Data Protection API, shared by all containers (encrypts secret settings).</summary>
+    public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -63,6 +69,15 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.ToTable("email_outbox");
             entity.HasIndex(mail => new { mail.Status, mail.CreatedAt });
         });
+
+        builder.Entity<AppSetting>(entity =>
+        {
+            entity.ToTable("app_setting");
+            entity.HasKey(setting => new { setting.Key, setting.Scope });
+            entity.Property(setting => setting.Value).HasColumnType("jsonb");
+        });
+
+        builder.Entity<DataProtectionKey>().ToTable("data_protection_key");
 
         // Own tables use snake_case columns; the ASP.NET Core Identity tables keep their defaults.
         foreach (var entityType in builder.Model.GetEntityTypes().Where(type => type.GetTableName()!.Contains('_')))

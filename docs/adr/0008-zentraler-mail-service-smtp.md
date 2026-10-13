@@ -9,7 +9,7 @@ Benutzerkonten mit Selbstregistrierung ([ADR-0005](0005-identity-rbac-openapi.md
 1. **Ein Port für alle Aufrufer:** `IEmailSender.QueueAsync(EmailMessage)` in `ChargeGlobe.Application`. Api, Crawler und Worker rufen ausschließlich diesen Port auf; niemand spricht SMTP direkt.
 2. **Outbox statt Direktversand:** `QueueAsync` schreibt in die Tabelle `email_outbox` (Empfänger, Betreff, Text- und HTML-Körper, `template_key`, Status `QUEUED | SENT | FAILED`, `attempts`, `last_error`, `created_at`, `sent_at`) in derselben Transaktion wie der auslösende Use Case. Die Rolle `worker` versendet per `FOR UPDATE SKIP LOCKED`, mit Backoff und begrenzter Zahl an Versuchen. Ein nicht erreichbarer SMTP-Server blockiert damit keinen Request und verliert keine Mail.
 3. **SMTP-Versand mit MailKit** (MIT) in `ChargeGlobe.Infrastructure`.
-4. **Konfiguration im Config-Service** ([ADR-0006](0006-konfiguration-env-minimal-config-service.md)), nicht in `.env`, änderbar über `PUT /settings/{key}` und Admin-UI, wirksam ohne Neustart:
+4. **Konfiguration im Config-Service** ([ADR-0006](0006-konfiguration-env-minimal-config-service.md)), nicht in `.env`, änderbar über `PUT /settings/{key}` und die Admin-Seite `/admin/settings`, wirksam ohne Neustart. Die Keys stehen im Katalog (`SettingsCatalog`):
 
    | Key | Typ | Default | Bedeutung |
    |---|---|---|---|

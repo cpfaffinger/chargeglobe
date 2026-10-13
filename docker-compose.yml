@@ -46,6 +46,7 @@ services:
       db:
         condition: service_healthy
     environment:
+      ConnectionStrings__Default: Host=db;Database=${POSTGRES_DB:-chargeglobe};Username=${POSTGRES_USER:-chargeglobe};Password=${POSTGRES_PASSWORD}
       Logging__LogLevel__Default: ${LOG_LEVEL:-Information}
     deploy:
       replicas: ${CRAWLER_REPLICAS:-1}
@@ -62,6 +63,7 @@ services:
       crawler:
         condition: service_started
     environment:
+      ConnectionStrings__Default: Host=db;Database=${POSTGRES_DB:-chargeglobe};Username=${POSTGRES_USER:-chargeglobe};Password=${POSTGRES_PASSWORD}
       Logging__LogLevel__Default: ${LOG_LEVEL:-Information}
     deploy:
       replicas: ${WORKER_REPLICAS:-1}
