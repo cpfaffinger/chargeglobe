@@ -24,6 +24,9 @@ public class DatabaseAndStartupTests(IntegrationFactory factory)
         Assert.EndsWith("_AppSettings", applied.Last());
         Assert.Empty(await factory.WithDbAsync(db => db.Database.GetPendingMigrationsAsync()));
 
+        // Nothing touched the database before the migration had created its tables.
+        Assert.DoesNotContain(factory.Warnings, message => message.Contains("key ring") || message.Contains("cannot be refreshed"));
+
         var bundles = await factory.WithDbAsync(db => (
             from role in db.Roles
             join permission in db.RolePermissions on role.Id equals permission.RoleId

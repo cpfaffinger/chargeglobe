@@ -35,7 +35,9 @@ public static class ApiSetup
     {
         services.AddOpenApi(options => options.AddChargeGlobeContract());
         services.AddProblemDetails();
-        services.AddHostedService<DatabaseInitializationService>();
+        // Hosted services start in registration order. The migration goes first, ahead of the
+        // key ring warm-up of Data Protection and the settings refresh, which both need its tables.
+        services.Insert(0, ServiceDescriptor.Singleton<IHostedService, DatabaseInitializationService>());
         services.AddSettingsCacheRefresh();
 
         // Binding errors answer 400 problem details in every environment instead of throwing.
