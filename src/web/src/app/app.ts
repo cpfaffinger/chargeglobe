@@ -1,40 +1,27 @@
-import { HttpClient } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
-
-interface HealthResponse {
-  status: string;
-  db: string;
-}
+import { Component, inject } from '@angular/core';
+import { RouterLink, RouterOutlet } from '@angular/router';
+import { AuthService } from './auth/auth.service';
 
 @Component({
-  imports: [RouterOutlet],
+  imports: [RouterLink, RouterOutlet],
   selector: 'app-root',
   template: `
+    <header>
+      <h1><a routerLink="/">chargeglobe</a></h1>
+      <nav>
+        @if (auth.isAuthenticated()) {
+          <a routerLink="/account" id="nav-account">Mein Konto</a>
+        } @else {
+          <a routerLink="/login" id="nav-login">Anmelden</a>
+          <a routerLink="/register" id="nav-register">Registrieren</a>
+        }
+      </nav>
+    </header>
     <main>
-      <h1>chargeglobe</h1>
-      <p id="api-status">API: {{ apiStatus() }}</p>
-      <p id="db-status">DB: {{ dbStatus() }}</p>
       <router-outlet />
     </main>
   `,
 })
 export class App {
-  private readonly http = inject(HttpClient);
-
-  protected readonly apiStatus = signal('…');
-  protected readonly dbStatus = signal('…');
-
-  constructor() {
-    this.http.get<HealthResponse>('/api/v1/health').subscribe({
-      next: (health) => {
-        this.apiStatus.set(health.status);
-        this.dbStatus.set(health.db);
-      },
-      error: () => {
-        this.apiStatus.set('unavailable');
-        this.dbStatus.set('unknown');
-      },
-    });
-  }
+  protected readonly auth = inject(AuthService);
 }

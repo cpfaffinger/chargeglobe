@@ -1,3 +1,4 @@
+using ChargeGlobe.Api.OpenApi;
 using ChargeGlobe.Application.Health;
 
 namespace ChargeGlobe.Api.Health;
@@ -14,7 +15,8 @@ public static class HealthEndpoints
                 "Returns HTTP 200 as long as the API process is serving requests. " +
                 "`status` is always `ok`; `db` is `ok` if the database accepts connections and " +
                 "`unavailable` otherwise. Public, no authentication required.")
-            .Produces<HealthResponse>();
+            .Produces<HealthResponse>()
+            .WithResponseExample(StatusCodes.Status200OK, new HealthResponse("ok", "ok"));
 
         return endpoints;
     }

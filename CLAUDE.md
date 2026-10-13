@@ -51,10 +51,10 @@ Stack: **ASP.NET Core / C# / .NET 10 · Angular 22 / TypeScript · PostgreSQL 17
 
 - Die gesamte App läuft als **Docker-Compose-Stack**. Services: `db` (timescaledb-ha mit PostGIS), `api` (.NET), `crawler` (.NET, holt Daten von Quellen; skalierbar), `worker` (.NET, Ingest/Merge/Aggregation; skalierbar) – beide aus dem Projekt `ChargeGlobe.Jobs` (Image `chargeglobe-jobs`, `--role crawler|worker`), `web` (nginx: Angular-Build, statisch ausgeliefert, proxied `/api` zur API, terminiert TLS). Vorgesehen: `routing` (Valhalla, nicht exponiert).
 - **Konfiguration in zwei Schichten** ([ADR-0006](docs/adr/0006-konfiguration-env-minimal-config-service.md)):
-  - **`.env` = nur Infrastruktur und Bootstrap**, so minimal wie möglich: exponierter Port, DB-Zugang, JWT-Secret, Admin-Seed, Anzahl Crawler-/Worker-Instanzen, Log-Level. **`.env.example` listet immer alle verfügbaren Variablen** mit Default und Kommentar; eine neue Variable ohne Eintrag in `.env.example` ist ein Fehler.
+  - **`.env` = nur Infrastruktur und Bootstrap**, so minimal wie möglich: exponierter Port, DB-Zugang, JWT-Secret, Admin-Seed, E-Mail-Bestätigung an/aus (`AUTH_REQUIRE_CONFIRMED_EMAIL`), Anzahl Crawler-/Worker-Instanzen, Log-Level, Basis-URL. **`.env.example` listet immer alle verfügbaren Variablen** mit Default und Kommentar; eine neue Variable ohne Eintrag in `.env.example` ist ein Fehler.
   - **Zentraler Config-Service in der App** für alles Fachliche (Provider an/aus, Intervalle, Rate-Limits, Regionen, Schwellwerte, Präzedenzen): Katalog der Einstellungen mit Typ, Default und Beschreibung im Code, Werte in der DB-Tabelle `app_setting`, änderbar über API (`settings:manage`) und Admin-UI, wirksam ohne Neustart. Keine fachlichen Einstellungen in `.env` oder `appsettings.json`.
 - **Skalierung**: `crawler` und `worker` sind zustandslos und werden über `CRAWLER_REPLICAS` / `WORKER_REPLICAS` in `.env` (Compose `deploy.replicas`) vervielfacht; Arbeitsverteilung über Lease-/Queue-Tabellen in Postgres (`FOR UPDATE SKIP LOCKED`), kein Message-Broker.
-- **Oberkante der App ist ein exponierter HTTPS-Port** (`CHARGEGLOBE_PORT`, Default `5005`, in `.env` änderbar), unter dem die Web-App inkl. `/api` erreichbar ist. Der Port spricht **ausschließlich HTTPS** mit einem **dauerhaft self-signed Zertifikat**, das der `web`-Container beim ersten Start erzeugt (Volume `tls`); HTTP-Requests werden umgeleitet. Intern (nginx → `api:8080`) bleibt es bei HTTP ([ADR-0009](docs/adr/0009-https-only-self-signed.md)).
+- **Oberkante der App ist ein exponierter HTTPS-Port** (`CHARGEGLOBE_PORT`, Default `5005`, in `.env` änderbar), unter dem die Web-App inkl. `/api` erreichbar ist. Der Port spricht **ausschließlich HTTPS** mit einem **dauerhaft self-signed Zertifikat**, das der `web`-Container beim ersten Start erzeugt (Volume `tls`); HTTP-Requests werden umgeleitet. Die App sendet kein HSTS (`Strict-Transport-Security`); das wäre Sache des externen Loadbalancers. Intern (nginx → `api:8080`) bleibt es bei HTTP ([ADR-0009](docs/adr/0009-https-only-self-signed.md)).
 - **Nicht im Scope:** öffentlich gültige Zertifikate, Let's Encrypt, Caddy. Das übernimmt der externe Loadbalancer (nginx) außerhalb dieses Repos.
 - **Deployment-Ziel** ist ein Dev-Server, dessen Zugangsdaten in `CLAUDE.local.md` stehen. Auf dem Server läuft eine **andere Anwendung unter `/opt/companyhero-dev` mit eigenen Deploy-Skripten in `/opt`; diese wird nicht angefasst.** chargeglobe wird unter `/opt/chargeglobe` betrieben (`docker compose up -d`), eigene Compose-Projektnamen, keine Port-Kollisionen mit fremden Diensten.
 - Deployment-Ablauf: Repo auf dem Server klonen/pullen → `.env` pflegen → `docker compose up -d --build` → Healthcheck `curl -k https://srv-dev2.pulseone.cloud:5005/api/v1/health`.
@@ -64,7 +64,10 @@ Stack: **ASP.NET Core / C# / .NET 10 · Angular 22 / TypeScript · PostgreSQL 17
 Alle Befehle vom Repo-Root, sofern nicht anders angegeben. Lokale Läufe (Voraussetzungen: .NET-10-SDK, Node 24, Docker mit Compose; rechnerspezifische Pfade in `CLAUDE.local.md`) sind optional; maßgeblich ist der Testlauf auf dem Dev-Server.
 
 ```bash
-# .NET: Build und Tests mit Coverage (Coverlet-Konfiguration: coverlet.runsettings)
+# .NET: Build und Tests mit Coverage (Coverlet-Konfiguration: coverlet.runsettings).
+# ChargeGlobe.IntegrationTests braucht ein Postgres und die Variable ConnectionStrings__TestDb
+# (Server-Verbindung, z. B. "Host=localhost;Username=postgres;Password=…;Database=postgres");
+# im Compose-Testpfad ist beides vorhanden.
 dotnet build
 dotnet test --collect:"XPlat Code Coverage"
 dotnet tool restore
@@ -73,28 +76,40 @@ cat artifacts/coverage/Summary.txt          # erwartet: Line coverage: 100%
 
 # Angular (in src/web): Tests mit Coverage, Build, Dev-Server (proxied /api an localhost:8080)
 npm ci
-npx ng test --code-coverage --watch=false   # erwartet: Statements 100%; braucht CHROME_BIN (Chrome oder Edge)
+npx ng test --code-coverage --watch=false   # erwartet: Statements 100% (karma.conf.js bricht darunter ab); braucht CHROME_BIN (Chrome oder Edge)
 npx ng build
 npx ng serve
 
+# EF-Core-Migrationen (Tool dotnet-ef aus dotnet-tools.json; braucht keine Datenbank)
+dotnet tool restore
+dotnet tool run dotnet-ef migrations add <Name> --project src/ChargeGlobe.Infrastructure --output-dir Persistence/Migrations
+dotnet tool run dotnet-ef migrations script --idempotent --project src/ChargeGlobe.Infrastructure   # SQL zur Kontrolle
+# Angewendet werden Migrationen von der API beim Start (DatabaseInitializer, mit pg_advisory_lock),
+# also durch "docker compose up -d --build" bzw. "dotnet run --project src/ChargeGlobe.Api".
+
 # Einzelne Prozesse ohne Docker
-dotnet run --project src/ChargeGlobe.Api                    # http://localhost:8080, DB laut launchSettings.json
+dotnet run --project src/ChargeGlobe.Api                    # http://localhost:8080, DB und JWT_SIGNING_KEY laut launchSettings.json
 dotnet run --project src/ChargeGlobe.Jobs -- --role crawler # oder --role worker
 
 # Compose-Stack
-cp .env.example .env                        # POSTGRES_PASSWORD, JWT_SIGNING_KEY: openssl rand -hex 32
+cp .env.example .env                        # POSTGRES_PASSWORD, JWT_SIGNING_KEY: openssl rand -hex 32; ADMIN_EMAIL, ADMIN_INITIAL_PASSWORD: openssl rand -base64 18
 docker compose up -d --build
 curl -k https://localhost:5005/api/v1/health   # {"status":"ok","db":"ok"}; -k wegen self-signed Zertifikat
+curl -k https://localhost:5005/api/v1/permissions   # Permission-Katalog (anonym)
 docker compose logs crawler worker          # Heartbeats beider Rollen
+docker compose exec db psql -U chargeglobe -d chargeglobe -c "select template_key, status from email_outbox"
 docker compose down                         # Volumes pgdata und tls (Zertifikat) bleiben erhalten
 
 # Testlauf auf dem Dev-Server (maßgeblicher Abnahmeweg, ADR-0010; per SSH laut CLAUDE.local.md).
-# Zielbild: docker-compose.test.yml und scripts/test.sh existieren noch nicht.
+# scripts/test.sh baut die Test-Images, startet test-dotnet und test-web nacheinander, gibt beide
+# Coverage-Zusammenfassungen aus und entfernt danach immer Container, Netz und lokal gebaute Images
+# des Projekts chargeglobe-test (docker compose -f docker-compose.test.yml down -v --rmi local --remove-orphans).
 git push -u origin <branch>                                   # lokal
 git clone --depth 1 --branch <branch> https://github.com/cpfaffinger/chargeglobe.git /opt/chargeglobe-test
-cd /opt/chargeglobe-test && ./scripts/test.sh                 # Exitcode 0 = alle Tests grün, Coverage 100 %
-docker compose -f docker-compose.test.yml down -v --rmi local --remove-orphans
+cd /opt/chargeglobe-test && ./scripts/test.sh                 # Exitcode 0 = alle Tests grün; Ausgabe "Line coverage: 100%" und "Statements : 100%"
 cd /opt && rm -rf /opt/chargeglobe-test
+docker compose ls                                             # chargeglobe-test darf nicht mehr auftauchen
+docker ps -a --filter label=com.docker.compose.project=chargeglobe-test   # leer
 
 # Deploy auf den Dev-Server (per SSH laut CLAUDE.local.md)
 cd /opt/chargeglobe && git pull --ff-only origin master
@@ -102,8 +117,8 @@ docker compose up -d --build
 curl -k https://localhost:5005/api/v1/health
 ```
 
-Vor einem neuen Coverage-Lauf alte Ergebnisse löschen (`tests/*/TestResults`, `artifacts/`), sonst mischt ReportGenerator alte und neue Berichte. Migrationen gibt es noch nicht; der Befehl wird ergänzt, sobald der EF-Core-DbContext existiert.
+Vor einem neuen lokalen Coverage-Lauf alte Ergebnisse löschen (`tests/*/TestResults`, `artifacts/`), sonst mischt ReportGenerator alte und neue Berichte; im Compose-Testpfad erledigt das der Container. Bei einer Coverage-Lücke steht die Liste der nicht abgedeckten Zeilen in der Ausgabe von `scripts/test.sh` (`Datei:Zeile`). Niemals `docker system prune`, `docker volume prune` oder andere globale Aufräumbefehle auf dem Dev-Server ausführen.
 
 ## Nächste Schritte (Stand jetzt)
 
-Siehe `docs/09-roadmap.md`, Phase 0: Identity-Grundgerüst ([ADR-0005](docs/adr/0005-identity-rbac-openapi.md)), Compose-Testpfad für den Dev-Server ([ADR-0010](docs/adr/0010-tests-auf-dev-server-per-compose.md)), zentraler Config-Service ([ADR-0006](docs/adr/0006-konfiguration-env-minimal-config-service.md)), Lizenz festlegen, E-Control-API-Key beantragen.
+Siehe `docs/09-roadmap.md`, Phase 0: zentraler Config-Service inklusive der Einstellungen `mail.*` und `map.*` ([ADR-0006](docs/adr/0006-konfiguration-env-minimal-config-service.md)), danach SMTP-Versand der Outbox ([ADR-0008](docs/adr/0008-zentraler-mail-service-smtp.md)) und die Karte mit MapLibre/Geolocation ([ADR-0007](docs/adr/0007-karte-standort-routing.md)); außerdem Lizenz festlegen, E-Control-API-Key beantragen.

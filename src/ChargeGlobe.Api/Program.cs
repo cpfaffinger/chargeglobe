@@ -1,20 +1,20 @@
 using System.Diagnostics.CodeAnalysis;
-using ChargeGlobe.Api.Health;
+using ChargeGlobe.Api;
+using ChargeGlobe.Application.Identity;
 using ChargeGlobe.Infrastructure;
-using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddOpenApi();
+var authSettings = AuthSettings.Create(name => builder.Configuration[name]);
 builder.Services.AddInfrastructure(
     builder.Configuration.GetConnectionString("Default")
-    ?? throw new InvalidOperationException("Connection string 'Default' is not configured."));
+    ?? throw new InvalidOperationException("Connection string 'Default' is not configured."),
+    authSettings);
+builder.Services.AddApi(authSettings);
 
 var app = builder.Build();
 
-app.MapOpenApi();
-app.MapScalarApiReference();
-app.MapHealthEndpoints();
+app.UseApi();
 
 app.Run();
 

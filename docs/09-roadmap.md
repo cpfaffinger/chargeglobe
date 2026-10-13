@@ -7,9 +7,9 @@
 - [x] Git-Repository angelegt (`origin` = github.com/cpfaffinger/chargeglobe), `CLAUDE.md` mit Arbeitsregeln
 - [x] .NET-10-SDK lokal installiert
 - [x] Solution-Skelett (.NET 10), Angular-22-Workspace, `docker-compose.yml` + `.env.example` (db/api/crawler/worker/web, HTTPS-only auf Port 5005 mit self-signed Zertifikat, `CRAWLER_REPLICAS`/`WORKER_REPLICAS`), Test-Projekte mit Coverage-Reporting
-- [ ] Compose-Testpfad `docker-compose.test.yml` + `scripts/test.sh` für Testläufe auf dem Dev-Server ([ADR-0010](adr/0010-tests-auf-dev-server-per-compose.md))
+- [x] Compose-Testpfad `docker-compose.test.yml` + `scripts/test.sh` für Testläufe auf dem Dev-Server ([ADR-0010](adr/0010-tests-auf-dev-server-per-compose.md))
 - [ ] Zentraler Config-Service: Settings-Katalog, `app_setting`, typisierte Accessoren, LISTEN/NOTIFY-Invalidierung, `GET/PUT /settings`, generisches Admin-UI
-- [ ] Identity-Grundgerüst: ASP.NET Core Identity, Permission-Katalog, Standardrollen, Selbstregistrierung mit E-Mail-Bestätigung, Login (JWT), Passwort-Reset, API-Keys, `GET /me`, OpenAPI mit Security Schemes und `x-required-permission`; Admin-Seed-User aus `.env`; Mail-Port `IEmailSender` mit `email_outbox`
+- [x] Identity-Grundgerüst: ASP.NET Core Identity, Permission-Katalog, Standardrollen, Selbstregistrierung mit E-Mail-Bestätigung, Login (JWT), Passwort-Reset, API-Keys, `GET /me`, OpenAPI mit Security Schemes und `x-required-permission`; Admin-Seed-User aus `.env`; Mail-Port `IEmailSender` mit `email_outbox`; Angular-Seiten für Registrierung, Login und Passwort-Reset mit Guard nach Permission
 - [ ] Mail-Service: SMTP-Versand der Outbox im Worker (MailKit), Einstellungen `mail.*` im Config-Service, `POST /mail/test`, `GET /mail/outbox`, Admin-UI ([ADR-0008](adr/0008-zentraler-mail-service-smtp.md)); setzt den Config-Service voraus
 - [x] Erstes Deployment auf den Dev-Server (`/opt/chargeglobe`)
 - [ ] Lizenz festlegen (siehe unten), `CONTRIBUTING.md`, Code of Conduct
@@ -24,7 +24,8 @@
 - [ ] Region-Polygone, Lease-Scheduler (`poll_plan`), `ingest_queue`, clusterweites Rate-Budget, adaptive Statusabfrage, Metriken
 - [ ] API v1 (EVSE-Suche, Detail, Statushistorie, Belegung, Ad-hoc-Preis, Provenienz)
 - [ ] Angular: Karte mit MapLibre und OSM-Vektorkacheln (OpenFreeMap, `GET /map/config`), eigener Standort per Geolocation, anonym nur Karte ([ADR-0007](adr/0007-karte-standort-routing.md))
-- [ ] Angular: Detailseite mit Historie (angemeldet), Registrierung/Login/Passwort-Reset, Admin (Nutzer, Rollen, API-Keys, Einstellungen)
+- [ ] Angular: Detailseite mit Historie (angemeldet), Admin (Nutzer, Rollen, API-Keys, Einstellungen)
+- [ ] Nutzer- und Rollenverwaltung in der API (`/users`, `/roles`, `GET /audit-log`)
 - [ ] Customizings: `GET/PUT /me/preferences`, Favoriten, Einstellungsseite
 - [ ] Routing: Compose-Service `routing` (Valhalla, OSM-Extrakt Österreich), `IRoutingEngine`, `POST /routes`, Routen-Layer in der Karte
 - [ ] Erste EMP-Tarife: 2–3 Ladekarten-Anbieter mit Tarif-Editor (manuell gepflegt), Szenario-Preisvergleich

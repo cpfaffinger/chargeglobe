@@ -7,7 +7,9 @@
       "applicationUrl": "http://localhost:8080",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "ConnectionStrings__Default": "Host=localhost;Database=chargeglobe;Username=chargeglobe;Password=chargeglobe"
+        "ConnectionStrings__Default": "Host=localhost;Database=chargeglobe;Username=chargeglobe;Password=chargeglobe",
+        "JWT_SIGNING_KEY": "local-development-only-signing-key-0000",
+        "AUTH_REQUIRE_CONFIRMED_EMAIL": "false"
       }
     }
   }

@@ -2,6 +2,7 @@ using System.Data;
 using System.Data.Common;
 using System.Diagnostics.CodeAnalysis;
 using ChargeGlobe.Application.Health;
+using ChargeGlobe.Application.Identity;
 using ChargeGlobe.Infrastructure;
 using ChargeGlobe.Infrastructure.Health;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,11 +17,14 @@ public class InfrastructureTests
     {
         var services = new ServiceCollection().AddLogging();
 
-        services.AddInfrastructure("Host=localhost;Database=unused");
+        services.AddInfrastructure(
+            "Host=localhost;Database=unused",
+            AuthSettings.Create(name => name == "JWT_SIGNING_KEY" ? new string('k', 32) : null));
 
         await using var provider = services.BuildServiceProvider();
         Assert.IsType<DatabaseProbe>(provider.GetRequiredService<IDatabaseProbe>());
-        Assert.IsType<Npgsql.NpgsqlDataSource>(provider.GetRequiredService<DbDataSource>(), exactMatch: false);
+        Assert.Same(provider.GetRequiredService<Npgsql.NpgsqlDataSource>(), provider.GetRequiredService<DbDataSource>());
+        Assert.Same(TimeProvider.System, provider.GetRequiredService<TimeProvider>());
     }
 
     [Theory]
