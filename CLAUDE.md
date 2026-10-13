@@ -40,9 +40,9 @@ Stack: **ASP.NET Core / C# / .NET 10 · Angular 22 / TypeScript · PostgreSQL 17
 ## Workflow je Prompt
 
 1. **Branch anlegen**: jede Prompt-Ausführung arbeitet in einem eigenen Branch von `master` (`feat/<kurzname>`, `fix/<kurzname>`, `docs/<kurzname>`). Nie direkt auf `master` committen.
-2. **Umsetzen + Tests**: Code, Tests und Doku im selben Branch. **Ziel ist 100 % Statement Coverage** für den .NET-Code (Coverlet, `dotnet test --collect:"XPlat Code Coverage"`) und den Angular-Code (`ng test --code-coverage`); noch keine Branch-Coverage-Gates. Nicht testbarer Glue-Code (z. B. `Program.cs`) wird explizit per `[ExcludeFromCodeCoverage]` ausgenommen und das Warum im Code kommentiert. Vor dem Merge laufen alle Tests lokal grün.
-3. **Keine GitHub-CI**: derzeit nicht im Scope. Keine Workflows unter `.github/` anlegen. Qualitätssicherung passiert lokal vor dem Merge.
-4. **Merge**: nach grünen Tests und angepasster Doku den Branch in `master` mergen (`git merge --no-ff`), Branch löschen, `master` nach `origin` pushen.
+2. **Umsetzen + Tests**: Code, Tests und Doku im selben Branch. **Ziel ist 100 % Statement Coverage** für den .NET-Code (Coverlet, `dotnet test --collect:"XPlat Code Coverage"`) und den Angular-Code (`ng test --code-coverage`); noch keine Branch-Coverage-Gates. Nicht testbarer Glue-Code (z. B. `Program.cs`) wird explizit per `[ExcludeFromCodeCoverage]` ausgenommen und das Warum im Code kommentiert. Vor dem Merge laufen alle Tests grün, und zwar **auf dem Dev-Server über den Compose-Testpfad** (`docker-compose.test.yml`, Projekt `chargeglobe-test`, Aufruf `scripts/test.sh`), nicht in der lokalen WSL ([ADR-0010](docs/adr/0010-tests-auf-dev-server-per-compose.md)). Dazu den Branch nach `origin` pushen, auf dem Server nach `/opt/chargeglobe-test` auschecken, Testlauf starten, Ergebnis und Coverage berichten, danach die Test-Reste entfernen (nur Projekt `chargeglobe-test` und `/opt/chargeglobe-test`; nie `docker system prune` oder andere globale Aufräumbefehle).
+3. **Keine GitHub-CI**: derzeit nicht im Scope. Keine Workflows unter `.github/` anlegen. Qualitätssicherung passiert vor dem Merge über den Testlauf auf dem Dev-Server.
+4. **Merge**: nach grünen Tests und angepasster Doku den Branch in `master` mergen (`git merge --no-ff`), Branch lokal und auf `origin` löschen, `master` nach `origin` pushen.
 5. **Deploy**: nach dem Merge auf den Dev-Server deployen (Zugang in `CLAUDE.local.md`): Repo unter `/opt/chargeglobe` auf `origin/master` bringen, `.env` auf dem Server unverändert lassen (nur neue Variablen aus `.env.example` ergänzen), `docker compose up -d --build`, Healthcheck prüfen. Die fremde App auf dem Server bleibt unberührt.
 6. **Link nennen**: Im Chat zum Abschluss den erreichbaren Link an den Betreiber geben (`https://srv-dev2.pulseone.cloud:5005`, ggf. mit konkretem Pfad zur neuen Funktion) und den Zustand des Deployments ehrlich berichten (Healthcheck-Ergebnis, offene Punkte).
 7. **n+1-Prompt** als letzter Abschnitt (Regel 3).
@@ -61,7 +61,7 @@ Stack: **ASP.NET Core / C# / .NET 10 · Angular 22 / TypeScript · PostgreSQL 17
 
 ## Befehle
 
-Alle Befehle vom Repo-Root, sofern nicht anders angegeben. Voraussetzungen: .NET-10-SDK, Node 24, Docker mit Compose; rechnerspezifische Pfade stehen in `CLAUDE.local.md`.
+Alle Befehle vom Repo-Root, sofern nicht anders angegeben. Lokale Läufe (Voraussetzungen: .NET-10-SDK, Node 24, Docker mit Compose; rechnerspezifische Pfade in `CLAUDE.local.md`) sind optional; maßgeblich ist der Testlauf auf dem Dev-Server.
 
 ```bash
 # .NET: Build und Tests mit Coverage (Coverlet-Konfiguration: coverlet.runsettings)
@@ -88,6 +88,14 @@ curl -k https://localhost:5005/api/v1/health   # {"status":"ok","db":"ok"}; -k w
 docker compose logs crawler worker          # Heartbeats beider Rollen
 docker compose down                         # Volumes pgdata und tls (Zertifikat) bleiben erhalten
 
+# Testlauf auf dem Dev-Server (maßgeblicher Abnahmeweg, ADR-0010; per SSH laut CLAUDE.local.md).
+# Zielbild: docker-compose.test.yml und scripts/test.sh existieren noch nicht.
+git push -u origin <branch>                                   # lokal
+git clone --depth 1 --branch <branch> https://github.com/cpfaffinger/chargeglobe.git /opt/chargeglobe-test
+cd /opt/chargeglobe-test && ./scripts/test.sh                 # Exitcode 0 = alle Tests grün, Coverage 100 %
+docker compose -f docker-compose.test.yml down -v --rmi local --remove-orphans
+cd /opt && rm -rf /opt/chargeglobe-test
+
 # Deploy auf den Dev-Server (per SSH laut CLAUDE.local.md)
 cd /opt/chargeglobe && git pull --ff-only origin master
 docker compose up -d --build
@@ -98,4 +106,4 @@ Vor einem neuen Coverage-Lauf alte Ergebnisse löschen (`tests/*/TestResults`, `
 
 ## Nächste Schritte (Stand jetzt)
 
-Siehe `docs/09-roadmap.md`, Phase 0: Identity-Grundgerüst ([ADR-0005](docs/adr/0005-identity-rbac-openapi.md)), zentraler Config-Service ([ADR-0006](docs/adr/0006-konfiguration-env-minimal-config-service.md)), Lizenz festlegen, E-Control-API-Key beantragen.
+Siehe `docs/09-roadmap.md`, Phase 0: Identity-Grundgerüst ([ADR-0005](docs/adr/0005-identity-rbac-openapi.md)), Compose-Testpfad für den Dev-Server ([ADR-0010](docs/adr/0010-tests-auf-dev-server-per-compose.md)), zentraler Config-Service ([ADR-0006](docs/adr/0006-konfiguration-env-minimal-config-service.md)), Lizenz festlegen, E-Control-API-Key beantragen.
