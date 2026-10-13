@@ -9,7 +9,7 @@ Anbieter und Tarifmodelle hinweg. Alles wird über eine öffentliche API und ein
 
 | | |
 |---|---|
-| **Status** | Lauffähiges Grundgerüst: Compose-Stack, Benutzerkonten (Selbstregistrierung, Login, Passwort-Reset, API-Keys, Permissions), zentraler Config-Service mit Admin-Seite, OpenAPI 3.1, Angular-Seiten für Konto und Anmeldung, Jobs-Heartbeat; Karte und Fachfunktionen folgen laut [Roadmap](docs/09-roadmap.md) |
+| **Status** | Lauffähiges Grundgerüst: Compose-Stack, Benutzerkonten (Selbstregistrierung, Login, Passwort-Reset, API-Keys, Permissions), zentraler Config-Service mit Admin-Seite, Mail-Versand über konfigurierbaren SMTP-Server, OpenAPI 3.1, Angular-Seiten für Konto und Anmeldung, Jobs-Heartbeat; Karte und Fachfunktionen folgen laut [Roadmap](docs/09-roadmap.md) |
 | **Start-Scope** | Wien, Niederösterreich, Oberösterreich, Burgenland |
 | **Ziel-Scope** | Österreich → DACH → Italien |
 | **Stack** | ASP.NET Core / C# / .NET 10 · Angular 22 / TypeScript · PostgreSQL (PostGIS + TimescaleDB) |
@@ -41,7 +41,7 @@ docker compose up -d --build
 curl -k https://localhost:5005/api/v1/health   # {"status":"ok","db":"ok"}
 ```
 
-Web-App: `https://localhost:5005` (self-signed Zertifikat, Ausnahme im Browser bestätigen), Anmeldung unter `/login` mit dem Admin aus `.env` · OpenAPI 3.1: `/openapi/v1.json` · Scalar UI: `/scalar`. Solange kein SMTP-Versand existiert, bleiben Bestätigungsmails in der Outbox; mit `AUTH_REQUIRE_CONFIRMED_EMAIL=false` sind neue Konten sofort nutzbar. Build- und Testbefehle stehen in [CLAUDE.md](CLAUDE.md#befehle).
+Web-App: `https://localhost:5005` (self-signed Zertifikat, Ausnahme im Browser bestätigen), Anmeldung unter `/login` mit dem Admin aus `.env` · OpenAPI 3.1: `/openapi/v1.json` · Scalar UI: `/scalar`. Mails werden erst versendet, wenn ein Admin den SMTP-Zugang unter `/admin/settings` eingetragen (`mail.*`), unter `/admin/mail` mit einer Testmail geprüft und `mail.enabled` eingeschaltet hat; bis dahin bleiben sie in der Outbox, und mit `AUTH_REQUIRE_CONFIRMED_EMAIL=false` sind neue Konten sofort nutzbar. Build- und Testbefehle stehen in [CLAUDE.md](CLAUDE.md#befehle).
 
 ## Repository-Struktur
 
@@ -53,15 +53,15 @@ chargeglobe/
 ├─ ChargeGlobe.sln
 ├─ src/
 │  ├─ ChargeGlobe.Domain/        # Value Objects (EvseId), Permission-Katalog und Standardrollen; vorgesehen: Entitäten, Domain-Events
-│  ├─ ChargeGlobe.Application/   # Ports (IEmailSender, IAppConfig, IDatabaseProbe), Settings-Katalog, Mail-Vorlagen; vorgesehen: Ingest-Pipeline, Merge
-│  ├─ ChargeGlobe.Infrastructure/# EF Core + Npgsql (AppDbContext, Migrationen), ASP.NET Core Identity, Identity-Services, Mail-Outbox, Config-Service
+│  ├─ ChargeGlobe.Application/   # Ports (IEmailSender, IMailTransport, IAppConfig, …), Settings-Katalog, Mail-Vorlagen; vorgesehen: Ingest-Pipeline, Merge
+│  ├─ ChargeGlobe.Infrastructure/# EF Core + Npgsql (AppDbContext, Migrationen), ASP.NET Core Identity, Identity-Services, Mail-Outbox + SMTP (MailKit), Config-Service
 │  ├─ ChargeGlobe.Providers.Abstractions/  # Provider-Interfaces (ACL-Vertrag)
 │  ├─ ChargeGlobe.Providers.*/   # (geplant) je Quelle ein Adapter (EControl, OpenChargeMap, Osm, Evn, …)
 │  ├─ ChargeGlobe.Api/           # ASP.NET Core Minimal API, OpenAPI 3.1, Auth (JWT + API-Keys), Permission-Prüfung, Rate Limiting
 │  ├─ ChargeGlobe.Jobs/          # ein Host für beide Rollen (--role crawler|worker), Image chargeglobe-jobs, skalierbar
 │  │                             #   crawler: Lease-Scheduler + Provider-Abrufe → raw_snapshot, ingest_queue
-│  │                             #   worker: Ingest-Queue-Verarbeitung, Merge, Aggregate, Reconcile
-│  └─ web/                       # Angular-App: Startseite, Registrierung, Login, Passwort-Reset, Konto, Admin-Einstellungen; vorgesehen: Karte, Detail
+│  │                             #   worker: Mail-Zustellung; vorgesehen: Ingest-Queue-Verarbeitung, Merge, Aggregate, Reconcile
+│  └─ web/                       # Angular-App: Startseite, Registrierung, Login, Passwort-Reset, Konto, Admin (Einstellungen, E-Mail); vorgesehen: Karte, Detail
 ├─ tests/
 │  ├─ ChargeGlobe.Api.Tests/         # Tests ohne Datenbank (WebApplicationFactory mit Stub, Einstellungen, Mail-Vorlagen)
 │  ├─ ChargeGlobe.Domain.Tests/
@@ -72,7 +72,7 @@ chargeglobe/
 │  └─ run-dotnet-tests.sh            # Tests + Coverage-Gate im Container
 ├─ fixtures/                     # (geplant) aufgezeichnete Beispiel-Responses je Provider (sanitisiert)
 ├─ docker-compose.yml            # db · api · crawler · worker · web, gesteuert über .env
-├─ docker-compose.test.yml       # Testlauf statt App: test-db · test-dotnet · test-web (Projekt chargeglobe-test)
+├─ docker-compose.test.yml       # Testlauf statt App: test-db · test-smtp · test-dotnet · test-web (Projekt chargeglobe-test)
 ├─ scripts/test.sh               # ein Aufruf: bauen, beide Suiten, Coverage-Zusammenfassung, aufräumen
 └─ .env.example                  # vollständige Liste aller Variablen
 ```

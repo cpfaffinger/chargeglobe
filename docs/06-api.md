@@ -31,9 +31,11 @@ Vorhandene Endpunkte (in Klammern die `operationId`):
 | `GET /settings` (`listSettings`) | zentraler Config-Service: vollständiger Katalog mit `key`, `type` (`string`/`int`/`number`/`bool`/`enum`/`secret`), `description`, `default`, `allowedValues`, `min`, `max`, `scopeKinds`, dem wirksamen globalen `value` und den gespeicherten Werten je Scope in `stored`. Secrets erscheinen als `********`, wenn gesetzt, sonst `null` | `settings:read` |
 | `GET /settings/{key}` (`getSetting`) | eine Einstellung in derselben Form; `404` bei unbekanntem Key | `settings:read` |
 | `PUT /settings/{key}` (`updateSetting`) | Body `value` und optional `scope` (Default `global`). Speichert den Wert; `value: null` (oder weggelassen) entfernt ihn, sodass der Default wieder gilt. Idempotent, wirkt ohne Neustart in allen Containern. `422` mit Feldfehlern (`value`, `scope`) bei falschem Typ, Wert außerhalb der Grenzen oder nicht unterstütztem Scope; `404` bei unbekanntem Key | `settings:manage` |
+| `POST /mail/test` (`sendTestMail`) | Body `to`. Sendet eine Testmail synchron mit den aktuellen `mail.*`-Einstellungen, auch bei `mail.enabled = false`. `200` mit Erfolgsmeldung; `422` mit Feldfehlern bei ungültiger Adresse (`to`) oder fehlenden Einstellungen (`mail.smtp.host`, `mail.from.address`); `502` als Problem Details mit der SMTP-Meldung im `detail` | `settings:manage` |
+| `GET /mail/outbox` (`listMailOutbox`) | Postausgang, neueste zuerst: `data[]` mit `id`, `to`, `subject`, `templateKey`, `status`, `attempts`, `lastError`, `createdAt`, `sentAt`, `nextAttemptAt` und `meta` mit `total`, `page`, `pageSize`. Filter `status` (`QUEUED`, `SENT`, `FAILED`), Pagination `page` (ab 1) und `pageSize` (1–200, Default 50). Mail-Körper werden nie ausgegeben. `422` bei unbekanntem Status oder ungültiger Seite | `settings:manage` |
 | `GET /map/config` (`getMapConfig`) | `styleUrl`, `attribution`, `center` (`latitude`, `longitude`) und `zoom` der Basiskarte aus den Einstellungen `map.*` | `none` |
 
-Schreibende Aktionen (Registrierung, Bestätigung, Login, Passwort-Reset anfordern/ausführen, Key anlegen/widerrufen, Einstellung ändern) landen mit Akteur (Nutzer bzw. API-Key) im `audit_log`; bei Einstellungen ohne den Wert.
+Schreibende Aktionen (Registrierung, Bestätigung, Login, Passwort-Reset anfordern/ausführen, Key anlegen/widerrufen, Einstellung ändern, Testmail senden) landen mit Akteur (Nutzer bzw. API-Key) im `audit_log`; bei Einstellungen ohne den Wert.
 
 Vorgesehene Endpunkte:
 
@@ -46,7 +48,6 @@ Vorgesehene Endpunkte:
 | `GET /audit-log` | schreibende Aktionen, filterbar nach Akteur/Entität/Zeit | `audit:read` |
 | `PUT /tariffs/{id}`, `POST /tariffs` | Tarif-Pflege | `tariff:write` |
 | `POST /conflicts/{id}/resolve`, `POST /evses/{id}/merge` | Konflikt-/Match-Entscheidungen | `conflict:resolve` |
-| `POST /mail/test`, `GET /mail/outbox` | Testmail über den konfigurierten SMTP-Server senden; Zustellstatus der Outbox | `settings:manage` |
 | `POST /sources/{key}/run` | Job anstoßen | `provider:manage` |
 | `GET /jobs/instances`, `GET /jobs/queue` | laufende Crawler-/Worker-Instanzen, Leases, Queue-Tiefe | `jobs:read` |
 | `POST /proposals/tariffs`, `POST /proposals/conflicts` | Vorschläge einreichen (werden von Maintainern geprüft) | `proposal:write` (Standard für Rolle `Agent`) |

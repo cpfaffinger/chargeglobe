@@ -127,4 +127,7 @@ public sealed class EmailOutboxEntry
     public DateTimeOffset CreatedAt { get; set; }
 
     public DateTimeOffset? SentAt { get; set; }
+
+    /// <summary>Earliest time of the next delivery attempt after a failure; null means "now".</summary>
+    public DateTimeOffset? NextAttemptAt { get; set; }
 }

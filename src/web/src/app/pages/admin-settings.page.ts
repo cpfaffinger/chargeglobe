@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { AuthService } from '../auth/auth.service';
 import { attempt } from '../auth/problem';
 import { SettingRow } from '../settings/setting-row';
@@ -9,11 +10,16 @@ import { Setting, SettingsService } from '../settings/settings.service';
  * Readable with settings:read (route guard); editing needs settings:manage.
  */
 @Component({
-  imports: [SettingRow],
+  imports: [RouterLink, SettingRow],
   selector: 'app-admin-settings',
   template: `
     <h2>Einstellungen</h2>
     <p>Änderungen wirken ohne Neustart in allen Containern.</p>
+    @if (auth.hasPermission('settings:manage')) {
+      <p id="mail-link">
+        SMTP-Zugang prüfen: <a routerLink="/admin/mail">Testmail senden und Postausgang ansehen</a>
+      </p>
+    }
     @if (busy()) {
       <p>Einstellungen werden geladen …</p>
     }

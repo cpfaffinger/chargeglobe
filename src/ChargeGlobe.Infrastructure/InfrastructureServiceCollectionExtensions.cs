@@ -20,8 +20,8 @@ namespace ChargeGlobe.Infrastructure;
 public static class InfrastructureServiceCollectionExtensions
 {
     /// <summary>
-    /// What every process needs (api, crawler, worker): database access, the shared key ring
-    /// and the config service.
+    /// What every process needs (api, crawler, worker): database access, the shared key ring,
+    /// the config service and mail delivery.
     /// </summary>
     public static IServiceCollection AddInfrastructureCore(this IServiceCollection services, string connectionString)
     {
@@ -38,6 +38,9 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<AuditLog>();
         services.AddSingleton<SettingsCache>();
         services.AddSingleton<IAppConfig, AppConfig>();
+
+        services.AddSingleton<IMailTransport, MailKitTransport>();
+        services.AddScoped<IOutboxDispatcher, OutboxDispatcher>();
         return services;
     }
 

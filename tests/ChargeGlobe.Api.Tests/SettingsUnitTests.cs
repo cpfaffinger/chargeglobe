@@ -47,6 +47,8 @@ public class SettingsCatalogTests
                 ("mail.smtp.password", SettingType.Secret, null),
                 ("mail.from.address", SettingType.String, null),
                 ("mail.from.name", SettingType.String, "chargeglobe"),
+                ("mail.max_attempts", SettingType.Int, 5),
+                ("mail.retention_days", SettingType.Int, 30),
             ],
             mail.Select(definition => (definition.Key, definition.Type, definition.Default)));
         Assert.Equal(["plain", "starttls", "ssl"], SettingsCatalog.Find("mail.smtp.security")!.AllowedValues);

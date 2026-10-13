@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { AuthService } from '../auth/auth.service';
 import { AdminSettingsPage } from '../pages/admin-settings.page';
 import { ME, fakeAuth, flush, text, validationError } from '../testing';
@@ -241,6 +242,7 @@ describe('AdminSettingsPage', () => {
     service = jasmine.createSpyObj<SettingsService>('SettingsService', ['list', 'update']);
     TestBed.configureTestingModule({
       providers: [
+        provideRouter([]),
         { provide: AuthService, useValue: auth },
         { provide: SettingsService, useValue: service },
       ],
@@ -261,6 +263,7 @@ describe('AdminSettingsPage', () => {
       'mail.smtp.port',
     ]);
     expect(root().querySelectorAll('button.save').length).toBe(2);
+    expect(root().querySelector('#mail-link a')?.getAttribute('href')).toBe('/admin/mail');
 
     root().querySelectorAll<HTMLButtonElement>('button.reset')[1].click();
     await flush();
@@ -281,6 +284,7 @@ describe('AdminSettingsPage', () => {
 
     expect(root().querySelectorAll('app-setting-row').length).toBe(1);
     expect(root().querySelector('button')).toBeNull();
+    expect(root().querySelector('#mail-link')).toBeNull();
   });
 
   it('shows the error when the settings cannot be loaded', async () => {

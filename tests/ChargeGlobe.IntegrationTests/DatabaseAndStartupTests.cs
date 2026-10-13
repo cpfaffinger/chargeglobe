@@ -19,9 +19,9 @@ public class DatabaseAndStartupTests(IntegrationFactory factory)
         Assert.Equal("ok", health.GetProperty("db").GetString());
 
         var applied = await factory.WithDbAsync(db => db.Database.GetAppliedMigrationsAsync());
-        Assert.Equal(2, applied.Count());
-        Assert.EndsWith("_InitialIdentity", applied.First());
-        Assert.EndsWith("_AppSettings", applied.Last());
+        Assert.Equal(
+            ["InitialIdentity", "AppSettings", "MailDelivery"],
+            applied.Select(migration => migration[(migration.IndexOf('_') + 1)..]));
         Assert.Empty(await factory.WithDbAsync(db => db.Database.GetPendingMigrationsAsync()));
 
         // Nothing touched the database before the migration had created its tables.

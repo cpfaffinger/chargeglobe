@@ -9,6 +9,7 @@ Auf dem Entwicklerrechner ist Docker nur über WSL verfügbar, das .NET-SDK nur 
 1. **Tests werden nach Möglichkeit auf `srv-dev2` ausgeführt, nicht lokal.** Die lokale WSL-/Docker-Umgebung ist keine Voraussetzung mehr; lokale Läufe bleiben erlaubt, sind aber nicht maßgeblich. Maßgeblich für die Abnahme vor einem Merge ist der Lauf auf dem Server.
 2. **Der Testlauf ist ein eigener Startpfad des Compose-Setups:** `docker-compose.test.yml` im Repo-Root mit eigenem Projektnamen `chargeglobe-test`. Statt der App starten dort Testcontainer:
    - `test-db`: `timescale/timescaledb-ha:pg17` ohne Volume (tmpfs), für Integrationstests,
+   - `test-smtp`: `axllent/mailpit`, nimmt jede Mail im Arbeitsspeicher an; die Integrationstests senden per SMTP dorthin und lesen die zugestellte Mail über dessen HTTP-API (Adressen in `TestSmtp__Host`, `TestSmtp__Port`, `TestSmtp__ApiUrl`),
    - `test-dotnet` (`tests/Dockerfile.dotnet`, Basis `mcr.microsoft.com/dotnet/sdk:10.0`): führt `dotnet test --collect:"XPlat Code Coverage"` und ReportGenerator aus und endet mit Exitcode ≠ 0, wenn ein Test fehlschlägt oder die Line Coverage unter 100 % liegt; nicht abgedeckte Zeilen werden als `Datei:Zeile` ausgegeben,
    - `test-web` (`src/web/Dockerfile.test`, Basis `node:24` mit Chromium): führt `ng test --code-coverage --watch=false` mit dem Karma-Launcher `ChromeHeadlessNoSandbox` aus, baut danach das Produktions-Bundle (`ng build --configuration production`) und endet mit Exitcode ≠ 0 bei Testfehlschlag, Statement Coverage unter 100 % oder fehlgeschlagenem Build.
 

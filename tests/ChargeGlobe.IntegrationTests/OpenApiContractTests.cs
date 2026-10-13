@@ -75,8 +75,8 @@ public class OpenApiContractTests(IntegrationFactory factory)
             new[]
             {
                 "confirmEmail", "createApiKey", "getHealth", "getMapConfig", "getMe", "getSetting", "listApiKeys",
-                "listPermissions", "listSettings", "login", "logout", "refreshToken", "register",
-                "requestPasswordReset", "resetPassword", "revokeApiKey", "updateSetting",
+                "listMailOutbox", "listPermissions", "listSettings", "login", "logout", "refreshToken", "register",
+                "requestPasswordReset", "resetPassword", "revokeApiKey", "sendTestMail", "updateSetting",
             },
             operationIds.Order(StringComparer.Ordinal));
     }
@@ -104,6 +104,8 @@ public class OpenApiContractTests(IntegrationFactory factory)
     [InlineData("/api/v1/settings", "get", "settings:read")]
     [InlineData("/api/v1/settings/{key}", "get", "settings:read")]
     [InlineData("/api/v1/settings/{key}", "put", "settings:manage")]
+    [InlineData("/api/v1/mail/test", "post", "settings:manage")]
+    [InlineData("/api/v1/mail/outbox", "get", "settings:manage")]
     [InlineData("/api/v1/me", "get", "authenticated")]
     [InlineData("/api/v1/api-keys", "get", "apikey:manage")]
     [InlineData("/api/v1/api-keys", "post", "apikey:manage")]

@@ -80,3 +80,22 @@ app-setting-row .control select {
   flex: 1;
   padding: 0.4rem;
 }
+
+#outbox table {
+  width: 100%;
+  margin-top: 0.75rem;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+#outbox th,
+#outbox td {
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+  vertical-align: top;
+}
+
+#test-mail form {
+  max-width: 24rem;
+}
