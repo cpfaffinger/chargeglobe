@@ -2,7 +2,7 @@
 
 Offene Datenbank für öffentliche E-Ladepunkte: Inventar aus vielen Quellen unter gemeinsamer Identität (EVSE-ID), zyklisches Status-Tracking je Ladepunkt mit Historie, Preistracking über Ladekarten-/App-Anbieter (EMPs) und Tarifmodelle hinweg, öffentliche API + Web-Frontend. Start-Scope Wien/NÖ/OÖ/Burgenland, Ziel AT → DACH → Italien.
 
-Stack: **ASP.NET Core / C# / .NET 10 · Angular 22 / TypeScript · PostgreSQL 17 + PostGIS + TimescaleDB · Docker Compose**. Zugriff: öffentliche Lese-API ohne Login; Nutzerverwaltung mit RBAC (Rollen = Berechtigungsbündel, feingranulare Permissions) für Pflege und Administration; API-Keys und eine OpenAPI-3.1-Beschreibung, die KI-Agenten ohne weitere Doku nutzen können ([ADR-0005](docs/adr/0005-identity-rbac-openapi.md)).
+Stack: **ASP.NET Core / C# / .NET 10 · Angular 22 / TypeScript · PostgreSQL 17 + PostGIS + TimescaleDB · Docker Compose**. Zugriff: anonym ist nur die Karte nutzbar (Ladepunkte mit Basisdaten und aktuellem Status, eigener Standort); alle erweiterten Funktionen und persönlichen Einstellungen setzen ein Benutzerkonto voraus (kostenlose Selbstregistrierung) ([ADR-0005](docs/adr/0005-identity-rbac-openapi.md)); Karte mit MapLibre/OSM, Standort und Routing ([ADR-0007](docs/adr/0007-karte-standort-routing.md)); zentraler Mail-Service mit SMTP ([ADR-0008](docs/adr/0008-zentraler-mail-service-smtp.md)); Nutzerverwaltung mit RBAC (Rollen = Berechtigungsbündel, feingranulare Permissions) für Pflege und Administration; API-Keys und eine OpenAPI-3.1-Beschreibung, die KI-Agenten ohne weitere Doku nutzen können ([ADR-0005](docs/adr/0005-identity-rbac-openapi.md)).
 
 ## Dokumentation (Einstieg)
 
@@ -44,20 +44,20 @@ Stack: **ASP.NET Core / C# / .NET 10 · Angular 22 / TypeScript · PostgreSQL 17
 3. **Keine GitHub-CI**: derzeit nicht im Scope. Keine Workflows unter `.github/` anlegen. Qualitätssicherung passiert lokal vor dem Merge.
 4. **Merge**: nach grünen Tests und angepasster Doku den Branch in `master` mergen (`git merge --no-ff`), Branch löschen, `master` nach `origin` pushen.
 5. **Deploy**: nach dem Merge auf den Dev-Server deployen (Zugang in `CLAUDE.local.md`): Repo unter `/opt/chargeglobe` auf `origin/master` bringen, `.env` auf dem Server unverändert lassen (nur neue Variablen aus `.env.example` ergänzen), `docker compose up -d --build`, Healthcheck prüfen. Die fremde App auf dem Server bleibt unberührt.
-6. **Link nennen**: Im Chat zum Abschluss den erreichbaren Link an den Betreiber geben (`http://srv-dev2.pulseone.cloud:5005`, ggf. mit konkretem Pfad zur neuen Funktion) und den Zustand des Deployments ehrlich berichten (Healthcheck-Ergebnis, offene Punkte).
+6. **Link nennen**: Im Chat zum Abschluss den erreichbaren Link an den Betreiber geben (`https://srv-dev2.pulseone.cloud:5005`, ggf. mit konkretem Pfad zur neuen Funktion) und den Zustand des Deployments ehrlich berichten (Healthcheck-Ergebnis, offene Punkte).
 7. **n+1-Prompt** als letzter Abschnitt (Regel 3).
 
 ## Betrieb & Deployment
 
-- Die gesamte App läuft als **Docker-Compose-Stack**. Services: `db` (timescaledb-ha mit PostGIS), `api` (.NET), `crawler` (.NET, holt Daten von Quellen; skalierbar), `worker` (.NET, Ingest/Merge/Aggregation; skalierbar) – beide aus dem Projekt `ChargeGlobe.Jobs` (Image `chargeglobe-jobs`, `--role crawler|worker`), `web` (Angular-Build, statisch ausgeliefert, proxied `/api` zur API).
+- Die gesamte App läuft als **Docker-Compose-Stack**. Services: `db` (timescaledb-ha mit PostGIS), `api` (.NET), `crawler` (.NET, holt Daten von Quellen; skalierbar), `worker` (.NET, Ingest/Merge/Aggregation; skalierbar) – beide aus dem Projekt `ChargeGlobe.Jobs` (Image `chargeglobe-jobs`, `--role crawler|worker`), `web` (nginx: Angular-Build, statisch ausgeliefert, proxied `/api` zur API, terminiert TLS). Vorgesehen: `routing` (Valhalla, nicht exponiert).
 - **Konfiguration in zwei Schichten** ([ADR-0006](docs/adr/0006-konfiguration-env-minimal-config-service.md)):
   - **`.env` = nur Infrastruktur und Bootstrap**, so minimal wie möglich: exponierter Port, DB-Zugang, JWT-Secret, Admin-Seed, Anzahl Crawler-/Worker-Instanzen, Log-Level. **`.env.example` listet immer alle verfügbaren Variablen** mit Default und Kommentar; eine neue Variable ohne Eintrag in `.env.example` ist ein Fehler.
   - **Zentraler Config-Service in der App** für alles Fachliche (Provider an/aus, Intervalle, Rate-Limits, Regionen, Schwellwerte, Präzedenzen): Katalog der Einstellungen mit Typ, Default und Beschreibung im Code, Werte in der DB-Tabelle `app_setting`, änderbar über API (`settings:manage`) und Admin-UI, wirksam ohne Neustart. Keine fachlichen Einstellungen in `.env` oder `appsettings.json`.
 - **Skalierung**: `crawler` und `worker` sind zustandslos und werden über `CRAWLER_REPLICAS` / `WORKER_REPLICAS` in `.env` (Compose `deploy.replicas`) vervielfacht; Arbeitsverteilung über Lease-/Queue-Tabellen in Postgres (`FOR UPDATE SKIP LOCKED`), kein Message-Broker.
-- **Oberkante der App ist ein exponierter HTTP-Port** (`CHARGEGLOBE_PORT`, Default `5005`, in `.env` änderbar), unter dem die Web-App inkl. `/api` erreichbar ist. Die App spricht intern und außen **HTTP**.
-- **Nicht im Scope:** Reverse Proxy, TLS-Zertifikate, Caddy, Let's Encrypt. Das übernimmt eine getrennte Komponente außerhalb dieses Repos. Ein Snakeoil-Zertifikat ist erlaubt, falls technisch nötig, aber nicht erforderlich.
+- **Oberkante der App ist ein exponierter HTTPS-Port** (`CHARGEGLOBE_PORT`, Default `5005`, in `.env` änderbar), unter dem die Web-App inkl. `/api` erreichbar ist. Der Port spricht **ausschließlich HTTPS** mit einem **dauerhaft self-signed Zertifikat**, das der `web`-Container beim ersten Start erzeugt (Volume `tls`); HTTP-Requests werden umgeleitet. Intern (nginx → `api:8080`) bleibt es bei HTTP ([ADR-0009](docs/adr/0009-https-only-self-signed.md)).
+- **Nicht im Scope:** öffentlich gültige Zertifikate, Let's Encrypt, Caddy. Das übernimmt der externe Loadbalancer (nginx) außerhalb dieses Repos.
 - **Deployment-Ziel** ist ein Dev-Server, dessen Zugangsdaten in `CLAUDE.local.md` stehen. Auf dem Server läuft eine **andere Anwendung unter `/opt/companyhero-dev` mit eigenen Deploy-Skripten in `/opt`; diese wird nicht angefasst.** chargeglobe wird unter `/opt/chargeglobe` betrieben (`docker compose up -d`), eigene Compose-Projektnamen, keine Port-Kollisionen mit fremden Diensten.
-- Deployment-Ablauf: Repo auf dem Server klonen/pullen → `.env` pflegen → `docker compose up -d --build` → Healthcheck `GET http://srv-dev2.pulseone.cloud:5005/api/v1/health`.
+- Deployment-Ablauf: Repo auf dem Server klonen/pullen → `.env` pflegen → `docker compose up -d --build` → Healthcheck `curl -k https://srv-dev2.pulseone.cloud:5005/api/v1/health`.
 
 ## Befehle
 
@@ -84,14 +84,14 @@ dotnet run --project src/ChargeGlobe.Jobs -- --role crawler # oder --role worker
 # Compose-Stack
 cp .env.example .env                        # POSTGRES_PASSWORD, JWT_SIGNING_KEY: openssl rand -hex 32
 docker compose up -d --build
-curl http://localhost:5005/api/v1/health    # {"status":"ok","db":"ok"}
+curl -k https://localhost:5005/api/v1/health   # {"status":"ok","db":"ok"}; -k wegen self-signed Zertifikat
 docker compose logs crawler worker          # Heartbeats beider Rollen
-docker compose down                         # Volume pgdata bleibt erhalten
+docker compose down                         # Volumes pgdata und tls (Zertifikat) bleiben erhalten
 
 # Deploy auf den Dev-Server (per SSH laut CLAUDE.local.md)
 cd /opt/chargeglobe && git pull --ff-only origin master
 docker compose up -d --build
-curl http://localhost:5005/api/v1/health
+curl -k https://localhost:5005/api/v1/health
 ```
 
 Vor einem neuen Coverage-Lauf alte Ergebnisse löschen (`tests/*/TestResults`, `artifacts/`), sonst mischt ReportGenerator alte und neue Berichte. Migrationen gibt es noch nicht; der Befehl wird ergänzt, sobald der EF-Core-DbContext existiert.

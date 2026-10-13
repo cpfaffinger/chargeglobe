@@ -68,8 +68,15 @@ services:
     restart: unless-stopped
     depends_on:
       - api
+    environment:
+      # Host name for the SAN of the self-signed certificate.
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://localhost:5005}
+    volumes:
+      - tls:/etc/nginx/tls
     ports:
-      - "${CHARGEGLOBE_PORT:-5005}:80"
+      # HTTPS only (self-signed certificate, docs/adr/0009).
+      - "${CHARGEGLOBE_PORT:-5005}:443"
 
 volumes:
   pgdata:
+  tls:

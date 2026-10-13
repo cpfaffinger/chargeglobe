@@ -1,12 +1,12 @@
 # 06 – Öffentliche API (v1)
 
-Basis: `http://<host>:5005/api/v1`, JSON, UTF-8, Zeiten in ISO 8601 UTC, Geld als Dezimalstring + Währung. OpenAPI 3.1 unter `/openapi/v1.json`, interaktive Doku unter `/scalar`. Fehler nach RFC 9457 (Problem Details).
+Basis: `https://<host>:5005/api/v1` (HTTPS-only, am App-Port mit self-signed Zertifikat), JSON, UTF-8, Zeiten in ISO 8601 UTC, Geld als Dezimalstring + Währung. OpenAPI 3.1 unter `/openapi/v1.json`, interaktive Doku unter `/scalar`. Fehler nach RFC 9457 (Problem Details).
 
 ## Authentifizierung & Autorisierung
 
 | Schema | Für wen | Mechanik |
 |---|---|---|
-| anonym | alle Lese-Endpunkte unter „Ladepunkte“, „Standorte“, „Stammdaten & Meta“ | Rate-Limit je IP |
+| anonym | nur die Karte: `GET /locations`, `GET /locations/{id}`, `GET /tiles/…`, `GET /map/config`; dazu `GET /health`, `GET /permissions`, `/auth/*` | Rate-Limit je IP |
 | `Bearer` (JWT) | Angular-SPA, Menschen | `POST /auth/login` (E-Mail + Passwort) → Access-Token (15 min) + Refresh-Token (HttpOnly-Cookie, 14 Tage); `POST /auth/refresh`, `POST /auth/logout` |
 | `ApiKey` | KI-Agenten, Skripte, Integrationen | Header `X-Api-Key: cg_<prefix>_<secret>`; Key trägt eine Teilmenge der Rechte seines Eigentümers, Ablaufdatum, eigenes Rate-Limit-Tier |
 
@@ -14,7 +14,11 @@ Beide Schemata münden in dieselben **Permission-Claims**. Jeder geschützte End
 
 | Methode & Pfad | Zweck | Permission |
 |---|---|---|
+| `POST /auth/register`, `POST /auth/confirm-email` | Selbstregistrierung mit E-Mail-Bestätigung; neues Konto erhält die Rolle `User` | anonym |
+| `POST /auth/password/forgot`, `POST /auth/password/reset` | Passwort-Reset per Mail-Link; die Antwort verrät nicht, ob die Adresse existiert | anonym |
 | `GET /me` | eigene Identität, effektive Permissions, Rate-Limit-Tier | authentifiziert |
+| `GET /me/preferences`, `PUT /me/preferences` | Customizings des Nutzers (Standard-Kartenausschnitt, gespeicherte Filter, eigene Ladekarten) | authentifiziert |
+| `GET /me/favorites`, `PUT /me/favorites/{locationId}`, `DELETE /me/favorites/{locationId}` | Favoriten | authentifiziert |
 | `GET /permissions` | Katalog aller Permissions mit Beschreibung | anonym |
 | `GET/POST/PUT/DELETE /users`, `PUT /users/{id}/roles`, `PUT /users/{id}/permissions` | Nutzerverwaltung | `user:manage` |
 | `GET/POST/PUT/DELETE /roles` | Rollen und ihre Permissions | `role:manage` |
@@ -23,6 +27,7 @@ Beide Schemata münden in dieselben **Permission-Claims**. Jeder geschützte End
 | `PUT /tariffs/{id}`, `POST /tariffs` | Tarif-Pflege | `tariff:write` |
 | `POST /conflicts/{id}/resolve`, `POST /evses/{id}/merge` | Konflikt-/Match-Entscheidungen | `conflict:resolve` |
 | `GET /settings`, `GET /settings/{key}`, `PUT /settings/{key}` | zentraler Config-Service: Katalog mit Typ/Default/Beschreibung und aktuellen Werten je Scope; Secrets werden maskiert zurückgegeben | `settings:read` / `settings:manage` |
+| `POST /mail/test`, `GET /mail/outbox` | Testmail über den konfigurierten SMTP-Server senden; Zustellstatus der Outbox | `settings:manage` |
 | `POST /sources/{key}/run` | Job anstoßen | `provider:manage` |
 | `GET /jobs/instances`, `GET /jobs/queue` | laufende Crawler-/Worker-Instanzen, Leases, Queue-Tiefe | `jobs:read` |
 | `POST /proposals/tariffs`, `POST /proposals/conflicts` | Vorschläge einreichen (werden von Maintainern geprüft) | `proposal:write` (Standard für Rolle `Agent`) |
@@ -38,7 +43,9 @@ Beide Schemata münden in dieselben **Permission-Claims**. Jeder geschützte End
 
 ## Ressourcen
 
-### Ladepunkte
+Ohne Anmeldung sind nur die Endpunkte unter „Standorte“ (`GET /locations`, `GET /locations/{id}`) und „Karte“ erreichbar. Die übrigen Lese-Endpunkte verlangen die angegebene Permission; die Rolle `User` (Selbstregistrierung) enthält `evse:read`, `price:read` und `route:read`.
+
+### Ladepunkte (`evse:read`, Preis-Endpunkte `price:read`)
 
 | Methode & Pfad | Zweck | Wichtige Parameter |
 |---|---|---|
@@ -52,7 +59,7 @@ Beide Schemata münden in dieselben **Permission-Claims**. Jeder geschützte End
 | `GET /evses/{evseId}/prices/history` | Preisbeobachtungen | `emp`, `from`, `to` |
 | `GET /evses/{evseId}/sources` | Provenienz: Quell-Datensätze, Match-Methode, Attribut-Herkunft | |
 
-### Standorte
+### Standorte (anonym, außer Historie: `evse:read`)
 
 | Methode & Pfad | Zweck |
 |---|---|
@@ -60,7 +67,7 @@ Beide Schemata münden in dieselben **Permission-Claims**. Jeder geschützte End
 | `GET /locations/{id}` | Standort mit allen Ladepunkten und Steckern |
 | `GET /locations/{id}/status/history` | aggregierte Verfügbarkeit (frei/gesamt) über Zeit |
 
-### Stammdaten & Meta
+### Stammdaten & Meta (`evse:read`)
 
 | Methode & Pfad | Zweck |
 |---|---|
@@ -70,8 +77,12 @@ Beide Schemata münden in dieselben **Permission-Claims**. Jeder geschützte End
 | `GET /stats` | Zähler (EVSEs je Region/Betreiber/Leistungsklasse, Statusfrische) |
 | `GET /changes?since=` | Feed von Änderungen (neue/entfernte EVSEs, Preisänderungen) für Downstream-Consumer |
 
-### Karte (ab Phase 2)
-`GET /tiles/{z}/{x}/{y}.mvt` – Vector-Tiles mit Standort-Markern inkl. Status-Zusammenfassung; alternativ via pg_tileserv/Martin direkt aus Postgres.
+### Karte (anonym)
+- `GET /map/config` – Style-URL der Basiskarte, Attributionstext, Start-Ausschnitt (aus dem Config-Service, `map.*`).
+- `GET /tiles/{z}/{x}/{y}.mvt` (ab Phase 2) – Vector-Tiles mit Standort-Markern inkl. Status-Zusammenfassung; alternativ via pg_tileserv/Martin direkt aus Postgres.
+
+### Routing (`route:read`)
+`POST /routes` – berechnet eine Route auf OSM-Straßendaten. Body: `origin` und `destination` (`lat`, `lon`), optional `waypoints[]`, `profile` (`car`, Standard), `avoid` (`tolls`, `motorways`). Antwort: `geometry` (GeoJSON LineString), `distanceMeters`, `durationSeconds`, `legs[].maneuvers[]`, `meta.attribution`. Der Aufruf verändert nichts und ist beliebig wiederholbar; POST statt GET, damit Koordinaten nicht in URLs und Logs stehen. Start und Ziel werden nicht gespeichert.
 
 ## Beispiel: `GET /evses/AT*EVN*E1234*5`
 
