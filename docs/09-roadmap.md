@@ -5,18 +5,18 @@
 ### Phase 0 – Fundament (jetzt)
 - [x] Konzept (dieses Verzeichnis)
 - [x] Git-Repository angelegt (`origin` = github.com/cpfaffinger/chargeglobe), `CLAUDE.md` mit Arbeitsregeln
-- [ ] .NET-10-SDK lokal installieren (derzeit nur 9.0 vorhanden)
-- [ ] Solution-Skelett (.NET 10), Angular-22-Workspace, `docker-compose.yml` + `.env.example` (db/api/crawler/worker/web, Port 5005, `CRAWLER_REPLICAS`/`WORKER_REPLICAS`), Test-Projekte mit Coverage-Reporting
+- [x] .NET-10-SDK lokal installiert
+- [x] Solution-Skelett (.NET 10), Angular-22-Workspace, `docker-compose.yml` + `.env.example` (db/api/crawler/worker/web, Port 5005, `CRAWLER_REPLICAS`/`WORKER_REPLICAS`), Test-Projekte mit Coverage-Reporting
 - [ ] Zentraler Config-Service: Settings-Katalog, `app_setting`, typisierte Accessoren, LISTEN/NOTIFY-Invalidierung, `GET/PUT /settings`, generisches Admin-UI
 - [ ] Identity-Grundgerüst: ASP.NET Core Identity, Permission-Katalog, Standardrollen, Login (JWT), API-Keys, `GET /me`, OpenAPI mit Security Schemes und `x-required-permission`; Admin-Seed-User aus `.env`
-- [ ] Erstes Deployment auf den Dev-Server (`/opt/chargeglobe`)
+- [x] Erstes Deployment auf den Dev-Server (`/opt/chargeglobe`)
 - [ ] Lizenz festlegen (siehe unten), `CONTRIBUTING.md`, Code of Conduct
 - [ ] API-Key für das E-Control-Ladestellenverzeichnis beantragen (admin.ladestellen.at → API → registrieren), Nutzungsbedingungen prüfen und dokumentieren
 - [ ] OpenChargeMap-API-Key beantragen
 
 ### Phase 1 – MVP Ost-Österreich (Wien, NÖ, OÖ, Bgld)
 - [ ] Domain + Datenmodell + Migrationen (inkl. Hypertables)
-- [ ] `Providers.Abstractions`, Ingest-Pipeline, `EvseId` Value Object, Matching-Kaskade
+- [ ] `Providers.Abstractions`, Ingest-Pipeline, Matching-Kaskade (`EvseId` Value Object existiert bereits)
 - [ ] Adapter **E-Control** (Inventar + Status + Ad-hoc-Preis) – Tier 0, deckt bereits Status und Ad-hoc-Preis für ganz Österreich ab
 - [ ] Adapter **OpenStreetMap** (Overpass) und **OpenChargeMap** als Ergänzung/Plausibilisierung
 - [ ] Region-Polygone, Lease-Scheduler (`poll_plan`), `ingest_queue`, clusterweites Rate-Budget, adaptive Statusabfrage, Metriken

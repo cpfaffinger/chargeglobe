@@ -1,0 +1,13 @@
+.git
+.env
+.env.*
+CLAUDE.local.md
+**/bin
+**/obj
+**/TestResults
+**/node_modules
+**/dist
+**/.angular
+artifacts
+docs
+tests

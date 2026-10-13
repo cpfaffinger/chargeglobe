@@ -49,7 +49,7 @@ Stack: **ASP.NET Core / C# / .NET 10 · Angular 22 / TypeScript · PostgreSQL 17
 
 ## Betrieb & Deployment
 
-- Die gesamte App läuft als **Docker-Compose-Stack**. Services: `db` (timescaledb-ha mit PostGIS), `api` (.NET), `crawler` (.NET, holt Daten von Quellen; skalierbar), `worker` (.NET, Ingest/Merge/Aggregation; skalierbar), `web` (Angular-Build, statisch ausgeliefert, proxied `/api` zur API).
+- Die gesamte App läuft als **Docker-Compose-Stack**. Services: `db` (timescaledb-ha mit PostGIS), `api` (.NET), `crawler` (.NET, holt Daten von Quellen; skalierbar), `worker` (.NET, Ingest/Merge/Aggregation; skalierbar) – beide aus dem Projekt `ChargeGlobe.Jobs` (Image `chargeglobe-jobs`, `--role crawler|worker`), `web` (Angular-Build, statisch ausgeliefert, proxied `/api` zur API).
 - **Konfiguration in zwei Schichten** ([ADR-0006](docs/adr/0006-konfiguration-env-minimal-config-service.md)):
   - **`.env` = nur Infrastruktur und Bootstrap**, so minimal wie möglich: exponierter Port, DB-Zugang, JWT-Secret, Admin-Seed, Anzahl Crawler-/Worker-Instanzen, Log-Level. **`.env.example` listet immer alle verfügbaren Variablen** mit Default und Kommentar; eine neue Variable ohne Eintrag in `.env.example` ist ein Fehler.
   - **Zentraler Config-Service in der App** für alles Fachliche (Provider an/aus, Intervalle, Rate-Limits, Regionen, Schwellwerte, Präzedenzen): Katalog der Einstellungen mit Typ, Default und Beschreibung im Code, Werte in der DB-Tabelle `app_setting`, änderbar über API (`settings:manage`) und Admin-UI, wirksam ohne Neustart. Keine fachlichen Einstellungen in `.env` oder `appsettings.json`.
@@ -61,8 +61,41 @@ Stack: **ASP.NET Core / C# / .NET 10 · Angular 22 / TypeScript · PostgreSQL 17
 
 ## Befehle
 
-Noch kein Code vorhanden. Sobald die Solution existiert, hier eintragen: Build, Test, Migrationen, Compose-Start, Deploy.
+Alle Befehle vom Repo-Root, sofern nicht anders angegeben. Voraussetzungen: .NET-10-SDK, Node 24, Docker mit Compose; rechnerspezifische Pfade stehen in `CLAUDE.local.md`.
+
+```bash
+# .NET: Build und Tests mit Coverage (Coverlet-Konfiguration: coverlet.runsettings)
+dotnet build
+dotnet test --collect:"XPlat Code Coverage"
+dotnet tool restore
+dotnet tool run reportgenerator "-reports:tests/*/TestResults/*/coverage.cobertura.xml" -targetdir:artifacts/coverage -reporttypes:TextSummary
+cat artifacts/coverage/Summary.txt          # erwartet: Line coverage: 100%
+
+# Angular (in src/web): Tests mit Coverage, Build, Dev-Server (proxied /api an localhost:8080)
+npm ci
+npx ng test --code-coverage --watch=false   # erwartet: Statements 100%; braucht CHROME_BIN (Chrome oder Edge)
+npx ng build
+npx ng serve
+
+# Einzelne Prozesse ohne Docker
+dotnet run --project src/ChargeGlobe.Api                    # http://localhost:8080, DB laut launchSettings.json
+dotnet run --project src/ChargeGlobe.Jobs -- --role crawler # oder --role worker
+
+# Compose-Stack
+cp .env.example .env                        # POSTGRES_PASSWORD, JWT_SIGNING_KEY: openssl rand -hex 32
+docker compose up -d --build
+curl http://localhost:5005/api/v1/health    # {"status":"ok","db":"ok"}
+docker compose logs crawler worker          # Heartbeats beider Rollen
+docker compose down                         # Volume pgdata bleibt erhalten
+
+# Deploy auf den Dev-Server (per SSH laut CLAUDE.local.md)
+cd /opt/chargeglobe && git pull --ff-only origin master
+docker compose up -d --build
+curl http://localhost:5005/api/v1/health
+```
+
+Vor einem neuen Coverage-Lauf alte Ergebnisse löschen (`tests/*/TestResults`, `artifacts/`), sonst mischt ReportGenerator alte und neue Berichte. Migrationen gibt es noch nicht; der Befehl wird ergänzt, sobald der EF-Core-DbContext existiert.
 
 ## Nächste Schritte (Stand jetzt)
 
-Siehe `docs/09-roadmap.md`, Phase 0: .NET-10-SDK lokal installieren, Lizenz festlegen, E-Control-API-Key beantragen, Solution-Skelett + Compose + Identity-Grundgerüst anlegen.
+Siehe `docs/09-roadmap.md`, Phase 0: Identity-Grundgerüst ([ADR-0005](docs/adr/0005-identity-rbac-openapi.md)), zentraler Config-Service ([ADR-0006](docs/adr/0006-konfiguration-env-minimal-config-service.md)), Lizenz festlegen, E-Control-API-Key beantragen.

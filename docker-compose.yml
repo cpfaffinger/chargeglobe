@@ -1,0 +1,75 @@
+name: chargeglobe
+
+services:
+  db:
+    image: timescale/timescaledb-ha:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-chargeglobe}
+      POSTGRES_USER: ${POSTGRES_USER:-chargeglobe}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/home/postgres/pgdata
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  api:
+    image: chargeglobe-api
+    build:
+      context: .
+      dockerfile: src/ChargeGlobe.Api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Default: Host=db;Database=${POSTGRES_DB:-chargeglobe};Username=${POSTGRES_USER:-chargeglobe};Password=${POSTGRES_PASSWORD}
+      Logging__LogLevel__Default: ${LOG_LEVEL:-Information}
+
+  crawler:
+    image: chargeglobe-jobs
+    build:
+      context: .
+      dockerfile: src/ChargeGlobe.Jobs/Dockerfile
+    command: ["--role", "crawler"]
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      Logging__LogLevel__Default: ${LOG_LEVEL:-Information}
+    deploy:
+      replicas: ${CRAWLER_REPLICAS:-1}
+
+  worker:
+    image: chargeglobe-jobs
+    # Built by the crawler service; both roles share one image.
+    pull_policy: never
+    command: ["--role", "worker"]
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      crawler:
+        condition: service_started
+    environment:
+      Logging__LogLevel__Default: ${LOG_LEVEL:-Information}
+    deploy:
+      replicas: ${WORKER_REPLICAS:-1}
+
+  web:
+    image: chargeglobe-web
+    build:
+      context: src/web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${CHARGEGLOBE_PORT:-5005}:80"
+
+volumes:
+  pgdata:
