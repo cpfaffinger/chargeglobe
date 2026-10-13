@@ -1,0 +1,24 @@
+# Test image for the .NET suites (docs/adr/0010). Build context: repository root.
+# The sources are copied into the image; nothing is mounted from the checkout.
+FROM mcr.microsoft.com/dotnet/sdk:10.0
+WORKDIR /repo
+
+# Restore first, so that source changes do not invalidate the package layer.
+COPY ChargeGlobe.sln Directory.Build.props coverlet.runsettings dotnet-tools.json ./
+COPY src/ChargeGlobe.Domain/ChargeGlobe.Domain.csproj src/ChargeGlobe.Domain/
+COPY src/ChargeGlobe.Application/ChargeGlobe.Application.csproj src/ChargeGlobe.Application/
+COPY src/ChargeGlobe.Infrastructure/ChargeGlobe.Infrastructure.csproj src/ChargeGlobe.Infrastructure/
+COPY src/ChargeGlobe.Providers.Abstractions/ChargeGlobe.Providers.Abstractions.csproj src/ChargeGlobe.Providers.Abstractions/
+COPY src/ChargeGlobe.Api/ChargeGlobe.Api.csproj src/ChargeGlobe.Api/
+COPY src/ChargeGlobe.Jobs/ChargeGlobe.Jobs.csproj src/ChargeGlobe.Jobs/
+COPY tests/ChargeGlobe.Domain.Tests/ChargeGlobe.Domain.Tests.csproj tests/ChargeGlobe.Domain.Tests/
+COPY tests/ChargeGlobe.Api.Tests/ChargeGlobe.Api.Tests.csproj tests/ChargeGlobe.Api.Tests/
+COPY tests/ChargeGlobe.Jobs.Tests/ChargeGlobe.Jobs.Tests.csproj tests/ChargeGlobe.Jobs.Tests/
+COPY tests/ChargeGlobe.IntegrationTests/ChargeGlobe.IntegrationTests.csproj tests/ChargeGlobe.IntegrationTests/
+RUN dotnet tool restore && dotnet restore
+
+COPY src/ src/
+COPY tests/ tests/
+RUN dotnet build --no-restore
+
+ENTRYPOINT ["sh", "tests/run-dotnet-tests.sh"]

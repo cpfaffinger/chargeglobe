@@ -29,6 +29,11 @@ services:
     environment:
       ConnectionStrings__Default: Host=db;Database=${POSTGRES_DB:-chargeglobe};Username=${POSTGRES_USER:-chargeglobe};Password=${POSTGRES_PASSWORD}
       Logging__LogLevel__Default: ${LOG_LEVEL:-Information}
+      JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?set JWT_SIGNING_KEY in .env (openssl rand -hex 32)}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD:-}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://localhost:5005}
+      AUTH_REQUIRE_CONFIRMED_EMAIL: ${AUTH_REQUIRE_CONFIRMED_EMAIL:-true}
 
   crawler:
     image: chargeglobe-jobs

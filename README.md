@@ -9,7 +9,7 @@ Anbieter und Tarifmodelle hinweg. Alles wird über eine öffentliche API und ein
 
 | | |
 |---|---|
-| **Status** | Lauffähiges Skelett (API-Healthcheck, Jobs-Heartbeat, Angular-Startseite, Compose-Stack); Fachfunktionen folgen laut [Roadmap](docs/09-roadmap.md) |
+| **Status** | Lauffähiges Grundgerüst: Compose-Stack, Benutzerkonten (Selbstregistrierung, Login, Passwort-Reset, API-Keys, Permissions), OpenAPI 3.1, Angular-Seiten für Konto und Anmeldung, Jobs-Heartbeat; Karte und Fachfunktionen folgen laut [Roadmap](docs/09-roadmap.md) |
 | **Start-Scope** | Wien, Niederösterreich, Oberösterreich, Burgenland |
 | **Ziel-Scope** | Österreich → DACH → Italien |
 | **Stack** | ASP.NET Core / C# / .NET 10 · Angular 22 / TypeScript · PostgreSQL (PostGIS + TimescaleDB) |
@@ -36,12 +36,12 @@ Anbieter und Tarifmodelle hinweg. Alles wird über eine öffentliche API und ein
 ## Schnellstart
 
 ```bash
-cp .env.example .env        # POSTGRES_PASSWORD und JWT_SIGNING_KEY setzen (openssl rand -hex 32)
+cp .env.example .env        # POSTGRES_PASSWORD, JWT_SIGNING_KEY (openssl rand -hex 32), ADMIN_EMAIL, ADMIN_INITIAL_PASSWORD setzen
 docker compose up -d --build
 curl -k https://localhost:5005/api/v1/health   # {"status":"ok","db":"ok"}
 ```
 
-Web-App: `https://localhost:5005` (self-signed Zertifikat, Ausnahme im Browser bestätigen) · OpenAPI 3.1: `/openapi/v1.json` · Scalar UI: `/scalar`. Build- und Testbefehle stehen in [CLAUDE.md](CLAUDE.md#befehle).
+Web-App: `https://localhost:5005` (self-signed Zertifikat, Ausnahme im Browser bestätigen), Anmeldung unter `/login` mit dem Admin aus `.env` · OpenAPI 3.1: `/openapi/v1.json` · Scalar UI: `/scalar`. Solange kein SMTP-Versand existiert, bleiben Bestätigungsmails in der Outbox; mit `AUTH_REQUIRE_CONFIRMED_EMAIL=false` sind neue Konten sofort nutzbar. Build- und Testbefehle stehen in [CLAUDE.md](CLAUDE.md#befehle).
 
 ## Repository-Struktur
 
@@ -52,24 +52,27 @@ chargeglobe/
 ├─ docs/                         # Konzept und Architektur
 ├─ ChargeGlobe.sln
 ├─ src/
-│  ├─ ChargeGlobe.Domain/        # Entitäten, Value Objects (EvseId, …), Domain-Events, Permission-Katalog
-│  ├─ ChargeGlobe.Application/   # Use Cases, Ingest-Pipeline, Identity Resolution, Merge, Autorisierung
-│  ├─ ChargeGlobe.Infrastructure/# EF Core + Npgsql + PostGIS, Timescale, ASP.NET Core Identity, Repositories
+│  ├─ ChargeGlobe.Domain/        # Value Objects (EvseId), Permission-Katalog und Standardrollen; vorgesehen: Entitäten, Domain-Events
+│  ├─ ChargeGlobe.Application/   # Ports (IEmailSender, IDatabaseProbe), Mail-Vorlagen, Auth-Einstellungen; vorgesehen: Ingest-Pipeline, Merge
+│  ├─ ChargeGlobe.Infrastructure/# EF Core + Npgsql (AppDbContext, Migrationen), ASP.NET Core Identity, Identity-Services, Mail-Outbox
 │  ├─ ChargeGlobe.Providers.Abstractions/  # Provider-Interfaces (ACL-Vertrag)
 │  ├─ ChargeGlobe.Providers.*/   # (geplant) je Quelle ein Adapter (EControl, OpenChargeMap, Osm, Evn, …)
-│  ├─ ChargeGlobe.Api/           # ASP.NET Core, OpenAPI 3.1, Auth (JWT + API-Keys), RBAC, Rate Limiting, Caching
+│  ├─ ChargeGlobe.Api/           # ASP.NET Core Minimal API, OpenAPI 3.1, Auth (JWT + API-Keys), Permission-Prüfung, Rate Limiting
 │  ├─ ChargeGlobe.Jobs/          # ein Host für beide Rollen (--role crawler|worker), Image chargeglobe-jobs, skalierbar
 │  │                             #   crawler: Lease-Scheduler + Provider-Abrufe → raw_snapshot, ingest_queue
 │  │                             #   worker: Ingest-Queue-Verarbeitung, Merge, Aggregate, Reconcile
-│  └─ web/                       # Angular-App (Karte, Ladepunkt-Detail, Historie, Preise, Login, Admin: Nutzer/Rollen/API-Keys)
+│  └─ web/                       # Angular-App: Startseite, Registrierung, Login, Passwort-Reset, Konto; vorgesehen: Karte, Detail, Admin
 ├─ tests/
-│  ├─ ChargeGlobe.Api.Tests/         # API-Tests (WebApplicationFactory) inkl. Application/Infrastructure
+│  ├─ ChargeGlobe.Api.Tests/         # Tests ohne Datenbank (WebApplicationFactory mit Stub, Einstellungen, Mail-Vorlagen)
 │  ├─ ChargeGlobe.Domain.Tests/
 │  ├─ ChargeGlobe.Jobs.Tests/
 │  ├─ ChargeGlobe.Providers.Tests/   # (geplant) Replay-Tests mit aufgezeichneten, anonymisierten Antworten
-│  └─ ChargeGlobe.IntegrationTests/  # (geplant) Integrationstests gegen Postgres/PostGIS/Timescale (Compose-Service test-db)
+│  ├─ ChargeGlobe.IntegrationTests/  # API in-process gegen Postgres (Compose-Service test-db): Migration, Seed, Identity, OpenAPI
+│  ├─ Dockerfile.dotnet              # Test-Image für test-dotnet
+│  └─ run-dotnet-tests.sh            # Tests + Coverage-Gate im Container
 ├─ fixtures/                     # (geplant) aufgezeichnete Beispiel-Responses je Provider (sanitisiert)
 ├─ docker-compose.yml            # db · api · crawler · worker · web, gesteuert über .env
-├─ docker-compose.test.yml       # (geplant) Testlauf statt App: test-db · test-dotnet · test-web
+├─ docker-compose.test.yml       # Testlauf statt App: test-db · test-dotnet · test-web (Projekt chargeglobe-test)
+├─ scripts/test.sh               # ein Aufruf: bauen, beide Suiten, Coverage-Zusammenfassung, aufräumen
 └─ .env.example                  # vollständige Liste aller Variablen
 ```

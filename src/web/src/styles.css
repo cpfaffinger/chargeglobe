@@ -1,1 +1,51 @@
-/* You can add global styles to this file, and also import other style files */
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid #ccc;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+header nav a {
+  margin-left: 1rem;
+}
+
+main {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+form label {
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+form input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.4rem;
+}
+
+.error {
+  color: #b00020;
+}
+
+#map-placeholder {
+  padding: 3rem 1rem;
+  text-align: center;
+  background: #eef3f7;
+  border: 1px dashed #9ab;
+}

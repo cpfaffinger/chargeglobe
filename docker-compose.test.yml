@@ -1,0 +1,39 @@
+# Test path of the Compose setup (docs/adr/0010): runs the test suites instead of the app.
+# Own project name, no published ports, no volumes, no Docker socket. Start with scripts/test.sh.
+name: chargeglobe-test
+
+services:
+  test-db:
+    image: timescale/timescaledb-ha:pg17
+    environment:
+      # Throwaway instance: reachable only inside this project's network, data in RAM.
+      POSTGRES_PASSWORD: test
+    tmpfs:
+      # uid/gid of the postgres user in the image.
+      - /home/postgres/pgdata:uid=1000,gid=1000,mode=0700
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+      start_period: 10s
+
+  test-dotnet:
+    build:
+      context: .
+      dockerfile: tests/Dockerfile.dotnet
+    depends_on:
+      test-db:
+        condition: service_healthy
+    environment:
+      # Server connection; every test fixture creates and drops its own database.
+      ConnectionStrings__TestDb: Host=test-db;Username=postgres;Password=test;Database=postgres
+    volumes:
+      - ./artifacts:/artifacts
+
+  test-web:
+    build:
+      context: src/web
+      dockerfile: Dockerfile.test
+    volumes:
+      - ./artifacts:/artifacts

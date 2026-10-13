@@ -11,20 +11,26 @@ public sealed class HeartbeatService(
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         using var timer = new PeriodicTimer(Interval, timeProvider);
+        do
+        {
+            logger.LogInformation(
+                "Heartbeat role={Role} instance={InstanceId}",
+                options.Role.ToString().ToLowerInvariant(),
+                options.InstanceId);
+        }
+        while (await WaitForNextTickAsync(timer, stoppingToken));
+    }
+
+    /// <summary>Returns <c>false</c> on shutdown instead of throwing.</summary>
+    private static async Task<bool> WaitForNextTickAsync(PeriodicTimer timer, CancellationToken stoppingToken)
+    {
         try
         {
-            do
-            {
-                logger.LogInformation(
-                    "Heartbeat role={Role} instance={InstanceId}",
-                    options.Role.ToString().ToLowerInvariant(),
-                    options.InstanceId);
-            }
-            while (await timer.WaitForNextTickAsync(stoppingToken));
+            return await timer.WaitForNextTickAsync(stoppingToken);
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
         {
-            // Regular shutdown.
+            return false;
         }
     }
 }

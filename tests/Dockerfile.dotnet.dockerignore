@@ -1,0 +1,11 @@
+# Ignore file for tests/Dockerfile.dotnet (the root .dockerignore excludes tests/).
+.git
+.env
+.env.*
+CLAUDE.local.md
+**/bin
+**/obj
+**/TestResults
+artifacts
+docs
+src/web

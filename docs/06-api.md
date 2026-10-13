@@ -6,23 +6,39 @@ Basis: `https://<host>:5005/api/v1` (HTTPS-only, am App-Port mit self-signed Zer
 
 | Schema | Für wen | Mechanik |
 |---|---|---|
-| anonym | nur die Karte: `GET /locations`, `GET /locations/{id}`, `GET /tiles/…`, `GET /map/config`; dazu `GET /health`, `GET /permissions`, `/auth/*` | Rate-Limit je IP |
-| `Bearer` (JWT) | Angular-SPA, Menschen | `POST /auth/login` (E-Mail + Passwort) → Access-Token (15 min) + Refresh-Token (HttpOnly-Cookie, 14 Tage); `POST /auth/refresh`, `POST /auth/logout` |
-| `ApiKey` | KI-Agenten, Skripte, Integrationen | Header `X-Api-Key: cg_<prefix>_<secret>`; Key trägt eine Teilmenge der Rechte seines Eigentümers, Ablaufdatum, eigenes Rate-Limit-Tier |
+| anonym | nur die Karte: `GET /locations`, `GET /locations/{id}`, `GET /tiles/…`, `GET /map/config`; dazu `GET /health`, `GET /permissions`, `/auth/*` | `/auth/*`: 20 Requests je Minute und IP, danach `429` mit `Retry-After` |
+| `Bearer` (JWT, HS256) | Angular-SPA, Menschen | `POST /auth/login` (E-Mail + Passwort) → Access-Token (15 min) im Body + Refresh-Token als Cookie `cg_refresh` (HttpOnly, Secure, SameSite=Strict, Pfad `/api/v1/auth`, 14 Tage); `POST /auth/refresh` tauscht das Cookie gegen ein neues Access-Token und ein neues Cookie (jedes Refresh-Token gilt einmal; ein bereits benutztes beendet alle Sitzungen des Nutzers); `POST /auth/logout` |
+| `ApiKey` | KI-Agenten, Skripte, Integrationen | Header `X-Api-Key: cg_<prefix>_<secret>`; der Key trägt eine Teilmenge der Rechte seines Eigentümers und optional ein Ablaufdatum. Verliert der Eigentümer eine Permission, verliert sie auch der Key. Vorgesehen: eigenes Rate-Limit-Tier |
 
-Beide Schemata münden in dieselben **Permission-Claims**. Jeder geschützte Endpunkt deklariert genau eine Permission (`x-required-permission` in OpenAPI). Rollen sind nur Bündel von Permissions und tauchen in der API-Autorisierung nicht auf.
+Beide Schemata münden in dieselben **Permission-Claims**. Jeder Endpunkt deklariert seine Anforderung in `x-required-permission`: eine Permission aus dem Katalog, `authenticated` (beliebiges Konto oder beliebiger API-Key) oder `none` (anonym). Rollen sind nur Bündel von Permissions und tauchen in der API-Autorisierung nicht auf. `401` und `403` kommen als Problem Details; `403` nennt die fehlende Permission im `detail` (`Missing permission: apikey:manage.`), `422` trägt die Feldfehler in `errors`.
+
+Vorhandene Endpunkte (in Klammern die `operationId`):
 
 | Methode & Pfad | Zweck | Permission |
 |---|---|---|
-| `POST /auth/register`, `POST /auth/confirm-email` | Selbstregistrierung mit E-Mail-Bestätigung; neues Konto erhält die Rolle `User` | anonym |
-| `POST /auth/password/forgot`, `POST /auth/password/reset` | Passwort-Reset per Mail-Link; die Antwort verrät nicht, ob die Adresse existiert | anonym |
-| `GET /me` | eigene Identität, effektive Permissions, Rate-Limit-Tier | authentifiziert |
-| `GET /me/preferences`, `PUT /me/preferences` | Customizings des Nutzers (Standard-Kartenausschnitt, gespeicherte Filter, eigene Ladekarten) | authentifiziert |
-| `GET /me/favorites`, `PUT /me/favorites/{locationId}`, `DELETE /me/favorites/{locationId}` | Favoriten | authentifiziert |
-| `GET /permissions` | Katalog aller Permissions mit Beschreibung | anonym |
-| `GET/POST/PUT/DELETE /users`, `PUT /users/{id}/roles`, `PUT /users/{id}/permissions` | Nutzerverwaltung | `user:manage` |
+| `POST /auth/register` (`register`) | legt ein Konto mit der Rolle `User` an und stellt die Bestätigungsmail in die Outbox. Body `email`, `password` (mindestens 10 Zeichen), optional `language` (`de`/`en`). Antwort immer `202`, egal ob die Adresse schon existiert | `none` |
+| `POST /auth/confirm-email` (`confirmEmail`) | bestätigt die Adresse mit `userId` und `token` aus dem Mail-Link (24 h gültig, einmalig). `204`, bei ungültigem Token `422` | `none` |
+| `POST /auth/login` (`login`) | `200` mit `accessToken`, `tokenType`, `expiresIn` + Refresh-Cookie; `401` bei falschen Zugangsdaten, `403` bei unbestätigter Adresse (entfällt mit `AUTH_REQUIRE_CONFIRMED_EMAIL=false`) | `none` |
+| `POST /auth/refresh` (`refreshToken`) | neues Access-Token gegen das Refresh-Cookie, ohne Body; `401` ohne gültiges Cookie | `none` |
+| `POST /auth/logout` (`logout`) | widerruft das Refresh-Token und löscht das Cookie; immer `204` | `none` |
+| `POST /auth/password/forgot` (`requestPasswordReset`) | stellt die Reset-Mail in die Outbox, falls die Adresse zu einem Konto gehört; Antwort immer `202` | `none` |
+| `POST /auth/password/reset` (`resetPassword`) | setzt mit `userId`, `token`, `newPassword` ein neues Passwort und beendet alle Browser-Sitzungen des Nutzers; `204` bzw. `422` | `none` |
+| `GET /me` (`getMe`) | `id`, `email`, `roles`, effektive `permissions`, `authenticatedVia` (`bearer`/`apiKey`); bei einem API-Key beschreiben `id`/`email`/`roles` den Eigentümer und `permissions` den Key | `authenticated` |
+| `GET /permissions` (`listPermissions`) | Katalog aller Permissions mit Beschreibung | `none` |
+| `GET /api-keys` (`listApiKeys`) | eigene Keys inklusive widerrufener, ohne Secret | `apikey:manage` |
+| `POST /api-keys` (`createApiKey`) | Body `name`, `permissions[]` (nicht leer, ⊆ Rechte des Aufrufers), optional `expiresAt`. `201` mit dem Klartext-Key in `key` – nur in dieser Antwort. Mit Header `Idempotency-Key` legt eine Wiederholung nichts an und antwortet `200` mit dem bestehenden Key und `key: null`, weil das Secret nicht wiederherstellbar ist | `apikey:manage` |
+| `DELETE /api-keys/{id}` (`revokeApiKey`) | widerruft einen eigenen Key sofort; wiederholbar (`204`), `404` bei fremder oder unbekannter Id | `apikey:manage` |
+
+Schreibende Aktionen (Registrierung, Bestätigung, Login, Passwort-Reset anfordern/ausführen, Key anlegen/widerrufen) landen mit Akteur (Nutzer bzw. API-Key) im `audit_log`.
+
+Vorgesehene Endpunkte:
+
+| Methode & Pfad | Zweck | Permission |
+|---|---|---|
+| `GET /me/preferences`, `PUT /me/preferences` | Customizings des Nutzers (Standard-Kartenausschnitt, gespeicherte Filter, eigene Ladekarten) | `authenticated` |
+| `GET /me/favorites`, `PUT /me/favorites/{locationId}`, `DELETE /me/favorites/{locationId}` | Favoriten | `authenticated` |
+| `GET/POST/PUT/DELETE /users`, `PUT /users/{id}/roles`, `PUT /users/{id}/permissions` | Nutzerverwaltung; fremde API-Keys verwalten | `user:manage` |
 | `GET/POST/PUT/DELETE /roles` | Rollen und ihre Permissions | `role:manage` |
-| `GET/POST /api-keys`, `DELETE /api-keys/{id}` | eigene API-Keys (Klartext nur in der POST-Antwort) | `apikey:manage` (für fremde Keys zusätzlich `user:manage`) |
 | `GET /audit-log` | schreibende Aktionen, filterbar nach Akteur/Entität/Zeit | `audit:read` |
 | `PUT /tariffs/{id}`, `POST /tariffs` | Tarif-Pflege | `tariff:write` |
 | `POST /conflicts/{id}/resolve`, `POST /evses/{id}/merge` | Konflikt-/Match-Entscheidungen | `conflict:resolve` |
@@ -35,9 +51,9 @@ Beide Schemata münden in dieselben **Permission-Claims**. Jeder geschützte End
 ## Agenten-Tauglichkeit (OpenAPI als einzige Doku)
 
 - **Vollständige OpenAPI 3.1**: jeder Endpunkt mit `operationId` (`listEvses`, `getEvseStatusHistory`, …), `summary`, mehrsätziger `description` (Zweck, Einheiten, typische Parameterkombinationen, Fallstricke), Tags, Beispiel-Request/-Response, dokumentierten Fehlerfällen (`401`, `403` mit fehlender Permission im `detail`, `404`, `409`, `422` mit Feldfehlern, `429` mit `Retry-After`).
-- **Security Schemes** `bearerAuth` und `apiKeyAuth` sind im Dokument deklariert; `x-required-permission` je Operation, damit ein Agent vorab prüfen kann, ob sein Key reicht (`GET /me`).
+- **Security Schemes** `bearerAuth` und `apiKeyAuth` sind im Dokument deklariert; `x-required-permission` je Operation, damit ein Agent vorab prüfen kann, ob sein Key reicht (`GET /me`). Ein Integrationstest lädt `/openapi/v1.json` und verlangt für jede Operation `operationId`, `summary`, `description`, mindestens einen Tag, `x-required-permission`, bei geschützten Operationen beide Security Schemes samt `401`/`403` und für jede erfolgreiche JSON-Antwort ein Beispiel.
 - **Vorhersagbare Konventionen**: Pagination immer `page`/`pageSize` + `meta.total`, Filter als Query-Parameter mit Enum-Werten aus dem Schema, Sortierung `sort=feld:asc|desc`, Zeiten ISO 8601, IDs als Strings; keine HTML-Antworten, keine Redirects auf API-Pfaden.
-- **Schreibende Aufrufe sicher wiederholbar**: `PUT` ist idempotent; `POST` akzeptiert `Idempotency-Key` (24 h gespeichert, gleiche Antwort bei Wiederholung).
+- **Schreibende Aufrufe sicher wiederholbar**: `PUT` ist idempotent; `POST`, das etwas anlegt, akzeptiert `Idempotency-Key` (eine Wiederholung legt nichts Zweites an und liefert das bereits Angelegte; bei `createApiKey` ohne das Secret).
 - **Discovery**: `GET /.well-known/openapi` → Link auf das aktuelle Spec-Dokument; `GET /` liefert JSON mit Versionen, Spec-URL und Attribution.
 - **Spätere Option**: ein MCP-Server, der aus derselben OpenAPI-Beschreibung generiert wird (Roadmap Phase 2); er bringt keine zusätzliche Logik, sondern ist nur eine weitere Darreichung derselben Operationen.
 
@@ -119,7 +135,7 @@ Ohne Anmeldung sind nur die Endpunkte unter „Standorte“ (`GET /locations`, `
 ## Querschnitt
 
 - **Caching**: Listen/Status 30 s Output-Cache, Stammdaten 10 min, Historie 5 min; `ETag` überall.
-- **Rate-Limits**: anonym 60 req/min & 5.000/Tag je IP; authentifiziert nach `rate_limit_tier` (Standard 600 req/min). `429` mit `Retry-After`.
+- **Rate-Limits**: `/auth/*` 20 req/min je IP, `429` als Problem Details mit `Retry-After`. Vorgesehen für die übrigen Endpunkte: anonym 60 req/min & 5.000/Tag je IP; authentifiziert nach `rate_limit_tier` (Standard 600 req/min).
 - **Attribution**: jede Antwort enthält `meta.attribution[]` mit Lizenztexten der beteiligten Quellen (Pflicht z. B. bei ODbL/CC BY).
 - **Versionierung**: Breaking Changes nur über `/api/v2`; additive Felder jederzeit.
 - **Bulk-Export**: täglicher Dump (`/exports/evses.csv.gz`, `/exports/evses.geojson.gz`, Tarife als JSON) für Forschung/Analysen – mit Lizenzhinweis.
