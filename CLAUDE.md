@@ -101,7 +101,7 @@ docker compose exec db psql -U chargeglobe -d chargeglobe -c "select template_ke
 docker compose down                         # Volumes pgdata und tls (Zertifikat) bleiben erhalten
 
 # Testlauf auf dem Dev-Server (maßgeblicher Abnahmeweg, ADR-0010; per SSH laut CLAUDE.local.md).
-# scripts/test.sh baut die Test-Images, startet test-dotnet und test-web nacheinander, gibt beide
+# scripts/test.sh baut die Test-Images, startet test-dotnet und test-web (Tests + Produktions-Build) nacheinander, gibt beide
 # Coverage-Zusammenfassungen aus und entfernt danach immer Container, Netz und lokal gebaute Images
 # des Projekts chargeglobe-test (docker compose -f docker-compose.test.yml down -v --rmi local --remove-orphans).
 git push -u origin <branch>                                   # lokal
