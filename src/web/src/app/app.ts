@@ -13,6 +13,9 @@ import { AuthService } from './auth/auth.service';
           @if (auth.hasPermission('settings:read')) {
             <a routerLink="/admin/settings" id="nav-settings">Einstellungen</a>
           }
+          @if (auth.hasPermission('settings:manage')) {
+            <a routerLink="/admin/mail" id="nav-mail">E-Mail</a>
+          }
           <a routerLink="/account" id="nav-account">Mein Konto</a>
         } @else {
           <a routerLink="/login" id="nav-login">Anmelden</a>

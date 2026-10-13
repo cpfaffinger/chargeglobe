@@ -97,8 +97,8 @@ docker compose up -d --build
 curl -k https://localhost:5005/api/v1/health   # {"status":"ok","db":"ok"}; -k wegen self-signed Zertifikat
 curl -k https://localhost:5005/api/v1/permissions   # Permission-Katalog (anonym)
 curl -k https://localhost:5005/api/v1/map/config    # Kartenkonfiguration aus dem Config-Service (anonym)
-docker compose logs crawler worker          # Heartbeats beider Rollen (alle 30 s, mit aktuellem Wert von mail.enabled)
-docker compose exec db psql -U chargeglobe -d chargeglobe -c "select template_key, status from email_outbox"
+docker compose logs crawler worker          # Heartbeats beider Rollen (alle 30 s, mit aktuellem Wert von mail.enabled); worker: "Mail outbox: …"
+docker compose exec db psql -U chargeglobe -d chargeglobe -c "select template_key, status, attempts, last_error from email_outbox"
 docker compose down                         # Volumes pgdata und tls (Zertifikat) bleiben erhalten
 
 # Testlauf auf dem Dev-Server (maßgeblicher Abnahmeweg, ADR-0010; per SSH laut CLAUDE.local.md).
@@ -122,4 +122,4 @@ Vor einem neuen lokalen Coverage-Lauf alte Ergebnisse löschen (`tests/*/TestRes
 
 ## Nächste Schritte (Stand jetzt)
 
-Siehe `docs/09-roadmap.md`, Phase 0: SMTP-Versand der Outbox im Worker inklusive `POST /mail/test` und `GET /mail/outbox` ([ADR-0008](docs/adr/0008-zentraler-mail-service-smtp.md)), danach die Karte mit MapLibre/Geolocation ([ADR-0007](docs/adr/0007-karte-standort-routing.md)); außerdem Lizenz festlegen, E-Control-API-Key beantragen.
+Siehe `docs/09-roadmap.md`: die Karte mit MapLibre/Geolocation ([ADR-0007](docs/adr/0007-karte-standort-routing.md)) als Einstieg in Phase 1; außerdem Lizenz festlegen, E-Control-API-Key beantragen.

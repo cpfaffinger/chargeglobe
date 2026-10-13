@@ -119,6 +119,31 @@ describe('App with its routes', () => {
       http.expectOne('/api/v1/settings').flush([]);
     });
 
+    it('opens /admin/mail only with settings:manage and shows the link only then', async () => {
+      auth.me.set(ME);
+      auth.hasPermission.and.callFake((permission) => permission === 'settings:read');
+
+      await navigate('/admin/mail');
+
+      expect(router.url).toBe('/');
+      expect(root().querySelector('#nav-mail')).toBeNull();
+      http.expectOne('/api/v1/health');
+
+      auth.hasPermission.and.returnValue(true);
+      await navigate('/admin/mail');
+
+      expect(router.url).toBe('/admin/mail');
+      expect(text(root(), 'h2')).toBe('E-Mail-Versand');
+      expect(root().querySelector('#nav-mail')).not.toBeNull();
+      http.expectOne('/api/v1/mail/outbox?page=1&pageSize=25').flush({ data: [], meta: { total: 0, page: 1, pageSize: 25 } });
+    });
+
+    it('redirects anonymous visitors from /admin/mail to the login', async () => {
+      await navigate('/admin/mail');
+
+      expect(router.url).toBe('/login?returnUrl=%2Fadmin%2Fmail');
+    });
+
     it('redirects anonymous visitors from /admin/settings to the login', async () => {
       await navigate('/admin/settings');
 

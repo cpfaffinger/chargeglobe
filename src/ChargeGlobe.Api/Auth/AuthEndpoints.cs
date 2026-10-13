@@ -1,4 +1,3 @@
-using System.Net.Mail;
 using ChargeGlobe.Api.OpenApi;
 using ChargeGlobe.Application.Mail;
 using ChargeGlobe.Infrastructure.Identity;
@@ -104,9 +103,6 @@ public static class AuthEndpoints
 
     private const string ForgotMessage = "If the address belongs to an account, a reset mail is on its way.";
 
-    private static bool IsEmail(string? value) =>
-        value is { Length: <= 254 } && MailAddress.TryCreate(value, out var address) && address.Address == value;
-
     private static Validation RequireLanguage(this Validation validation, string? language) =>
         validation.Require(
             language is null || EmailTemplates.Languages.Contains(language),
@@ -119,7 +115,7 @@ public static class AuthEndpoints
         var email = request.Email?.Trim();
         var passwordErrors = await accounts.ValidatePasswordAsync(request.Password ?? string.Empty);
         var invalid = new Validation()
-            .Require(IsEmail(email), "email", "Must be a valid e-mail address.")
+            .Require(Validation.IsEmail(email), "email", "Must be a valid e-mail address.")
             .Require(passwordErrors.Length == 0, "password", passwordErrors)
             .RequireLanguage(request.Language)
             .ToResult();
@@ -214,7 +210,7 @@ public static class AuthEndpoints
     {
         var email = request.Email?.Trim();
         var invalid = new Validation()
-            .Require(IsEmail(email), "email", "Must be a valid e-mail address.")
+            .Require(Validation.IsEmail(email), "email", "Must be a valid e-mail address.")
             .RequireLanguage(request.Language)
             .ToResult();
         if (invalid is not null)

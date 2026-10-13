@@ -10,7 +10,7 @@
 - [x] Compose-Testpfad `docker-compose.test.yml` + `scripts/test.sh` für Testläufe auf dem Dev-Server ([ADR-0010](adr/0010-tests-auf-dev-server-per-compose.md))
 - [x] Zentraler Config-Service: Settings-Katalog, `app_setting`, typisierte Accessoren, LISTEN/NOTIFY-Invalidierung, `GET/PUT /settings`, generisches Admin-UI (`/admin/settings`), `GET /map/config`; Einstellungen `auth.rate_limit_per_minute`, `mail.*`, `map.*`
 - [x] Identity-Grundgerüst: ASP.NET Core Identity, Permission-Katalog, Standardrollen, Selbstregistrierung mit E-Mail-Bestätigung, Login (JWT), Passwort-Reset, API-Keys, `GET /me`, OpenAPI mit Security Schemes und `x-required-permission`; Admin-Seed-User aus `.env`; Mail-Port `IEmailSender` mit `email_outbox`; Angular-Seiten für Registrierung, Login und Passwort-Reset mit Guard nach Permission
-- [ ] Mail-Service: SMTP-Versand der Outbox im Worker (MailKit) mit den vorhandenen Einstellungen `mail.*`, `POST /mail/test`, `GET /mail/outbox`, Testmail im Admin-UI ([ADR-0008](adr/0008-zentraler-mail-service-smtp.md))
+- [x] Mail-Service: SMTP-Versand der Outbox im Worker (MailKit) mit den Einstellungen `mail.*`, Backoff und Retention, `POST /mail/test`, `GET /mail/outbox`, Admin-Seite `/admin/mail` ([ADR-0008](adr/0008-zentraler-mail-service-smtp.md))
 - [x] Erstes Deployment auf den Dev-Server (`/opt/chargeglobe`)
 - [ ] Lizenz festlegen (siehe unten), `CONTRIBUTING.md`, Code of Conduct
 - [ ] API-Key für das E-Control-Ladestellenverzeichnis beantragen (admin.ladestellen.at → API → registrieren), Nutzungsbedingungen prüfen und dokumentieren

@@ -4,13 +4,12 @@ using ChargeGlobe.Jobs;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-builder.Services.AddSingleton(JobOptions.Create(builder.Configuration["role"], Environment.MachineName));
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddInfrastructureCore(
     builder.Configuration.GetConnectionString("Default")
     ?? throw new InvalidOperationException("Connection string 'Default' is not configured."));
 builder.Services.AddSettingsCacheRefresh();
-builder.Services.AddHostedService<HeartbeatService>();
+builder.Services.AddJobs(JobOptions.Create(builder.Configuration["role"], Environment.MachineName));
 
 builder.Build().Run();
 

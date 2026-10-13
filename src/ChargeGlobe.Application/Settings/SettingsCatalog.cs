@@ -17,6 +17,9 @@ public static class SettingsCatalog
     public const string MailFromAddress = "mail.from.address";
     public const string MailFromName = "mail.from.name";
 
+    public const string MailMaxAttempts = "mail.max_attempts";
+    public const string MailRetentionDays = "mail.retention_days";
+
     public const string MapStyleUrl = "map.style_url";
     public const string MapAttribution = "map.attribution";
     public const string MapStartLatitude = "map.start.latitude";
@@ -45,6 +48,17 @@ public static class SettingsCatalog
         new(MailSmtpPassword, SettingType.Secret, null, "SMTP password. Stored encrypted and never returned."),
         new(MailFromAddress, SettingType.String, null, "Sender address of all mails."),
         new(MailFromName, SettingType.String, "chargeglobe", "Display name of the sender."),
+        new(MailMaxAttempts, SettingType.Int, 5,
+            "Delivery attempts per mail. After the last failed attempt the mail is marked FAILED.")
+        {
+            Min = 1,
+            Max = 20,
+        },
+        new(MailRetentionDays, SettingType.Int, 30, "Days after which sent mails are deleted from the outbox.")
+        {
+            Min = 1,
+            Max = 365,
+        },
 
         new(MapStyleUrl, SettingType.String, "https://tiles.openfreemap.org/styles/liberty",
             "URL of the MapLibre style (vector tiles) of the base map."),

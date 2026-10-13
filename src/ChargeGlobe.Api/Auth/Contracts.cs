@@ -1,3 +1,4 @@
+using System.Net.Mail;
 using ChargeGlobe.Infrastructure.Persistence;
 
 namespace ChargeGlobe.Api.Auth;
@@ -73,6 +74,10 @@ public sealed record ApiKeyResponse(
 public sealed class Validation
 {
     private readonly Dictionary<string, string[]> _errors = [];
+
+    /// <summary>A plain address (no display name) of at most 254 characters.</summary>
+    public static bool IsEmail(string? value) =>
+        value is { Length: <= 254 } && MailAddress.TryCreate(value, out var address) && address.Address == value;
 
     public Validation Require(bool valid, string field, params string[] messages)
     {

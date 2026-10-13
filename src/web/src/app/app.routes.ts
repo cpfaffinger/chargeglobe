@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { requirePermission } from './auth/permission.guard';
 import { AccountPage } from './pages/account.page';
+import { AdminMailPage } from './pages/admin-mail.page';
 import { AdminSettingsPage } from './pages/admin-settings.page';
 import { ConfirmEmailPage } from './pages/confirm-email.page';
 import { ForgotPasswordPage } from './pages/forgot-password.page';
@@ -20,5 +21,7 @@ export const routes: Routes = [
   { path: 'account', component: AccountPage, canActivate: [requirePermission()] },
   // Mirrors x-required-permission of GET /api/v1/settings.
   { path: 'admin/settings', component: AdminSettingsPage, canActivate: [requirePermission('settings:read')] },
+  // Mirrors x-required-permission of the /api/v1/mail endpoints.
+  { path: 'admin/mail', component: AdminMailPage, canActivate: [requirePermission('settings:manage')] },
   { path: '**', redirectTo: '' },
 ];

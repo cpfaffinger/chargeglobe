@@ -71,6 +71,7 @@ Operator (CPO) ─┬─ 1..n ─ Location ─ 1..n ─ ChargingStation? ─ 1..
 | Tabelle | Spalten | Anmerkung |
 |---|---|---|
 | `app_setting` | `key`, `scope` (`global`, `provider:<key>`, `region:<code>`), `value jsonb`, `updated_by`, `updated_at`; Primärschlüssel `key` + `scope` | Werte des zentralen Config-Service; Defaults und Typen (auch „Secret“) stehen im Katalog im Code, Secrets sind verschlüsselt (Schlüsselring in `data_protection_key`) |
+| `email_outbox` | `id`, `to`, `subject`, `body_text`, `body_html`, `template_key`, `status` (`QUEUED`, `SENT`, `FAILED`), `attempts`, `last_error`, `created_at`, `sent_at`, `next_attempt_at` | Postausgang des Mail-Service; der Worker versendet fällige Einträge (`status = QUEUED` und `next_attempt_at` leer oder erreicht), versendete werden nach `mail.retention_days` gelöscht |
 | `poll_plan` | `id`, `provider_key`, `job_type`, `region_code?`, `tile?`, `interval`, `next_run_at`, `leased_by?`, `lease_until?`, `last_run_at`, `last_result` | Arbeitsvorrat der Crawler; `SKIP LOCKED` |
 | `provider_rate_budget` | `provider_key`, `tokens`, `refilled_at`, `day_count`, `day_reset_at` | clusterweiter Token-Bucket |
 | `ingest_queue` | `id`, `provider_key`, `job_id`, `payload jsonb` (Ingest-Modell), `enqueued_at`, `leased_by?`, `lease_until?`, `attempts`, `error?` | Übergabe Crawler → Worker; Retention 7 Tage nach Verarbeitung |

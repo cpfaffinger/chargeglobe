@@ -1,5 +1,5 @@
 # Test path of the Compose setup (docs/adr/0010): runs the test suites instead of the app.
-# Own project name, no published ports, no volumes, no Docker socket. Start with scripts/test.sh.
+# Own project name, no published ports, no named volumes, no Docker socket. Start with scripts/test.sh.
 name: chargeglobe-test
 
 services:
@@ -18,6 +18,14 @@ services:
       retries: 40
       start_period: 10s
 
+  test-smtp:
+    # Catches every mail in memory; SMTP on 1025, HTTP API on 8025 (both only inside this network).
+    image: axllent/mailpit:v1.31
+    environment:
+      # Accept any credentials over the unencrypted test connection.
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+
   test-dotnet:
     build:
       context: .
@@ -25,9 +33,15 @@ services:
     depends_on:
       test-db:
         condition: service_healthy
+      test-smtp:
+        condition: service_started
     environment:
       # Server connection; every test fixture creates and drops its own database.
       ConnectionStrings__TestDb: Host=test-db;Username=postgres;Password=test;Database=postgres
+      # SMTP server and its HTTP API, used by the mail delivery tests.
+      TestSmtp__Host: test-smtp
+      TestSmtp__Port: "1025"
+      TestSmtp__ApiUrl: http://test-smtp:8025
     volumes:
       - ./artifacts:/artifacts
 
