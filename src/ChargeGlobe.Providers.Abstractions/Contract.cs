@@ -125,3 +125,22 @@ public sealed record BoundingBox
         point.Latitude >= MinLatitude && point.Latitude <= MaxLatitude
         && point.Longitude >= MinLongitude && point.Longitude <= MaxLongitude;
 }
+
+/// <summary>
+/// Runtime settings of the providers from the config service (scope <c>provider:&lt;key&gt;</c>);
+/// read on every use, so changes apply without a restart.
+/// </summary>
+public interface IProviderSettings
+{
+    /// <summary>Whether the provider may run (setting <c>provider.enabled</c>).</summary>
+    bool IsEnabled(string providerKey);
+
+    /// <summary>API key issued by the source (secret <c>provider.api_key</c>); null if not set.</summary>
+    string? ApiKey(string providerKey);
+
+    /// <summary>Referer for sources that bind the key to a registered domain (<c>provider.referer</c>); null if not set.</summary>
+    string? Referer(string providerKey);
+}
+
+/// <summary>A required setting of the provider is missing, e.g. the API key.</summary>
+public sealed class ProviderNotConfiguredException(string message) : Exception(message);

@@ -39,7 +39,9 @@ public class SettingsTests(IntegrationFactory factory)
             Assert.Contains(setting.GetProperty("type").GetString(), new[] { "string", "int", "number", "bool", "enum", "secret" });
             Assert.False(string.IsNullOrWhiteSpace(setting.GetProperty("description").GetString()));
             Assert.True(setting.TryGetProperty("default", out _));
-            Assert.Equal(["global"], setting.GetProperty("scopeKinds").EnumerateArray().Select(kind => kind.GetString()));
+            var definition = SettingsCatalog.Find(setting.GetProperty("key").GetString()!)!;
+            Assert.Equal(definition.ScopeKinds, setting.GetProperty("scopeKinds").EnumerateArray().Select(kind => kind.GetString()));
+            Assert.Equal(SettingsCatalog.EditableScopes(definition), setting.GetProperty("scopes").EnumerateArray().Select(scope => scope.GetString()));
         });
 
         var security = settings.Single(setting => setting.GetProperty("key").GetString() == SettingsCatalog.MailSmtpSecurity);
@@ -149,6 +151,40 @@ public class SettingsTests(IntegrationFactory factory)
         await (await admin.GetAsync("/api/v1/settings/does.not.exist")).AssertProblemAsync(HttpStatusCode.NotFound);
 
         Assert.Equal(0, await factory.WithDbAsync(db => db.AppSettings.CountAsync(setting => setting.Key == SettingsCatalog.MailSmtpPort)));
+    }
+
+    [Fact]
+    public async Task Provider_settings_are_stored_per_provider_scope_only()
+    {
+        var admin = await AdminAsync();
+        const string scope = "provider:econtrol";
+        try
+        {
+            (await PutAsync(admin, SettingsCatalog.ProviderApiKey, "integration-provider-key", scope)).EnsureSuccessStatusCode();
+            var referer = await (await PutAsync(admin, SettingsCatalog.ProviderReferer, "example.org", scope)).ReadJsonAsync();
+
+            var apiKey = await (await admin.GetAsync($"/api/v1/settings/{SettingsCatalog.ProviderApiKey}")).ReadJsonAsync();
+            Assert.Equal([scope], apiKey.GetProperty("scopes").EnumerateArray().Select(value => value.GetString()));
+            Assert.Equal("********", apiKey.GetProperty("stored")[0].GetProperty("value").GetString());
+            Assert.Equal(scope, referer.GetProperty("stored")[0].GetProperty("scope").GetString());
+            Assert.Equal("integration-provider-key", Config.Get<string?>(SettingsCatalog.ProviderApiKey, scope));
+            Assert.Null(Config.Get<string?>(SettingsCatalog.ProviderApiKey, "provider:other"));
+            Assert.False(Config.Get<bool>(SettingsCatalog.ProviderEnabled, scope));
+            var stored = await factory.WithDbAsync(db => db.AppSettings.SingleAsync(
+                setting => setting.Key == SettingsCatalog.ProviderApiKey && setting.Scope == scope));
+            Assert.DoesNotContain("integration-provider-key", stored.Value);
+
+            var global = await (await PutAsync(admin, SettingsCatalog.ProviderEnabled, true))
+                .AssertProblemAsync(HttpStatusCode.UnprocessableEntity);
+            Assert.Equal(
+                "Not supported by this setting. Allowed scope kinds: provider.",
+                global.GetProperty("errors").GetProperty("scope")[0].GetString());
+        }
+        finally
+        {
+            await PutAsync(admin, SettingsCatalog.ProviderApiKey, null, scope);
+            await PutAsync(admin, SettingsCatalog.ProviderReferer, null, scope);
+        }
     }
 
     [Fact]

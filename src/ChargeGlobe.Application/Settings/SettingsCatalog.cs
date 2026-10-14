@@ -26,6 +26,19 @@ public static class SettingsCatalog
     public const string MapStartLongitude = "map.start.longitude";
     public const string MapStartZoom = "map.start.zoom";
 
+    public const string ProviderEnabled = "provider.enabled";
+    public const string ProviderApiKey = "provider.api_key";
+    public const string ProviderReferer = "provider.referer";
+
+    /// <summary>Scope kind of the provider settings; a value is stored for <c>provider:&lt;key&gt;</c>.</summary>
+    public const string ProviderScopeKind = "provider";
+
+    /// <summary>
+    /// Keys of the source adapters (<c>ProviderDescriptor.Key</c>). A new adapter adds its key here, so
+    /// that its settings can be edited; a test checks this list against the registered adapters.
+    /// </summary>
+    public static IReadOnlyList<string> ProviderKeys { get; } = ["econtrol"];
+
     public static IReadOnlyList<SettingDefinition> All { get; } =
     [
         new(AuthRateLimitPerMinute, SettingType.Int, 20,
@@ -75,6 +88,37 @@ public static class SettingsCatalog
             Max = 180,
         },
         new(MapStartZoom, SettingType.Number, 7.0, "Initial zoom level of the map.") { Min = 0, Max = 22 },
+
+        new(ProviderEnabled, SettingType.Bool, false,
+            "Whether the source adapter may call its source (health probe, and later crawling).")
+        {
+            ScopeKinds = [ProviderScopeKind],
+        },
+        new(ProviderApiKey, SettingType.Secret, null,
+            "API key issued by the source. Stored encrypted and never returned.")
+        {
+            ScopeKinds = [ProviderScopeKind],
+        },
+        new(ProviderReferer, SettingType.String, null,
+            "Referer sent with every request, for sources that bind the API key to the domain it was " +
+            "registered for, e.g. https://example.org/ (a bare host name is completed with https://).")
+        {
+            ScopeKinds = [ProviderScopeKind],
+        },
+    ];
+
+    /// <summary>Provider scope of a source adapter, e.g. <c>provider:econtrol</c>.</summary>
+    public static string ProviderScope(string providerKey) => $"{ProviderScopeKind}:{providerKey}";
+
+    /// <summary>
+    /// The concrete scopes an administrator can store values of the setting for: <c>global</c> and one
+    /// <c>provider:&lt;key&gt;</c> per adapter, depending on the scope kinds of the setting. Regions follow
+    /// with the region seed.
+    /// </summary>
+    public static IReadOnlyList<string> EditableScopes(SettingDefinition definition) =>
+    [
+        .. definition.ScopeKinds.Contains(SettingDefinition.GlobalScope) ? [SettingDefinition.GlobalScope] : Array.Empty<string>(),
+        .. definition.ScopeKinds.Contains(ProviderScopeKind) ? ProviderKeys.Select(ProviderScope) : [],
     ];
 
     public static SettingDefinition? Find(string key) => All.FirstOrDefault(definition => definition.Key == key);

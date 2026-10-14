@@ -1,0 +1,38 @@
+{
+  "STYPE2": {
+    "standard": "IEC_62196_T2",
+    "format": "SOCKET"
+  },
+  "CTYPE2": {
+    "standard": "IEC_62196_T2",
+    "format": "CABLE"
+  },
+  "CTYPE1": {
+    "standard": "IEC_62196_T1",
+    "format": "CABLE"
+  },
+  "CCCS2": {
+    "standard": "IEC_62196_T2_COMBO",
+    "format": "CABLE"
+  },
+  "CG105": {
+    "standard": "CHADEMO",
+    "format": "CABLE"
+  },
+  "IEC_62196_T2_COMBO": {
+    "standard": "IEC_62196_T2_COMBO",
+    "format": "CABLE"
+  },
+  "IEC_62196_T1_COMBO": {
+    "standard": "IEC_62196_T1_COMBO",
+    "format": "CABLE"
+  },
+  "CHADEMO": {
+    "standard": "CHADEMO",
+    "format": "CABLE"
+  },
+  "DOMESTIC_F": {
+    "standard": "DOMESTIC_F",
+    "format": "SOCKET"
+  }
+}

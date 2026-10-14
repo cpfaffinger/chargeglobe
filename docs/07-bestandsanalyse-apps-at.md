@@ -178,7 +178,7 @@ GET https://app.chargecloud.de/emobility:ocpi/{operatorId}/app/2.0/locations?lat
 
 ## Nächste Schritte aus der Bestandsanalyse
 
-1. E-Control-API-Key beantragen, Swagger lesen, Bulk-Endpunkt und Status-Aktualisierungsrate klären, Operator-IDs aller Scope-Betreiber aus den Daten ziehen.
+1. E-Control: Key liegt vor, Adapter `ChargeGlobe.Providers.EControl` existiert ([Endpunkt-Notiz](endpunkte/econtrol.md)). Offen: Swagger ist auch mit Key nicht lesbar, Bulk-Endpunkt und Status-Aktualisierungsrate unbekannt; Operator-IDs aller Scope-Betreiber aus den Daten ziehen.
 2. Tarif-Editor mit den oben belegten Tarifen befüllen (EVN, Wien Energie, ÖAMTC, SMATRICS, Linz AG, Energie AG, Lidl, Tesla-Mitgliedschaft); Zuordnung über Operator-ID + Leistungsklasse.
 3. Tesla-Adapter auf Basis der evmap-Endpunkte (cua-api + Guest-GraphQL) mit Fixtures.
 4. Netzwerkanalyse (DevTools) der Web-Karten: Electroverse, ÖAMTC, SMATRICS/ÖBB, Energie AG (CIRRANTiC), EnBW – jeweils Endpunkt-Notiz nach Vorlage in 05, Capabilities, ToS.

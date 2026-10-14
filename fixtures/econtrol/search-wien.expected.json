@@ -1,0 +1,537 @@
+{
+  "locations": [
+    {
+      "externalId": "AT*TST*ETEST0001",
+      "name": "Teststation Stephansplatz",
+      "address": {
+        "street": "Teststraße 1",
+        "postalCode": "1010",
+        "city": "Wien",
+        "country": "AT"
+      },
+      "coordinates": {
+        "latitude": 48.2085,
+        "longitude": 16.3731
+      },
+      "operatorName": "Test Operator GmbH",
+      "operatorId": "TST",
+      "access": "PUBLIC",
+      "openingTimes": {
+        "twentyFourSeven": true,
+        "description": null
+      },
+      "evses": [
+        {
+          "externalId": "AT*TST*ETEST0001*1",
+          "evseId": "AT*TST*ETEST0001*1",
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 22,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "STYPE2"
+            }
+          ],
+          "status": "AVAILABLE",
+          "statusRaw": "AVAILABLE"
+        },
+        {
+          "externalId": "AT*TST*ETEST0001*2",
+          "evseId": "AT*TST*ETEST0001*2",
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 11.04,
+          "powerType": "AC_1_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": null,
+              "powerType": "AC_1_PHASE",
+              "maxPowerKw": 11.04,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "IEC_62196_T2"
+            }
+          ],
+          "status": "CHARGING",
+          "statusRaw": "CHARGING"
+        }
+      ],
+      "observedAt": "2026-10-14T08:00:00+00:00",
+      "raw": {
+        "countryId": "AT",
+        "operatorId": "TST",
+        "stationId": "ETEST0001",
+        "stationStatus": "ACTIVE",
+        "label": "Teststation Stephansplatz",
+        "description": null,
+        "postCode": "1010",
+        "city": "Wien",
+        "street": "Teststraße 1",
+        "location": {
+          "lat": 48.2085,
+          "lon": 16.3731
+        },
+        "distance": 0.012,
+        "website": "example.org",
+        "directions": null,
+        "greenEnergy": true,
+        "austrianEcoLabel": false,
+        "freeParking": false,
+        "roofedParking": false,
+        "illuminatedParking": true,
+        "cateringService": false,
+        "bathroomsAvailable": false,
+        "restingFacilities": false,
+        "otherOfferings": null,
+        "parkingPlaces": 2,
+        "barrierFreeParkingPlaces": 0,
+        "operatorName": "Test Operator GmbH",
+        "openingHours": [
+          {
+            "fromWeekday": "MONDAY",
+            "fromTime": "00:00",
+            "toWeekday": "SUNDAY",
+            "toTime": "24:00"
+          }
+        ],
+        "personPresence": "Selbstbedienung, kein Personal vor Ort.",
+        "priceUrl": null,
+        "providers": null,
+        "otherProviders": null,
+        "points": [
+          {
+            "evseId": "AT*TST*ETEST0001*1",
+            "capacityKw": 22,
+            "location": {
+              "lat": 48.2085,
+              "lon": 16.3731
+            },
+            "roaming": true,
+            "freeOfCharge": false,
+            "priceCentKwh": 59,
+            "priceCentMin": null,
+            "blockingFeeCentMin": 10,
+            "blockingFeeFromMinute": 240,
+            "startFeeCent": 0,
+            "authenticationMode": [
+              "RFID_READER",
+              "APP"
+            ],
+            "otherAuthenticationModes": null,
+            "electronicPaymentProvider": null,
+            "otherElectronicPaymentProviders": null,
+            "connectorType": [
+              {
+                "key": "STYPE2",
+                "description": "IEC62196-2 Type 2 socket a.k.a. Mennekes connector",
+                "legacy": true,
+                "consumerName": "TYPE_2_AC"
+              }
+            ],
+            "electricityType": [
+              "AC_3_PHASE"
+            ],
+            "vehicleType": [
+              "CAR"
+            ],
+            "otherVehicleTypes": null,
+            "status": "AVAILABLE",
+            "maxVehicleWeight": 3.5,
+            "maxVehicleHeight": null,
+            "maxVehicleLength": null,
+            "maxVehicleWidth": null
+          },
+          {
+            "evseId": "AT*TST*ETEST0001*2",
+            "capacityKw": 11.04,
+            "location": {
+              "lat": 48.2085,
+              "lon": 16.3731
+            },
+            "roaming": true,
+            "freeOfCharge": false,
+            "priceCentKwh": 59,
+            "priceCentMin": 2,
+            "blockingFeeCentMin": null,
+            "blockingFeeFromMinute": null,
+            "startFeeCent": 50,
+            "authenticationMode": [
+              "APP"
+            ],
+            "otherAuthenticationModes": null,
+            "electronicPaymentProvider": null,
+            "otherElectronicPaymentProviders": null,
+            "connectorType": [
+              {
+                "key": "IEC_62196_T2",
+                "description": "IEC 62196 Type 2",
+                "legacy": false,
+                "consumerName": "TYPE_2_AC"
+              }
+            ],
+            "electricityType": [
+              "AC_1_PHASE"
+            ],
+            "vehicleType": [
+              "CAR"
+            ],
+            "otherVehicleTypes": null,
+            "status": "CHARGING",
+            "maxVehicleWeight": null,
+            "maxVehicleHeight": null,
+            "maxVehicleLength": null,
+            "maxVehicleWidth": null
+          }
+        ]
+      }
+    },
+    {
+      "externalId": "AT*TST*ETEST0002",
+      "name": "Testladepark Ring",
+      "address": {
+        "street": "Testring 2",
+        "postalCode": "1010",
+        "city": "Wien",
+        "country": "AT"
+      },
+      "coordinates": {
+        "latitude": 48.2101,
+        "longitude": 16.3608
+      },
+      "operatorName": "Test Operator GmbH",
+      "operatorId": "TST",
+      "access": "PUBLIC",
+      "openingTimes": {
+        "twentyFourSeven": false,
+        "description": "MONDAY 06:00–FRIDAY 22:00; SATURDAY 08:00–SATURDAY 18:00"
+      },
+      "evses": [
+        {
+          "externalId": "AT*TST*ETEST0002*DC1",
+          "evseId": "AT*TST*ETEST0002*DC1",
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 150,
+          "powerType": "DC",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2_COMBO",
+              "format": "CABLE",
+              "powerType": "DC",
+              "maxPowerKw": 150,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "CCCS2"
+            },
+            {
+              "standard": "CHADEMO",
+              "format": "CABLE",
+              "powerType": "DC",
+              "maxPowerKw": 150,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "CG105"
+            }
+          ],
+          "status": "OUTOFORDER",
+          "statusRaw": "OUTOFORDER"
+        },
+        {
+          "externalId": "AT*TST*ETEST0002#2",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 3.7,
+          "powerType": null,
+          "connectors": [
+            {
+              "standard": "DOMESTIC_F",
+              "format": "SOCKET",
+              "powerType": null,
+              "maxPowerKw": 3.7,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "DOMESTIC_F"
+            },
+            {
+              "standard": "UNKNOWN",
+              "format": null,
+              "powerType": null,
+              "maxPowerKw": 3.7,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "XYZ_NEW"
+            }
+          ],
+          "status": "UNKNOWN",
+          "statusRaw": "WARTUNG"
+        }
+      ],
+      "observedAt": "2026-10-14T08:00:00+00:00",
+      "raw": {
+        "countryId": "AT",
+        "operatorId": "TST",
+        "stationId": "ETEST0002",
+        "stationStatus": "ACTIVE",
+        "label": "Testladepark Ring",
+        "description": null,
+        "postCode": "1010",
+        "city": "Wien",
+        "street": "Testring 2",
+        "location": {
+          "lat": 48.2101,
+          "lon": 16.3608
+        },
+        "distance": 0.95,
+        "website": null,
+        "directions": "Einfahrt über die Testgasse",
+        "greenEnergy": false,
+        "austrianEcoLabel": false,
+        "freeParking": true,
+        "roofedParking": false,
+        "illuminatedParking": false,
+        "cateringService": false,
+        "bathroomsAvailable": false,
+        "restingFacilities": false,
+        "otherOfferings": null,
+        "parkingPlaces": 4,
+        "barrierFreeParkingPlaces": 1,
+        "operatorName": "Test Operator GmbH",
+        "openingHours": [
+          {
+            "fromWeekday": "MONDAY",
+            "fromTime": "06:00",
+            "toWeekday": "FRIDAY",
+            "toTime": "22:00"
+          },
+          {
+            "fromWeekday": "SATURDAY",
+            "fromTime": "08:00",
+            "toWeekday": "SATURDAY",
+            "toTime": "18:00"
+          }
+        ],
+        "personPresence": null,
+        "priceUrl": "https://example.org/preise",
+        "providers": null,
+        "otherProviders": null,
+        "points": [
+          {
+            "evseId": "AT*TST*ETEST0002*DC1",
+            "capacityKw": 150,
+            "location": {
+              "lat": 48.2101,
+              "lon": 16.3608
+            },
+            "roaming": true,
+            "freeOfCharge": false,
+            "priceCentKwh": 69,
+            "priceCentMin": null,
+            "blockingFeeCentMin": 20,
+            "blockingFeeFromMinute": 45,
+            "startFeeCent": null,
+            "authenticationMode": [
+              "RFID_READER"
+            ],
+            "otherAuthenticationModes": null,
+            "electronicPaymentProvider": [
+              "Test Payment AG"
+            ],
+            "otherElectronicPaymentProviders": null,
+            "connectorType": [
+              {
+                "key": "CCCS2",
+                "description": "Combo CCS 2",
+                "legacy": true,
+                "consumerName": "COMBO2_CCS_DC"
+              },
+              {
+                "key": "CG105",
+                "description": "CHAdeMO",
+                "legacy": true,
+                "consumerName": "CHADEMO"
+              }
+            ],
+            "electricityType": [
+              "DC"
+            ],
+            "vehicleType": [
+              "CAR"
+            ],
+            "otherVehicleTypes": null,
+            "status": "OUTOFORDER",
+            "maxVehicleWeight": null,
+            "maxVehicleHeight": null,
+            "maxVehicleLength": null,
+            "maxVehicleWidth": null
+          },
+          {
+            "evseId": null,
+            "capacityKw": 3.7,
+            "location": {
+              "lat": 48.2101,
+              "lon": 16.3608
+            },
+            "roaming": false,
+            "freeOfCharge": true,
+            "priceCentKwh": null,
+            "priceCentMin": null,
+            "blockingFeeCentMin": null,
+            "blockingFeeFromMinute": null,
+            "startFeeCent": null,
+            "authenticationMode": [
+              "NONE"
+            ],
+            "otherAuthenticationModes": null,
+            "electronicPaymentProvider": null,
+            "otherElectronicPaymentProviders": null,
+            "connectorType": [
+              {
+                "key": "DOMESTIC_F",
+                "description": "Schuko",
+                "legacy": false,
+                "consumerName": "OTHER"
+              },
+              {
+                "key": "XYZ_NEW",
+                "description": "Not yet in the mapping table",
+                "legacy": true,
+                "consumerName": "OTHER"
+              }
+            ],
+            "electricityType": [
+              "AC_1_PHASE",
+              "AC_3_PHASE"
+            ],
+            "vehicleType": [
+              "CAR",
+              "BICYCLE"
+            ],
+            "otherVehicleTypes": null,
+            "status": "WARTUNG",
+            "maxVehicleWeight": null,
+            "maxVehicleHeight": null,
+            "maxVehicleLength": null,
+            "maxVehicleWidth": null
+          }
+        ]
+      }
+    }
+  ],
+  "statuses": [
+    {
+      "externalId": "AT*TST*ETEST0001*1",
+      "evseId": "AT*TST*ETEST0001*1",
+      "canonicalEvseId": null,
+      "status": "AVAILABLE",
+      "statusRaw": "AVAILABLE",
+      "observedAt": "2026-10-14T08:00:00+00:00",
+      "sourceReportedAt": null
+    },
+    {
+      "externalId": "AT*TST*ETEST0001*2",
+      "evseId": "AT*TST*ETEST0001*2",
+      "canonicalEvseId": null,
+      "status": "CHARGING",
+      "statusRaw": "CHARGING",
+      "observedAt": "2026-10-14T08:00:00+00:00",
+      "sourceReportedAt": null
+    },
+    {
+      "externalId": "AT*TST*ETEST0002*DC1",
+      "evseId": "AT*TST*ETEST0002*DC1",
+      "canonicalEvseId": null,
+      "status": "OUTOFORDER",
+      "statusRaw": "OUTOFORDER",
+      "observedAt": "2026-10-14T08:00:00+00:00",
+      "sourceReportedAt": null
+    },
+    {
+      "externalId": "AT*TST*ETEST0002#2",
+      "evseId": null,
+      "canonicalEvseId": null,
+      "status": "UNKNOWN",
+      "statusRaw": "WARTUNG",
+      "observedAt": "2026-10-14T08:00:00+00:00",
+      "sourceReportedAt": null
+    }
+  ],
+  "prices": [
+    {
+      "externalId": "AT*TST*ETEST0001*1",
+      "evseId": "AT*TST*ETEST0001*1",
+      "canonicalEvseId": null,
+      "empKey": null,
+      "currency": "EUR",
+      "pricePerKwh": 0.59,
+      "pricePerMinute": null,
+      "sessionFee": 0,
+      "blockingFeePerMinute": 0.1,
+      "blockingAfterMinutes": 240,
+      "tariffElements": null,
+      "tariffName": "Ad-hoc",
+      "tariffUrl": null,
+      "observedAt": "2026-10-14T08:00:00+00:00",
+      "raw": null
+    },
+    {
+      "externalId": "AT*TST*ETEST0001*2",
+      "evseId": "AT*TST*ETEST0001*2",
+      "canonicalEvseId": null,
+      "empKey": null,
+      "currency": "EUR",
+      "pricePerKwh": 0.59,
+      "pricePerMinute": 0.02,
+      "sessionFee": 0.5,
+      "blockingFeePerMinute": null,
+      "blockingAfterMinutes": null,
+      "tariffElements": null,
+      "tariffName": "Ad-hoc",
+      "tariffUrl": null,
+      "observedAt": "2026-10-14T08:00:00+00:00",
+      "raw": null
+    },
+    {
+      "externalId": "AT*TST*ETEST0002*DC1",
+      "evseId": "AT*TST*ETEST0002*DC1",
+      "canonicalEvseId": null,
+      "empKey": null,
+      "currency": "EUR",
+      "pricePerKwh": 0.69,
+      "pricePerMinute": null,
+      "sessionFee": null,
+      "blockingFeePerMinute": 0.2,
+      "blockingAfterMinutes": 45,
+      "tariffElements": null,
+      "tariffName": "Ad-hoc",
+      "tariffUrl": null,
+      "observedAt": "2026-10-14T08:00:00+00:00",
+      "raw": null
+    },
+    {
+      "externalId": "AT*TST*ETEST0002#2",
+      "evseId": null,
+      "canonicalEvseId": null,
+      "empKey": null,
+      "currency": "EUR",
+      "pricePerKwh": 0,
+      "pricePerMinute": null,
+      "sessionFee": 0,
+      "blockingFeePerMinute": null,
+      "blockingAfterMinutes": null,
+      "tariffElements": null,
+      "tariffName": "Ad-hoc (free of charge)",
+      "tariffUrl": null,
+      "observedAt": "2026-10-14T08:00:00+00:00",
+      "raw": null
+    }
+  ]
+}

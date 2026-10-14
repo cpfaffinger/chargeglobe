@@ -22,6 +22,8 @@ export interface Setting {
   min: number | null;
   max: number | null;
   scopeKinds: string[];
+  /** Concrete scopes a value can be stored for, e.g. "global" or "provider:econtrol". */
+  scopes: string[];
   /** Effective global value; for a secret "********" if set, else null. */
   value: unknown;
   stored: StoredSettingValue[];
@@ -36,10 +38,10 @@ export class SettingsService {
     return firstValueFrom(this.http.get<Setting[]>('/api/v1/settings'));
   }
 
-  /** Stores the global value; null resets the setting to its default. */
-  update(key: string, value: unknown): Promise<Setting> {
+  /** Stores the value for the scope; null resets the setting to its default there. */
+  update(key: string, value: unknown, scope: string): Promise<Setting> {
     return firstValueFrom(
-      this.http.put<Setting>(`/api/v1/settings/${encodeURIComponent(key)}`, { value }),
+      this.http.put<Setting>(`/api/v1/settings/${encodeURIComponent(key)}`, { value, scope }),
     );
   }
 }

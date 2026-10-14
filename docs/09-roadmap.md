@@ -13,14 +13,15 @@
 - [x] Mail-Service: SMTP-Versand der Outbox im Worker (MailKit) mit den Einstellungen `mail.*`, Backoff und Retention, `POST /mail/test`, `GET /mail/outbox`, Admin-Seite `/admin/mail` ([ADR-0008](adr/0008-zentraler-mail-service-smtp.md))
 - [x] Erstes Deployment auf den Dev-Server (`/opt/chargeglobe`)
 - [ ] Lizenz festlegen (siehe unten), `CONTRIBUTING.md`, Code of Conduct
-- [ ] API-Key für das E-Control-Ladestellenverzeichnis beantragen (admin.ladestellen.at → API → registrieren), Nutzungsbedingungen prüfen und dokumentieren
+- [x] API-Key für das E-Control-Ladestellenverzeichnis (an eine Domain gebunden, derzeit Platzhalter; Key nur im Config-Service)
+- [ ] Nutzungsbedingungen der E-Control-API archivieren, Weiterverbreitung schriftlich klären, Go-Live-Meldung
 - [ ] OpenChargeMap-API-Key beantragen
 
 ### Phase 1 – MVP Ost-Österreich (Wien, NÖ, OÖ, Bgld)
 - [x] Domain + Datenmodell + Migration `ChargingDomain` (PostGIS-Geometrie mit GiST, Hypertables mit Kompression/Retention, Region-Trigger)
 - [x] `Providers.Abstractions` (Descriptor, Capabilities, Quell-Interfaces, Ingest-Modell, Status-Mapping)
 - [ ] Ingest-Pipeline (Lease-Scheduler, `ingest_queue`), Matching-Kaskade, Region-Seed, Continuous Aggregate `evse_occupancy_hourly`
-- [ ] Adapter **E-Control** (Inventar + Status + Ad-hoc-Preis) – Tier 0, deckt bereits Status und Ad-hoc-Preis für ganz Österreich ab
+- [x] Adapter **E-Control** (Inventar + Status + Ad-hoc-Preis über `GET /search` mit adaptivem Raster, Health-Probe im Crawler, Provider-Einstellungen je Quelle im Config-Service) – Tier 0
 - [ ] Adapter **OpenStreetMap** (Overpass) und **OpenChargeMap** als Ergänzung/Plausibilisierung
 - [ ] Region-Polygone, Lease-Scheduler (`poll_plan`), `ingest_queue`, clusterweites Rate-Budget, adaptive Statusabfrage, Metriken
 - [ ] API v1 (EVSE-Suche, Detail, Statushistorie, Belegung, Ad-hoc-Preis, Provenienz)

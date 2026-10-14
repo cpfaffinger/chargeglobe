@@ -44,11 +44,13 @@ public sealed record ProviderEvseSnapshot(
     EvseStatus? Status,
     string? StatusRaw);
 
+/// <param name="Format">Null if the source does not tell socket from cable.</param>
+/// <param name="PowerType">Null if the source does not tell it.</param>
 /// <param name="RawType">Connector type as delivered, also when it maps to <see cref="ConnectorStandard.UNKNOWN"/>.</param>
 public sealed record ProviderConnectorSnapshot(
     ConnectorStandard Standard,
-    ConnectorFormat Format,
-    PowerType PowerType,
+    ConnectorFormat? Format,
+    PowerType? PowerType,
     decimal? MaxPowerKw,
     int? MaxVoltage,
     int? MaxAmperage,

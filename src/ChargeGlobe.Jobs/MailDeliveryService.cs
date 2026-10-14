@@ -1,4 +1,6 @@
 using ChargeGlobe.Application.Mail;
+using ChargeGlobe.Providers.Abstractions;
+using ChargeGlobe.Providers.EControl;
 
 namespace ChargeGlobe.Jobs;
 
@@ -88,6 +90,13 @@ public static class JobServices
         if (options.Role == JobRole.Worker)
         {
             services.AddHostedService<MailDeliveryService>();
+        }
+        else
+        {
+            // Source adapters run in the crawler role only; their settings come from the config service.
+            services.AddSingleton<IProviderSettings, ConfigProviderSettings>();
+            services.AddEControlProvider();
+            services.AddHostedService<ProviderHealthService>();
         }
 
         return services;

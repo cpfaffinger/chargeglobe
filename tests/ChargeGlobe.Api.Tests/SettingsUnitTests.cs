@@ -12,6 +12,18 @@ public class SettingsCatalogTests
     private static JsonElement Json(object? value) => JsonSerializer.SerializeToElement(value);
 
     [Fact]
+    public void Editable_scopes_follow_the_scope_kinds_and_the_known_providers()
+    {
+        Assert.Equal("provider:econtrol", SettingsCatalog.ProviderScope("econtrol"));
+        Assert.Equal(["global"], SettingsCatalog.EditableScopes(SettingsCatalog.Find(SettingsCatalog.MailSmtpPort)!));
+        Assert.Equal(["provider:econtrol"], SettingsCatalog.EditableScopes(SettingsCatalog.Find(SettingsCatalog.ProviderApiKey)!));
+        Assert.Equal(
+            ["global", "provider:econtrol"],
+            SettingsCatalog.EditableScopes(new SettingDefinition("x.y", SettingType.Bool, false, "Test setting.") { ScopeKinds = ["global", "provider", "region"] }));
+        Assert.Equal(SettingType.Secret, SettingsCatalog.Find(SettingsCatalog.ProviderApiKey)!.Type);
+    }
+
+    [Fact]
     public void Every_setting_has_a_unique_key_a_description_and_a_valid_default()
     {
         Assert.Equal(SettingsCatalog.All.Count, SettingsCatalog.All.Select(definition => definition.Key).Distinct().Count());
@@ -19,7 +31,11 @@ public class SettingsCatalogTests
         {
             Assert.Matches(@"^[a-z]+(\.[a-z_]+)+$", definition.Key);
             Assert.True(definition.Description.Length >= 10, definition.Key);
-            Assert.Contains(SettingDefinition.GlobalScope, definition.ScopeKinds);
+            // Provider settings exist per source adapter only; all others are global.
+            Assert.Equal(
+                definition.Key.StartsWith("provider.", StringComparison.Ordinal) ? ["provider"] : [SettingDefinition.GlobalScope],
+                definition.ScopeKinds);
+            Assert.NotEmpty(SettingsCatalog.EditableScopes(definition));
             Assert.Equal(definition.Type == SettingType.Enum, definition.AllowedValues.Count > 0);
 
             // A default is either deliberately absent or valid for its own definition.

@@ -119,7 +119,7 @@ public sealed record ProviderMappingIssue(string ProviderKey, string? ExternalId
 4. **EVSE-IDs werden roh weitergegeben**; Normalisierung passiert zentral im `EvseId` Value Object.
 5. **Keine Persistenz, keine Domain-Objekte im Adapter.**
 6. **Rate-Limit und Backoff sind Pflicht** und kommen aus dem Descriptor; der Worker setzt sie durch (`System.Threading.RateLimiting` + Polly `429`/`503`-Handling mit `Retry-After`).
-7. **Fixtures**: Jeder Adapter bringt mindestens eine aufgezeichnete, sanitisierte Antwort je Endpunkt mit (`fixtures/<key>/…json`) und einen Replay-Test, der daraus das Ingest-Modell erzeugt und gegen ein erwartetes Snapshot-JSON vergleicht (Verify.Xunit). Kein automatisierter Test spricht mit der echten Quelle.
+7. **Fixtures**: Jeder Adapter bringt mindestens eine aufgezeichnete, sanitisierte Antwort je Endpunkt mit (`fixtures/<key>/…json`; personenbezogene Daten entfernt, bei Quellen ohne Weiterverbreitungsrecht mit erfundenen Werten in der echten Struktur) und einen Replay-Test in `tests/ChargeGlobe.Providers.Tests`, der daraus das Ingest-Modell erzeugt und mit `fixtures/<key>/…expected.json` vergleicht. Nach einer gewollten Mapping-Änderung schreibt `UPDATE_FIXTURES=1 dotnet test tests/ChargeGlobe.Providers.Tests` die Erwartung neu; der Diff wird im Review geprüft. Kein automatisierter Test spricht mit der echten Quelle.
 8. **Health-Check**: `IProviderHealth.ProbeAsync()` (ein billiger Request), damit Ausfälle und Format-Änderungen sofort auffallen.
 
 ## Generische Adapter
@@ -134,18 +134,17 @@ Drei Formate kommen so oft vor, dass sie je einen generischen, konfigurierbaren 
 
 ## Registrierung & Konfiguration
 
-Adapter registrieren sich im Code via `services.AddProvider<EvnProvider>()`; der `IProviderRegistry` löst nach Key auf. Capabilities bestimmen automatisch, welche Jobtypen der Scheduler für den Provider anlegt.
+Adapter registrieren sich im Code mit einer eigenen Erweiterung (`services.AddEControlProvider()`) als `IProvider` und mit ihren Quell-Interfaces; der Crawler (`AddJobs`, Rolle `crawler`) bindet sie ein. Ihr Key muss in `SettingsCatalog.ProviderKeys` stehen (ein Test prüft das), damit ihre Einstellungen im Admin-UI erscheinen. Vorgesehen: `IProviderRegistry` und der Lease-Scheduler, der aus den Capabilities die Jobtypen ableitet.
 
-Alle Laufzeit-Einstellungen eines Providers liegen im **zentralen Config-Service** (siehe [02](02-architektur.md#zentraler-config-service-application--infrastructure--api--web)), nicht in `appsettings.json` oder `.env`. Jeder Adapter liefert dafür seine `SettingDefinition`s mit Defaults aus dem Descriptor:
+Laufzeit-Einstellungen eines Providers liegen im **zentralen Config-Service** (siehe [02](02-architektur.md#zentraler-config-service-application--infrastructure--api--web)), nicht in `appsettings.json` oder `.env`. Jeder Adapter liefert dafür seine `SettingDefinition`s mit Defaults aus dem Descriptor:
 
-| Key (Scope `provider:<key>`) | Typ | Default aus Descriptor | Beschreibung |
+| Key (Scope `provider:<key>`) | Typ | Default | Beschreibung |
 |---|---|---|---|
-| `enabled` | bool | `false` | Provider aktiv |
-| `regions` | string[] | alle Scope-Regionen | Regionen, für die gecrawlt wird |
-| `interval.inventory` / `interval.status` / `interval.prices` | TimeSpan | `PollDefaults` | Basisintervalle |
-| `rate_limit.per_minute` / `rate_limit.burst` / `rate_limit.per_day` | int | `RateLimitPolicy` | clusterweites Budget |
-| `secret.api_key` | secret | – | verschlüsselt gespeichert, nur über Admin-UI/API setzbar, nie lesbar zurückgegeben |
-| `status_mapping` | map | aus Adapter-JSON | überschreibbares Status-Mapping |
+| `provider.enabled` | bool | `false` | Provider darf seine Quelle aufrufen (derzeit Health-Probe, später Crawling) |
+| `provider.api_key` | secret | – | vom Anbieter ausgegebener Key; verschlüsselt gespeichert, nur über Admin-UI/API setzbar, nie lesbar zurückgegeben |
+| `provider.referer` | string | – | `Referer` für Quellen, die den Key an eine registrierte Domain binden; ein bloßer Hostname wird zu `https://<host>/` |
+
+Der Adapter liest sie über `IProviderSettings` (Implementierung `ConfigProviderSettings` im Crawler). Intervalle, Rate-Limits und das Status-Mapping kommen vorerst aus dem Descriptor bzw. der JSON-Tabelle des Adapters; überschreibbare Einstellungen dafür (`provider.interval.*`, `provider.rate_limit.*`, `provider.status_mapping`) sind vorgesehen.
 
 Änderungen gelten ohne Neustart in allen Crawler-/Worker-Instanzen.
 

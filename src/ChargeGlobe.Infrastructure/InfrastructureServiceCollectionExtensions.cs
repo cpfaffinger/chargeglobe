@@ -3,6 +3,7 @@ using ChargeGlobe.Application.Health;
 using ChargeGlobe.Application.Identity;
 using ChargeGlobe.Application.Mail;
 using ChargeGlobe.Application.Settings;
+using ChargeGlobe.Application.Sources;
 using ChargeGlobe.Infrastructure.Health;
 using ChargeGlobe.Infrastructure.Identity;
 using ChargeGlobe.Infrastructure.Mail;
@@ -37,6 +38,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddDataProtection().SetApplicationName("chargeglobe").PersistKeysToDbContext<AppDbContext>();
 
         services.AddScoped<AuditLog>();
+        services.AddScoped<ISourceRegistry, SourceRegistry>();
         services.AddSingleton<SettingsCache>();
         services.AddSingleton<IAppConfig, AppConfig>();
 
