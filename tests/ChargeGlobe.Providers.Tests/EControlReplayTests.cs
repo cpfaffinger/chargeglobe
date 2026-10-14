@@ -48,9 +48,11 @@ public class EControlReplayTests
         Assert.All(handler.Requests, request => Assert.Equal("/charge/1.0/search/stations", request.RequestUri!.AbsolutePath));
         Assert.Equal(
             [
+                "E-Control register page 1/1: stations 1–6 of 6",
                 "E-Control record AT*1W6*E1 skipped: Station without valid coordinates.",
-                "E-Control register read with 1 requests, 1 inactive station(s) skipped",
-                "E-Control register read with 1 requests, 1 inactive station(s) skipped",
+                "E-Control register read with 1 requests: 6 stations, 1 inactive station(s) skipped",
+                "E-Control register page 1/1: stations 1–6 of 6",
+                "E-Control register read with 1 requests: 6 stations, 1 inactive station(s) skipped",
             ],
             logger.Messages);
     }
@@ -60,8 +62,6 @@ public class EControlReplayTests
     {
         var handler = new StubHandler(_ => StubHandler.Json(EControl.Fixture("search-wien.json")));
         var (provider, _) = EControl.Provider(handler);
-        var vienna = new BoundingBox(16.30, 48.17, 16.42, 48.24);
-
         // The adapter reads its inventory from the register; the mapper maps a search result the same way,
         // with the live status. These locations feed the ingest integration tests.
         var issues = new List<ProviderMappingIssue>();
@@ -70,13 +70,13 @@ public class EControlReplayTests
         var result = new
         {
             locations = search.Stations.Select(item => mapper.ToLocation(item.Station, item.Raw, EControl.Now, issues)).OfType<ProviderLocationSnapshot>(),
-            statuses = await provider.FetchStatusAsync(new StatusQuery(vienna, null), CancellationToken.None).ToListAsync(),
+            statuses = await provider.FetchStatusAsync(new StatusQuery(null, null, new GeoPoint(48.2085, 16.3731)), CancellationToken.None).ToListAsync(),
         };
         var actual = Compare(result, "search-wien.expected.json");
 
         Assert.DoesNotContain("Mustermann", actual);
         Assert.Equal(["Station without valid coordinates."], issues.Select(issue => issue.Problem));
-        // Fewer stations than a page: one search covers the box.
+        // One search for the locations, one for the statuses around the query point.
         Assert.All(handler.Requests, request => Assert.Equal("/charge/1.0/search", request.RequestUri!.AbsolutePath));
         Assert.Equal(2, handler.Requests.Count);
     }

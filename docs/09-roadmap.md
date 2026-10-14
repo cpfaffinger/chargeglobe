@@ -25,9 +25,10 @@
 - [x] Continuous Aggregate `evse_occupancy_hourly` (stündlich je EVSE, Real-Time-Aggregation, Refresh-Policy)
 - [x] Region-Seed: die neun Bundesländer aus OSM-Grenzen (`regions-at.geojson`, ODbL, Skript `scripts/regions/build-regions-at.sh`), Import beim API-Start, `location.region_code` wird neu berechnet; `RegionBounds` aus den Polygonen abgeleitet
 - [ ] Matching-Heuristiken (Geo + Operator), Quellen-Präzedenz je Attribut, adaptive Intervalle
-- [x] Adapter **E-Control** (Inventar und Ad-hoc-Preis seitenweise aus dem Register `GET /search/stations` – ganz Österreich in 17 Requests, ein Inventar-Plan für alle Regionen –, Live-Status über `GET /search` mit adaptivem Raster, Health-Probe im Crawler, Provider-Einstellungen je Quelle im Config-Service) – Tier 0. Die DATEX-II-Publikationen der Quelle sind live geprüft, der Status-Snapshot ist aber Stunden alt und wird nicht genutzt ([Endpunkt-Notiz](endpunkte/econtrol.md))
+- [x] Adapter **E-Control** (Inventar und Ad-hoc-Preis seitenweise aus dem Register `GET /search/stations` – ganz Österreich in 17 Requests, ein Inventar-Plan für alle Regionen –, Live-Status über `GET /search` je Abfragepunkt, Health-Probe im Crawler, Provider-Einstellungen je Quelle im Config-Service) – Tier 0. Die DATEX-II-Publikationen der Quelle sind live geprüft, der Status-Snapshot ist aber Stunden alt und wird nicht genutzt ([Endpunkt-Notiz](endpunkte/econtrol.md))
 - [ ] Adapter **OpenStreetMap** (Overpass) und **OpenChargeMap** als Ergänzung/Plausibilisierung
-- [ ] Adaptive Statusabfrage, Metriken
+- [x] Passive Statusabfrage: Stundenbudget je Quelle clusterweit, Abfragepunkte aus den bekannten Standorten mit Priorität nach Aktivität (5/15/60 min, nachts ×3), Abruf bei Bedarf beim Öffnen eines Standorts, linear wachsende Pause nach Fehlern und Sperre bei abgelehntem Key, Lauf-Protokoll `crawler_run`, strukturierte Crawler-Logs, Live-Ansicht `/admin/crawler` ([05](05-crawling-konzept.md))
+- [ ] Metriken (OpenTelemetry → Prometheus/Grafana): Requests, Fehlerquote, Datenfrische je Quelle
 - [x] API v1: `GET /evses/{evseId}` (EVSE-ID in jeder Schreibweise oder UUID), Statushistorie, Belegung (`evse:read`)
 - [ ] API v1: EVSE-Suche (`GET /evses`), Ad-hoc-Preis, Provenienz
 - [x] Angular: Karte mit MapLibre und OSM-Vektorkacheln (OpenFreeMap, `GET /map/config`) als anonyme Startseite, eigener Standort per Geolocation ([ADR-0007](adr/0007-karte-standort-routing.md))

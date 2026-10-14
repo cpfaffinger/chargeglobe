@@ -17,48 +17,69 @@
 |---|---|---|---|
 | `InventoryFull` | kompletter Export/Scan der Quelle für aktive Regionen | 1×/Tag (Tier 0), 1×/Woche (OSM) | gering (ein Download) bis mittel (bbox-Scan) |
 | `InventoryDelta` | `since`-Abfrage, falls unterstützt | 1×/Stunde | gering |
-| `StatusPoll` | Status aller EVSEs einer Quelle | adaptiv 1–15 min | hoch → Hauptgegenstand der Optimierung |
+| `StatusPoll` | Status um einen Abfragepunkt (bzw. einer Region bei Quellen ohne Punktsuche) | je Punkt 5/15/60 min nach Aktivität, nachts ×3 | hoch → Hauptgegenstand der Optimierung |
+| `TilePlan` | Abfragepunkte aus den bekannten Standorten neu berechnen, Prioritäten aus der Aktivität | 1×/Stunde | keine Requests |
 | `PricePoll` | Ad-hoc-/EMP-Preise | 1×/Tag je EVSE, sofort bei neuem EVSE | mittel |
 | `Reconcile` | Vergleich: EVSEs, die seit 14 Tagen in keiner Quelle mehr auftauchen → `lifecycle=REMOVED`; neue EVSEs im amtlichen Verzeichnis ohne Status-Quelle → Hinweis | 1×/Tag | gering |
 
-## Status-Polling-Strategie
+## Status-Polling-Strategie (passiv)
+
+Leitlinie: **so frisch wie das Budget es erlaubt, nie mehr.** Ein festes Stundenbudget je Quelle wird gleichmäßig verteilt; wo sich viel ändert oder jemand hinschaut, wird öfter gelesen, ruhige Gegenden selten. Fehler der Quelle führen zu Pausen statt zu Wiederholungen.
 
 ### 1. Billigsten Abfragemodus wählen
 Adapter deklarieren per Capability, was geht. Der Scheduler bevorzugt:
 
 1. `BulkAll` – ein Request (oder eine Seitenfolge) liefert alles (ideal, z. B. OCPI-`Locations` mit Status, manche Web-Karten). Für das Inventar legt der Scheduler dann **einen** Plan für alle Regionen aus `provider.regions` an (Region z. B. `AT-9,AT-3,AT-4,AT-1`, Box = umschließendes Rechteck der Regionen) statt einen je Region; die E-Control liest so ihr Register (`GET /search/stations`, ganz Österreich in 17 Seiten). Ein Bulk-Status zählt nur, wenn er aktuell ist: die DATEX-II-Status-Publikation der E-Control ist ein Stunden alter Snapshot und wird nicht genutzt ([Endpunkt-Notiz](endpunkte/econtrol.md)).
-2. `BulkByBoundingBox` – je Region ein Plan mit der Bounding-Box der Region (`poll_plan`); der Adapter zerlegt sie selbst, wenn die Quelle es verlangt (E-Control: Live-Status per adaptivem Raster über `GET /search`, siehe [Endpunkt-Notiz](endpunkte/econtrol.md)). Vorgesehen: persistierte Kacheln (`poll_tile`), damit leere Kacheln übersprungen werden.
-3. `ByEvseId` – nur für Ladepunkte, die anders nicht erreichbar sind; streng rate-limitiert.
+2. `NearestToPoint` – ein Request liefert den Live-Status der `n` nächsten Stationen um einen Punkt (E-Control `GET /search`, `n` = 100). Der Status wird über **Abfragepunkte** gelesen (Tabelle `poll_tile`, Abschnitt 2), je Punkt genau ein Request.
+3. `BulkByBoundingBox` – je Region ein Status-Plan mit der Bounding-Box der Region (`poll_plan`), für Quellen ohne Punktsuche.
+4. `ByEvseId` – nur für Ladepunkte, die anders nicht erreichbar sind; streng rate-limitiert.
 
-### 2. Adaptive Intervalle je Ladepunkt (vorgesehen)
-Derzeit gilt je Plan ein festes Intervall (`provider.interval.*` bzw. `PollDefaults`). Ziel: Frische dort, wo sich etwas ändert, ohne Request-Budget zu sprengen.
+### 2. Abfragepunkte (`poll_tile`)
+Der Plan `TILE_PLAN` (ein Plan je Quelle für alle Regionen, stündlich) berechnet die Punkte aus den bekannten aktiven Standorten der Quelle (`source_record`) in der Box der Regionen:
 
-```
-interval = clamp(base[power_class] × activity_factor × time_of_day_factor, min, max)
+- **Überdeckung:** In einer raumfüllenden Reihenfolge (Z-Ordnung) setzt jeder noch nicht abgedeckte Standort einen Punkt in die Mitte seiner `0,9 × n` nächsten Standorte; die `0,9 × n` nächsten dieser Mitte gelten als abgedeckt (verliert die Mitte den Startstandort, wird er selbst der Punkt). Die 10 % Reserve fangen Stationen ab, die die Quelle kennt, chargeglobe aber nicht (inaktiv, außerhalb der Regionen). Gleiche Eingabe ergibt gleiche Punkte; ein Punkt behält daher seinen Abrufzustand über die stündliche Neuberechnung. Ohne bekannte Standorte (Inventar noch nicht verarbeitet) versucht der Plan es nach 10 min erneut.
+- **Priorität** aus den Statuswechseln der abgedeckten Standorte in den letzten 24 h (`evse_status_interval`): `HOT` ab 24 Wechseln oder ab 6 Wechseln mit Schnelllader (≥ 150 kW), `QUIET` ohne Wechsel und ohne Schnelllader, sonst `NORMAL`. Intervalle aus dem Config-Service: `provider.tile_interval_hot_minutes` (5), `…_normal_minutes` (15), `…_quiet_minutes` (60); von 22 bis 6 Uhr (Wien) dreimal so lang.
+- **Reihenfolge:** Der Scheduler arbeitet erst fällige Pläne ab, dann den am stärksten überfälligen Punkt (Alter ÷ Intervall, nie gelesene zuerst); vor allem anderen kommen **angeforderte** Punkte: Öffnet jemand einen Standort (`GET /locations/{id}`), wird sein Punkt markiert (`demand_at`) und mit dem nächsten freien Request gelesen, höchstens alle 2 min. Der API-Request wartet darauf nicht.
+- **Parallelität:** Jede Crawler-Instanz arbeitet einen Punkt nach dem anderen ab; mehrere Instanzen teilen sich die Punkte über `FOR UPDATE SKIP LOCKED` und dasselbe Budget.
 
-base:    HPC ≥ 150 kW: 2 min · DC 50–149 kW: 3 min · AC: 5 min
-activity_factor: 0.5 wenn ≥ 6 Statuswechsel in 24 h; 2.0 wenn 0 Wechsel in 7 Tagen
-time_of_day: 1.0 (06–22 Uhr) · 3.0 (22–06 Uhr)
-min/max: 1 min / 30 min
-```
-
-Bei Bulk-Modi ist das Intervall je Kachel = Minimum der enthaltenen EVSE-Intervalle.
+Mit 600 Requests/h und ~200 Punkten (Ost-Österreich) bleiben lebhafte Punkte bei 5 min, normale bei 15 min; reicht das Budget nicht, verlängert sich das Alter aller Punkte gleichmäßig (überfälligste zuerst), statt dass Requests wegfallen.
 
 ### 3. Request-Budget je Provider
-`RateLimitPolicy` (z. B. 60/min, Burst 10) wird als **clusterweiter** Token-Bucket in Postgres (`provider_rate_budget`) umgesetzt, damit mehrere Crawler-Instanzen zusammen das Limit einhalten; die Werte sind im Config-Service änderbar. Zusätzlich ein **Tagesbudget**; bei Überschreitung werden Intervalle global gestreckt statt Requests fallen zu lassen. Antworten mit `429`/`503` → exponentielles Backoff mit Jitter, Beachtung von `Retry-After`, nach 5 Fehlern in Folge Circuit-Breaker für 10 min + Alarm.
+Jeder Request nimmt vor dem Senden ein Token aus dem **clusterweiten** Token-Bucket in Postgres (`provider_rate_budget`). Der Bucket füllt sich mit `provider.request_budget_per_hour` (Default 600, höchstens 2.400, gleichmäßig über die Stunde, Burst ⅕ der Minutenrate), nie schneller als die `RateLimitPolicy` des Descriptors (E-Control 40/min); ohne Token wartet der Request die errechnete Zeit (100 ms – 1 min). Zusätzlich hält der Adapter je Prozess die Descriptor-Rate ein (`RateLimitingHandler`). Requests fallen nie weg, Läufe dauern nur länger.
 
-Umgesetzt: (1) im Adapter `RateLimitingHandler` (Token-Bucket je Prozess aus der `RateLimitPolicy`), der einen `429`/`503` mit `Retry-After` einmal nach der angekündigten Pause (höchstens 2 min) wiederholt; (2) clusterweit `provider_rate_budget` (Token-Bucket mit `PerMinute`, `Burst` und optionalem `PerDay`, Reset um Mitternacht UTC), aus dem jeder Request vor dem Senden ein Token nimmt; ohne Token wartet er die errechnete Zeit (100 ms – 1 min) und versucht es erneut, Requests fallen also nie weg, Läufe dauern nur länger. Die Werte kommen derzeit aus dem Descriptor. Vorgesehen: Budget-Werte im Config-Service, exponentielles Backoff mit Jitter, Circuit-Breaker.
+### 4. Pausen nach Fehlern (Anti-Flood)
+Fehler der Quelle werden **nicht wiederholt**; stattdessen pausiert der Crawler die Quelle clusterweit (`provider_backoff`):
 
-### 4. Change Detection & Dedupe
+| Fehler | Reaktion |
+|---|---|
+| `429`, `5xx`, Netzwerkfehler, Timeout, unerwartetes Format | Pause = n × `provider.cooldown_step_minutes` (Default 5) für den n-ten Fehler in Folge, höchstens `provider.cooldown_max_minutes` (Default 120); ein längeres `Retry-After` der Quelle gewinnt |
+| `401`, `403`, fehlender Key | Quelle gesperrt, bis sich eine ihrer Einstellungen (Scope `provider:<key>`) ändert |
+| Fehler außerhalb der Quelle (z. B. Datenbank) | keine Pause, der Plan läuft nach höchstens 5 min erneut |
+
+Ein erfolgreicher Lauf mit mindestens einem Request beendet die Fehlerserie. Während der Pause bekommt die Quelle keine Pläne und keine Abfragepunkte, auch die Health-Probe (stündlich) entfällt.
+
+### 5. Protokoll und Live-Ansicht
+Jeder Lauf (Plan oder Abfragepunkt) steht in `crawler_run` (Start, Ende, Requests, Datensätze, Ergebnis, Fehler, verursachte Pause; Aufbewahrung `crawler.run_retention_days`, Default 7) und im Log des Crawlers:
+
+```
+Job STATUS_POLL econtrol point 17/212 (48.2085,16.3731, 90 locations) started (HOT, last poll 6 min ago)
+Job STATUS_POLL econtrol point 17/212 (…) done: 318 records, 1 requests in 0.4 s; 412/600 requests in the last hour; 3 query points due; next plan TILE_PLAN AT-9,AT-3,AT-4,AT-1 at 09:00 UTC
+E-Control register page 3/17: stations 2001–3000 of 16070
+Job INVENTORY_FULL econtrol AT-9,AT-3,AT-4,AT-1 failed: E-Control search/stations returned 503.; provider paused until 08:20:00 UTC (failure 1 in a row)
+```
+
+Die Standard-Logs des `HttpClient` (eine Zeile je Request ohne Kontext) sind im Crawler auf `Warning` gefiltert. Administratoren sehen den Zustand live unter `/admin/crawler` (`GET /api/v1/admin/crawler/status` und `/runs`, Permission `jobs:read`).
+
+### 6. Change Detection & Dedupe
 - `content_hash` der Antwort: identische Antwort → nur `last_seen` aktualisieren, kein neuer Snapshot.
 - Statuswechsel → neues `evse_status_interval`, Domain-Event `EvseStatusChanged`.
 - Flapping-Schutz: Wechsel, der innerhalb von 30 s zurückgenommen wird, wird mit `confidence=0.5` markiert.
 
-### 5. Höflichkeit
+### 7. Höflichkeit
 - Eigener, ehrlicher `User-Agent: chargeglobe/<version> (+https://github.com/…; contact@…)`.
 - `robots.txt` wird für Web-Karten respektiert (für reine JSON-APIs oft nicht definiert; dann gilt das konfigurierte Limit).
 - Conditional Requests (`ETag`/`If-Modified-Since`) wo unterstützt.
-- Nie parallel gegen dieselbe Quelle über das Limit hinaus; Verteilung der Last über das Intervall (Jitter), keine Spitzen zur vollen Minute.
+- Nie parallel gegen dieselbe Quelle über das Limit hinaus; das Stundenbudget wird gleichmäßig über die Stunde verteilt, keine Spitzen zur vollen Minute.
 
 ## Inventar-Merge: Ablauf je Quell-Datensatz
 

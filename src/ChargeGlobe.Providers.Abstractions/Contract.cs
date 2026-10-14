@@ -16,6 +16,7 @@ public interface IProvider
 /// <param name="Key">Stable key, e.g. <c>econtrol</c>; scope of its settings is <c>provider:&lt;key&gt;</c>.</param>
 /// <param name="License">E.g. <c>CC BY 4.0</c>, <c>ODbL</c> or <c>ToS – display only</c>.</param>
 /// <param name="Countries">ISO 3166-1 alpha-2 codes the source covers.</param>
+/// <param name="NearestPageSize">Stations one request returns around a point (<see cref="ProviderCapabilities.NearestToPoint"/>); 0 otherwise.</param>
 public sealed record ProviderDescriptor(
     string Key,
     string DisplayName,
@@ -25,7 +26,8 @@ public sealed record ProviderDescriptor(
     string AttributionText,
     IReadOnlyList<string> Countries,
     PollDefaults PollDefaults,
-    RateLimitPolicy RateLimit);
+    RateLimitPolicy RateLimit,
+    int NearestPageSize = 0);
 
 [Flags]
 public enum ProviderCapabilities
@@ -54,6 +56,9 @@ public enum ProviderCapabilities
     ByEvseId = 1 << 8,
     DeltaSince = 1 << 9,
     Ocpi = 1 << 10,
+
+    /// <summary>One request returns the live status of the stations nearest to a point (<see cref="StatusQuery.Near"/>).</summary>
+    NearestToPoint = 1 << 11,
 }
 
 /// <summary>Default polling intervals; null if the provider does not deliver that kind of data.</summary>
@@ -90,7 +95,8 @@ public sealed record ProviderProbeResult(bool Healthy, int? HttpStatus, TimeSpan
 
 public sealed record InventoryQuery(BoundingBox? Bbox, string? Country, DateTimeOffset? Since);
 
-public sealed record StatusQuery(BoundingBox? Bbox, IReadOnlyCollection<ProviderEvseRef>? Evses);
+/// <param name="Near">Query point of a provider with <see cref="ProviderCapabilities.NearestToPoint"/>: one request around it.</param>
+public sealed record StatusQuery(BoundingBox? Bbox, IReadOnlyCollection<ProviderEvseRef>? Evses, GeoPoint? Near = null);
 
 public sealed record PriceQuery(BoundingBox? Bbox, IReadOnlyCollection<ProviderEvseRef>? Evses);
 
@@ -144,3 +150,10 @@ public interface IProviderSettings
 
 /// <summary>A required setting of the provider is missing, e.g. the API key.</summary>
 public sealed class ProviderNotConfiguredException(string message) : Exception(message);
+
+/// <summary>The source answered with an error status; <see cref="RetryAfter"/> is its <c>Retry-After</c>, if it sent one.</summary>
+public sealed class ProviderHttpException(string message, System.Net.HttpStatusCode statusCode, TimeSpan? retryAfter = null)
+    : HttpRequestException(message, null, statusCode)
+{
+    public TimeSpan? RetryAfter { get; } = retryAfter;
+}

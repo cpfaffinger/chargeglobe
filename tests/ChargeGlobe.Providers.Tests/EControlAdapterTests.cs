@@ -33,6 +33,29 @@ public class EControlClientTests
         Assert.True(raw.TryGetProperty("label", out _));
     }
 
+    [Fact]
+    public async Task Error_status_carries_the_Retry_After_of_the_source_in_seconds_or_as_a_date()
+    {
+        var now = EControl.Now;
+        var calls = 0;
+        var handler = new StubHandler(_ => ++calls switch
+        {
+            1 => new HttpResponseMessage(HttpStatusCode.TooManyRequests) { Headers = { RetryAfter = new(TimeSpan.FromSeconds(90)) } },
+            2 => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable) { Headers = { RetryAfter = new(now.AddMinutes(10)) } },
+            _ => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable) { Headers = { RetryAfter = new(now.AddMinutes(-1)) } },
+        });
+        var client = new EControlClient(new HttpClient(handler) { BaseAddress = EControlClient.BaseAddress }, new StubSettings(), new FakeTimeProvider(now));
+        var point = new GeoPoint(48, 16);
+
+        var seconds = await Assert.ThrowsAsync<ProviderHttpException>(() => client.SearchAsync(point, CancellationToken.None));
+        var date = await Assert.ThrowsAsync<ProviderHttpException>(() => client.SearchAsync(point, CancellationToken.None));
+        var past = await Assert.ThrowsAsync<ProviderHttpException>(() => client.SearchAsync(point, CancellationToken.None));
+
+        Assert.Equal((HttpStatusCode.TooManyRequests, TimeSpan.FromSeconds(90)), (seconds.StatusCode, seconds.RetryAfter!.Value));
+        Assert.Equal(TimeSpan.FromMinutes(10), date.RetryAfter);
+        Assert.Equal(TimeSpan.Zero, past.RetryAfter);
+    }
+
     [Theory]
     [InlineData(null, null)]
     [InlineData("  ", null)]
@@ -67,8 +90,13 @@ public class EControlClientTests
         Assert.Contains("provider.api_key", missing.Message);
         Assert.Empty(handler.Requests);
 
-        var unauthorized = await Assert.ThrowsAsync<HttpRequestException>(() => EControl.Client(handler).SearchAsync(point, CancellationToken.None));
-        Assert.Equal(HttpStatusCode.Unauthorized, unauthorized.StatusCode);
+        var unauthorized = await Assert.ThrowsAsync<ProviderHttpException>(() => EControl.Client(handler).SearchAsync(point, CancellationToken.None));
+        Assert.Equal((HttpStatusCode.Unauthorized, (TimeSpan?)null), (unauthorized.StatusCode, unauthorized.RetryAfter));
+
+        handler.Respond = _ => StubHandler.Json("[{}]");
+        await Assert.ThrowsAsync<JsonException>(() => EControl.Client(handler).SearchStationsAsync(0, 1, CancellationToken.None));
+        handler.Respond = _ => StubHandler.Json("{}");
+        await Assert.ThrowsAsync<JsonException>(() => EControl.Client(handler).SearchAsync(point, CancellationToken.None));
 
         handler.Respond = _ => StubHandler.Json("null");
         await Assert.ThrowsAsync<JsonException>(() => EControl.Client(handler).SearchAsync(point, CancellationToken.None));
@@ -116,7 +144,7 @@ public class EControlClientTests
         Assert.Null(bare.Points);
 
         handler.Respond = _ => StubHandler.Json("Registrierung notwendig", HttpStatusCode.Forbidden);
-        var forbidden = await Assert.ThrowsAsync<HttpRequestException>(() => EControl.Client(handler).SearchStationsAsync(0, 1000, CancellationToken.None));
+        var forbidden = await Assert.ThrowsAsync<ProviderHttpException>(() => EControl.Client(handler).SearchStationsAsync(0, 1000, CancellationToken.None));
         Assert.Equal("E-Control search/stations returned 403.", forbidden.Message);
     }
 }
@@ -261,93 +289,8 @@ public class EControlMapperTests
     }
 }
 
-public class SearchGridTests
-{
-    private static readonly BoundingBox Box = new(16.0, 48.0, 16.4, 48.4);
-
-    /// <summary>A full page of stations around the point, all within <paramref name="reachKm"/>.</summary>
-    private static SearchResult Page(GeoPoint center, int count, double reachKm, string prefix) =>
-        new([.. Enumerable.Range(0, count).Select(index =>
-        {
-            var json = EControl.Station($"{prefix}{index}", center.Latitude, center.Longitude, reachKm);
-            var raw = JsonDocument.Parse(json).RootElement;
-            return (raw.Deserialize<StationDto>(new JsonSerializerOptions(JsonSerializerDefaults.Web))!, raw);
-        })]);
-
-    [Fact]
-    public async Task A_full_page_closer_than_the_corners_splits_the_cell_into_four()
-    {
-        var centers = new List<GeoPoint>();
-        var grid = new SearchGrid(
-            (center, _) =>
-            {
-                centers.Add(center);
-                // The first (whole box) search is a dense full page; the quarters are sparse.
-                return Task.FromResult(centers.Count == 1 ? Page(center, SearchGrid.PageSize, 1, "dense") : Page(center, 3, 5, $"q{centers.Count}-"));
-            },
-            100);
-
-        var stations = await grid.CoverAsync(Box, CancellationToken.None).ToListAsync();
-
-        Assert.Equal(5, grid.Requests);
-        Assert.False(grid.Exhausted);
-        Assert.Equal(new GeoPoint(48.2, 16.2), centers[0]);
-        Assert.Equal(
-            [(48.1, 16.1), (48.1, 16.3), (48.3, 16.1), (48.3, 16.3)],
-            centers.Skip(1).Select(center => (Math.Round(center.Latitude, 6), Math.Round(center.Longitude, 6))));
-        Assert.Equal(SearchGrid.PageSize + (4 * 3), stations.Count);
-    }
-
-    [Fact]
-    public async Task Each_station_is_yielded_once_and_stations_outside_the_box_are_dropped()
-    {
-        var inside = EControl.Station("A", 48.1, 16.1, 1);
-        var outside = EControl.Station("B", 49.5, 16.1, 1);
-        var withoutId = """{"countryId":"AT","location":{"lat":48.1,"lon":16.1},"distance":1}""";
-        var withoutLocation = """{"countryId":"AT","operatorId":"TST","stationId":"C","distance":1}""";
-        var handler = new StubHandler(_ => StubHandler.Json($"[{inside},{inside},{outside},{withoutId},{withoutLocation}]"));
-        var grid = new SearchGrid(EControl.Client(handler).SearchAsync, 10);
-
-        var stations = await grid.CoverAsync(Box, CancellationToken.None).ToListAsync();
-
-        Assert.Equal(["A", null, "C"], stations.Select(item => item.Station.StationId));
-        Assert.Equal(1, grid.Requests);
-    }
-
-    [Fact]
-    public async Task The_budget_ends_a_run_and_tiny_cells_are_not_split_further()
-    {
-        var exhausted = new SearchGrid((center, _) => Task.FromResult(Page(center, SearchGrid.PageSize, 0.001, $"{center}")), 3);
-        await exhausted.CoverAsync(Box, CancellationToken.None).ToListAsync();
-        Assert.True(exhausted.Exhausted);
-        Assert.Equal(3, exhausted.Requests);
-
-        var tiny = new BoundingBox(16.3700, 48.2080, 16.3701, 48.2081);
-        var stacked = new SearchGrid((center, _) => Task.FromResult(Page(center, SearchGrid.PageSize, 0, "same")), 10);
-        var stations = await stacked.CoverAsync(tiny, CancellationToken.None).ToListAsync();
-        Assert.Equal(1, stacked.Requests);
-        Assert.False(stacked.Exhausted);
-        Assert.Equal(SearchGrid.PageSize, stations.Count);
-    }
-
-    [Fact]
-    public void Distance_is_the_great_circle_distance()
-    {
-        // Vienna Stephansplatz to St. Pölten Rathausplatz: about 56 km.
-        var distance = SearchGrid.DistanceKm(new GeoPoint(48.2085, 16.3731), new GeoPoint(48.2047, 15.6256));
-
-        Assert.InRange(distance, 55, 57);
-        Assert.Equal(0, SearchGrid.DistanceKm(new GeoPoint(48, 16), new GeoPoint(48, 16)));
-    }
-}
-
 public class RateLimitingHandlerTests
 {
-    private static HttpClient Client(RateLimiter limiter, FakeTimeProvider time, StubHandler inner) =>
-        new(new RateLimitingHandler(limiter, time) { InnerHandler = inner }) { BaseAddress = new Uri("https://source.test/") };
-
-    private static RateLimiter Unlimited() => RateLimitingHandler.CreateLimiter(new RateLimitPolicy(60_000, 100));
-
     [Fact]
     public void The_bucket_follows_the_policy()
     {
@@ -359,69 +302,21 @@ public class RateLimitingHandlerTests
     }
 
     [Fact]
-    public async Task A_request_without_a_token_fails()
+    public async Task A_request_without_a_token_fails_and_errors_are_not_repeated()
     {
         using var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
         {
             TokenLimit = 1, TokensPerPeriod = 1, ReplenishmentPeriod = TimeSpan.FromHours(1), QueueLimit = 0, AutoReplenishment = false,
         });
-        var inner = new StubHandler(_ => StubHandler.Json("[]"));
-        using var client = Client(limiter, new FakeTimeProvider(), inner);
+        var inner = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.TooManyRequests) { Headers = { RetryAfter = new(TimeSpan.FromSeconds(30)) } });
+        using var client = new HttpClient(new RateLimitingHandler(limiter) { InnerHandler = inner }) { BaseAddress = new Uri("https://source.test/") };
 
-        (await client.GetAsync("a")).EnsureSuccessStatusCode();
+        // A 429 goes back to the caller as it is: the crawler pauses the provider instead of asking again.
+        Assert.Equal(HttpStatusCode.TooManyRequests, (await client.GetAsync("a")).StatusCode);
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => client.GetAsync("b"));
 
         Assert.Contains("budget", exception.Message);
         Assert.Single(inner.Requests);
-    }
-
-    [Fact]
-    public async Task Too_many_requests_with_Retry_After_is_repeated_once_after_the_delay()
-    {
-        var time = new FakeTimeProvider(EControl.Now);
-        var calls = 0;
-        var inner = new StubHandler(_ => ++calls == 1
-            ? new HttpResponseMessage(HttpStatusCode.TooManyRequests) { Headers = { RetryAfter = new(TimeSpan.FromSeconds(30)) } }
-            : StubHandler.Json("[]"));
-        using var client = Client(Unlimited(), time, inner);
-
-        var response = await CompleteOnFakeClockAsync(client.GetAsync("a"), time);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal(2, inner.Requests.Count);
-        Assert.InRange(time.GetUtcNow() - EControl.Now, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(35));
-    }
-
-    [Fact]
-    public async Task Retry_After_as_date_is_clamped_and_responses_without_it_are_returned()
-    {
-        var time = new FakeTimeProvider(EControl.Now);
-        var calls = 0;
-        var inner = new StubHandler(_ => ++calls switch
-        {
-            1 => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable) { Headers = { RetryAfter = new(EControl.Now.AddHours(1)) } },
-            2 => StubHandler.Json("[]"),
-            _ => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable),
-        });
-        using var client = Client(Unlimited(), time, inner);
-
-        Assert.Equal(HttpStatusCode.OK, (await CompleteOnFakeClockAsync(client.GetAsync("a"), time)).StatusCode);
-        Assert.InRange(time.GetUtcNow() - EControl.Now, RateLimitingHandler.MaxRetryAfter, RateLimitingHandler.MaxRetryAfter + TimeSpan.FromSeconds(5));
-
-        Assert.Equal(HttpStatusCode.ServiceUnavailable, (await client.GetAsync("b")).StatusCode);
-        Assert.Equal(3, inner.Requests.Count);
-    }
-
-    /// <summary>Moves the fake clock forward in one-second steps until the request has completed.</summary>
-    private static async Task<HttpResponseMessage> CompleteOnFakeClockAsync(Task<HttpResponseMessage> pending, FakeTimeProvider time)
-    {
-        for (var step = 0; !pending.IsCompleted && step < 1000; step++)
-        {
-            await Task.Delay(1);
-            time.Advance(TimeSpan.FromSeconds(1));
-        }
-
-        return await pending;
     }
 }
 
@@ -434,8 +329,10 @@ public class EControlProviderTests
 
         Assert.Equal(("econtrol", SourceTier.OFFICIAL, "AT"), (descriptor.Key, descriptor.Tier, descriptor.Countries.Single()));
         Assert.True(descriptor.Capabilities.HasFlag(ProviderCapabilities.EvseIds | ProviderCapabilities.LiveStatusPerEvse | ProviderCapabilities.AdHocPrice));
-        // The register is read page by page in one go; the live status still needs the search grid.
-        Assert.True(descriptor.Capabilities.HasFlag(ProviderCapabilities.BulkAll | ProviderCapabilities.BulkByBoundingBox));
+        // The register is read page by page in one go; the live status comes from searches around query points.
+        Assert.True(descriptor.Capabilities.HasFlag(ProviderCapabilities.BulkAll | ProviderCapabilities.NearestToPoint));
+        Assert.False(descriptor.Capabilities.HasFlag(ProviderCapabilities.BulkByBoundingBox));
+        Assert.Equal(EControlProvider.SearchPageSize, descriptor.NearestPageSize);
         // 2,500 requests per hour allowed by the terms of use.
         Assert.True(descriptor.RateLimit.PerMinute * 60 <= 2500);
         Assert.Contains("ladestellen.at", descriptor.AttributionText);
@@ -454,28 +351,18 @@ public class EControlProviderTests
     }
 
     [Fact]
-    public async Task Without_bounding_box_the_search_covers_Austria()
+    public async Task Status_is_one_search_around_the_query_point()
     {
-        var handler = new StubHandler(_ => StubHandler.Json("[]"));
+        var handler = new StubHandler(_ => StubHandler.Json(EControl.Fixture("search-wien.json")));
+        var provider = EControl.Provider(handler).Provider;
 
-        await EControl.Provider(handler).Provider.FetchStatusAsync(new StatusQuery(null, null), CancellationToken.None).ToListAsync();
+        var statuses = await provider.FetchStatusAsync(new StatusQuery(null, null, new GeoPoint(48.2, 16.37)), CancellationToken.None).ToListAsync();
 
-        var center = new GeoPoint((EControlProvider.Austria.MinLatitude + EControlProvider.Austria.MaxLatitude) / 2, (EControlProvider.Austria.MinLongitude + EControlProvider.Austria.MaxLongitude) / 2);
-        Assert.Contains($"latitude={center.Latitude.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture)}", Assert.Single(handler.Requests).RequestUri!.Query);
-    }
-
-    [Fact]
-    public async Task A_run_that_exceeds_the_budget_is_logged()
-    {
-        // Every answer is a full page closer than any corner, so the grid keeps splitting.
-        var page = "[" + string.Join(",", Enumerable.Range(0, SearchGrid.PageSize).Select(index => EControl.Station($"S{index}", 47.5, 13.3, 0.0001))) + "]";
-        var handler = new StubHandler(_ => StubHandler.Json(page));
-        var (provider, logger) = EControl.Provider(handler);
-
-        await provider.FetchStatusAsync(new StatusQuery(null, null), CancellationToken.None).ToListAsync();
-
-        Assert.Equal(EControlProvider.MaxRequestsPerRun, handler.Requests.Count);
-        Assert.Contains($"E-Control fetch stopped after {EControlProvider.MaxRequestsPerRun} requests before the area was covered", logger.Messages);
+        Assert.Equal("?latitude=48.2&longitude=16.37", Assert.Single(handler.Requests).RequestUri!.Query);
+        Assert.Equal(4, statuses.Count);
+        await Assert.ThrowsAsync<NotSupportedException>(
+            async () => await provider.FetchStatusAsync(new StatusQuery(new BoundingBox(16, 48, 17, 49), null), CancellationToken.None).ToListAsync());
+        Assert.Single(handler.Requests);
     }
 
     [Fact]

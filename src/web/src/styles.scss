@@ -649,6 +649,66 @@ app-setting-row .error {
   width: 100%;
 }
 
+// ---- Crawler (admin) ------------------------------------------------------------------------------------------------
+
+.crawler-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.crawler-source {
+  margin-top: 16px;
+}
+
+.crawler-source .state.ok {
+  --mat-chip-elevated-container-color: color-mix(in srgb, var(--cg-status-available) 18%, transparent);
+}
+
+.crawler-source .state.paused {
+  --mat-chip-elevated-container-color: color-mix(in srgb, var(--cg-status-out-of-order) 18%, transparent);
+}
+
+.crawler-source .plans {
+  width: 100%;
+  border-collapse: collapse;
+  font: var(--mat-sys-body-small);
+}
+
+.crawler-source .plans th,
+.crawler-source .plans td {
+  padding: 4px 8px 4px 0;
+  text-align: left;
+  vertical-align: top;
+}
+
+#runs .table-box {
+  overflow-x: auto;
+}
+
+#runs table {
+  width: 100%;
+}
+
+#runs .note {
+  display: block;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-small);
+}
+
+.run-result {
+  font-weight: 600;
+}
+
+.run-result.ok {
+  color: var(--cg-status-available);
+}
+
+.run-result.failed {
+  color: var(--cg-status-out-of-order);
+}
+
 #account dl {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);

@@ -9,7 +9,12 @@ namespace ChargeGlobe.Application.Ingest;
 public enum JobType
 {
     INVENTORY_FULL,
+
+    /// <summary>Status of a region (sources without point search) or of one query point (<c>poll_tile</c>).</summary>
     STATUS_POLL,
+
+    /// <summary>Recomputes the query points of a source with point search.</summary>
+    TILE_PLAN,
 }
 #pragma warning restore CA1707
 
@@ -19,6 +24,9 @@ public sealed record PollPlanLease(
 
 /// <summary>A plan the crawler should have: provider × job type × region, with its interval.</summary>
 public sealed record PollPlanSpec(string ProviderKey, JobType JobType, string RegionCode, BoundingBox Bbox, TimeSpan Interval);
+
+/// <summary>When a plan runs next.</summary>
+public sealed record PollPlanDue(JobType JobType, string RegionCode, DateTimeOffset NextRunAt);
 
 /// <summary>Work list of the crawlers (table <c>poll_plan</c>), shared by all instances.</summary>
 public interface IPollPlanStore
@@ -31,6 +39,9 @@ public interface IPollPlanStore
 
     /// <summary>Stores the result, schedules the next run after <paramref name="nextRunIn"/> and releases the lease.</summary>
     Task CompleteAsync(Guid planId, string result, TimeSpan nextRunIn, CancellationToken cancellationToken);
+
+    /// <summary>The next plan of the provider by due time; null if it has none.</summary>
+    Task<PollPlanDue?> NextAsync(string providerKey, CancellationToken cancellationToken);
 }
 
 /// <summary>Cluster-wide token bucket per provider (table <c>provider_rate_budget</c>).</summary>
@@ -59,7 +70,7 @@ public interface IIngestQueue
     /// </summary>
     Task<bool> ProcessNextAsync(CancellationToken cancellationToken);
 
-    /// <summary>Deletes processed messages older than the retention and raw snapshots older than theirs.</summary>
+    /// <summary>Deletes processed messages, raw snapshots and crawler runs older than their retention.</summary>
     Task<int> PurgeAsync(CancellationToken cancellationToken);
 }
 

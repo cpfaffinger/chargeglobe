@@ -65,6 +65,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<JobLease> JobLeases => Set<JobLease>();
 
+    public DbSet<PollTile> PollTiles => Set<PollTile>();
+
+    public DbSet<ProviderBackoffState> ProviderBackoffs => Set<ProviderBackoffState>();
+
+    public DbSet<CrawlerRun> CrawlerRuns => Set<CrawlerRun>();
+
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder) =>
         ChargingModel.ConfigureConventions(configurationBuilder);
 
@@ -148,6 +154,27 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
         {
             entity.ToTable("job_lease");
             entity.HasKey(lease => lease.JobName);
+        });
+
+        builder.Entity<PollTile>(entity =>
+        {
+            entity.ToTable("poll_tile");
+            // The point is its identity across the hourly recomputation.
+            entity.HasIndex(tile => new { tile.ProviderKey, tile.Latitude, tile.Longitude }).IsUnique();
+            entity.HasIndex(tile => tile.LocationIds).HasMethod("gin");
+        });
+
+        builder.Entity<ProviderBackoffState>(entity =>
+        {
+            entity.ToTable("provider_backoff");
+            entity.HasKey(backoff => backoff.ProviderKey);
+        });
+
+        builder.Entity<CrawlerRun>(entity =>
+        {
+            entity.ToTable("crawler_run");
+            entity.HasIndex(run => run.StartedAt);
+            entity.HasIndex(run => new { run.ProviderKey, run.StartedAt });
         });
 
         // Own tables use snake_case columns; the ASP.NET Core Identity tables keep their defaults.

@@ -74,6 +74,15 @@ public sealed class PollPlanStore(AppDbContext db, TimeProvider timeProvider) : 
             : null;
     }
 
+    public async Task<PollPlanDue?> NextAsync(string providerKey, CancellationToken cancellationToken) =>
+        await db.PollPlans
+            .Where(plan => plan.ProviderKey == providerKey)
+            .OrderBy(plan => plan.NextRunAt)
+            .Select(plan => new { plan.JobType, plan.RegionCode, plan.NextRunAt })
+            .FirstOrDefaultAsync(cancellationToken) is { } next
+            ? new PollPlanDue(Enum.Parse<JobType>(next.JobType), next.RegionCode, next.NextRunAt)
+            : null;
+
     public async Task CompleteAsync(Guid planId, string result, TimeSpan nextRunIn, CancellationToken cancellationToken)
     {
         var now = timeProvider.GetUtcNow();
@@ -288,6 +297,9 @@ public sealed class IngestQueue(
         var snapshots = await db.RawSnapshots
             .Where(snapshot => snapshot.FetchedAt < now.AddDays(-config.Get<int>(SettingsCatalog.IngestSnapshotRetentionDays)))
             .ExecuteDeleteAsync(cancellationToken);
-        return messages + snapshots;
+        var runs = await db.CrawlerRuns
+            .Where(run => run.StartedAt < now.AddDays(-config.Get<int>(SettingsCatalog.CrawlerRunRetentionDays)))
+            .ExecuteDeleteAsync(cancellationToken);
+        return messages + snapshots + runs;
     }
 }

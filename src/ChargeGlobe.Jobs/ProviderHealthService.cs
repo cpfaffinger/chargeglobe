@@ -1,3 +1,4 @@
+using ChargeGlobe.Application.Ingest;
 using ChargeGlobe.Application.Settings;
 using ChargeGlobe.Application.Sources;
 using ChargeGlobe.Providers.Abstractions;
@@ -7,7 +8,7 @@ namespace ChargeGlobe.Jobs;
 /// <summary>
 /// Crawler role: keeps the <c>source</c> table in line with the registered adapters and probes every
 /// enabled provider once per <see cref="Interval"/>, so that a missing key, a wrong referer or a
-/// changed format shows in the log before crawling depends on it.
+/// changed format shows in the log before crawling depends on it. A provider in cooldown is not probed.
 /// </summary>
 public sealed class ProviderHealthService(
     IServiceScopeFactory scopeFactory,
@@ -17,7 +18,7 @@ public sealed class ProviderHealthService(
     TimeProvider timeProvider,
     ILogger<ProviderHealthService> logger) : BackgroundService
 {
-    public static readonly TimeSpan Interval = TimeSpan.FromMinutes(15);
+    public static readonly TimeSpan Interval = TimeSpan.FromHours(1);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -77,6 +78,13 @@ public sealed class ProviderHealthService(
             var key = probe.Descriptor.Key;
             try
             {
+                await using var scope = scopeFactory.CreateAsyncScope();
+                if (await scope.ServiceProvider.GetRequiredService<IProviderBackoff>().PauseOfAsync(key, stoppingToken) is { } pause)
+                {
+                    logger.LogInformation("Provider {Provider} not probed: paused until {Until} ({Reason})", key, pause.Until?.ToString("HH:mm:ss 'UTC'") ?? "a setting changes", pause.Reason);
+                    continue;
+                }
+
                 var result = await probe.ProbeAsync(stoppingToken);
                 if (result.Healthy)
                 {

@@ -114,13 +114,17 @@ TOKEN=$(curl -sk -H 'Content-Type: application/json' -d "{\"email\":\"$EMAIL\",\
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/evses/<EVSE-ID oder UUID>"                  # 200: EVSE mit Standort, Steckern, aktuellem Status
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/evses/<EVSE-ID>/status/history"           # Statusintervalle der letzten 7 Tage (max. 90 Tage je Abfrage)
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/evses/<EVSE-ID>/occupancy?weeks=4"        # Matrix Wochentag × Stunde (Europe/Vienna)
-docker compose logs crawler worker          # Heartbeats beider Rollen (alle 30 s, mit aktuellem Wert von mail.enabled); worker: "Mail outbox: …"; crawler: "Provider econtrol healthy: …" (alle 15 min, nur mit provider.enabled)
+docker compose logs crawler worker          # Heartbeats beider Rollen (alle 30 s); crawler (nur mit provider.enabled): "Job STATUS_POLL econtrol point 17/212 (…) started (HOT, last poll 6 min ago)", "… done: … requests …; 412/600 requests in the last hour; …", "E-Control register page 3/17 …", Pausen "… provider paused until …"; Health-Probe stündlich
+curl -k -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/admin/crawler/status   # Budget, Pause, Abfragepunkte, Pläne, Queue (jobs:read); UI: /admin/crawler
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select template_key, status, attempts, last_error from email_outbox"
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select hypertable_name from timescaledb_information.hypertables where hypertable_schema = 'public'"   # evse_status_observation, location_status_observation
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select view_name, materialized_only from timescaledb_information.continuous_aggregates"   # evse_occupancy_hourly, f (Real-Time-Aggregation)
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select code, name, round(ST_Area(geom)/1e6) km2 from region order by 1"   # AT-1 … AT-9 aus dem OSM-Seed
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select region_code, count(*) from location group by 1 order by 1"   # Standorte je Bundesland
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select provider_key, job_type, region_code, next_run_at, leased_by, last_result from poll_plan order by 1,2,3"
+docker compose exec db psql -U chargeglobe -d chargeglobe -c "select provider_key, sum(requests) requests, count(*) runs from crawler_run where started_at > now() - interval '1 hour' group by 1"   # Abrufvolumen der letzten Stunde (≤ provider.request_budget_per_hour)
+docker compose exec db psql -U chargeglobe -d chargeglobe -c "select priority, count(*), min(last_polled_at) from poll_tile group by 1"   # Abfragepunkte je Priorität
+docker compose exec db psql -U chargeglobe -d chargeglobe -c "select * from provider_backoff"   # Pause/Sperre nach Fehlern der Quelle
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select count(*) filter (where processed_at is null) offen, count(*) filter (where error is not null) fehler from ingest_queue"
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select (select count(*) from location) standorte, (select count(*) from evse) evses, (select count(*) from evse_status_current) status"
 docker compose down                         # ./data (Postgres-Cluster, Zertifikat) bleibt erhalten, auch mit -v

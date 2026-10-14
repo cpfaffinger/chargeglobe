@@ -213,3 +213,87 @@ public sealed class JobLease
 
     public DateTimeOffset LeaseUntil { get; set; }
 }
+
+/// <summary>Query point of a provider with point search (docs/05, passive polling).</summary>
+public sealed class PollTile
+{
+    public Guid Id { get; set; }
+
+    public required string ProviderKey { get; set; }
+
+    /// <summary>Position within the provider's points, 1 … n, in the order of the computation.</summary>
+    public int Number { get; set; }
+
+    public double Latitude { get; set; }
+
+    public double Longitude { get; set; }
+
+    /// <summary>Locations the point covers (GIN index, for requests from users).</summary>
+    public Guid[] LocationIds { get; set; } = [];
+
+    /// <summary>Name of <c>TilePriority</c>.</summary>
+    public required string Priority { get; set; }
+
+    public int IntervalMinutes { get; set; }
+
+    /// <summary>Status changes of the covered locations in the 24 hours before the last computation.</summary>
+    public int ChangesPerDay { get; set; }
+
+    public DateTimeOffset? LastPolledAt { get; set; }
+
+    /// <summary>Last request of a user for a fresh status.</summary>
+    public DateTimeOffset? DemandAt { get; set; }
+
+    public string? LeasedBy { get; set; }
+
+    public DateTimeOffset? LeaseUntil { get; set; }
+
+    public string? LastResult { get; set; }
+}
+
+/// <summary>Anti-flood state of a provider: failures in a row and the resulting pause.</summary>
+public sealed class ProviderBackoffState
+{
+    public required string ProviderKey { get; set; }
+
+    public int Failures { get; set; }
+
+    public DateTimeOffset? PausedUntil { get; set; }
+
+    /// <summary>Paused until a setting of the provider changes (key rejected or missing).</summary>
+    public bool Blocked { get; set; }
+
+    public string? Reason { get; set; }
+
+    public DateTimeOffset UpdatedAt { get; set; }
+}
+
+/// <summary>Protocol entry of one crawler run.</summary>
+public sealed class CrawlerRun
+{
+    public const string Running = "RUNNING";
+    public const string Ok = "OK";
+    public const string Failed = "FAILED";
+
+    public Guid Id { get; set; }
+
+    public required string ProviderKey { get; set; }
+
+    public required string JobType { get; set; }
+
+    public required string Target { get; set; }
+
+    public DateTimeOffset StartedAt { get; set; }
+
+    public DateTimeOffset? FinishedAt { get; set; }
+
+    public int Requests { get; set; }
+
+    public int Records { get; set; }
+
+    public string Result { get; set; } = Running;
+
+    public string? Error { get; set; }
+
+    public DateTimeOffset? CooldownUntil { get; set; }
+}

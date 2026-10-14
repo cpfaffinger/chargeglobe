@@ -135,6 +135,7 @@ describe('App with its routes', () => {
       expect(Array.from(sheet.querySelectorAll('nav a')).map((link) => link.id)).toEqual([
         'nav-map',
         'nav-settings',
+        'nav-crawler',
         'nav-mail',
         'nav-setup',
         'nav-account',
@@ -178,6 +179,26 @@ describe('App with its routes', () => {
       expect(text(root(), 'h1')).toBe('Einstellungen');
       expect(root().querySelector('#nav-settings')).not.toBeNull();
       http.expectOne('/api/v1/settings').flush([]);
+    });
+
+    it('opens /admin/crawler only with jobs:read and shows the link only then', async () => {
+      auth.me.set(ME);
+      auth.hasPermission.and.callFake((permission) => permission === 'settings:read');
+
+      await navigate('/admin/crawler');
+
+      expect(router.url).toBe('/');
+      expect(root().querySelector('#nav-crawler')).toBeNull();
+      http.expectOne('/api/v1/map/config');
+
+      auth.hasPermission.and.callFake((permission) => permission === 'jobs:read');
+      await navigate('/admin/crawler');
+
+      expect(router.url).toBe('/admin/crawler');
+      expect(text(root(), 'h1')).toBe('Crawler');
+      expect(root().querySelector('#nav-crawler')).not.toBeNull();
+      http.expectOne('/api/v1/admin/crawler/status').flush({ data: { at: '2026-10-14T08:15:00Z', providers: [], queue: { pending: 0, failed: 0 } } });
+      http.expectOne('/api/v1/admin/crawler/runs?limit=50').flush({ data: [], meta: { returned: 0, limit: 50 } });
     });
 
     it('opens /admin/mail only with settings:manage and shows the link only then', async () => {
