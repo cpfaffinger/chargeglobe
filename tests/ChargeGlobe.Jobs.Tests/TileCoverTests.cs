@@ -22,36 +22,39 @@ public class TileCoverTests
         Assert.Equal(2, tiles.Count);
         Assert.Equal(sites.Select(site => site.LocationId).Order(), tiles.SelectMany(tile => tile.Sites).Select(site => site.LocationId).Order());
         Assert.All(tiles, tile => Assert.Equal(30, tile.Sites.Count));
+        // A point lies on a known location.
+        Assert.All(tiles, tile => Assert.Contains(sites, site => new GeoPoint(Math.Round(site.Latitude, 6), Math.Round(site.Longitude, 6)) == tile.Center));
         Assert.Equal(tiles.Select(tile => tile.Center), again.Select(tile => tile.Center));
         Assert.Empty(TileCover.Compute([], 90));
         Assert.Throws<ArgumentOutOfRangeException>(() => TileCover.Compute(sites, 0));
     }
 
     [Fact]
-    public void A_centre_that_would_lose_its_seed_falls_back_to_the_seed()
+    public void The_point_covering_the_most_open_locations_comes_first()
     {
-        // The three nearest of A are A, B, C; the nearest three of their centre are B, C, D.
-        var a = Site(1, 48, 16.0);
-        var b = Site(2, 48, 16.2);
-        var c = Site(3, 48, 16.21);
-        var d = Site(4, 48, 16.22);
+        // On a line A–E with three per point: A covers A, B, C (first of the equal ones), then D covers D and E.
+        var line = Enumerable.Range(1, 5).Select(number => Site(number, 48, 16 + (number * 0.01))).ToList();
 
-        var first = TileCover.Compute([a, b, c, d], 3)[0];
+        var tiles = TileCover.Compute(line, 3);
 
-        Assert.Equal(new GeoPoint(48, 16.0), first.Center);
-        Assert.Equal([a, b, c], first.Sites);
+        Assert.Equal([new GeoPoint(48, 16.01), new GeoPoint(48, 16.04)], tiles.Select(tile => tile.Center));
+        Assert.Equal([line[0], line[1], line[2]], tiles[0].Sites);
+        Assert.Equal([line[3], line[2], line[4]], tiles[1].Sites);
+        Assert.Equal(5, TileCover.Compute(line, 1).Count);
     }
 
     [Theory]
-    [InlineData(24, false, TilePriority.HOT)]
-    [InlineData(6, true, TilePriority.HOT)]
-    [InlineData(5, true, TilePriority.NORMAL)]
-    [InlineData(23, false, TilePriority.NORMAL)]
-    [InlineData(0, true, TilePriority.NORMAL)]
-    [InlineData(0, false, TilePriority.QUIET)]
-    public void Points_are_classified_by_activity_and_fast_chargers(int changes, bool fastCharger, TilePriority priority)
+    [InlineData(10, 10, false, TilePriority.HOT)]
+    [InlineData(5, 10, true, TilePriority.HOT)]
+    [InlineData(4, 10, true, TilePriority.NORMAL)]
+    [InlineData(9, 10, false, TilePriority.NORMAL)]
+    [InlineData(1, 10, false, TilePriority.NORMAL)]
+    [InlineData(0, 10, true, TilePriority.NORMAL)]
+    [InlineData(0, 10, false, TilePriority.QUIET)]
+    [InlineData(0, 0, false, TilePriority.QUIET)]
+    public void Points_are_classified_by_changes_per_EVSE_and_fast_chargers(int changes, int evses, bool fastCharger, TilePriority priority)
     {
-        Assert.Equal(priority, TileSchedule.Classify(changes, fastCharger));
+        Assert.Equal(priority, TileSchedule.Classify(changes, evses, fastCharger));
     }
 
     [Fact]

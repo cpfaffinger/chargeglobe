@@ -144,11 +144,14 @@ public static class TileSchedule
     /// <summary>Intervals are this many times longer at night (22:00–06:00 Vienna time).</summary>
     public const double NightFactor = 3;
 
-    /// <summary>Changes per day from which a point is HOT.</summary>
-    public const int HotChangesPerDay = 24;
+    /// <summary>Status changes per EVSE and day from which a point is HOT.</summary>
+    public const double HotChangesPerEvse = 1.0;
 
-    /// <summary>Changes per day from which a point with a fast charger (≥ 150 kW) is HOT.</summary>
-    public const int HotChangesPerDayWithFastCharger = 6;
+    /// <summary>Status changes per EVSE and day from which a point with a fast charger (≥ 150 kW) is HOT.</summary>
+    public const double HotChangesPerEvseWithFastCharger = 0.5;
+
+    /// <summary>Below this many status changes per EVSE and day a point without fast charger is QUIET.</summary>
+    public const double QuietChangesPerEvse = 0.1;
 
     // IANA id in the containers; Windows without ICU (invariant globalization) only knows its own id.
     private static readonly TimeZoneInfo Vienna = TimeZoneInfo.TryFindSystemTimeZoneById("Europe/Vienna", out var zone)
@@ -158,78 +161,111 @@ public static class TileSchedule
     public static double Factor(DateTimeOffset now) =>
         TimeZoneInfo.ConvertTime(now, Vienna).Hour is >= 22 or < 6 ? NightFactor : 1;
 
-    public static TilePriority Classify(int changesPerDay, bool fastCharger) =>
-        changesPerDay >= HotChangesPerDay || (fastCharger && changesPerDay >= HotChangesPerDayWithFastCharger)
+    /// <summary>Priority from the status changes of the last 24 hours relative to the number of EVSEs of the point.</summary>
+    public static TilePriority Classify(int changesPerDay, int evses, bool fastCharger)
+    {
+        var rate = (double)changesPerDay / Math.Max(1, evses);
+        return rate >= HotChangesPerEvse || (fastCharger && rate >= HotChangesPerEvseWithFastCharger)
             ? TilePriority.HOT
-            : changesPerDay == 0 && !fastCharger ? TilePriority.QUIET : TilePriority.NORMAL;
+            : rate < QuietChangesPerEvse && !fastCharger ? TilePriority.QUIET : TilePriority.NORMAL;
+    }
 }
 
 /// <summary>A known location as input of <see cref="TileCover"/>.</summary>
-public sealed record TileSite(Guid LocationId, double Latitude, double Longitude, int ChangesPerDay = 0, bool FastCharger = false);
+/// <param name="ChangesPerDay">Status changes of its EVSEs in the last 24 hours (closed status intervals).</param>
+public sealed record TileSite(Guid LocationId, double Latitude, double Longitude, int ChangesPerDay = 0, bool FastCharger = false, int Evses = 0);
 
 /// <summary>A query point and the locations it covers.</summary>
 public sealed record CoverTile(GeoPoint Center, IReadOnlyList<TileSite> Sites);
 
 /// <summary>
-/// Covers known locations with query points of a source that returns the <c>n</c> stations nearest to a point:
-/// in a space-filling order, every location not yet covered seeds a point at the centre of its
-/// <paramref name="coverage"/> nearest locations, and the <paramref name="coverage"/> nearest of that centre count as
-/// covered (the seed itself if the centre would lose it). Deterministic: equal input gives equal points, so that the
-/// hourly recomputation keeps the poll state.
+/// Covers known locations with query points of a source that returns the <c>n</c> stations nearest to a point: every
+/// location is a candidate point that covers its <paramref name="coverage"/> nearest locations, and greedily the candidate
+/// covering the most locations not yet covered becomes a point, until all are covered (set cover, typically within
+/// 1.5 times the ideal number). A point lies on a known location, so its covered locations are those the source returns
+/// there. Deterministic: equal input gives equal points, so that the hourly recomputation keeps the poll state.
 /// </summary>
 public static class TileCover
 {
     public static IReadOnlyList<CoverTile> Compute(IReadOnlyList<TileSite> sites, int coverage)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(coverage, 1);
-        var order = sites.OrderBy(Morton).ThenBy(site => site.LocationId).ToList();
-        var covered = new HashSet<Guid>();
-        var tiles = new List<CoverTile>();
-        foreach (var seed in order)
+        var ordered = sites.OrderBy(site => site.LocationId).ToArray();
+        var around = ordered.Select((_, index) => Nearest(ordered, index, coverage)).ToArray();
+        var holders = ordered.Select(_ => new List<int>()).ToArray();
+        for (var candidate = 0; candidate < around.Length; candidate++)
         {
-            if (covered.Contains(seed.LocationId))
+            foreach (var site in around[candidate])
             {
+                holders[site].Add(candidate);
+            }
+        }
+
+        // Lazy greedy: an entry whose gain dropped since it was queued goes back with its current gain.
+        var gain = around.Select(members => members.Length).ToArray();
+        var covered = new bool[ordered.Length];
+        var queue = new PriorityQueue<int, (int Gain, int Index)>(gain.Select((value, index) => (index, (-value, index))));
+        var tiles = new List<CoverTile>();
+        while (queue.TryDequeue(out var candidate, out var priority))
+        {
+            if (-priority.Gain != gain[candidate])
+            {
+                queue.Enqueue(candidate, (-gain[candidate], candidate));
                 continue;
             }
 
-            var around = Nearest(sites, seed.Latitude, seed.Longitude, coverage);
-            var center = new GeoPoint(
-                Math.Round(around.Average(site => site.Latitude), 6), Math.Round(around.Average(site => site.Longitude), 6));
-            var members = Nearest(sites, center.Latitude, center.Longitude, coverage);
-            if (!members.Contains(seed))
+            if (gain[candidate] == 0)
             {
-                (center, members) = (new GeoPoint(Math.Round(seed.Latitude, 6), Math.Round(seed.Longitude, 6)), around);
+                break;
             }
 
-            covered.UnionWith(members.Select(site => site.LocationId));
-            tiles.Add(new CoverTile(center, members));
+            var center = ordered[candidate];
+            tiles.Add(new CoverTile(new GeoPoint(Math.Round(center.Latitude, 6), Math.Round(center.Longitude, 6)), [.. around[candidate].Select(site => ordered[site])]));
+            foreach (var site in around[candidate].Where(site => !covered[site]))
+            {
+                covered[site] = true;
+                foreach (var holder in holders[site])
+                {
+                    gain[holder]--;
+                }
+            }
         }
 
         return tiles;
     }
 
-    /// <summary>The <paramref name="count"/> sites nearest to the point (equirectangular distance, enough for ranking).</summary>
-    private static List<TileSite> Nearest(IReadOnlyList<TileSite> sites, double latitude, double longitude, int count)
+    /// <summary>
+    /// Indices of the <paramref name="count"/> sites nearest to site <paramref name="of"/> (equirectangular distance, enough
+    /// for ranking; equal distances by index), nearest first.
+    /// </summary>
+    private static int[] Nearest(TileSite[] sites, int of, int count)
     {
+        var (latitude, longitude) = (sites[of].Latitude, sites[of].Longitude);
         var scale = Math.Cos(latitude * Math.PI / 180);
-        return [.. sites
-            .OrderBy(site => Math.Pow(site.Latitude - latitude, 2) + Math.Pow((site.Longitude - longitude) * scale, 2))
-            .ThenBy(site => site.LocationId)
-            .Take(count)];
-    }
-
-    /// <summary>Z-order of the position on a grid of about 100 m, so that consecutive seeds lie close together.</summary>
-    private static ulong Morton(TileSite site)
-    {
-        var x = (uint)Math.Clamp((site.Longitude + 180) * 1000, 0, uint.MaxValue);
-        var y = (uint)Math.Clamp((site.Latitude + 90) * 1000, 0, uint.MaxValue);
-        ulong code = 0;
-        for (var bit = 0; bit < 32; bit++)
+        // Max-heap of the nearest so far: the farthest of them is on top.
+        var nearest = new PriorityQueue<int, (double Distance, int Index)>(
+            Comparer<(double Distance, int Index)>.Create((left, right) => right.CompareTo(left)));
+        for (var index = 0; index < sites.Length; index++)
         {
-            code |= (((ulong)x >> bit) & 1) << (2 * bit);
-            code |= (((ulong)y >> bit) & 1) << ((2 * bit) + 1);
+            var dLat = sites[index].Latitude - latitude;
+            var dLon = (sites[index].Longitude - longitude) * scale;
+            var key = ((dLat * dLat) + (dLon * dLon), index);
+            if (nearest.Count < count)
+            {
+                nearest.Enqueue(index, key);
+            }
+            else if (nearest.TryPeek(out _, out var farthest) && key.CompareTo(farthest) < 0)
+            {
+                nearest.DequeueEnqueue(index, key);
+            }
         }
 
-        return code;
+        var result = new int[nearest.Count];
+        for (var position = result.Length - 1; position >= 0; position--)
+        {
+            result[position] = nearest.Dequeue();
+        }
+
+        return result;
     }
 }

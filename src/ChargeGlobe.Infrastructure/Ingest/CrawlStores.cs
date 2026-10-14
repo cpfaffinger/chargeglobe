@@ -23,8 +23,10 @@ public sealed class PollTileStore(AppDbContext db, TimeProvider timeProvider) : 
             .SqlQuery<SiteRow>($"""
                 SELECT l.id AS "Id", ST_Y(l.geom::geometry) AS "Latitude", ST_X(l.geom::geometry) AS "Longitude",
                        COALESCE(max(e.max_power_kw), 0) >= {FastChargerKw} AS "FastCharger",
+                       count(e.id)::int AS "Evses",
+                       -- A status change closes an interval; the first reading of an EVSE closes none.
                        (SELECT count(*)::int FROM evse_status_interval i JOIN evse x ON x.id = i.evse_id
-                        WHERE x.location_id = l.id AND i.valid_from > {now.AddDays(-1)}) AS "Changes"
+                        WHERE x.location_id = l.id AND i.valid_to > {now.AddDays(-1)}) AS "Changes"
                 FROM location l
                 LEFT JOIN evse e ON e.location_id = l.id AND e.lifecycle = 'ACTIVE'
                 WHERE l.lifecycle = 'ACTIVE'
@@ -35,7 +37,7 @@ public sealed class PollTileStore(AppDbContext db, TimeProvider timeProvider) : 
                 """)
             .ToListAsync(cancellationToken);
         var tiles = TileCover.Compute(
-            [.. sites.Select(site => new TileSite(site.Id, site.Latitude, site.Longitude, site.Changes, site.FastCharger))], coverage);
+            [.. sites.Select(site => new TileSite(site.Id, site.Latitude, site.Longitude, site.Changes, site.FastCharger, site.Evses))], coverage);
 
         var existing = await db.PollTiles.Where(tile => tile.ProviderKey == providerKey).ToListAsync(cancellationToken);
         var byPoint = existing.ToDictionary(tile => (tile.Latitude, tile.Longitude));
@@ -44,7 +46,7 @@ public sealed class PollTileStore(AppDbContext db, TimeProvider timeProvider) : 
         {
             var tile = tiles[index];
             var changes = tile.Sites.Sum(site => site.ChangesPerDay);
-            var priority = TileSchedule.Classify(changes, tile.Sites.Any(site => site.FastCharger));
+            var priority = TileSchedule.Classify(changes, tile.Sites.Sum(site => site.Evses), tile.Sites.Any(site => site.FastCharger));
             counts[priority]++;
             if (!byPoint.Remove((tile.Center.Latitude, tile.Center.Longitude), out var row))
             {
@@ -156,6 +158,8 @@ public sealed class PollTileStore(AppDbContext db, TimeProvider timeProvider) : 
         public double Longitude { get; set; }
 
         public bool FastCharger { get; set; }
+
+        public int Evses { get; set; }
 
         public int Changes { get; set; }
     }

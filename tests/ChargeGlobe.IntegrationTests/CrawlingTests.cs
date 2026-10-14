@@ -74,11 +74,13 @@ public class CrawlingTests(IntegrationFactory factory) : IClassFixture<Integrati
     {
         await factory.WithDbAsync(db => db.PollTiles.ExecuteDeleteAsync());
 
+        // No status change yet (the first readings close no interval): Stephansplatz is quiet, the fast charger at the Ring normal.
         var single = await RebuildAsync(1);
-        Assert.Equal(new TilePlanResult(2, 2, 0, 2, 0), single);
+        Assert.Equal(new TilePlanResult(2, 2, 0, 1, 1), single);
         var tiles = await factory.WithDbAsync(db => db.PollTiles.OrderBy(tile => tile.Number).ToListAsync());
         Assert.Equal([1, 2], tiles.Select(tile => tile.Number));
-        Assert.All(tiles, tile => Assert.Equal((1, 15, "NORMAL"), (tile.LocationIds.Length, tile.IntervalMinutes, tile.Priority)));
+        Assert.All(tiles, tile => Assert.Single(tile.LocationIds));
+        Assert.Equal([(15, "NORMAL"), (60, "QUIET")], tiles.Select(tile => (tile.IntervalMinutes, tile.Priority)).Order());
 
         // A polled point keeps its state when the points are computed again; a leased one that is no longer needed stays.
         var claimed = (await ClaimAsync())!;
@@ -105,7 +107,7 @@ public class CrawlingTests(IntegrationFactory factory) : IClassFixture<Integrati
                 FROM evse e, generate_series(1, 30) AS n WHERE e.location_id = {ring} LIMIT 30
                 """));
             var busy = await RebuildAsync(1);
-            Assert.Equal((1, 1), (busy.Hot, busy.Normal));
+            Assert.Equal((1, 0, 1), (busy.Hot, busy.Normal, busy.Quiet));
             Assert.Equal(5, await factory.WithDbAsync(db => db.PollTiles.Where(tile => tile.LocationIds.Contains(ring)).Select(tile => tile.IntervalMinutes).SingleAsync()));
         }
         finally
@@ -128,7 +130,7 @@ public class CrawlingTests(IntegrationFactory factory) : IClassFixture<Integrati
         var stephansplatz = await LocationIdAsync("Teststation Stephansplatz");
         Assert.Equal(2, await DueAsync());
 
-        // Both polled: the one polled 20 min ago (interval 15) is due, the one polled now is not.
+        // Both polled: the Ring polled 20 min ago (normal, 15 min) is due, Stephansplatz (quiet) polled now is not.
         await factory.WithDbAsync(db => db.PollTiles.ExecuteUpdateAsync(tile => tile.SetProperty(item => item.LastPolledAt, DateTimeOffset.UtcNow)));
         await factory.WithDbAsync(db => db.PollTiles.Where(tile => !tile.LocationIds.Contains(stephansplatz))
             .ExecuteUpdateAsync(tile => tile.SetProperty(item => item.LastPolledAt, DateTimeOffset.UtcNow.AddMinutes(-20))));
@@ -151,7 +153,7 @@ public class CrawlingTests(IntegrationFactory factory) : IClassFixture<Integrati
                 .SetProperty(item => item.DemandAt, DateTimeOffset.UtcNow.AddMinutes(-1))));
         var demanded = (await ClaimAsync())!;
         Assert.Equal((requested.Id, true, 1, 2), (demanded.Id, demanded.OnDemand, demanded.LocationCount, demanded.Total));
-        Assert.Equal(TilePriority.NORMAL, demanded.Priority);
+        Assert.Equal(TilePriority.QUIET, demanded.Priority);
         Assert.Null(await ClaimAsync());
         await CompleteAsync(demanded.Id);
 

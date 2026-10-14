@@ -73,7 +73,7 @@ Konfiguration (Config-Service, Scope `provider:econtrol`, Admin-UI `/admin/setti
 ### Abdeckung einer Fläche
 - **Register:** ein Lauf liest alle Seiten (`fromIndex` += Seitengröße, bis `totalResults` erreicht oder eine Seite leer ist; höchstens 1.000 Requests) und behält die Stationen in der Bounding Box des Plans. Der Inventar-Plan gilt für alle Regionen aus `provider.regions` gemeinsam (Region `AT-9,AT-3,AT-4,AT-1`, Box = umschließendes Rechteck), weil jeder Lauf ohnehin das ganze Register liest.
 - **Register:** höchstens 50 Seiten je Lauf; jede Seite steht im Log („E-Control register page 3/17: stations 2001–3000 of 16070“).
-- **Live-Status:** genau eine `GET /search` je Abfragepunkt. Die Punkte berechnet der Crawler stündlich aus den bekannten Standorten so, dass jeder Standort unter den 90 nächsten eines Punkts liegt (10 % Reserve zu den 100 der Quelle); Priorität und Intervall aus der Aktivität der letzten 24 h ([05](../05-crawling-konzept.md), Abschnitt 2).
+- **Live-Status:** genau eine `GET /search` je Abfragepunkt. Die Punkte berechnet der Crawler stündlich aus den bekannten Standorten so, dass jeder Standort unter den 90 nächsten eines Punkts liegt (10 % Reserve zu den 100 der Quelle; gierige Mengenüberdeckung, 146 Punkte für die vier Startregionen); Priorität und Intervall aus den Statuswechseln je Ladepunkt der letzten 24 h ([05](../05-crawling-konzept.md), Abschnitt 2).
 
 ### DATEX II v3.5 (geprüft, nicht genutzt)
 | Endpunkt | Ergebnis am 2026-10-14 |
