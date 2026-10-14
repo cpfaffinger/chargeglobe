@@ -1,8 +1,10 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { AuthService } from '../auth/auth.service';
 import { HomePage } from '../pages/home.page';
-import { MAP_CONFIG, fakeBrowser, fakeMapEngine, flush, locationSummary, text } from '../testing';
+import { ME, MAP_CONFIG, fakeAuth, fakeBrowser, fakeMapEngine, flush, locationSummary, text } from '../testing';
 import { BrowserCapabilities } from './browser-capabilities';
 import { MapConfigService } from './map-config.service';
 import { GeolocateEvent, MapEngine, MapViewOptions } from './map-engine';
@@ -89,6 +91,7 @@ describe('HomePage (map)', () => {
   let http: HttpTestingController;
   let map: ReturnType<typeof fakeMapEngine>;
   let browser: ReturnType<typeof fakeBrowser>;
+  let auth: ReturnType<typeof fakeAuth>;
 
   const root = () => fixture.nativeElement as HTMLElement;
   const locateButton = () => root().querySelector<HTMLButtonElement>('#locate')!;
@@ -125,10 +128,13 @@ describe('HomePage (map)', () => {
   beforeEach(() => {
     map = fakeMapEngine();
     browser = fakeBrowser();
+    auth = fakeAuth();
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideRouter([]),
+        { provide: AuthService, useValue: auth },
         { provide: MapEngine, useValue: map.engine },
         { provide: BrowserCapabilities, useValue: browser },
       ],
@@ -386,6 +392,26 @@ describe('HomePage (map)', () => {
       options().onSelect('unknown');
       await settle();
       expect(root().querySelector('#location-card')).toBeNull();
+    });
+
+    it('links the card to the detail page and tells anonymous visitors that it needs an account', async () => {
+      await render();
+      await moveTo(vienna, response());
+      options().onSelect('loc-1');
+      await settle();
+
+      expect(root().querySelector('#details')!.getAttribute('href')).toBe('/locations/loc-1');
+      expect(text(root(), '#location-card .details')).toBe('Details – Verlauf und Auslastung nach Anmeldung');
+
+      // Like AuthService, the double reads the signal, so the card follows a change of the user.
+      auth.hasPermission.and.callFake((permission) => auth.me()?.permissions.includes(permission) ?? false);
+      auth.me.set(ME);
+      await settle();
+      expect(text(root(), '#location-card .details')).toBe('Details');
+
+      auth.me.set({ ...ME, permissions: [] });
+      await settle();
+      expect(root().querySelector('#details')).toBeNull();
     });
 
     it('hands locations that arrived before the map to the engine once it exists', async () => {

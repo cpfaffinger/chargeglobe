@@ -1,0 +1,268 @@
+using System.Globalization;
+using ChargeGlobe.Api.Auth;
+using ChargeGlobe.Api.Locations;
+using ChargeGlobe.Api.OpenApi;
+using ChargeGlobe.Application.Evses;
+using ChargeGlobe.Application.Locations;
+using ChargeGlobe.Domain.Identity;
+
+namespace ChargeGlobe.Api.Evses;
+
+public sealed record EvseResponse(EvseView Data, AttributionMeta Meta);
+
+/// <param name="Id">Internal UUID of the EVSE.</param>
+/// <param name="EvseId">EVSE-ID with separators.</param>
+/// <param name="From">Start of the requested range (inclusive).</param>
+/// <param name="To">End of the requested range (exclusive).</param>
+/// <param name="Intervals">Periods overlapping the range, oldest first; the first and last may reach beyond it.</param>
+public sealed record StatusHistoryData(Guid Id, string EvseId, DateTimeOffset From, DateTimeOffset To, IReadOnlyList<StatusInterval> Intervals);
+
+public sealed record StatusHistoryResponse(StatusHistoryData Data, AttributionMeta Meta);
+
+/// <param name="Weekday">ISO weekday: 1 = Monday … 7 = Sunday.</param>
+/// <param name="Day">English name of the weekday in upper case.</param>
+/// <param name="ChargingShare">Per hour 0–23: share of observations with status CHARGING (0–1); null without observations.</param>
+/// <param name="Observations">Per hour 0–23: number of status observations.</param>
+public sealed record OccupancyDay(int Weekday, string Day, IReadOnlyList<double?> ChargingShare, IReadOnlyList<long> Observations);
+
+/// <param name="Utilization">Share of all observations in the range with status CHARGING; null without observations.</param>
+/// <param name="Observations">Number of status observations in the range.</param>
+/// <param name="Days">Seven rows, Monday first, with 24 hours each.</param>
+public sealed record OccupancyData(
+    Guid Id,
+    string EvseId,
+    int Weeks,
+    DateTimeOffset From,
+    DateTimeOffset To,
+    string TimeZone,
+    double? Utilization,
+    long Observations,
+    IReadOnlyList<OccupancyDay> Days);
+
+public sealed record OccupancyResponse(OccupancyData Data, AttributionMeta Meta);
+
+public static class EvsesEndpoints
+{
+    public const int DefaultHistoryDays = 7;
+    public const int MaxHistoryDays = 90;
+    public const int DefaultWeeks = 4;
+    public const int MaxWeeks = 12;
+    public const string DefaultTimeZone = "Europe/Vienna";
+
+    private static readonly Guid ExampleId = Guid.Parse("01990a3e-5b1d-7d42-8c3a-6e9f1a2b3c4f");
+
+    private const string ExampleEvseId = "AT*VIE*E1234*1";
+
+    private static readonly AttributionMeta ExampleMeta = new([new SourceAttribution(
+        "econtrol",
+        "Datenquelle: Ladestellenverzeichnis der E-Control (ladestellen.at)",
+        "E-Control API terms of use (free, registration required); redistribution only with written consent")]);
+
+    private static DateTimeOffset At(string value) => DateTimeOffset.Parse(value, CultureInfo.InvariantCulture);
+
+    public static IEndpointRouteBuilder MapEvsesEndpoints(this IEndpointRouteBuilder endpoints)
+    {
+        var evses = endpoints.MapGroup("/api/v1/evses").WithTags("EVSEs").RequirePermission(Permissions.EvseRead);
+
+        evses.MapGet("/{evseId}", GetEvseAsync)
+            .WithName("getEvse")
+            .WithSummary("Get an EVSE (charge point) with its location and current status")
+            .WithDescription(
+                "Returns one EVSE by `evseId`: its EVSE-ID in any notation (`AT*VIE*E1234*1`, `AT-VIE-E1234-1`, " +
+                "`ATVIEE12341`, case-insensitive) or its internal UUID (`id` of `getLocation`). Contains the location " +
+                "with region code, the operator, power, current type, connectors, lifecycle and the current OCPI status " +
+                "with `since`, `observedAt`, `source` and `stale` (older than `map.status_max_age_minutes`). Unlike " +
+                "`getLocation` the status is not replaced by UNKNOWN when stale. EVSEs that are no longer active are " +
+                "returned too (`lifecycle`). 404 for an unknown EVSE. `meta.attribution` names the sources.")
+            .Produces<EvseResponse>()
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .WithResponseExample(
+                StatusCodes.Status200OK,
+                new EvseResponse(
+                    new EvseView(
+                        ExampleId,
+                        ExampleEvseId,
+                        true,
+                        "ACTIVE",
+                        new EvseLocation(
+                            Guid.Parse("01990a3e-5b1d-7d42-8c3a-6e9f1a2b3c4e"),
+                            "Parkgarage Stephansplatz",
+                            "Stephansplatz 1",
+                            "1010",
+                            "Wien",
+                            "AT",
+                            48.2085,
+                            16.3731,
+                            "AT-9"),
+                        new EvseOperator(Guid.Parse("01990a3e-5b1d-7d42-8c3a-6e9f1a2b3c40"), "Wien Energie GmbH", "VIE"),
+                        "1",
+                        22m,
+                        "AC_3_PHASE",
+                        [new ConnectorDetail("IEC_62196_T2", "SOCKET", "AC_3_PHASE", 22m)],
+                        new EvseCurrentStatus("CHARGING", At("2026-10-14T07:40:00Z"), At("2026-10-14T08:15:00Z"), "econtrol", false),
+                        At("2026-03-01T06:00:00Z"),
+                        At("2026-10-14T08:15:00Z"),
+                        At("2026-10-14T06:00:00Z")),
+                    ExampleMeta));
+
+        evses.MapGet("/{evseId}/status/history", GetStatusHistoryAsync)
+            .WithName("getEvseStatusHistory")
+            .WithSummary("Get the status history of an EVSE as intervals")
+            .WithDescription(
+                "Returns the periods of constant OCPI status of the EVSE (`evseId` as in `getEvse`) that overlap " +
+                "[`from`, `to`): `from` inclusive, `to` exclusive, both ISO 8601 (UTC if no offset is given). Defaults: " +
+                "`to` = now, `from` = `to` minus 7 days. At most 90 days per request; page through longer ranges. " +
+                "Intervals are sorted oldest first and are not clipped: the first may start before `from`, and `to: null` " +
+                "marks the ongoing period. A new interval starts only when the status changes; gaps mean that no source " +
+                "reported a status. Optional `source` restricts the result to one source key (e.g. `econtrol`). " +
+                "422 with field errors for unparsable times, `from` not before `to` or a range above 90 days; 404 for an unknown EVSE.")
+            .Produces<StatusHistoryResponse>()
+            .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .WithResponseExample(
+                StatusCodes.Status200OK,
+                new StatusHistoryResponse(
+                    new StatusHistoryData(
+                        ExampleId,
+                        ExampleEvseId,
+                        At("2026-10-07T08:15:00Z"),
+                        At("2026-10-14T08:15:00Z"),
+                        [
+                            new StatusInterval("AVAILABLE", At("2026-10-07T05:00:00Z"), At("2026-10-14T07:40:00Z"), "econtrol", 1),
+                            new StatusInterval("CHARGING", At("2026-10-14T07:40:00Z"), null, "econtrol", 1),
+                        ]),
+                    ExampleMeta));
+
+        evses.MapGet("/{evseId}/occupancy", GetOccupancyAsync)
+            .WithName("getEvseOccupancy")
+            .WithSummary("Get the weekly occupancy profile of an EVSE")
+            .WithDescription(
+                "Returns how often the EVSE (`evseId` as in `getEvse`) was charging, as a matrix weekday × hour over the " +
+                "last `weeks` weeks (1–12, default 4) up to now. `days` has seven rows, Monday first (ISO `weekday` 1–7); " +
+                "each row has 24 values for the hours 0–23 in `timeZone` (IANA name, default Europe/Vienna). " +
+                "`chargingShare` is the share of status observations with status CHARGING (0–1, null where nothing was " +
+                "observed), `observations` the number of observations behind it; `utilization` is the share over the " +
+                "whole range. Based on the hourly continuous aggregate `evse_occupancy_hourly`; observations arrive in the " +
+                "polling interval of the sources, so a share is a sample, not a measured duration. 422 for `weeks` out " +
+                "of range or an unknown time zone; 404 for an unknown EVSE.")
+            .Produces<OccupancyResponse>()
+            .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .WithResponseExample(
+                StatusCodes.Status200OK,
+                new OccupancyResponse(
+                    BuildOccupancy(
+                        ExampleId,
+                        ExampleEvseId,
+                        DefaultWeeks,
+                        At("2026-09-16T08:15:00Z"),
+                        At("2026-10-14T08:15:00Z"),
+                        DefaultTimeZone,
+                        [new OccupancyCell(1, 8, 9, 12), new OccupancyCell(1, 9, 12, 12), new OccupancyCell(3, 18, 3, 12)]),
+                    ExampleMeta));
+
+        return endpoints;
+    }
+
+    private static async Task<IResult> GetEvseAsync(string evseId, IEvseQueries queries, CancellationToken cancellationToken)
+    {
+        if (await queries.ResolveAsync(evseId, cancellationToken) is not { } id)
+        {
+            return NotFound(evseId);
+        }
+
+        var evse = await queries.FindAsync(id, cancellationToken);
+        return Results.Ok(new EvseResponse(evse!, new AttributionMeta(await queries.AttributionAsync(id, cancellationToken))));
+    }
+
+    private static async Task<IResult> GetStatusHistoryAsync(
+        string evseId, string? from, string? to, string? source, IEvseQueries queries, TimeProvider timeProvider, CancellationToken cancellationToken)
+    {
+        var end = to is null ? timeProvider.GetUtcNow() : ParseTime(to);
+        var start = from is null ? end?.AddDays(-DefaultHistoryDays) : ParseTime(from);
+        var invalid = new Validation()
+            .Require(from is null || start is not null, "from", "Must be an ISO 8601 time, e.g. 2026-10-07T00:00:00Z.")
+            .Require(end is not null, "to", "Must be an ISO 8601 time, e.g. 2026-10-14T00:00:00Z.")
+            .ToResult()
+            ?? new Validation()
+                .Require(start < end, "from", "Must lie before 'to'.")
+                .Require(end - start <= TimeSpan.FromDays(MaxHistoryDays), "to", $"The range must not exceed {MaxHistoryDays} days; split longer ranges into several requests.")
+                .ToResult();
+        if (invalid is not null)
+        {
+            return invalid;
+        }
+
+        if (await queries.ResolveAsync(evseId, cancellationToken) is not { } id)
+        {
+            return NotFound(evseId);
+        }
+
+        var evse = await queries.FindAsync(id, cancellationToken);
+        var intervals = await queries.StatusHistoryAsync(id, start!.Value, end!.Value, source, cancellationToken);
+        return Results.Ok(new StatusHistoryResponse(
+            new StatusHistoryData(id, evse!.EvseId, start.Value, end.Value, intervals),
+            new AttributionMeta(await queries.AttributionAsync(id, cancellationToken))));
+    }
+
+    private static async Task<IResult> GetOccupancyAsync(
+        string evseId, int? weeks, string? timeZone, IEvseQueries queries, TimeProvider timeProvider, CancellationToken cancellationToken)
+    {
+        var count = weeks ?? DefaultWeeks;
+        var zone = string.IsNullOrWhiteSpace(timeZone) ? DefaultTimeZone : timeZone.Trim();
+        if (new Validation().Require(count is >= 1 and <= MaxWeeks, "weeks", $"Must be between 1 and {MaxWeeks}.").ToResult() is { } invalid)
+        {
+            return invalid;
+        }
+
+        if (await queries.ResolveAsync(evseId, cancellationToken) is not { } id)
+        {
+            return NotFound(evseId);
+        }
+
+        var to = timeProvider.GetUtcNow();
+        var from = to.AddDays(-7 * count);
+        if (await queries.OccupancyAsync(id, from, to, zone, cancellationToken) is not { } cells)
+        {
+            return new Validation().Require(false, "timeZone", "Must be an IANA time zone name, e.g. Europe/Vienna or UTC.").ToResult()!;
+        }
+
+        var evse = await queries.FindAsync(id, cancellationToken);
+        return Results.Ok(new OccupancyResponse(
+            BuildOccupancy(id, evse!.EvseId, count, from, to, zone, cells),
+            new AttributionMeta(await queries.AttributionAsync(id, cancellationToken))));
+    }
+
+    /// <summary>Spreads the cells over the 7 × 24 matrix, Monday first.</summary>
+    public static OccupancyData BuildOccupancy(
+        Guid id, string evseId, int weeks, DateTimeOffset from, DateTimeOffset to, string timeZone, IReadOnlyList<OccupancyCell> cells)
+    {
+        var byHour = cells.ToDictionary(cell => (cell.Weekday, cell.Hour));
+        var days = Enumerable.Range(1, 7)
+            .Select(weekday =>
+            {
+                var hours = Enumerable.Range(0, 24).Select(hour => byHour.GetValueOrDefault((weekday, hour))).ToList();
+                return new OccupancyDay(
+                    weekday,
+                    ((DayOfWeek)(weekday % 7)).ToString().ToUpperInvariant(),
+                    [.. hours.Select(cell => cell is { Total: > 0 } ? Share(cell.Charging, cell.Total) : (double?)null)],
+                    [.. hours.Select(cell => cell?.Total ?? 0)]);
+            })
+            .ToList();
+        var total = cells.Sum(cell => cell.Total);
+        return new OccupancyData(
+            id, evseId, weeks, from, to, timeZone, total > 0 ? Share(cells.Sum(cell => cell.Charging), total) : null, total, days);
+    }
+
+    private static double Share(long part, long total) => Math.Round((double)part / total, 4);
+
+    /// <summary>An ISO 8601 time; without offset it is taken as UTC. Null if unparsable.</summary>
+    public static DateTimeOffset? ParseTime(string value) =>
+        DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var time) ? time : null;
+
+    private static IResult NotFound(string evseId) =>
+        Results.Problem(
+            statusCode: StatusCodes.Status404NotFound,
+            title: "Not found",
+            detail: $"There is no EVSE with the EVSE-ID or id '{evseId}'. Use getLocation to list the EVSEs of a location.");
+}
