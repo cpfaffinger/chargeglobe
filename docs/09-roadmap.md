@@ -11,7 +11,7 @@
 - [x] Zentraler Config-Service: Settings-Katalog, `app_setting`, typisierte Accessoren, LISTEN/NOTIFY-Invalidierung, `GET/PUT /settings`, generisches Admin-UI (`/admin/settings`), `GET /map/config`; Einstellungen `auth.rate_limit_per_minute`, `mail.*`, `map.*`
 - [x] Identity-Grundgerüst: ASP.NET Core Identity, Permission-Katalog, Standardrollen, Selbstregistrierung mit E-Mail-Bestätigung, Login (JWT), Passwort-Reset, API-Keys, `GET /me`, OpenAPI mit Security Schemes und `x-required-permission`; Admin-Seed-User aus `.env`; Mail-Port `IEmailSender` mit `email_outbox`; Angular-Seiten für Registrierung, Login und Passwort-Reset mit Guard nach Permission
 - [x] Mail-Service: SMTP-Versand der Outbox im Worker (MailKit) mit den Einstellungen `mail.*`, Backoff und Retention, `POST /mail/test`, `GET /mail/outbox`, Admin-Seite `/admin/mail` ([ADR-0008](adr/0008-zentraler-mail-service-smtp.md))
-- [x] Erstes Deployment auf den Dev-Server (`/opt/chargeglobe`)
+- [x] Live-Betrieb unter `https://chargeglobe.net` (Cloudflare → nginx des Hosts → App-Port), Stack in `/etc/docker/compose/chargeglobe` mit systemd-Unit; Tests weiter auf dem Testserver
 - [x] Persistente Daten nur in Bind-Mounts unter `./data/` statt Docker-Volumes ([ADR-0011](adr/0011-bind-mounts-statt-volumes.md))
 - [ ] Lizenz festlegen (siehe unten), `CONTRIBUTING.md`, Code of Conduct
 - [x] API-Key für das E-Control-Ladestellenverzeichnis (an eine Domain gebunden, derzeit Platzhalter; Key nur im Config-Service)
@@ -72,7 +72,7 @@
 |---|---|---|
 | **Code-Lizenz** | MIT / Apache-2.0 / AGPL-3.0 | **AGPL-3.0**: verhindert, dass Dritte die Crawler-Infrastruktur als geschlossenen Dienst betreiben, ohne Verbesserungen zurückzugeben. MIT, wenn maximale Verbreitung wichtiger ist. |
 | **Daten-Lizenz der API** | CC BY 4.0 / ODbL / „nur mit Quellenlizenzen“ | Jede Antwort trägt die Lizenzen der beteiligten Quellen (`meta.attribution`). Eine eigene Sammel-Lizenz (z. B. ODbL für die Kompilation) erst, wenn die Nutzungsbedingungen der E-Control-API das erlauben – die Weiterverbreitung ihrer Daten ist laut Nutzungsbedingungen an Auflagen gebunden. |
-| **Hosting** | entschieden: Docker Compose auf dem Dev-Server (`/opt/chargeglobe`, HTTPS-Port 5005 mit self-signed Zertifikat, gültiges Zertifikat im externen Loadbalancer) | Produktiv-Hosting später separat entscheiden; Ressourcen reichen für Phase 1–2 (DB < 50 GB). |
+| **Hosting** | entschieden: Docker Compose auf einem gemeinsam genutzten Debian-Host (`/etc/docker/compose/chargeglobe`, App-Port nur lokal, davor nginx des Hosts mit Cloudflare-Origin-Zertifikat und Cloudflare-Proxy), Domain `chargeglobe.net` | Der Host hat 8 GB RAM für viele Dienste; bei Wachstum (Statushistorie, weitere Quellen) eigener Host. |
 | **Realtime-API** | SSE / WebSocket / Polling | SSE ab Phase 2, Polling im MVP. |
 | **Benachrichtigungen** (Alerts) | keine / später | keine im MVP; Favoriten und persönliche Einstellungen sind entschieden ([ADR-0005](adr/0005-identity-rbac-openapi.md)), Alerts bauen später auf dem Mail-Service auf. |
 | **UI-Design** | entschieden: Angular Material (Material 3) + Angular CDK mit Light und Dark Mode, Palette „Volt“, Roboto Flex | umgesetzt, siehe [ADR-0012](adr/0012-design-system-und-theming.md); Wahl des Modus später als Customizing im Benutzerprofil |

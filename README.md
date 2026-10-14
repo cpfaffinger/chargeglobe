@@ -10,6 +10,7 @@ Anbieter und Tarifmodelle hinweg. Alles wird über eine öffentliche API und ein
 | | |
 |---|---|
 | **Status** | Lauffähiges Grundgerüst: Compose-Stack, Benutzerkonten (Selbstregistrierung, Login, Passwort-Reset, API-Keys, Permissions), zentraler Config-Service mit Admin-Seite, Mail-Versand über konfigurierbaren SMTP-Server, OpenAPI 3.1, Angular-Seiten für Konto und Anmeldung, Karte als anonyme Startseite (MapLibre, OpenFreeMap, eigener Standort, Ladepunkte mit Clustering und Verfügbarkeitsfarben), Ingest-Pipeline für das E-Control-Ladestellenverzeichnis (Register seitenweise für Inventar mit Zahlungsarten, Roaming, Ökostrom und Parken; Live-Status über Abfragepunkte mit Stundenbudget und Pausen nach Fehlern; Live-Ansicht der Crawler für Administratoren; Scheduler, Request-Budget, Queue, Merge, Statushistorie), Ladepunkt-API mit Statushistorie und Belegungsprofil (angemeldet), Standort-Detailseite mit Status-Timeline und Heatmap, Oberfläche mit Angular Material 3 in Light und Dark Mode, Bundesländer aus OpenStreetMap-Grenzen für die Regionszuordnung, Jobs-Heartbeat; Preise, Filter und weitere Quellen folgen laut [Roadmap](docs/09-roadmap.md) |
+| **Live** | [chargeglobe.net](https://chargeglobe.net) |
 | **Start-Scope** | Wien, Niederösterreich, Oberösterreich, Burgenland |
 | **Ziel-Scope** | Österreich → DACH → Italien |
 | **Stack** | ASP.NET Core / C# / .NET 10 · Angular 22 / TypeScript · PostgreSQL (PostGIS + TimescaleDB) |

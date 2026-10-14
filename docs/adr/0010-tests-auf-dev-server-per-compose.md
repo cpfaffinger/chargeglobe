@@ -15,7 +15,7 @@ Auf dem Entwicklerrechner ist Docker nur über WSL verfügbar, das .NET-SDK nur 
 
    Der Quellcode wird beim Build in die Test-Images kopiert (kein Bind-Mount des Checkouts); Ergebnisse (`Summary.txt`, Coverage-Berichte) landen über ein Bind-Mount in `./artifacts/`. Es werden keine Ports veröffentlicht.
 3. **Ein Aufruf, ein Ergebnis:** `scripts/test.sh` startet beide Testservices nacheinander, gibt die Coverage-Zusammenfassungen aus, räumt auf und liefert einen Gesamt-Exitcode. Integrationstests sprechen `test-db` über eine Verbindungszeichenfolge aus der Umgebung an (`ConnectionStrings__TestDb`; kein Docker-in-Docker, kein Docker-Socket im Container); jede Test-Fixture legt dort ihre eigene Datenbank an und löscht sie wieder.
-4. **Getrennt von der laufenden App:** Der zu testende Branch wird nach `origin` gepusht und auf dem Server in ein eigenes Verzeichnis `/opt/chargeglobe-test` ausgecheckt. `/opt/chargeglobe` (laufender Stack, `.env`, Daten unter `./data/`) wird vom Testlauf nicht berührt.
+4. **Getrennt von der laufenden App:** Der zu testende Branch wird nach `origin` gepusht und auf dem Testserver in ein eigenes Verzeichnis `/opt/chargeglobe-test` ausgecheckt. Die App selbst läuft auf einem anderen Host (`chargeglobe.net`, siehe `CLAUDE.md`); der Testlauf belastet sie nicht, und dort laufen keine Tests.
 5. **Aufräumen nach jedem Lauf ist erlaubt und vorgesehen:** `docker compose -f docker-compose.test.yml down -v --rmi local --remove-orphans` und Löschen von `/opt/chargeglobe-test`. Bereinigt werden ausschließlich Ressourcen des Projekts `chargeglobe-test`; globale Befehle wie `docker system prune` oder `docker volume prune` sind tabu, weil auf dem Host fremde Stacks (`companyhero`) denselben Docker-Daemon nutzen.
 
 ## Alternativen
