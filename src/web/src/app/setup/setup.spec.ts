@@ -125,17 +125,15 @@ describe('setup guards', () => {
     expect(TestBed.runInInjectionContext(() => requireSetupDone(route, state))).toBeTrue();
   });
 
-  it('opens the wizard to everybody before the setup and to settings:manage afterwards', async () => {
+  it('opens the wizard only before the setup, afterwards not even to administrators', async () => {
     const access = () => TestBed.runInInjectionContext(() => setupAccess(route, state));
     await required(true);
     expect(access()).toBeTrue();
 
     await required(false);
-    expect(url(access())).toBe('/login?returnUrl=%2Fsetup');
-    auth.me.set({ ...ME, permissions: ['evse:read'] });
     expect(url(access())).toBe('/');
     auth.me.set({ ...ME, permissions: ['settings:manage'] });
-    expect(access()).toBeTrue();
+    expect(url(access())).toBe('/');
   });
 });
 
@@ -303,16 +301,11 @@ describe('SetupPage', () => {
     expect(TestBed.inject(SetupService).required()).toBeTrue();
   });
 
-  it('starts at the data source on an instance that is set up already, vertical on small screens', async () => {
+  it('shows the steps vertically on small screens', async () => {
     viewport.mobile.set(true);
-    await open(false);
+    await open(true);
 
     expect(page().querySelector('.mat-stepper-vertical')).not.toBeNull();
-    expect(current()).toBe('Datenquelle');
-    http
-      .expectOne('/api/v1/settings')
-      .flush({ title: 'Forbidden', detail: 'Missing permission: settings:read.' }, { status: 403, statusText: 'Forbidden' });
-    await settle();
-    expect(text(page(), '#source-step .error')).toBe('Missing permission: settings:read.');
+    expect(current()).toBe('Administrator');
   });
 });

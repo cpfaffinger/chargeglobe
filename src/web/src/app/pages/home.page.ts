@@ -21,6 +21,10 @@ import { BrowserCapabilities } from '../map/browser-capabilities';
 import { MapConfig, MapConfigService } from '../map/map-config.service';
 import { GeolocateEvent, MapEngine, MapHandle, MapTheme } from '../map/map-engine';
 import { Bbox, LocationSummary, LocationsService } from '../map/locations.service';
+import { MapFocus } from '../search/search.service';
+
+/** Zoom of the map on a search hit: streets and single locations visible. */
+export const FOCUS_ZOOM = 16;
 
 /** Reasons the map or the own position cannot be shown. */
 export type MapNotice =
@@ -134,6 +138,9 @@ export class HomePage {
   private readonly browser = inject(BrowserCapabilities);
   private readonly locationsService = inject(LocationsService);
   private readonly theme = inject(ThemeService);
+  private readonly focus = inject(MapFocus);
+  /** Location of a search hit whose info card opens once the map has loaded it. */
+  private pending: string | null = null;
   protected readonly auth = inject(AuthService);
   protected readonly viewport = inject(Viewport);
   private config: MapConfig | null = null;
@@ -161,6 +168,19 @@ export class HomePage {
     effect(() => {
       const dark = this.theme.dark();
       untracked(() => this.handle()?.setTheme(this.mapTheme(dark)));
+    });
+    // A search hit: center the map on it; its card opens when the locations there have arrived.
+    effect(() => {
+      const target = this.focus.target();
+      const handle = this.handle();
+      if (target && handle) {
+        untracked(() => {
+          this.focus.target.set(null);
+          this.pending = target.locationId;
+          handle.flyTo(target.latitude, target.longitude, FOCUS_ZOOM);
+          this.openPending();
+        });
+      }
     });
     inject(DestroyRef).onDestroy(() => {
       this.destroyed = true;
@@ -246,6 +266,7 @@ export class HomePage {
       this.attribution.set([...new Set(response.meta.attribution.map((source) => source.text))]);
       this.truncated.set(response.meta.truncated);
       this.handle()?.showLocations(response.data);
+      this.openPending();
       if (this.notice() === 'locations') {
         this.notice.set(null);
       }
@@ -253,6 +274,15 @@ export class HomePage {
       if (request === this.request) {
         this.notice.set('locations');
       }
+    }
+  }
+
+  /** Opens the card of the searched location as soon as it is among the loaded ones. */
+  private openPending(): void {
+    const location = this.locations().find((item) => item.id === this.pending);
+    if (location) {
+      this.selected.set(location);
+      this.pending = null;
     }
   }
 

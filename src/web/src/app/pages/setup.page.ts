@@ -32,8 +32,8 @@ const MAIL_KEYS = [
  * Setup wizard as Material stepper (horizontal from 840 px, vertical below). While the instance has no user
  * (GET /api/v1/setup), every page leads here: the first step creates the first administrator with the setup token
  * from the API log and signs it in; the linear stepper opens the next steps only then. The following steps store the
- * E-Control access and the SMTP server in the config service; they are optional and stay reachable for
- * settings:manage as onboarding of a running instance.
+ * E-Control access and the SMTP server in the config service; they are optional. Once the first administrator
+ * exists, the wizard is closed (setupAccess); the settings stay in /admin/settings.
  */
 @Component({
   imports: [
@@ -54,7 +54,6 @@ const MAIL_KEYS = [
       #stepper
       linear
       [orientation]="viewport.mobile() ? 'vertical' : 'horizontal'"
-      [selectedIndex]="startIndex"
       aria-label="Schritte der Einrichtung"
     >
       <ng-template matStepperIcon="edit"><app-icon name="check" /></ng-template>
@@ -175,8 +174,6 @@ export class SetupPage {
   protected readonly mailKeys = MAIL_KEYS;
   protected readonly sourceScope = SOURCE_SCOPE;
 
-  /** An instance that is set up already opens at the data source. */
-  protected readonly startIndex = this.setup.required() ? 0 : 1;
   protected readonly settings = signal<Setting[]>([]);
   protected readonly busy = signal(false);
   protected readonly errors = signal<string[]>([]);
@@ -186,12 +183,6 @@ export class SetupPage {
     password: ['', [Validators.required, Validators.minLength(10)]],
     repeat: ['', Validators.required],
   });
-
-  constructor() {
-    if (this.startIndex === 1) {
-      void this.loadSettings();
-    }
-  }
 
   /** The settings of the catalog with the given keys, in that order. */
   protected rows(keys: string[]): Setting[] {

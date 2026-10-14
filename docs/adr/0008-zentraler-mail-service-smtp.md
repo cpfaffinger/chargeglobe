@@ -33,7 +33,7 @@ Benutzerkonten mit Selbstregistrierung ([ADR-0005](0005-identity-rbac-openapi.md
 - Synchroner Versand im Request: einfacher, aber Registrierung und Passwort-Reset hingen an der Erreichbarkeit des Mailservers.
 
 ## Konsequenzen
-- Bis SMTP konfiguriert und `mail.enabled` gesetzt ist, werden Mails nur gesammelt (Status `QUEUED`). Für diese Zeit bestätigt `AUTH_REQUIRE_CONFIRMED_EMAIL=false` ([ADR-0005](0005-identity-rbac-openapi.md)) neue Konten sofort; ein Passwort-Reset per Mail ist dann nicht möglich.
+- Bis SMTP konfiguriert und `mail.enabled` gesetzt ist, werden Mails nur gesammelt (Status `QUEUED`). Für diese Zeit bestätigt die Einstellung `auth.require_confirmed_email = false` ([ADR-0005](0005-identity-rbac-openapi.md)) neue Konten sofort; ein Passwort-Reset per Mail ist dann nicht möglich.
 - Mail-Körper enthalten Tokens und werden nie geloggt.
 - `email_outbox` enthält personenbezogene Daten; versendete Einträge werden nach `mail.retention_days` (Default 30 Tage) gelöscht (täglicher Lauf des Workers). Wartende und fehlgeschlagene Einträge bleiben stehen.
 - Der SMTP-Zugang wird ausschließlich über den Config-Service gepflegt (Admin-Seite `/admin/settings` oder `PUT /settings/{key}`), nie über `.env`.

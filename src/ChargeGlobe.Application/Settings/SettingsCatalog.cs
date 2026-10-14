@@ -7,6 +7,8 @@ namespace ChargeGlobe.Application.Settings;
 public static class SettingsCatalog
 {
     public const string AuthRateLimitPerMinute = "auth.rate_limit_per_minute";
+    public const string AuthRequireConfirmedEmail = "auth.require_confirmed_email";
+    public const string AuthRequireAdminApproval = "auth.require_admin_approval";
 
     public const string MailEnabled = "mail.enabled";
     public const string MailSmtpHost = "mail.smtp.host";
@@ -67,6 +69,12 @@ public static class SettingsCatalog
             Min = 1,
             Max = 100_000,
         },
+        new(AuthRequireConfirmedEmail, SettingType.Bool, true,
+            "New accounts must confirm their e-mail address with the link of the confirmation mail before they can log in. " +
+            "If false, new accounts count as confirmed at once."),
+        new(AuthRequireAdminApproval, SettingType.Bool, false,
+            "New accounts must be approved by an administrator (permission user:manage) before they can log in. The " +
+            "administrators get a mail for every new account; existing accounts stay approved."),
 
         new(MailEnabled, SettingType.Bool, false,
             "Whether queued mails are sent. While false, mails stay in the outbox."),

@@ -32,7 +32,7 @@ public class AccountFlowTests(IntegrationFactory factory)
 
         var beforeConfirmation = await client.PostAsJsonAsync("/api/v1/auth/login", new { email, password = IntegrationFactory.Password });
         var notConfirmed = await beforeConfirmation.AssertProblemAsync(HttpStatusCode.Forbidden);
-        Assert.Equal("E-mail address not confirmed", notConfirmed.GetProperty("title").GetString());
+        Assert.Equal(("E-mail address not confirmed", "account_not_confirmed"), (notConfirmed.GetProperty("title").GetString(), notConfirmed.GetProperty("code").GetString()));
 
         var wrongToken = await client.PostAsJsonAsync("/api/v1/auth/confirm-email", new { userId, token = "00" });
         var wrongTokenProblem = await wrongToken.AssertProblemAsync(HttpStatusCode.UnprocessableEntity);

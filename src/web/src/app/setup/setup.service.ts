@@ -2,7 +2,6 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { AuthService } from '../auth/auth.service';
 
 /**
  * Whether the instance still needs its initial setup (GET /api/v1/setup): true while no user account exists.
@@ -38,17 +37,7 @@ export const requireSetupDone: CanActivateFn = () =>
   !inject(SetupService).required() || inject(Router).createUrlTree(['/setup']);
 
 /**
- * Guard of /setup: open to everybody while no user exists; afterwards it is the onboarding of the remaining
- * configuration and needs settings:manage (anonymous visitors log in first, others go to the map).
+ * Guard of /setup: the wizard runs exactly once, while no user exists; afterwards it leads to the map. The settings
+ * of the later steps are maintained under /admin/settings.
  */
-export const setupAccess: CanActivateFn = (_route, state) => {
-  const auth = inject(AuthService);
-  const router = inject(Router);
-  if (inject(SetupService).required()) {
-    return true;
-  }
-  if (!auth.isAuthenticated()) {
-    return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
-  }
-  return auth.hasPermission('settings:manage') || router.createUrlTree(['/']);
-};
+export const setupAccess: CanActivateFn = () => inject(SetupService).required() || inject(Router).createUrlTree(['/']);

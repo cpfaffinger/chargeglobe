@@ -14,6 +14,19 @@ public sealed record ConfirmEmailRequest(Guid? UserId, string? Token);
 
 public sealed record LoginRequest(string? Email, string? Password);
 
+/// <param name="Email">Address of the account that has not confirmed its e-mail address yet.</param>
+/// <param name="Language">Language of the confirmation mail: <c>de</c> (default) or <c>en</c>.</param>
+public sealed record ResendConfirmationRequest(string? Email, string? Language);
+
+/// <summary>Values of the <c>code</c> member of the problem responses of <c>login</c>.</summary>
+public static class LoginProblemCodes
+{
+    public const string InvalidCredentials = "invalid_credentials";
+    public const string NotConfirmed = "account_not_confirmed";
+    public const string PendingApproval = "account_pending_approval";
+    public const string Disabled = "account_disabled";
+}
+
 /// <param name="Email">Address of the account whose password should be reset.</param>
 /// <param name="Language">Language of the reset mail: <c>de</c> (default) or <c>en</c>.</param>
 public sealed record ForgotPasswordRequest(string? Email, string? Language);

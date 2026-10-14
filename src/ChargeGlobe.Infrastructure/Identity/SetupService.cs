@@ -37,7 +37,7 @@ public enum SetupOutcome
 }
 
 /// <summary>Initial setup: an instance without users is set up by creating the first administrator.</summary>
-public sealed class SetupService(AppDbContext db, UserManager<AppUser> users, SetupToken token, AuditLog audit)
+public sealed class SetupService(AppDbContext db, UserManager<AppUser> users, SetupToken token, AuditLog audit, TimeProvider timeProvider)
 {
     // Arbitrary, but fixed: serializes parallel attempts to create the first administrator.
     private const long AdvisoryLockKey = 0x6367_6462_0002;
@@ -64,7 +64,11 @@ public sealed class SetupService(AppDbContext db, UserManager<AppUser> users, Se
             return (SetupOutcome.InvalidToken, null, []);
         }
 
-        var admin = new AppUser { Id = Guid.CreateVersion7(), UserName = email, Email = email, EmailConfirmed = true };
+        var now = timeProvider.GetUtcNow();
+        var admin = new AppUser
+        {
+            Id = Guid.CreateVersion7(), UserName = email, Email = email, EmailConfirmed = true, CreatedAt = now, ApprovedAt = now,
+        };
         var created = await users.CreateAsync(admin, password);
         if (!created.Succeeded)
         {

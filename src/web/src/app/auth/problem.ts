@@ -13,6 +13,11 @@ export function describeError(error: unknown): string[] {
   return [problem?.detail ?? problem?.title ?? 'Der Server ist nicht erreichbar.'];
 }
 
+/** The machine-readable `code` of a problem response (e.g. `account_disabled`), if there is one. */
+export function problemCode(error: unknown): string | null {
+  return error instanceof HttpErrorResponse ? (error.error?.code ?? null) : null;
+}
+
 /** Runs a form action with a busy flag and collects its error messages. */
 export async function attempt(
   busy: WritableSignal<boolean>,

@@ -3,7 +3,8 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { AuthService } from '../auth/auth.service';
-import { HomePage } from '../pages/home.page';
+import { FOCUS_ZOOM, HomePage } from '../pages/home.page';
+import { MapFocus } from '../search/search.service';
 import { ThemeService, Viewport } from '../design/theme.service';
 import { ME, MAP_CONFIG, fakeAuth, fakeBrowser, fakeMapEngine, fakeViewport, flush, locationSummary, text } from '../testing';
 import { BrowserCapabilities } from './browser-capabilities';
@@ -450,6 +451,28 @@ describe('HomePage (map)', () => {
       ]);
       expect(root().querySelectorAll('#legend app-icon').length).toBe(4);
       expect(root().querySelector<HTMLElement>('#location-card .status-dot')!.style.background).toBe('var(--cg-status-available)');
+    });
+
+    it('flies to a search hit and opens its card once the location is loaded', async () => {
+      await render();
+      const focus = TestBed.inject(MapFocus);
+
+      focus.focus({ locationId: 'loc-2', latitude: 48.2, longitude: 16.4 });
+      await settle();
+      expect(map.handle.flyTo).toHaveBeenCalledOnceWith(48.2, 16.4, FOCUS_ZOOM);
+      expect(focus.target()).toBeNull();
+      expect(root().querySelector('#location-card')).toBeNull();
+
+      await moveTo(vienna, response());
+      expect(text(root(), '#location-card h2')).toBe('Ladestandort');
+
+      // A hit that is already loaded opens at once; later loads keep the selection.
+      focus.focus({ locationId: 'loc-1', latitude: 48.2085, longitude: 16.3731 });
+      await settle();
+      expect(text(root(), '#location-card h2')).toBe('Parkgarage Stephansplatz');
+      root().querySelector<HTMLButtonElement>('#close-card')!.click();
+      await moveTo(vienna, response());
+      expect(root().querySelector('#location-card')).toBeNull();
     });
 
     it('hands locations that arrived before the map to the engine once it exists', async () => {

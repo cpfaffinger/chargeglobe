@@ -5,6 +5,7 @@ import { Router, provideRouter } from '@angular/router';
 import { App } from './app';
 import { appConfig } from './app.config';
 import { routes } from './app.routes';
+import { SetupService } from './setup/setup.service';
 import { AuthService } from './auth/auth.service';
 import { BrowserCapabilities } from './map/browser-capabilities';
 import { MapEngine } from './map/map-engine';
@@ -132,25 +133,19 @@ describe('App with its routes', () => {
       await fixture.whenStable();
       const sheet = root().querySelector('mat-sidenav')!;
       expect(sheet.classList).toContain('mat-drawer-opened');
-      expect(Array.from(sheet.querySelectorAll('nav a')).map((link) => link.id)).toEqual([
-        'nav-map',
-        'nav-settings',
-        'nav-crawler',
-        'nav-mail',
-        'nav-setup',
-        'nav-account',
-      ]);
+      expect(Array.from(sheet.querySelectorAll('nav a')).map((link) => link.id)).toEqual(['nav-map', 'nav-admin', 'nav-account']);
+      expect(sheet.querySelector('#location-search')).not.toBeNull();
 
       sheet.querySelectorAll<HTMLButtonElement>('#theme-toggle button')[0].click();
       await fixture.whenStable();
       expect(TestBed.inject(ThemeService).mode()).toBe('light');
 
-      sheet.querySelector<HTMLAnchorElement>('#nav-settings')!.click();
+      sheet.querySelector<HTMLAnchorElement>('#nav-admin')!.click();
       await flush();
       await fixture.whenStable();
-      expect(router.url).toBe('/admin/settings');
+      expect(router.url).toBe('/admin');
       expect(sheet.classList).not.toContain('mat-drawer-opened');
-      http.expectOne('/api/v1/settings').flush([]);
+      expect(text(root(), 'h1')).toBe('Administration');
     });
   });
 
@@ -162,22 +157,56 @@ describe('App with its routes', () => {
       expect(text(root(), 'h1')).toBe('Anmelden');
     });
 
-    it('opens /admin/settings only with settings:read and shows the link only then', async () => {
+    it('opens the administration with any admin permission and shows only the permitted subpages', async () => {
       auth.me.set(ME);
       auth.hasPermission.and.returnValue(false);
 
-      await navigate('/admin/settings');
+      await navigate('/admin');
 
       expect(router.url).toBe('/');
-      expect(root().querySelector('#nav-settings')).toBeNull();
+      expect(root().querySelector('#nav-admin')).toBeNull();
       http.expectOne('/api/v1/map/config');
 
       auth.hasPermission.and.callFake((permission) => permission === 'settings:read');
-      await navigate('/admin/settings');
+      await navigate('/admin');
 
+      expect(router.url).toBe('/admin');
+      expect(root().querySelector('#nav-admin')).not.toBeNull();
+      expect(text(root(), 'h1')).toBe('Administration');
+      expect(Array.from(root().querySelectorAll('.admin-tabs a')).map((tab) => tab.id)).toEqual(['admin-tab-overview', 'admin-tab-settings']);
+      expect(Array.from(root().querySelectorAll('.admin-group h2')).map((heading) => heading.textContent)).toEqual(['Konfiguration']);
+
+      root().querySelector<HTMLAnchorElement>('#admin-card-settings')!.click();
+      await flush();
+      await fixture.whenStable();
       expect(router.url).toBe('/admin/settings');
       expect(text(root(), 'h1')).toBe('Einstellungen');
-      expect(root().querySelector('#nav-settings')).not.toBeNull();
+      http.expectOne('/api/v1/settings').flush([]);
+
+      await navigate('/admin/mail');
+      expect(router.url).toBe('/');
+      http.expectOne('/api/v1/map/config');
+    });
+
+    it('shows "Administration" in the toolbar as drop-down with the overview and the permitted pages', async () => {
+      auth.me.set(ME);
+      auth.hasPermission.and.callFake((permission) => permission === 'jobs:read' || permission === 'settings:read');
+      await navigate('/');
+      http.expectOne('/api/v1/map/config');
+
+      const trigger = root().querySelector<HTMLButtonElement>('.toolbar-nav #nav-admin')!;
+      expect(trigger.classList).not.toContain('active');
+      trigger.click();
+      await flush();
+      await fixture.whenStable();
+      const items = () => Array.from(document.querySelectorAll<HTMLAnchorElement>('.mat-mdc-menu-panel a[mat-menu-item]'));
+      expect(items().map((item) => item.id)).toEqual(['admin-menu-overview', 'admin-menu-crawler', 'admin-menu-settings']);
+
+      items()[2].click();
+      await flush();
+      await fixture.whenStable();
+      expect(router.url).toBe('/admin/settings');
+      expect(root().querySelector('#nav-admin')!.classList).toContain('active');
       http.expectOne('/api/v1/settings').flush([]);
     });
 
@@ -188,7 +217,6 @@ describe('App with its routes', () => {
       await navigate('/admin/crawler');
 
       expect(router.url).toBe('/');
-      expect(root().querySelector('#nav-crawler')).toBeNull();
       http.expectOne('/api/v1/map/config');
 
       auth.hasPermission.and.callFake((permission) => permission === 'jobs:read');
@@ -196,7 +224,7 @@ describe('App with its routes', () => {
 
       expect(router.url).toBe('/admin/crawler');
       expect(text(root(), 'h1')).toBe('Crawler');
-      expect(root().querySelector('#nav-crawler')).not.toBeNull();
+      expect(root().querySelector('#admin-tab-crawler')).not.toBeNull();
       http.expectOne('/api/v1/admin/crawler/status').flush({ data: { at: '2026-10-14T08:15:00Z', providers: [], queue: { pending: 0, failed: 0 } } });
       http.expectOne('/api/v1/admin/crawler/runs?limit=50').flush({ data: [], meta: { returned: 0, limit: 50 } });
     });
@@ -208,7 +236,6 @@ describe('App with its routes', () => {
       await navigate('/admin/mail');
 
       expect(router.url).toBe('/');
-      expect(root().querySelector('#nav-mail')).toBeNull();
       http.expectOne('/api/v1/map/config');
 
       auth.hasPermission.and.returnValue(true);
@@ -216,7 +243,7 @@ describe('App with its routes', () => {
 
       expect(router.url).toBe('/admin/mail');
       expect(text(root(), 'h1')).toBe('E-Mail-Versand');
-      expect(root().querySelector('#nav-mail')).not.toBeNull();
+      expect(root().querySelector('#admin-tab-mail')).not.toBeNull();
       http.expectOne('/api/v1/mail/outbox?page=1&pageSize=25').flush({ data: [], meta: { total: 0, page: 1, pageSize: 25 } });
     });
 
@@ -267,9 +294,26 @@ describe('App with its routes', () => {
       expect(router.url).toBe('/locations/loc-1');
       http.expectOne('/api/v1/locations/loc-1').flush({ title: 'Not found' }, { status: 404, statusText: 'Not Found' });
 
+      await navigate('/admin/users');
+      expect(text(root(), 'h1')).toBe('Nutzer');
+      http.expectOne('/api/v1/users?page=1&pageSize=25').flush({ data: [], meta: { total: 0, page: 1, pageSize: 25 } });
+      http.expectOne('/api/v1/roles').flush({ data: [] });
+
+      await navigate('/admin/roles');
+      expect(text(root(), 'h1')).toBe('Rollen');
+      http.expectOne('/api/v1/permissions').flush([]);
+      http.expectOne('/api/v1/roles').flush({ data: [] });
+
+      // The wizard runs once: after the setup it leads to the map, even for administrators.
+      await navigate('/setup');
+      expect(router.url).toBe('/');
+      http.expectOne('/api/v1/map/config');
+
+      const loaded = TestBed.inject(SetupService).load();
+      http.expectOne('/api/v1/setup').flush({ required: true });
+      await loaded;
       await navigate('/setup');
       expect(text(root(), 'h1')).toBe('Einrichtung');
-      http.expectOne('/api/v1/settings').flush([]);
     });
 
     it('sends unknown paths to the start page', async () => {

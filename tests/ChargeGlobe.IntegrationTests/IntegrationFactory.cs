@@ -26,8 +26,6 @@ public class IntegrationFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
     private readonly string _databaseName = $"cg_test_{Guid.NewGuid():N}";
 
-    public bool RequireConfirmedEmail { get; init; } = true;
-
     public string? AdminEmailSetting { get; init; } = AdminEmail;
 
     public string? AdminPasswordSetting { get; init; } = AdminPassword;
@@ -142,7 +140,6 @@ public class IntegrationFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("ConnectionStrings:Default", ConnectionString);
         builder.UseSetting("JWT_SIGNING_KEY", "integration-test-signing-key-0123456789abcdef");
         builder.UseSetting("PUBLIC_BASE_URL", PublicBaseUrl);
-        builder.UseSetting("AUTH_REQUIRE_CONFIRMED_EMAIL", RequireConfirmedEmail ? "true" : "false");
         builder.UseSetting("ADMIN_EMAIL", AdminEmailSetting);
         builder.UseSetting("ADMIN_INITIAL_PASSWORD", AdminPasswordSetting);
         builder.ConfigureLogging(logging => logging.AddProvider(new WarningCollector(Warnings)));

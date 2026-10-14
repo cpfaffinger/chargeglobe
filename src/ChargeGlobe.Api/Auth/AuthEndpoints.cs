@@ -46,13 +46,27 @@ public static class AuthEndpoints
             .WithDescription(
                 "Returns an access token (JWT, 15 minutes) for the `Authorization: Bearer` header and sets the " +
                 "refresh token as an HttpOnly, Secure, SameSite=Strict cookie (14 days) for `refreshToken`. " +
-                "401 for wrong credentials, 403 if the e-mail address is not confirmed yet. " +
+                "Errors carry a machine-readable `code`: 401 `invalid_credentials` for a wrong e-mail address or password; " +
+                "403 `account_disabled` if an administrator disabled the account, `account_not_confirmed` if the e-mail " +
+                "address is not confirmed yet (see `resendConfirmation`), `account_pending_approval` if an administrator " +
+                "still has to approve the account (setting `auth.require_admin_approval`). " +
                 "Scripts and agents should use an API key (`createApiKey`) instead. Public, rate-limited per IP.")
             .Produces<TokenResponse>()
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
             .WithResponseExample(StatusCodes.Status200OK, ExampleTokenResponse);
+
+        auth.MapPost("/confirm-email/resend", ResendConfirmationAsync)
+            .WithName("resendConfirmation")
+            .WithSummary("Send the confirmation mail again")
+            .WithDescription(
+                "Queues a new confirmation mail if the address belongs to an account whose e-mail address is not " +
+                "confirmed yet; earlier links stay valid until they expire. Always answers 202 for a well-formed request, " +
+                "so the response does not reveal whether the address is registered. Public, rate-limited per IP.")
+            .Produces<MessageResponse>(StatusCodes.Status202Accepted)
+            .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
+            .WithResponseExample(StatusCodes.Status202Accepted, new MessageResponse(ResendMessage));
 
         auth.MapPost("/refresh", RefreshAsync)
             .WithName("refreshToken")
@@ -104,6 +118,8 @@ public static class AuthEndpoints
         "If the address is not registered yet, an account was created and a confirmation mail is on its way.";
 
     private const string ForgotMessage = "If the address belongs to an account, a reset mail is on its way.";
+
+    private const string ResendMessage = "If the address belongs to an unconfirmed account, a new confirmation mail is on its way.";
 
     private static Validation RequireLanguage(this Validation validation, string? language) =>
         validation.Require(
@@ -166,22 +182,43 @@ public static class AuthEndpoints
         }
 
         var (outcome, user) = await accounts.LoginAsync(request.Email!.Trim(), request.Password!, cancellationToken);
-        switch (outcome)
+        if (outcome == LoginOutcome.Success)
         {
-            case LoginOutcome.Success:
-                RefreshCookie.Set(response, await sessions.IssueAsync(user!.Id, cancellationToken));
-                return Results.Ok(await accessTokens.IssueAsync(user.Id, cancellationToken));
-            case LoginOutcome.EmailNotConfirmed:
-                return Results.Problem(
-                    statusCode: StatusCodes.Status403Forbidden,
-                    title: "E-mail address not confirmed",
-                    detail: "Confirm the e-mail address with the link from the confirmation mail, then log in again.");
-            default:
-                return Results.Problem(
-                    statusCode: StatusCodes.Status401Unauthorized,
-                    title: "Unauthorized",
-                    detail: "E-mail address or password is wrong.");
+            RefreshCookie.Set(response, await sessions.IssueAsync(user!.Id, cancellationToken));
+            return Results.Ok(await accessTokens.IssueAsync(user.Id, cancellationToken));
         }
+
+        var (status, title, detail, code) = outcome switch
+        {
+            LoginOutcome.EmailNotConfirmed => (
+                StatusCodes.Status403Forbidden, "E-mail address not confirmed",
+                "Confirm the e-mail address with the link from the confirmation mail, then log in again.", LoginProblemCodes.NotConfirmed),
+            LoginOutcome.PendingApproval => (
+                StatusCodes.Status403Forbidden, "Account awaits approval",
+                "An administrator has to approve the account first; you get a mail when it is approved.", LoginProblemCodes.PendingApproval),
+            LoginOutcome.Disabled => (
+                StatusCodes.Status403Forbidden, "Account disabled",
+                "An administrator disabled the account.", LoginProblemCodes.Disabled),
+            _ => (StatusCodes.Status401Unauthorized, "Unauthorized", "E-mail address or password is wrong.", LoginProblemCodes.InvalidCredentials),
+        };
+        return Results.Problem(statusCode: status, title: title, detail: detail, extensions: new Dictionary<string, object?> { ["code"] = code });
+    }
+
+    private static async Task<IResult> ResendConfirmationAsync(
+        ResendConfirmationRequest request, AccountService accounts, CancellationToken cancellationToken)
+    {
+        var email = request.Email?.Trim();
+        var invalid = new Validation()
+            .Require(Validation.IsEmail(email), "email", "Must be a valid e-mail address.")
+            .RequireLanguage(request.Language)
+            .ToResult();
+        if (invalid is not null)
+        {
+            return invalid;
+        }
+
+        await accounts.ResendConfirmationAsync(email!, request.Language, cancellationToken);
+        return Results.Json(new MessageResponse(ResendMessage), statusCode: StatusCodes.Status202Accepted);
     }
 
     private static async Task<IResult> RefreshAsync(

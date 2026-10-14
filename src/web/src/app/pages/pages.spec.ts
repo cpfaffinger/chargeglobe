@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
@@ -9,7 +9,7 @@ import { ME, fakeAuth, flush, submit, text, type, validationError } from '../tes
 import { AccountPage } from './account.page';
 import { ConfirmEmailPage } from './confirm-email.page';
 import { ForgotPasswordPage } from './forgot-password.page';
-import { LoginPage } from './login.page';
+import { LOGIN_PROBLEMS, LoginPage } from './login.page';
 import { RegisterPage } from './register.page';
 import { ResetPasswordPage } from './reset-password.page';
 
@@ -104,6 +104,44 @@ describe('account pages', () => {
       expect(text(page(), '.error')).toBe('E-mail address or password is wrong.');
       expect(page().querySelector<HTMLButtonElement>('button')!.disabled).toBeFalse();
       expect(TestBed.inject(Router).url).toBe('/login');
+    });
+
+    const refused = (code: string) =>
+      new HttpErrorResponse({ status: code === 'invalid_credentials' ? 401 : 403, error: { title: 'Login refused', code } });
+
+    it('explains the code of a refused login in German', async () => {
+      await open('/login');
+
+      for (const code of ['invalid_credentials', 'account_pending_approval', 'account_disabled']) {
+        auth.login.and.rejectWith(refused(code));
+        await logIn();
+        expect(text(page(), '.error')).toBe(LOGIN_PROBLEMS[code]);
+        expect(page().querySelector('#resend')).toBeNull();
+      }
+
+      auth.login.and.rejectWith(refused('something_new'));
+      await logIn();
+      expect(text(page(), '.error')).toBe('Login refused');
+    });
+
+    it('sends the confirmation mail again for an unconfirmed account', async () => {
+      auth.login.and.rejectWith(refused('account_not_confirmed'));
+      auth.resendConfirmation.and.resolveTo('queued');
+      await open('/login');
+      await logIn();
+
+      expect(text(page(), '.error')).toBe(LOGIN_PROBLEMS['account_not_confirmed']);
+      page().querySelector<HTMLButtonElement>('#resend')!.click();
+      await settle();
+
+      expect(auth.resendConfirmation).toHaveBeenCalledOnceWith('anna@example.org', 'de');
+      expect(page().querySelector('#resend')).toBeNull();
+      expect(page().querySelector('.error')).toBeNull();
+      expect(text(page(), '#resent')).toBe('Wir haben dir eine neue Bestätigungsmail geschickt. Bitte prüfe auch den Spam-Ordner.');
+
+      // A new attempt clears the message.
+      await logIn();
+      expect(page().querySelector('#resent')).toBeNull();
     });
   });
 

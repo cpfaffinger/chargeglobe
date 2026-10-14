@@ -115,6 +115,15 @@ describe('AuthService', () => {
     await expectAsync(confirmed).toBeResolved();
   });
 
+  it('asks for a new confirmation mail', async () => {
+    const requested = auth.resendConfirmation('anna@example.org', 'de');
+    const request = http.expectOne('/api/v1/auth/confirm-email/resend');
+    expect(request.request.body).toEqual({ email: 'anna@example.org', language: 'de' });
+    request.flush({ message: 'queued' });
+
+    expect(await requested).toBe('queued');
+  });
+
   it('requests a password reset mail', async () => {
     const requested = auth.requestPasswordReset('anna@example.org', 'de');
     const request = http.expectOne('/api/v1/auth/password/forgot');

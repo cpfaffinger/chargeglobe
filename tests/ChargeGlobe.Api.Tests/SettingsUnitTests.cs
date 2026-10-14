@@ -206,7 +206,7 @@ public class EnvExampleTests
         var used = readByCode.Concat(readByCompose).ToHashSet();
 
         Assert.Contains("JWT_SIGNING_KEY", used);
-        Assert.Contains("AUTH_REQUIRE_CONFIRMED_EMAIL", used);
+        Assert.Contains("ADMIN_EMAIL", used);
         Assert.Contains("CHARGEGLOBE_PORT", used);
         Assert.Empty(used.Except(listed));
         Assert.Empty(listed.Except(used));

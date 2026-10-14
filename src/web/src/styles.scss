@@ -649,6 +649,123 @@ app-setting-row .error {
   width: 100%;
 }
 
+// ---- Administration -------------------------------------------------------------------------------------------------
+
+.admin-tabs {
+  margin-bottom: 16px;
+}
+
+.admin-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.admin-card {
+  color: inherit;
+  text-decoration: none;
+}
+
+.admin-card h3 {
+  margin: 0 0 4px;
+}
+
+.admin-card:hover mat-card,
+.admin-card:focus-visible mat-card {
+  border-color: var(--mat-sys-primary);
+}
+
+.users-filter,
+#new-role {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-bottom: 16px;
+}
+
+.users-filter mat-form-field {
+  flex: 1;
+  min-width: 240px;
+}
+
+#users,
+.role-matrix {
+  width: 100%;
+}
+
+.role-select {
+  min-width: 180px;
+}
+
+#users .actions {
+  white-space: nowrap;
+}
+
+.account-state {
+  font-weight: 600;
+}
+
+.account-state.active {
+  color: var(--cg-status-available);
+}
+
+.account-state.pending_confirmation,
+.account-state.pending_approval {
+  color: var(--cg-status-occupied);
+}
+
+.account-state.disabled {
+  color: var(--cg-status-out-of-order);
+}
+
+.role-matrix {
+  border-collapse: collapse;
+  font: var(--mat-sys-body-small);
+}
+
+.role-matrix th,
+.role-matrix td {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  text-align: center;
+  vertical-align: top;
+}
+
+.role-matrix th[scope='row'] {
+  text-align: left;
+}
+
+.role-matrix th span {
+  display: block;
+}
+
+.role-matrix .role-name {
+  font: var(--mat-sys-title-small);
+}
+
+// ---- Search ---------------------------------------------------------------------------------------------------------
+
+.location-search {
+  width: min(360px, 32vw);
+  margin-right: 8px;
+}
+
+.nav-sheet .location-search {
+  width: calc(100% - 32px);
+  margin: 0 16px 8px;
+}
+
+.location-search app-icon {
+  margin: 0 4px 0 12px;
+}
+
+.hit-detail {
+  display: block;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-small);
+}
+
 // ---- Crawler (admin) ------------------------------------------------------------------------------------------------
 
 .crawler-actions {

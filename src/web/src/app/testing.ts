@@ -29,6 +29,7 @@ export function fakeAuth(me: Me | null = null) {
     'logout',
     'register',
     'confirmEmail',
+    'resendConfirmation',
     'requestPasswordReset',
     'resetPassword',
     'refresh',
@@ -49,7 +50,7 @@ export const MAP_CONFIG: MapConfig = {
 
 /** MapEngine double: WebGL is not reliably available in the headless test browser. */
 export function fakeMapEngine() {
-  const handle = jasmine.createSpyObj<MapHandle>('MapHandle', ['locate', 'destroy', 'showLocations', 'setTheme']);
+  const handle = jasmine.createSpyObj<MapHandle>('MapHandle', ['locate', 'destroy', 'showLocations', 'setTheme', 'flyTo']);
   handle.locate.and.returnValue(true);
   const engine = jasmine.createSpyObj<MapEngine>('MapEngine', ['create']);
   engine.create.and.resolveTo(handle);
