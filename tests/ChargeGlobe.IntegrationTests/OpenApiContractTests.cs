@@ -74,7 +74,7 @@ public class OpenApiContractTests(IntegrationFactory factory)
         Assert.Equal(
             new[]
             {
-                "addFavorite", "confirmEmail", "createApiKey", "createInitialAdmin", "deleteRole", "getCrawlerStatus", "getEvse", "getEvseOccupancy", "getEvsePrices",
+                "addFavorite", "changePassword", "confirmEmail", "createApiKey", "createInitialAdmin", "deleteRole", "getCrawlerStatus", "getEvse", "getEvseOccupancy", "getEvsePrices",
                 "getEvseStatusHistory", "getHealth", "getLocation", "getMapConfig", "getMe", "getSetting", "getSetupStatus", "getUser",
                 "listApiKeys", "listCrawlerRuns", "listFavorites", "listLocations", "listMailOutbox", "listOperators", "listPermissions", "listRoles", "listSettings",
                 "listUsers", "login", "logout", "putRole", "refreshToken", "register", "removeFavorite", "requestPasswordReset", "resendConfirmation",
@@ -103,6 +103,7 @@ public class OpenApiContractTests(IntegrationFactory factory)
     [InlineData("/api/v1/permissions", "get", "none")]
     [InlineData("/api/v1/auth/register", "post", "none")]
     [InlineData("/api/v1/auth/login", "post", "none")]
+    [InlineData("/api/v1/auth/password/change", "post", "authenticated")]
     [InlineData("/api/v1/map/config", "get", "none")]
     [InlineData("/api/v1/locations", "get", "none")]
     [InlineData("/api/v1/locations/{id}", "get", "none")]

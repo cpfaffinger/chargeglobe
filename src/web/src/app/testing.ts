@@ -32,6 +32,7 @@ export function fakeAuth(me: Me | null = null) {
     'resendConfirmation',
     'requestPasswordReset',
     'resetPassword',
+    'changePassword',
     'refresh',
     'accessToken',
     'hasPermission',

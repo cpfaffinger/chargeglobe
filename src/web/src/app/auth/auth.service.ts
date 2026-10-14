@@ -104,6 +104,11 @@ export class AuthService {
     return response.message;
   }
 
+  /** Changes the password of the signed-in account; the other browser sessions end. */
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    await firstValueFrom(this.http.post(`${API}/auth/password/change`, { currentPassword, newPassword }));
+  }
+
   async resetPassword(userId: string, token: string, newPassword: string): Promise<void> {
     await firstValueFrom(
       this.http.post(`${API}/auth/password/reset`, { userId, token, newPassword }),
