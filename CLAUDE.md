@@ -117,7 +117,10 @@ TOKEN=$(curl -sk -H 'Content-Type: application/json' -d "{\"email\":\"$EMAIL\",\
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/evses/<EVSE-ID oder UUID>"                  # 200: EVSE mit Standort, Steckern, aktuellem Status
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/evses/<EVSE-ID>/status/history"           # Statusintervalle der letzten 7 Tage (max. 90 Tage je Abfrage)
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/evses/<EVSE-ID>/occupancy?weeks=4"        # Matrix Wochentag × Stunde (Europe/Vienna)
-curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/evses/<EVSE-ID>/prices"                  # Ad-hoc-Preis, Verlauf, Kosten 30 kWh/40 min (price:read)
+curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/evses/<EVSE-ID>/prices"                  # Ad-hoc-Preis, Verlauf, Kosten 30 kWh/40 min, emps[] = Ladekarten nach Kosten (price:read)
+curl -k -H "Authorization: Bearer $TOKEN" -X PUT -H 'Content-Type: application/json' -d '{"name":"SMATRICS","website":"https://smatrics.com"}' https://localhost:5005/api/v1/emps/smatrics   # Anbieter anlegen (tariff:write); UI: /admin/tariffs
+curl -k -H "Authorization: Bearer $TOKEN" -X PUT -H 'Content-Type: application/json' -d '{"emp":"smatrics","name":"Basic","currency":"EUR","validFrom":"2026-01-01T00:00:00Z","pricePerKwhAc":0.45,"pricePerKwhDc":0.65,"roamingOnly":true}' https://localhost:5005/api/v1/tariffs/$(cat /proc/sys/kernel/random/uuid)   # Tarif anlegen, 201
+curl -k -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/tariffs   # Tarife (price:read)
 docker compose logs crawler worker          # Heartbeats beider Rollen (alle 30 s); crawler (nur mit provider.enabled): "Job STATUS_POLL econtrol point 17/212 (…) started (HOT, last poll 6 min ago)", "… done: … requests …; 412/600 requests in the last hour; …", "E-Control register page 3/17 …", Pausen "… provider paused until …"; Health-Probe stündlich
 curl -k "https://localhost:5005/api/v1/search?q=stephansplatz"   # Suche nach EVSE-ID, Name, Straße, PLZ, Ort (anonym)
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/users?q=example.org"   # Konten mit Status und Rollen (user:read); UI: /admin/users
@@ -165,4 +168,4 @@ Vor einem neuen lokalen Coverage-Lauf alte Ergebnisse löschen (`tests/*/TestRes
 
 ## Nächste Schritte (Stand jetzt)
 
-Siehe `docs/09-roadmap.md`: erste EMP-Tarife mit Tarif-Editor und Preisvergleich je Ladepunkt, Routing mit Valhalla, Mail-Absender auf `chargeglobe.net`; außerdem Lizenz festlegen und die E-Control-Nutzungsbedingungen archivieren. API-Keys von Quellen werden nur im Admin-UI eingetragen (`provider.api_key`, Scope `provider:<key>`), nie in Dateien.
+Siehe `docs/09-roadmap.md`: reale Ladekarten-Tarife pflegen, eigene Karten in den Einstellungen, Routing mit Valhalla, zweite Datenquelle (NAP/AFIR oder OpenChargeMap), Mail-Absender auf `chargeglobe.net`; außerdem Lizenz festlegen und die E-Control-Nutzungsbedingungen archivieren. API-Keys von Quellen werden nur im Admin-UI eingetragen (`provider.api_key`, Scope `provider:<key>`), nie in Dateien.

@@ -145,6 +145,7 @@ describe('App with its routes', () => {
         'nav-admin-crawler',
         'nav-admin-mail',
         'nav-admin-settings',
+        'nav-admin-tariffs',
         'nav-account',
       ]);
       expect(sheet.querySelector('#location-search')).not.toBeNull();
@@ -268,6 +269,26 @@ describe('App with its routes', () => {
       expect(text(root(), 'h1')).toBe('E-Mail-Versand');
       expect(root().querySelector('#admin-tab-mail')).not.toBeNull();
       http.expectOne('/api/v1/mail/outbox?page=1&pageSize=25').flush({ data: [], meta: { total: 0, page: 1, pageSize: 25 } });
+    });
+
+    it('opens /admin/tariffs only with tariff:write and shows the link only then', async () => {
+      auth.me.set(ME);
+      auth.hasPermission.and.callFake((permission) => permission === 'settings:read');
+
+      await navigate('/admin/tariffs');
+
+      expect(router.url).toBe('/');
+      http.expectOne('/api/v1/map/config');
+
+      auth.hasPermission.and.callFake((permission) => permission === 'tariff:write');
+      await navigate('/admin/tariffs');
+
+      expect(router.url).toBe('/admin/tariffs');
+      expect(text(root(), 'h1')).toBe('Tarife');
+      expect(root().querySelector('#admin-tab-tariffs')).not.toBeNull();
+      http.expectOne('/api/v1/emps').flush({ data: [] });
+      http.expectOne('/api/v1/tariffs').flush({ data: [] });
+      http.expectOne('/api/v1/operators?limit=100').flush({ data: [] });
     });
 
     it('redirects anonymous visitors from /admin/mail to the login', async () => {

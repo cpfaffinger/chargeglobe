@@ -2,10 +2,11 @@ namespace ChargeGlobe.Domain.Charging;
 
 #pragma warning disable CA1707 // Identifiers should not contain underscores: names as stored in the text columns.
 
-/// <summary>Kind of a price: the ad-hoc price without contract (AFIR); later the tariffs of charging cards.</summary>
+/// <summary>Kind of a price: the ad-hoc price without contract (AFIR) or the tariff of a charging card or app (EMP).</summary>
 public enum TariffKind
 {
     AD_HOC,
+    EMP,
 }
 
 #pragma warning restore CA1707

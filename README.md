@@ -55,7 +55,7 @@ chargeglobe/
 ├─ docs/                         # Konzept und Architektur
 ├─ ChargeGlobe.sln
 ├─ src/
-│  ├─ ChargeGlobe.Domain/        # Ladepunkt-Modell (Location, EVSE, Connector, Operator, Region), Provenienz, Status-Zeitreihen, Value Objects (EvseId, GeoPoint), Permission-Katalog; vorgesehen: Tarife, Domain-Events
+│  ├─ ChargeGlobe.Domain/        # Ladepunkt-Modell (Location, EVSE, Connector, Operator, Region), Provenienz, Status-Zeitreihen, Value Objects (EvseId, GeoPoint), Preise und EMP-Tarife, Permission-Katalog; vorgesehen: Domain-Events
 │  ├─ ChargeGlobe.Application/   # Ports (IEmailSender, IAppConfig, IIngestQueue, IPollPlanStore, …), Settings-Katalog, Mail-Vorlagen, Ingest-Batch, Regionen
 │  ├─ ChargeGlobe.Infrastructure/# EF Core + Npgsql (AppDbContext, Migrationen, PostGIS/TimescaleDB), ASP.NET Core Identity, Identity-Services, Mail-Outbox + SMTP (MailKit), Config-Service
 │  ├─ ChargeGlobe.Providers.Abstractions/  # Provider-Vertrag (ACL): Descriptor, Quell-Interfaces, Ingest-Modell, Status-Mapping

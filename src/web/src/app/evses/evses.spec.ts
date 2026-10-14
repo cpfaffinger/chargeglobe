@@ -12,7 +12,7 @@ import { FavoritesService } from '../favorites/favorites.service';
 import { LocationDetailPage } from '../pages/location-detail.page';
 import { ME, fakeAuth, flush, locationSummary, text } from '../testing';
 import { LocationDetails } from './location-details';
-import { EvsePricesResponse, PriceView, money, priceParts } from './prices';
+import { EmpPrice, EvsePricesResponse, PriceView, comparison, money, priceParts } from './prices';
 import {
   EvseDetail,
   EvsesService,
@@ -506,8 +506,8 @@ describe('LocationDetails with prices', () => {
     exampleCost: 17.7,
     ...overrides,
   });
-  const prices = (current: EvsePricesResponse['data']['current']): EvsePricesResponse => ({
-    data: { id: 'e', evseId: 'e', tariffKind: 'AD_HOC', from: '', to: '', example: { kwh: 30, minutes: 40 }, current, history: [] },
+  const prices = (current: EvsePricesResponse['data']['current'], emps: EmpPrice[] = []): EvsePricesResponse => ({
+    data: { id: 'e', evseId: 'e', tariffKind: 'AD_HOC', from: '', to: '', example: { kwh: 30, minutes: 40 }, current, history: [], emps },
     meta: { attribution: [] },
   });
 
@@ -542,7 +542,15 @@ describe('LocationDetails with prices', () => {
     ]);
 
     http.expectOne('/api/v1/evses/e-1/prices').flush(prices({ price: priceView(), since: '2026-10-01T00:00:00Z', observedAt: '2026-10-14T00:00:00Z' }));
-    http.expectOne('/api/v1/evses/e-2/prices').flush(prices(null));
+    const card: EmpPrice = {
+      emp: 'smatrics',
+      empName: 'SMATRICS',
+      tariffId: 't-1',
+      tariff: 'Basic',
+      monthlyFee: null,
+      price: priceView({ source: 'emp:smatrics', exampleCost: 13.5 }),
+    };
+    http.expectOne('/api/v1/evses/e-2/prices').flush(prices(null, [card]));
     http.expectOne('/api/v1/evses/e-3/prices').flush({ title: 'Error' }, { status: 500, statusText: 'Error' });
     await settle();
 
@@ -550,6 +558,7 @@ describe('LocationDetails with prices', () => {
     expect(lines).toEqual([
       'Ad-hoc: 0,59 €/kWh · Blockiergebühr 0,10 €/min ab Minute 240 · 30 kWh in 40 min: 17,70 €',
       'Kein Ad-hoc-Preis bekannt.',
+      'günstigste Karte: SMATRICS (Basic) · 30 kWh in 40 min: 13,50 €',
       'Der Preis konnte nicht geladen werden.',
     ]);
     expect(root().querySelector('.timeline, #heatmap')).toBeNull();
@@ -577,5 +586,49 @@ describe('price texts', () => {
     expect(priceParts({ ...base, pricePerKwh: null, pricePerMinute: null, sessionFee: null, blockingFeePerMinute: null })).toEqual(['keine Angaben']);
     expect(money(0.1234, 'EUR')).toBe('0,1234\u00a0€');
     expect(money(19, 'EUR')).toBe('19,00\u00a0€');
+  });
+
+  it('compares the ad-hoc price with the cards by the cost of the example and marks the cheapest', () => {
+    const view = (exampleCost: number): PriceView => ({
+      source: 'x',
+      currency: 'EUR',
+      pricePerKwh: null,
+      pricePerMinute: null,
+      sessionFee: null,
+      blockingFeePerMinute: null,
+      blockingAfterMinutes: null,
+      freeOfCharge: false,
+      exampleCost,
+    });
+    const card = (tariffId: string, exampleCost: number): EmpPrice => ({
+      emp: 'e',
+      empName: 'Karte',
+      tariffId,
+      tariff: tariffId,
+      monthlyFee: 2,
+      price: view(exampleCost),
+    });
+    const data = (current: EvsePricesResponse['data']['current'], emps: EmpPrice[]): EvsePricesResponse['data'] => ({
+      id: 'e',
+      evseId: 'e',
+      tariffKind: 'AD_HOC',
+      from: '',
+      to: '',
+      example: { kwh: 30, minutes: 40 },
+      current,
+      history: [],
+      emps,
+    });
+    const adHoc = { price: view(13), since: '', observedAt: '' };
+
+    expect(comparison(data(adHoc, []))).toEqual([]);
+    const rows = comparison(data(adHoc, [card('a', 13), card('b', 20), card('c', 9)]));
+    expect(rows.map((row) => [row.key, row.label, row.monthlyFee, row.cheapest])).toEqual([
+      ['c', 'Karte · c', 2, true],
+      ['ad-hoc', 'Ad-hoc (ohne Vertrag)', null, false],
+      ['a', 'Karte · a', 2, false],
+      ['b', 'Karte · b', 2, false],
+    ]);
+    expect(comparison(data(null, [card('a', 13), card('b', 13)])).map((row) => row.cheapest)).toEqual([true, true]);
   });
 });

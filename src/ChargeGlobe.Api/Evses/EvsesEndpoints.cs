@@ -45,7 +45,8 @@ public sealed record OccupancyResponse(OccupancyData Data, AttributionMeta Meta)
 /// <summary>The session of <c>exampleCost</c>.</summary>
 public sealed record PriceExampleSession(decimal Kwh, int Minutes);
 
-/// <param name="TariffKind">AD_HOC: the price without contract or app account.</param>
+/// <param name="TariffKind">AD_HOC: <paramref name="Current"/> and <paramref name="History"/> are the price without contract or app account.</param>
+/// <param name="Emps">Prices of the charging cards and apps (EMP tariffs valid now) at this EVSE, cheapest example first.</param>
 public sealed record EvsePricesData(
     Guid Id,
     string EvseId,
@@ -54,7 +55,8 @@ public sealed record EvsePricesData(
     DateTimeOffset To,
     PriceExampleSession Example,
     CurrentPrice? Current,
-    IReadOnlyList<PricePeriod> History);
+    IReadOnlyList<PricePeriod> History,
+    IReadOnlyList<EmpPrice> Emps);
 
 public sealed record EvsePricesResponse(EvsePricesData Data, AttributionMeta Meta);
 
@@ -150,7 +152,7 @@ public static class EvsesEndpoints
             .WithTags("EVSEs")
             .RequirePermission(Permissions.PriceRead)
             .WithName("getEvsePrices")
-            .WithSummary("Get the ad-hoc price of an EVSE and its history")
+            .WithSummary("Get the ad-hoc price of an EVSE, its history and the prices of charging cards")
             .WithDescription(
                 "Returns the ad-hoc price of the EVSE (`evseId` as in `getEvse`): what a session costs without contract or app " +
                 "account (AFIR), as reported by the sources. `current` holds the newest price with `since` (unchanged since) and " +
@@ -159,8 +161,12 @@ public static class EvsesEndpoints
                 "oldest first, not clipped (`to: null` = still valid). Each price has `source`, `currency`, `pricePerKwh`, " +
                 "`pricePerMinute`, `sessionFee`, `blockingFeePerMinute` with `blockingAfterMinutes` (minute of the session from " +
                 "which it applies), `freeOfCharge` (amounts null if the source does not tell) and `exampleCost`: the cost of " +
-                "charging 30 kWh in 40 minutes (`example`), unknown parts counted as 0. 422 for invalid or too long ranges; " +
-                "404 for an unknown EVSE. `meta.attribution` names the sources.")
+                "charging 30 kWh in 40 minutes (`example`), unknown parts counted as 0. `emps` compares charging cards and " +
+                "apps: per EMP tariff valid now that applies at the EVSE (`listTariffs`: own network by `operatorIds`, " +
+                "otherwise `roamingOnly` needs `roaming` = true at the EVSE) `emp` (key), `empName`, `tariffId`, `tariff`, " +
+                "`monthlyFee` (not part of the example) and `price` (source `emp:<key>`, energy price for DC if the EVSE or " +
+                "a connector is DC, otherwise AC), sorted by `price.exampleCost`; empty if no tariff applies. 422 for " +
+                "invalid or too long ranges; 404 for an unknown EVSE. `meta.attribution` names the sources.")
             .Produces<EvsePricesResponse>()
             .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
             .ProducesProblem(StatusCodes.Status404NotFound)
@@ -178,6 +184,14 @@ public static class EvsesEndpoints
                         [
                             new PricePeriod(ExamplePrice with { PricePerKwh = 0.49m, ExampleCost = 14.70m }, At("2026-05-01T06:00:00Z"), At("2026-09-01T06:00:00Z")),
                             new PricePeriod(ExamplePrice, At("2026-09-01T06:00:00Z"), null),
+                        ],
+                        [
+                            new EmpPrice(
+                                "smatrics", "SMATRICS", Guid.Parse("01990a3e-7c00-7a10-9b2c-3d4e5f6a7b8c"), "Basic", null,
+                                new PriceView("emp:smatrics", "EUR", 0.45m, null, null, 0.10m, 120, false, 13.50m)),
+                            new EmpPrice(
+                                "oeamtc", "ÖAMTC ePower", Guid.Parse("01990a3e-7c00-7a10-9b2c-3d4e5f6a7b8d"), "Standard", 4.90m,
+                                new PriceView("emp:oeamtc", "EUR", 0.55m, null, null, null, null, false, 16.50m)),
                         ]),
                     ExampleMeta));
 
@@ -303,7 +317,7 @@ public static class EvsesEndpoints
         return Results.Ok(new EvsePricesResponse(
             new EvsePricesData(
                 evse.Id, evse.EvseId, nameof(TariffKind.AD_HOC), start.Value, end.Value, new PriceExampleSession(PriceExample.Kwh, PriceExample.Minutes),
-                prices.Current, prices.History),
+                prices.Current, prices.History, prices.Emps),
             new AttributionMeta(await queries.AttributionAsync(evse.Id, cancellationToken))));
     }
 

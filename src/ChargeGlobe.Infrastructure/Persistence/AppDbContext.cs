@@ -22,6 +22,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<EvsePriceCurrent> EvsePriceCurrent => Set<EvsePriceCurrent>();
 
+    public DbSet<Emp> Emps => Set<Emp>();
+
+    public DbSet<Tariff> Tariffs => Set<Tariff>();
+
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
 
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();

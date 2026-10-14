@@ -11,6 +11,7 @@ using ChargeGlobe.Api.OpenApi;
 using ChargeGlobe.Api.Search;
 using ChargeGlobe.Api.Settings;
 using ChargeGlobe.Api.Setup;
+using ChargeGlobe.Api.Tariffs;
 using ChargeGlobe.Application.Identity;
 using ChargeGlobe.Application.Settings;
 using ChargeGlobe.Infrastructure;
@@ -139,6 +140,7 @@ public static class ApiSetup
         app.MapOperatorsEndpoints();
         app.MapFavoritesEndpoints();
         app.MapPreferencesEndpoints();
+        app.MapTariffsEndpoints();
         return app;
     }
 }

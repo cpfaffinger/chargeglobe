@@ -131,14 +131,20 @@ type LoadState = 'loading' | 'error' | 'ready';
                     <p class="price price-state error">Der Preis konnte nicht geladen werden.</p>
                   }
                   @default {
-                    @let current = priceOf(evse.id);
-                    @if (current) {
+                    @let pricing = priceOf(evse.id);
+                    @if (pricing.current; as current) {
                       <p class="price">
                         Ad-hoc: {{ parts(current.price).join(' · ') }}
                         <span class="price-example">· {{ example }}: {{ money(current.price.exampleCost, current.price.currency) }}</span>
                       </p>
                     } @else {
                       <p class="price price-state">Kein Ad-hoc-Preis bekannt.</p>
+                    }
+                    @if (pricing.emps[0]; as card) {
+                      <p class="price cheapest-card">
+                        günstigste Karte: {{ card.empName }} ({{ card.tariff }})
+                        <span class="price-example">· {{ example }}: {{ money(card.price.exampleCost, card.price.currency) }}</span>
+                      </p>
                     }
                   }
                 }
@@ -251,7 +257,7 @@ export class LocationDetails {
   protected readonly range = signal({ from: new Date(), to: new Date() });
   private readonly timelines = signal<Record<string, Segment[] | 'error'>>({});
   private readonly occupancies = signal<Record<string, Occupancy | 'error'>>({});
-  private readonly priceResults = signal<Record<string, EvsePricesResponse['data']['current'] | 'error'>>({});
+  private readonly priceResults = signal<Record<string, EvsePricesResponse['data'] | 'error'>>({});
   /** "all" or the id of the EVSE whose heatmap is shown. */
   protected readonly heatmapOf = signal('all');
 
@@ -362,14 +368,14 @@ export class LocationDetails {
     return result === undefined ? 'loading' : result === 'error' ? 'error' : 'ready';
   }
 
-  protected priceOf(evseId: string): EvsePricesResponse['data']['current'] {
-    return this.priceResults()[evseId] as EvsePricesResponse['data']['current'];
+  protected priceOf(evseId: string): EvsePricesResponse['data'] {
+    return this.priceResults()[evseId] as EvsePricesResponse['data'];
   }
 
   private async loadPrice(request: number, evseId: string): Promise<void> {
-    let result: EvsePricesResponse['data']['current'] | 'error';
+    let result: EvsePricesResponse['data'] | 'error';
     try {
-      result = (await this.service.prices(evseId)).data.current;
+      result = (await this.service.prices(evseId)).data;
     } catch {
       result = 'error';
     }
