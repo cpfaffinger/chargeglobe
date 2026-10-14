@@ -115,6 +115,10 @@ public class StartupVariantTests
         };
         await factory.InitializeAsync();
         const string email = "instant@chargeglobe.test";
+        await factory.Client().GetAsync("/api/v1/health");
+        (await factory.Client().PostAsJsonAsync(
+            "/api/v1/setup/admin", new { setupToken = factory.SetupToken(), email = "owner@chargeglobe.test", password = IntegrationFactory.Password }))
+            .EnsureSuccessStatusCode();
 
         var registered = await factory.RegisterAsync(email);
         var (accessToken, _) = await factory.LoginAsync(email);
@@ -125,8 +129,8 @@ public class StartupVariantTests
         Assert.Equal(EmailOutboxEntry.Queued, mail.Status);
         Assert.Equal("chargeglobe: E-Mail-Adresse bestätigen", mail.Subject);
 
-        // No admin seed configured: the registered account is the only user and holds the User role.
-        var user = Assert.Single(await factory.WithDbAsync(db => db.Users.ToListAsync()));
+        // No admin seed configured: besides the administrator from the setup, the account holds the User role.
+        var user = await factory.WithDbAsync(db => db.Users.SingleAsync(item => item.Email == email));
         Assert.True(user.EmailConfirmed);
         var me = await (await factory.Client(accessToken).GetAsync("/api/v1/me")).ReadJsonAsync();
         Assert.Equal([DefaultRoles.User], me.GetProperty("roles").EnumerateArray().Select(role => role.GetString()));

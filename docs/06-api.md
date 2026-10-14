@@ -6,7 +6,7 @@ Basis: `https://<host>:5005/api/v1` (HTTPS-only, am App-Port mit self-signed Zer
 
 | Schema | Für wen | Mechanik |
 |---|---|---|
-| anonym | nur die Karte: `GET /locations`, `GET /locations/{id}`, `GET /tiles/…`, `GET /map/config`; dazu `GET /health`, `GET /permissions`, `/auth/*` | `/auth/*`: Limit je Minute und IP aus der Einstellung `auth.rate_limit_per_minute` (Default 20), danach `429` mit `Retry-After` |
+| anonym | nur die Karte: `GET /locations`, `GET /locations/{id}`, `GET /tiles/…`, `GET /map/config`; dazu `GET /health`, `GET /permissions`, `/auth/*`, `/setup` | `/auth/*`: Limit je Minute und IP aus der Einstellung `auth.rate_limit_per_minute` (Default 20), danach `429` mit `Retry-After` |
 | `Bearer` (JWT, HS256) | Angular-SPA, Menschen | `POST /auth/login` (E-Mail + Passwort) → Access-Token (15 min) im Body + Refresh-Token als Cookie `cg_refresh` (HttpOnly, Secure, SameSite=Strict, Pfad `/api/v1/auth`, 14 Tage); `POST /auth/refresh` tauscht das Cookie gegen ein neues Access-Token und ein neues Cookie (jedes Refresh-Token gilt einmal; ein bereits benutztes beendet alle Sitzungen des Nutzers); `POST /auth/logout` |
 | `ApiKey` | KI-Agenten, Skripte, Integrationen | Header `X-Api-Key: cg_<prefix>_<secret>`; der Key trägt eine Teilmenge der Rechte seines Eigentümers und optional ein Ablaufdatum. Verliert der Eigentümer eine Permission, verliert sie auch der Key. Vorgesehen: eigenes Rate-Limit-Tier |
 
@@ -16,7 +16,9 @@ Vorhandene Endpunkte (in Klammern die `operationId`):
 
 | Methode & Pfad | Zweck | Permission |
 |---|---|---|
-| `POST /auth/register` (`register`) | legt ein Konto mit der Rolle `User` an und stellt die Bestätigungsmail in die Outbox. Body `email`, `password` (mindestens 10 Zeichen), optional `language` (`de`/`en`). Antwort immer `202`, egal ob die Adresse schon existiert | `none` |
+| `GET /setup` (`getSetupStatus`) | `required: true`, solange kein Nutzerkonto existiert; die Web-App zeigt dann den Setup-Assistenten `/setup` | `none` |
+| `POST /setup/admin` (`createInitialAdmin`) | Ersteinrichtung: Body `setupToken` (einmaliger Token aus dem API-Log, Zeile „Setup required: …“, nach einem Neustart ein neuer), `email`, `password` (mindestens 10 Zeichen). Legt das erste Konto mit der Rolle `Admin` und bestätigter Adresse an und antwortet wie `login` (`200` mit Access-Token + Refresh-Cookie). Gelingt genau einmal, danach `409`; `422` mit Feldfehlern `setupToken`, `email`, `password`; Rate-Limit wie `/auth/*` | `none` |
+| `POST /auth/register` (`register`) | `409`, solange die Instanz keinen Nutzer hat (erst `createInitialAdmin`); sonst legt es ein Konto mit der Rolle `User` an und stellt die Bestätigungsmail in die Outbox. Body `email`, `password` (mindestens 10 Zeichen), optional `language` (`de`/`en`). Antwort immer `202`, egal ob die Adresse schon existiert | `none` |
 | `POST /auth/confirm-email` (`confirmEmail`) | bestätigt die Adresse mit `userId` und `token` aus dem Mail-Link (24 h gültig, einmalig). `204`, bei ungültigem Token `422` | `none` |
 | `POST /auth/login` (`login`) | `200` mit `accessToken`, `tokenType`, `expiresIn` + Refresh-Cookie; `401` bei falschen Zugangsdaten, `403` bei unbestätigter Adresse (entfällt mit `AUTH_REQUIRE_CONFIRMED_EMAIL=false`) | `none` |
 | `POST /auth/refresh` (`refreshToken`) | neues Access-Token gegen das Refresh-Cookie, ohne Body; `401` ohne gültiges Cookie | `none` |
@@ -40,7 +42,7 @@ Vorhandene Endpunkte (in Klammern die `operationId`):
 | `GET /evses/{evseId}/occupancy` (`getEvseOccupancy`) | Belegungsprofil der letzten `weeks` Wochen (1–12, Default 4) bis jetzt aus `evse_occupancy_hourly`: `data.days[]` mit sieben Zeilen ab Montag (`weekday` 1–7, `day` z. B. `MONDAY`), je 24 Werte `chargingShare` (Anteil der Statusmeldungen mit `CHARGING`, 0–1, `null` ohne Meldung) und `observations`; dazu `utilization` (Anteil über den ganzen Zeitraum), `observations`, `from`, `to`, `weeks`, `timeZone` (IANA-Name für Wochentag und Stunde, Parameter `timeZone`, Default `Europe/Vienna`). Die Anteile sind Stichproben im Abfrageintervall der Quellen, keine gemessenen Dauern. `422` bei `weeks` außerhalb 1–12 oder unbekannter Zeitzone, `404` bei unbekannter ID | `evse:read` |
 | `GET /map/config` (`getMapConfig`) | `styleUrl`, `attribution`, `center` (`latitude`, `longitude`) und `zoom` der Basiskarte aus den Einstellungen `map.*`; die Kartenseite der Web-App lädt sie bei jedem Aufruf, Änderungen wirken also nach einem Neuladen der Seite. Kacheln, Glyphen und Sprites holt der Browser direkt von den Hosts der Style-URL (Default: `tiles.openfreemap.org`), nicht über die API | `none` |
 
-Schreibende Aktionen (Registrierung, Bestätigung, Login, Passwort-Reset anfordern/ausführen, Key anlegen/widerrufen, Einstellung ändern, Testmail senden) landen mit Akteur (Nutzer bzw. API-Key) im `audit_log`; bei Einstellungen ohne den Wert.
+Schreibende Aktionen (Ersteinrichtung, Registrierung, Bestätigung, Login, Passwort-Reset anfordern/ausführen, Key anlegen/widerrufen, Einstellung ändern, Testmail senden) landen mit Akteur (Nutzer bzw. API-Key) im `audit_log`; bei Einstellungen ohne den Wert.
 
 Vorgesehene Endpunkte:
 

@@ -117,6 +117,16 @@ public class IntegrationFactory : WebApplicationFactory<Program>, IAsyncLifetime
         return userId;
     }
 
+    /// <summary>The setup token from the warning the API logs at start while no user exists.</summary>
+    public string SetupToken()
+    {
+        var match = Warnings
+            .Select(message => Regex.Match(message, @"Open (?<url>\S+) and enter the setup token (?<token>[0-9a-f]{32})"))
+            .Single(found => found.Success);
+        Assert.Equal($"{PublicBaseUrl}/setup", match.Groups["url"].Value);
+        return match.Groups["token"].Value;
+    }
+
     public async Task<(string AccessToken, string RefreshCookie)> LoginAsync(string email, string password = Password)
     {
         var response = await Client().PostAsJsonAsync("/api/v1/auth/login", new { email, password });

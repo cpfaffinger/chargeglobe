@@ -64,6 +64,14 @@ export class AuthService {
     return this.refreshing;
   }
 
+  /** Creates the first administrator of a new instance (setup wizard) and signs it in like login. */
+  async createInitialAdmin(setupToken: string, email: string, password: string): Promise<void> {
+    const response = await firstValueFrom(
+      this.http.post<TokenResponse>(`${API}/setup/admin`, { setupToken, email, password }),
+    );
+    await this.startSession(response.accessToken);
+  }
+
   async logout(): Promise<void> {
     // The local session ends in any case; a failed request leaves at most a cookie that expires.
     await firstValueFrom(this.http.post(`${API}/auth/logout`, null)).catch(() => undefined);

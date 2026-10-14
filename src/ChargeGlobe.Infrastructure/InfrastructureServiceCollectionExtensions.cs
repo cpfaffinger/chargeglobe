@@ -90,6 +90,8 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IEmailSender, OutboxEmailSender>();
         services.AddScoped<PermissionService>();
         services.AddScoped<AccountService>();
+        services.AddSingleton<SetupToken>();
+        services.AddScoped<SetupService>();
         services.AddScoped<SessionService>();
         services.AddScoped<ApiKeyService>();
         services.AddScoped<RegionSeeder>();

@@ -1,6 +1,7 @@
 using ChargeGlobe.Application.Identity;
 using ChargeGlobe.Application.Settings;
 using ChargeGlobe.Domain.Identity;
+using ChargeGlobe.Infrastructure.Identity;
 using ChargeGlobe.Infrastructure.Settings;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -21,6 +22,7 @@ public sealed class DatabaseInitializer(
     AuthSettings settings,
     SettingsCache settingsCache,
     RegionSeeder regions,
+    SetupToken setupToken,
     ILogger<DatabaseInitializer> logger)
 {
     // Arbitrary, but fixed: identifies the "chargeglobe schema" lock within the database.
@@ -36,6 +38,7 @@ public sealed class DatabaseInitializer(
             await regions.SeedAsync(cancellationToken);
             await SeedRolesAsync(cancellationToken);
             await SeedAdminAsync(cancellationToken);
+            await IssueSetupTokenAsync(cancellationToken);
             await ReconcileSettingsAsync(cancellationToken);
         }
         finally
@@ -93,6 +96,23 @@ public sealed class DatabaseInitializer(
         }
 
         await settingsCache.ReloadAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Without any user the instance needs the setup wizard (<c>/setup</c>); its one-time token is logged here, the
+    /// only place an operator can read it from (<c>docker compose logs api</c>).
+    /// </summary>
+    private async Task IssueSetupTokenAsync(CancellationToken cancellationToken)
+    {
+        if (await db.Users.AnyAsync(cancellationToken))
+        {
+            return;
+        }
+
+        logger.LogWarning(
+            "Setup required: no user exists yet. Open {SetupUrl} and enter the setup token {SetupToken} to create the first administrator",
+            $"{settings.PublicBaseUrl}/setup",
+            setupToken.Issue());
     }
 
     /// <summary>Creates the admin from the environment, but only while the user table is empty.</summary>

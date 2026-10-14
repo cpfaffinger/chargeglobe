@@ -305,6 +305,7 @@ describe('AdminSettingsPage', () => {
     ]);
     expect(root().querySelectorAll('button.save').length).toBe(2);
     expect(root().querySelector('#mail-link a')?.getAttribute('href')).toBe('/admin/mail');
+    expect(root().querySelector('#setup-link a')?.getAttribute('href')).toBe('/setup');
 
     root().querySelectorAll<HTMLButtonElement>('button.reset')[1].click();
     await flush();

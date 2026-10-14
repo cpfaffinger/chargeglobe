@@ -10,8 +10,11 @@ import { LocationDetailPage } from './pages/location-detail.page';
 import { LoginPage } from './pages/login.page';
 import { RegisterPage } from './pages/register.page';
 import { ResetPasswordPage } from './pages/reset-password.page';
+import { SetupPage } from './pages/setup.page';
+import { requireSetupDone, setupAccess } from './setup/setup.service';
 
-export const routes: Routes = [
+/** Every page except the wizard waits for the initial setup (GET /api/v1/setup). */
+const pages: Routes = [
   { path: '', component: HomePage, pathMatch: 'full' },
   { path: 'register', component: RegisterPage },
   { path: 'confirm-email', component: ConfirmEmailPage },
@@ -27,4 +30,10 @@ export const routes: Routes = [
   // Mirrors x-required-permission of the /api/v1/mail endpoints.
   { path: 'admin/mail', component: AdminMailPage, canActivate: [requirePermission('settings:manage')] },
   { path: '**', redirectTo: '' },
+];
+
+export const routes: Routes = [
+  // Open while no user exists; afterwards the onboarding of the remaining settings for settings:manage.
+  { path: 'setup', component: SetupPage, canActivate: [setupAccess] },
+  { path: '', canActivateChild: [requireSetupDone], children: pages },
 ];

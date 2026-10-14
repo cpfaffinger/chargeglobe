@@ -24,6 +24,7 @@ export function fakeAuth(me: Me | null = null) {
   const current = signal<Me | null>(me);
   const spies = jasmine.createSpyObj<AuthService>('AuthService', [
     'login',
+    'createInitialAdmin',
     'logout',
     'register',
     'confirmEmail',

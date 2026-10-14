@@ -8,12 +8,14 @@ import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { authInterceptor } from './auth/auth.interceptor';
 import { restoreSession } from './auth/auth.service';
+import { loadSetupState } from './setup/setup.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideHttpClient(withInterceptors([authInterceptor])),
     provideAppInitializer(restoreSession),
+    provideAppInitializer(loadSetupState),
     provideRouter(routes),
   ],
 };

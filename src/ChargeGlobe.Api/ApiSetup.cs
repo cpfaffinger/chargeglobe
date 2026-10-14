@@ -6,6 +6,7 @@ using ChargeGlobe.Api.Locations;
 using ChargeGlobe.Api.Mail;
 using ChargeGlobe.Api.OpenApi;
 using ChargeGlobe.Api.Settings;
+using ChargeGlobe.Api.Setup;
 using ChargeGlobe.Application.Identity;
 using ChargeGlobe.Application.Settings;
 using ChargeGlobe.Infrastructure;
@@ -121,6 +122,7 @@ public static class ApiSetup
         app.MapOpenApi();
         app.MapScalarApiReference();
         app.MapHealthEndpoints();
+        app.MapSetupEndpoints();
         app.MapAuthEndpoints();
         app.MapAccountEndpoints();
         app.MapSettingsEndpoints();

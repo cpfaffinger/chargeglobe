@@ -36,12 +36,13 @@ Anbieter und Tarifmodelle hinweg. Alles wird über eine öffentliche API und ein
 ## Schnellstart
 
 ```bash
-cp .env.example .env        # POSTGRES_PASSWORD, JWT_SIGNING_KEY (openssl rand -hex 32), ADMIN_EMAIL, ADMIN_INITIAL_PASSWORD setzen
+cp .env.example .env        # POSTGRES_PASSWORD, JWT_SIGNING_KEY (openssl rand -hex 32) setzen
 docker compose up -d --build
 curl -k https://localhost:5005/api/v1/health   # {"status":"ok","db":"ok"}
+docker compose logs api | grep "Setup required"   # Setup-Token für den Assistenten unter https://localhost:5005/setup
 ```
 
-Web-App: `https://localhost:5005` (self-signed Zertifikat, Ausnahme im Browser bestätigen) mit der Karte als Startseite; Kacheln, Schriften und Sprites lädt der Browser von `tiles.openfreemap.org` (Einstellung `map.style_url`). Anmeldung unter `/login` mit dem Admin aus `.env` · OpenAPI 3.1: `/openapi/v1.json` · Scalar UI: `/scalar`. Mails werden erst versendet, wenn ein Admin den SMTP-Zugang unter `/admin/settings` eingetragen (`mail.*`), unter `/admin/mail` mit einer Testmail geprüft und `mail.enabled` eingeschaltet hat; bis dahin bleiben sie in der Outbox, und mit `AUTH_REQUIRE_CONFIRMED_EMAIL=false` sind neue Konten sofort nutzbar. Build- und Testbefehle stehen in [CLAUDE.md](CLAUDE.md#befehle).
+Web-App: `https://localhost:5005` (self-signed Zertifikat, Ausnahme im Browser bestätigen) mit der Karte als Startseite; Kacheln, Schriften und Sprites lädt der Browser von `tiles.openfreemap.org` (Einstellung `map.style_url`). Beim ersten Start führt jede Seite zum Setup-Assistenten `/setup`: erstes Administrator-Konto mit dem Setup-Token aus dem API-Log anlegen, danach optional E-Control-Zugang und SMTP-Server eintragen (alternativ legt `ADMIN_EMAIL`/`ADMIN_INITIAL_PASSWORD` in `.env` den Admin automatisch an) · OpenAPI 3.1: `/openapi/v1.json` · Scalar UI: `/scalar`. Mails werden erst versendet, wenn ein Admin den SMTP-Zugang unter `/admin/settings` eingetragen (`mail.*`), unter `/admin/mail` mit einer Testmail geprüft und `mail.enabled` eingeschaltet hat; bis dahin bleiben sie in der Outbox, und mit `AUTH_REQUIRE_CONFIRMED_EMAIL=false` sind neue Konten sofort nutzbar. Build- und Testbefehle stehen in [CLAUDE.md](CLAUDE.md#befehle).
 
 ## Repository-Struktur
 

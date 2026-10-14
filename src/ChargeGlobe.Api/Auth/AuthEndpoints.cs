@@ -23,8 +23,10 @@ public static class AuthEndpoints
                 "`/confirm-email?userId=…&token=…`. Always answers 202 for a well-formed request, whether or not " +
                 "the address is already registered, so the response does not reveal existing accounts. " +
                 "Login is possible after `confirmEmail`, unless the operator disabled e-mail confirmation. " +
-                "Public, rate-limited per IP.")
+                "409 while the instance has no user yet (`getSetupStatus`): the first account is the administrator " +
+                "created with `createInitialAdmin`. Public, rate-limited per IP.")
             .Produces<MessageResponse>(StatusCodes.Status202Accepted)
+            .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
             .WithResponseExample(StatusCodes.Status202Accepted, new MessageResponse(RegisterMessage));
 
@@ -110,8 +112,16 @@ public static class AuthEndpoints
             $"Must be one of: {string.Join(", ", EmailTemplates.Languages)}.");
 
     private static async Task<IResult> RegisterAsync(
-        RegisterRequest request, AccountService accounts, CancellationToken cancellationToken)
+        RegisterRequest request, AccountService accounts, SetupService setup, CancellationToken cancellationToken)
     {
+        if (await setup.IsRequiredAsync(cancellationToken))
+        {
+            return Results.Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Setup required",
+                detail: "This instance has no administrator yet. Complete the setup at /setup (createInitialAdmin) first.");
+        }
+
         var email = request.Email?.Trim();
         var passwordErrors = await accounts.ValidatePasswordAsync(request.Password ?? string.Empty);
         var invalid = new Validation()
