@@ -52,10 +52,10 @@ chargeglobe/
 ├─ docs/                         # Konzept und Architektur
 ├─ ChargeGlobe.sln
 ├─ src/
-│  ├─ ChargeGlobe.Domain/        # Value Objects (EvseId), Permission-Katalog und Standardrollen; vorgesehen: Entitäten, Domain-Events
+│  ├─ ChargeGlobe.Domain/        # Ladepunkt-Modell (Location, EVSE, Connector, Operator, Region), Provenienz, Status-Zeitreihen, Value Objects (EvseId, GeoPoint), Permission-Katalog; vorgesehen: Tarife, Domain-Events
 │  ├─ ChargeGlobe.Application/   # Ports (IEmailSender, IMailTransport, IAppConfig, …), Settings-Katalog, Mail-Vorlagen; vorgesehen: Ingest-Pipeline, Merge
-│  ├─ ChargeGlobe.Infrastructure/# EF Core + Npgsql (AppDbContext, Migrationen), ASP.NET Core Identity, Identity-Services, Mail-Outbox + SMTP (MailKit), Config-Service
-│  ├─ ChargeGlobe.Providers.Abstractions/  # Provider-Interfaces (ACL-Vertrag)
+│  ├─ ChargeGlobe.Infrastructure/# EF Core + Npgsql (AppDbContext, Migrationen, PostGIS/TimescaleDB), ASP.NET Core Identity, Identity-Services, Mail-Outbox + SMTP (MailKit), Config-Service
+│  ├─ ChargeGlobe.Providers.Abstractions/  # Provider-Vertrag (ACL): Descriptor, Quell-Interfaces, Ingest-Modell, Status-Mapping
 │  ├─ ChargeGlobe.Providers.*/   # (geplant) je Quelle ein Adapter (EControl, OpenChargeMap, Osm, Evn, …)
 │  ├─ ChargeGlobe.Api/           # ASP.NET Core Minimal API, OpenAPI 3.1, Auth (JWT + API-Keys), Permission-Prüfung, Rate Limiting
 │  ├─ ChargeGlobe.Jobs/          # ein Host für beide Rollen (--role crawler|worker), Image chargeglobe-jobs, skalierbar
@@ -66,7 +66,7 @@ chargeglobe/
 │  ├─ ChargeGlobe.Api.Tests/         # Tests ohne Datenbank (WebApplicationFactory mit Stub, Einstellungen, Mail-Vorlagen)
 │  ├─ ChargeGlobe.Domain.Tests/
 │  ├─ ChargeGlobe.Jobs.Tests/
-│  ├─ ChargeGlobe.Providers.Tests/   # (geplant) Replay-Tests mit aufgezeichneten, anonymisierten Antworten
+│  ├─ ChargeGlobe.Providers.Tests/   # Tests des Provider-Vertrags; künftig Replay-Tests der Adapter mit sanitisierten Antworten
 │  ├─ ChargeGlobe.IntegrationTests/  # API in-process gegen Postgres (Compose-Service test-db): Migration, Seed, Identity, OpenAPI
 │  ├─ Dockerfile.dotnet              # Test-Image für test-dotnet
 │  └─ run-dotnet-tests.sh            # Tests + Coverage-Gate im Container

@@ -81,6 +81,8 @@ public class ChargingDomainTests(IntegrationFactory factory)
         Assert.Equal(EvseId.Parse(evseIdText).Normalized, stored.EvseIdNorm);
         Assert.Equal((IdentityKind.EVSE_ID, PowerType.DC, (decimal?)150m, station.Id), (stored.IdentityKind, stored.PowerType, stored.MaxPowerKw, stored.ChargingStationId!.Value));
         Assert.Equal([ConnectorStandard.IEC_62196_T2_COMBO, ConnectorStandard.CHADEMO], stored.Connectors.OrderBy(c => c.Ordinal).Select(c => c.Standard));
+        var ccs = await factory.WithDbAsync(db => db.Connectors.SingleAsync(c => c.EvseId == evse.Id && c.Ordinal == 1));
+        Assert.Equal((ConnectorFormat.CABLE, (decimal?)150m), (ccs.Format, ccs.MaxPowerKw));
         Assert.Equal(StStephen.Latitude, storedLocation.Coordinates.Latitude, 9);
         Assert.Equal(StStephen.Longitude, storedLocation.Coordinates.Longitude, 9);
         Assert.Equal(("Stephansplatz", T0, AccessType.PUBLIC), (storedLocation.Name, storedLocation.FirstSeen, storedLocation.Access));

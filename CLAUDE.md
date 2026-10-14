@@ -100,6 +100,7 @@ curl -k https://localhost:5005/api/v1/map/config    # Kartenkonfiguration aus de
 curl -kI https://localhost:5005/maplibre/maplibre-gl-worker.mjs   # 200, Content-Type text/javascript (Worker der Karte)
 docker compose logs crawler worker          # Heartbeats beider Rollen (alle 30 s, mit aktuellem Wert von mail.enabled); worker: "Mail outbox: …"
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select template_key, status, attempts, last_error from email_outbox"
+docker compose exec db psql -U chargeglobe -d chargeglobe -c "select hypertable_name from timescaledb_information.hypertables"   # evse_status_observation, location_status_observation
 docker compose down                         # Volumes pgdata und tls (Zertifikat) bleiben erhalten
 
 # Testlauf auf dem Dev-Server (maßgeblicher Abnahmeweg, ADR-0010; per SSH laut CLAUDE.local.md).
@@ -123,4 +124,4 @@ Vor einem neuen lokalen Coverage-Lauf alte Ergebnisse löschen (`tests/*/TestRes
 
 ## Nächste Schritte (Stand jetzt)
 
-Siehe `docs/09-roadmap.md`: Phase 1 mit Domain und Datenmodell für Location/EVSE/Connector (Migrationen, `Providers.Abstractions` nach `docs/03`, `docs/04`), danach der Adapter für das E-Control-Ladestellenverzeichnis und die Ladepunkt-Marker auf der Karte; außerdem Lizenz festlegen, E-Control-API-Key beantragen.
+Siehe `docs/09-roadmap.md`: Adapter für das E-Control-Ladestellenverzeichnis (`ChargeGlobe.Providers.EControl`), danach Ingest-Pipeline (Lease-Scheduler, `ingest_queue`), `GET /locations` und Ladepunkt-Marker auf der Karte; außerdem Lizenz festlegen.
