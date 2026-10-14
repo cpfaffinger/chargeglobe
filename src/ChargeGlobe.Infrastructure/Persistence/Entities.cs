@@ -2,7 +2,16 @@ using Microsoft.AspNetCore.Identity;
 
 namespace ChargeGlobe.Infrastructure.Persistence;
 
-public sealed class AppUser : IdentityUser<Guid>;
+public sealed class AppUser : IdentityUser<Guid>
+{
+    public DateTimeOffset CreatedAt { get; set; }
+
+    /// <summary>When an administrator approved the account (or the registration, if no approval was required); null while pending.</summary>
+    public DateTimeOffset? ApprovedAt { get; set; }
+
+    /// <summary>When an administrator disabled the account; null while it may log in.</summary>
+    public DateTimeOffset? DisabledAt { get; set; }
+}
 
 public sealed class AppRole : IdentityRole<Guid>;
 

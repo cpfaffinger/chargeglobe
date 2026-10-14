@@ -20,7 +20,6 @@ public class AuthSettingsTests
 
         Assert.Equal(SigningKey, settings.JwtSigningKey);
         Assert.Equal("https://localhost:5005", settings.PublicBaseUrl);
-        Assert.True(settings.RequireConfirmedEmail);
         Assert.Null(settings.AdminEmail);
         Assert.Null(settings.AdminInitialPassword);
     }
@@ -32,31 +31,20 @@ public class AuthSettingsTests
         {
             ["JWT_SIGNING_KEY"] = SigningKey,
             ["PUBLIC_BASE_URL"] = " https://example.org:5005/ ",
-            ["AUTH_REQUIRE_CONFIRMED_EMAIL"] = " False ",
             ["ADMIN_EMAIL"] = " admin@example.org ",
             ["ADMIN_INITIAL_PASSWORD"] = "initial-password",
         });
 
         Assert.Equal("https://example.org:5005", settings.PublicBaseUrl);
-        Assert.False(settings.RequireConfirmedEmail);
         Assert.Equal("admin@example.org", settings.AdminEmail);
         Assert.Equal("initial-password", settings.AdminInitialPassword);
     }
 
-    [Theory]
-    [InlineData("true")]
-    [InlineData("")]
-    [InlineData("0")]
-    public void Confirmation_stays_required_unless_explicitly_set_to_false(string value)
+    [Fact]
+    public void A_blank_admin_seed_counts_as_missing()
     {
-        var settings = Create(new()
-        {
-            ["JWT_SIGNING_KEY"] = SigningKey,
-            ["AUTH_REQUIRE_CONFIRMED_EMAIL"] = value,
-            ["ADMIN_EMAIL"] = "  ",
-        });
+        var settings = Create(new() { ["JWT_SIGNING_KEY"] = SigningKey, ["ADMIN_EMAIL"] = "  " });
 
-        Assert.True(settings.RequireConfirmedEmail);
         Assert.Null(settings.AdminEmail);
     }
 
@@ -94,6 +82,21 @@ public class EmailTemplatesTests
         Assert.Equal(templateKey, message.TemplateKey);
         Assert.Contains(link, message.BodyText);
         Assert.Contains($"<a href=\"{link.Replace("&", "&amp;")}\">", message.BodyHtml);
+    }
+
+    [Theory]
+    [InlineData(EmailTemplates.ApprovalRequest, "de", "chargeglobe: neues Konto wartet auf Freischaltung", "Das Konto bob@example.org wurde angelegt")]
+    [InlineData(EmailTemplates.ApprovalRequest, "en", "chargeglobe: new account awaits approval", "The account bob@example.org was created")]
+    [InlineData(EmailTemplates.AccountApproved, null, "chargeglobe: dein Konto ist freigeschaltet", "Dein chargeglobe-Konto bob@example.org wurde freigeschaltet")]
+    [InlineData(EmailTemplates.AccountApproved, "en", "chargeglobe: your account was approved", "Your chargeglobe account bob@example.org was approved")]
+    public void Notices_link_to_a_page_and_name_the_account(string templateKey, string? language, string expectedSubject, string expectedIntro)
+    {
+        var message = EmailTemplates.RenderNotice(templateKey, language, "anna@example.org", "https://example.org:5005", "/admin/users?q=bob&x=1", "bob@example.org");
+
+        Assert.Equal(("anna@example.org", expectedSubject, templateKey), (message.To, message.Subject, message.TemplateKey));
+        Assert.StartsWith(expectedIntro, message.BodyText, StringComparison.Ordinal);
+        Assert.Contains("https://example.org:5005/admin/users?q=bob&x=1", message.BodyText, StringComparison.Ordinal);
+        Assert.Contains("<a href=\"https://example.org:5005/admin/users?q=bob&amp;x=1\">", message.BodyHtml, StringComparison.Ordinal);
     }
 
     [Fact]

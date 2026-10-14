@@ -16,6 +16,7 @@ public static class Permissions
     public const string TariffWrite = "tariff:write";
     public const string ConflictResolve = "conflict:resolve";
     public const string ProviderManage = "provider:manage";
+    public const string UserRead = "user:read";
     public const string UserManage = "user:manage";
     public const string RoleManage = "role:manage";
     public const string ApiKeyManage = "apikey:manage";
@@ -34,7 +35,8 @@ public static class Permissions
         new(TariffWrite, "Create and update tariffs."),
         new(ConflictResolve, "Resolve source conflicts and decide charge point matches."),
         new(ProviderManage, "Configure data sources and trigger their jobs."),
-        new(UserManage, "Manage user accounts, their roles and direct permissions."),
+        new(UserRead, "List user accounts with their state and roles, and the roles with their permissions."),
+        new(UserManage, "Approve, enable and disable user accounts and assign their roles."),
         new(RoleManage, "Manage roles and the permissions bundled in them."),
         new(ApiKeyManage, "Create, list and revoke own API keys."),
         new(ExportRead, "Download bulk exports and raw observations."),

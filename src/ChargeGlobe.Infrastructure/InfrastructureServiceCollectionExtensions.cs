@@ -45,6 +45,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<ISourceRegistry, SourceRegistry>();
         services.AddScoped<ILocationQueries, LocationQueries>();
         services.AddScoped<IEvseQueries, EvseQueries>();
+        services.AddScoped<ISearchQueries, SearchQueries>();
         services.AddScoped<IngestProcessor>();
         services.AddScoped<IIngestQueue, IngestQueue>();
         services.AddScoped<IPollPlanStore, PollPlanStore>();
@@ -95,6 +96,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IEmailSender, OutboxEmailSender>();
         services.AddScoped<PermissionService>();
         services.AddScoped<AccountService>();
+        services.AddScoped<UserAdministration>();
         services.AddSingleton<SetupToken>();
         services.AddScoped<SetupService>();
         services.AddScoped<SessionService>();

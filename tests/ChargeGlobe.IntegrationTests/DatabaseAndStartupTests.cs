@@ -20,7 +20,7 @@ public class DatabaseAndStartupTests(IntegrationFactory factory)
 
         var applied = await factory.WithDbAsync(db => db.Database.GetAppliedMigrationsAsync());
         Assert.Equal(
-            ["InitialIdentity", "AppSettings", "MailDelivery", "ChargingDomain", "IngestPipeline", "OccupancyHourly", "EvseAuthAndFacilities", "PassiveCrawling"],
+            ["InitialIdentity", "AppSettings", "MailDelivery", "ChargingDomain", "IngestPipeline", "OccupancyHourly", "EvseAuthAndFacilities", "PassiveCrawling", "AdminAndSearch"],
             applied.Select(migration => migration[(migration.IndexOf('_') + 1)..]));
         Assert.Empty(await factory.WithDbAsync(db => db.Database.GetPendingMigrationsAsync()));
 
@@ -109,7 +109,6 @@ public class StartupVariantTests
     {
         await using var factory = new IntegrationFactory
         {
-            RequireConfirmedEmail = false,
             AdminEmailSetting = null,
             AdminPasswordSetting = null,
         };
@@ -119,15 +118,21 @@ public class StartupVariantTests
         (await factory.Client().PostAsJsonAsync(
             "/api/v1/setup/admin", new { setupToken = factory.SetupToken(), email = "owner@chargeglobe.test", password = IntegrationFactory.Password }))
             .EnsureSuccessStatusCode();
+        await factory.WithScopeAsync(async services =>
+        {
+            await services.GetRequiredService<ChargeGlobe.Application.Settings.IAppConfig>().SetAsync(
+                ChargeGlobe.Application.Settings.SettingsCatalog.AuthRequireConfirmedEmail, "global",
+                System.Text.Json.JsonDocument.Parse("false").RootElement, new ChargeGlobe.Application.Identity.Actor(null), CancellationToken.None);
+            return true;
+        });
 
         var registered = await factory.RegisterAsync(email);
         var (accessToken, _) = await factory.LoginAsync(email);
 
         Assert.Equal(HttpStatusCode.Accepted, registered.StatusCode);
         Assert.False(string.IsNullOrEmpty(accessToken));
-        var mail = Assert.Single(await factory.WithDbAsync(db => db.EmailOutbox.ToListAsync()));
-        Assert.Equal(EmailOutboxEntry.Queued, mail.Status);
-        Assert.Equal("chargeglobe: E-Mail-Adresse bestätigen", mail.Subject);
+        // Confirmed at once: no confirmation mail.
+        Assert.Empty(await factory.WithDbAsync(db => db.EmailOutbox.ToListAsync()));
 
         // No admin seed configured: besides the administrator from the setup, the account holds the User role.
         var user = await factory.WithDbAsync(db => db.Users.SingleAsync(item => item.Email == email));

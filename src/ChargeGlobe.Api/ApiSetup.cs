@@ -1,4 +1,5 @@
 using System.Threading.RateLimiting;
+using ChargeGlobe.Api.Admin;
 using ChargeGlobe.Api.Auth;
 using ChargeGlobe.Api.Crawler;
 using ChargeGlobe.Api.Evses;
@@ -6,6 +7,7 @@ using ChargeGlobe.Api.Health;
 using ChargeGlobe.Api.Locations;
 using ChargeGlobe.Api.Mail;
 using ChargeGlobe.Api.OpenApi;
+using ChargeGlobe.Api.Search;
 using ChargeGlobe.Api.Settings;
 using ChargeGlobe.Api.Setup;
 using ChargeGlobe.Application.Identity;
@@ -131,6 +133,8 @@ public static class ApiSetup
         app.MapLocationsEndpoints();
         app.MapEvsesEndpoints();
         app.MapCrawlerEndpoints();
+        app.MapUsersEndpoints();
+        app.MapSearchEndpoints();
         return app;
     }
 }

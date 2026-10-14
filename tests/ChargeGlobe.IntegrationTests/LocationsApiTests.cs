@@ -170,4 +170,31 @@ public class LocationsApiTests(IntegrationFactory factory) : IClassFixture<Integ
         var problem = await (await client.GetAsync($"/api/v1/locations/{Guid.NewGuid()}")).AssertProblemAsync(HttpStatusCode.NotFound);
         Assert.Contains("listLocations", problem.GetProperty("detail").GetString());
     }
+
+    [Fact]
+    public async Task Search_finds_EVSEs_by_any_notation_of_the_EVSE_ID_and_locations_by_words()
+    {
+        using var client = factory.Client();
+
+        var location = (await GetJsonAsync(client, "/api/v1/search?q=Stephansplatz")).GetProperty("data")[0];
+        Assert.Equal(("LOCATION", "Teststation Stephansplatz", "Teststraße 1, 1010 Wien"), (
+            location.GetProperty("type").GetString(), location.GetProperty("label").GetString(), location.GetProperty("detail").GetString()));
+        Assert.Equal(48.2085, location.GetProperty("latitude").GetDouble(), 6);
+
+        var evses = (await GetJsonAsync(client, "/api/v1/search?q=at-tst-etest0001")).GetProperty("data").EnumerateArray().ToList();
+        Assert.Equal(["AT*TST*ETEST0001*1", "AT*TST*ETEST0001*2"], evses.Select(hit => hit.GetProperty("evseId").GetString()));
+        Assert.All(evses, hit => Assert.Equal("EVSE", hit.GetProperty("type").GetString()));
+        Assert.Equal("Teststation Stephansplatz, Teststraße 1, 1010 Wien", evses[0].GetProperty("detail").GetString());
+
+        var limited = await GetJsonAsync(client, "/api/v1/search?q=AT*TST*ETEST&limit=1");
+        Assert.Equal((1, 1), (limited.GetProperty("meta").GetProperty("returned").GetInt32(), limited.GetProperty("meta").GetProperty("limit").GetInt32()));
+
+        var words = (await GetJsonAsync(client, "/api/v1/search?q=wien%20test")).GetProperty("data").EnumerateArray().ToList();
+        Assert.Equal(["Testladepark Ring", "Teststation Stephansplatz"], words.Select(hit => hit.GetProperty("label").GetString()).Order());
+        Assert.Empty((await GetJsonAsync(client, "/api/v1/search?q=100%25")).GetProperty("data").EnumerateArray());
+
+        await (await client.GetAsync("/api/v1/search?q=a")).AssertProblemAsync(HttpStatusCode.UnprocessableEntity);
+        var problem = await (await client.GetAsync("/api/v1/search?q=Wien&limit=0")).AssertProblemAsync(HttpStatusCode.UnprocessableEntity);
+        Assert.True(problem.GetProperty("errors").TryGetProperty("limit", out _));
+    }
 }

@@ -23,6 +23,7 @@ public sealed class DatabaseInitializer(
     SettingsCache settingsCache,
     RegionSeeder regions,
     SetupToken setupToken,
+    TimeProvider timeProvider,
     ILogger<DatabaseInitializer> logger)
 {
     // Arbitrary, but fixed: identifies the "chargeglobe schema" lock within the database.
@@ -129,6 +130,8 @@ public sealed class DatabaseInitializer(
             UserName = settings.AdminEmail,
             Email = settings.AdminEmail,
             EmailConfirmed = true,
+            CreatedAt = timeProvider.GetUtcNow(),
+            ApprovedAt = timeProvider.GetUtcNow(),
         };
         var result = await users.CreateAsync(admin, settings.AdminInitialPassword);
         if (!result.Succeeded)

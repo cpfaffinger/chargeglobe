@@ -91,8 +91,10 @@ public sealed class ApiKeyService(AppDbContext db, PermissionService permissions
 
         var now = timeProvider.GetUtcNow();
         var apiKey = await db.ApiKeys.SingleOrDefaultAsync(key => key.Prefix == prefix, cancellationToken);
+        // Keys of a disabled account stop working with it.
         if (apiKey is null || apiKey.RevokedAt is not null || apiKey.ExpiresAt <= now
-            || !Secrets.Matches(presentedKey, apiKey.KeyHash))
+            || !Secrets.Matches(presentedKey, apiKey.KeyHash)
+            || await db.Users.AnyAsync(user => user.Id == apiKey.OwnerUserId && user.DisabledAt != null, cancellationToken))
         {
             return null;
         }
