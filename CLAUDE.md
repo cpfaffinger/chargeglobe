@@ -136,7 +136,7 @@ docker compose exec db psql -U chargeglobe -d chargeglobe -c "select provider_ke
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select priority, count(*), min(last_polled_at) from poll_tile group by 1"   # Abfragepunkte je Priorität
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select * from provider_backoff"   # Pause/Sperre nach Fehlern der Quelle
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select (select count(*) from evse_price_current) aktuell, (select count(*) from price_observation) aenderungen"   # Ad-hoc-Preise nach einem Register-Durchlauf
-docker compose exec db psql -U chargeglobe -d chargeglobe -c "select count(*) filter (where processed_at is null) offen, count(*) filter (where error is not null) fehler from ingest_queue"
+docker compose exec db psql -U chargeglobe -d chargeglobe -c "select count(*) filter (where processed_at is null) offen, count(*) filter (where error is not null) fehler from ingest_queue"   # Rückstand des Workers; nach einem Register-Lauf in wenigen Minuten wieder 0 (docs/05, Durchsatz)
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select (select count(*) from location) standorte, (select count(*) from evse) evses, (select count(*) from evse_status_current) status"
 docker compose down                         # ./data (Postgres-Cluster, Zertifikat) bleibt erhalten, auch mit -v
 docker compose down && sudo rm -rf data && docker compose up -d   # Umgebung zurücksetzen: leere Instanz mit Setup-Assistent
