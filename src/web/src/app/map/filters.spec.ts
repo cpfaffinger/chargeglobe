@@ -209,6 +209,13 @@ describe('MapFilterPanel', () => {
     await settle();
   }
 
+  /** Focus on the search field: the panel loads the operators and the autocomplete opens. */
+  function openOperators(): void {
+    const input = root().querySelector<HTMLInputElement>('#filter-operator')!;
+    input.dispatchEvent(new Event('focus'));
+    input.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+  }
+
   async function slide(thumb: 'power-min' | 'power-max', stop: number): Promise<void> {
     const input = root().querySelector<HTMLInputElement>(`#${thumb}`)!;
     input.value = String(stop);
@@ -277,7 +284,7 @@ describe('MapFilterPanel', () => {
   it('finds operators, most locations first, adds them as chips and removes them', async () => {
     await render();
 
-    root().querySelector<HTMLInputElement>('#filter-operator')!.dispatchEvent(new Event('focus'));
+    openOperators();
     await settle();
     expect(operators.search).toHaveBeenCalledWith('');
     expect(options().map((option) => text(option, '.hit-label'))).toEqual(['Wien Energie GmbH', 'EVN']);
@@ -322,8 +329,8 @@ describe('MapFilterPanel', () => {
       'Betreiber',
     ]);
 
-    root().querySelector<HTMLInputElement>('#filter-operator')!.dispatchEvent(new Event('focus'));
-    root().querySelector<HTMLInputElement>('#filter-operator')!.dispatchEvent(new Event('focus'));
+    openOperators();
+    openOperators();
     await settle();
     answer([wien]);
     await settle();
@@ -337,7 +344,7 @@ describe('MapFilterPanel', () => {
     await render();
     expect(text(root(), '#filter-operators mat-chip .mdc-evolution-chip__text-label')).toBe('Betreiber');
 
-    root().querySelector<HTMLInputElement>('#filter-operator')!.dispatchEvent(new Event('focus'));
+    openOperators();
     await settle();
     expect(options().map((option) => option.textContent!.trim())).toEqual(['Kein Betreiber gefunden.']);
 
