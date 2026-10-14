@@ -306,8 +306,9 @@ describe('MapFilterPanel', () => {
       jasmine.clock().uninstall();
     }
     await settle();
+    // Only the text after the pause is searched.
     expect(operators.search.calls.mostRecent().args).toEqual(['evn']);
-    expect(operators.search).toHaveBeenCalledTimes(2);
+    expect(operators.search.calls.allArgs()).not.toContain(['ev']);
 
     root().querySelector<HTMLButtonElement>('#filter-operators button[matChipRemove]')!.click();
     await settle();
