@@ -160,7 +160,7 @@ ASP.NET Core Minimal APIs, Versionierung `/api/v1`, OpenAPI 3.1 (eingebaute Gene
 
 ## Infrastruktur & Betrieb
 
-- **Ein Compose-Stack für alles**: `docker compose up -d` startet `db` (`timescale/timescaledb-ha:pg17`, enthält PostGIS), `api`, `crawler` (×N), `worker` (×M) und `web` (nginx, liefert den Angular-Build statisch aus; `/api`, `/openapi` und `/scalar` werden containerintern per HTTP an `api:8080` weitergereicht). Nur `web` veröffentlicht einen Port, und zwar ausschließlich HTTPS mit einem self-signed Zertifikat, das der Container beim ersten Start erzeugt und im Volume `tls` ablegt ([ADR-0009](adr/0009-https-only-self-signed.md)); Compose-Projektname ist `chargeglobe`. Vorgesehen ist zusätzlich der Service `routing` (Valhalla, nicht exponiert).
+- **Ein Compose-Stack für alles**: `docker compose up -d` startet `db` (`timescale/timescaledb-ha:pg17`, enthält PostGIS), `api`, `crawler` (×N), `worker` (×M) und `web` (nginx, liefert den Angular-Build statisch aus; `/api`, `/openapi` und `/scalar` werden containerintern per HTTP an `api:8080` weitergereicht; nginx löst den Namen über das Docker-DNS alle 10 s neu auf, damit ein neu erstellter `api`-Container ohne Neustart von `web` erreichbar ist). Nur `web` veröffentlicht einen Port, und zwar ausschließlich HTTPS mit einem self-signed Zertifikat, das der Container beim ersten Start erzeugt und im Volume `tls` ablegt ([ADR-0009](adr/0009-https-only-self-signed.md)); Compose-Projektname ist `chargeglobe`. Vorgesehen ist zusätzlich der Service `routing` (Valhalla, nicht exponiert).
 - **`.env` minimal, aber vollständig dokumentiert**: `.env.example` enthält jede verfügbare Variable mit Default und Kommentar. Vorgesehener Umfang:
 
   | Variable | Default | Zweck |
