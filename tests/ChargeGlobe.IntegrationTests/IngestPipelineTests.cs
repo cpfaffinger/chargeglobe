@@ -92,7 +92,7 @@ public class IngestPipelineTests(IntegrationFactory factory) : IClassFixture<Int
         Assert.Equal(4, await factory.WithDbAsync(db => db.EvseStatusObservations.CountAsync(o => evseIds.Contains(o.EvseId))));
         Assert.Equal(4, await factory.WithDbAsync(db => db.EvseStatusIntervals.CountAsync(i => evseIds.Contains(i.EvseId) && i.ValidTo == null)));
         var statuses = await factory.WithDbAsync(db => db.EvseStatusCurrent.Where(c => evseIds.Contains(c.EvseId)).Select(c => c.Status).ToListAsync());
-        Assert.Equal([EvseStatus.AVAILABLE, EvseStatus.CHARGING, EvseStatus.OUTOFORDER, EvseStatus.UNKNOWN], statuses.Order());
+        Assert.Equal([EvseStatus.UNKNOWN, EvseStatus.AVAILABLE, EvseStatus.CHARGING, EvseStatus.OUTOFORDER], statuses.Order());
         var records = await factory.WithDbAsync(db => db.SourceRecords.Where(r => r.SourceKey == Source && r.ExternalId.Contains(code)).ToListAsync());
         Assert.Equal((2, 4), (records.Count(r => r.EntityType == EntityType.LOCATION), records.Count(r => r.EntityType == EntityType.EVSE)));
         Assert.All(records, record => Assert.Equal(MatchMethod.CREATED, record.MatchMethod));
