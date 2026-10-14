@@ -10,6 +10,9 @@ namespace ChargeGlobe.Providers.EControl;
 /// <summary>Response of one search: the stations and the sanitized raw records (for <c>raw_snapshot</c>).</summary>
 public sealed record SearchResult(IReadOnlyList<(StationDto Station, JsonElement Raw)> Stations);
 
+/// <summary>One page of the register and the number of stations in it overall.</summary>
+public sealed record StationsPage(int TotalResults, IReadOnlyList<(StationDto Station, JsonElement Raw)> Stations);
+
 /// <summary>
 /// HTTP client of the E-Control API (<c>https://api.e-control.at/charge/1.0/</c>). Key and referer are
 /// read from the config service on every request; rate limit and Retry-After live in
@@ -17,6 +20,9 @@ public sealed record SearchResult(IReadOnlyList<(StationDto Station, JsonElement
 /// </summary>
 public sealed class EControlClient(HttpClient http, IProviderSettings settings)
 {
+    /// <summary>The largest page <c>GET /search/stations</c> returns.</summary>
+    public const int MaxPageSize = 1000;
+
     public static readonly Uri BaseAddress = new("https://api.e-control.at/charge/1.0/");
 
     /// <summary>Fields with personal data of the operator's contact person; never stored (docs/08, GDPR).</summary>
@@ -28,11 +34,32 @@ public sealed class EControlClient(HttpClient http, IProviderSettings settings)
     /// <summary><c>GET /search</c>: the about 100 stations closest to the point, with points, status and prices.</summary>
     public async Task<SearchResult> SearchAsync(GeoPoint point, CancellationToken cancellationToken)
     {
+        var uri = string.Create(
+            CultureInfo.InvariantCulture, $"search?latitude={point.Latitude:0.######}&longitude={point.Longitude:0.######}");
+        var stations = (await GetAsync(uri, "search", cancellationToken)).AsArray();
+        return new SearchResult(stations.OfType<JsonObject>().Select(Read<StationDto>).ToList());
+    }
+
+    /// <summary>
+    /// <c>GET /search/stations</c>: one page of the whole register, ordered by the source; the source caps
+    /// <paramref name="maxResults"/> at <see cref="MaxPageSize"/>. Stations come in the common form without live status.
+    /// </summary>
+    public async Task<StationsPage> SearchStationsAsync(int fromIndex, int maxResults, CancellationToken cancellationToken)
+    {
+        var uri = string.Create(CultureInfo.InvariantCulture, $"search/stations?fromIndex={fromIndex}&maxResults={maxResults}");
+        var page = (await GetAsync(uri, "search/stations", cancellationToken)).AsObject();
+        var stations = (page["stations"] as JsonArray ?? []).OfType<JsonObject>()
+            .Select(Read<CatalogStationDto>)
+            .Select(item => (item.Station.ToStation(), item.Raw))
+            .ToList();
+        return new StationsPage(page["totalResults"]?.GetValue<int>() ?? 0, stations);
+    }
+
+    private async Task<JsonNode> GetAsync(string uri, string name, CancellationToken cancellationToken)
+    {
         var apiKey = settings.ApiKey(EControlProvider.Key)
             ?? throw new ProviderNotConfiguredException(
                 $"Setting provider.api_key for scope provider:{EControlProvider.Key} is not set.");
-        var uri = string.Create(
-            CultureInfo.InvariantCulture, $"search?latitude={point.Latitude:0.######}&longitude={point.Longitude:0.######}");
         using var request = new HttpRequestMessage(HttpMethod.Get, uri);
         request.Headers.Add("apiKey", apiKey);
         request.Headers.Referrer = RefererUri(settings.Referer(EControlProvider.Key));
@@ -43,12 +70,11 @@ public sealed class EControlClient(HttpClient http, IProviderSettings settings)
         {
             // The body of a 401 is a German explanation of the registration; the status says enough.
             throw new HttpRequestException(
-                $"E-Control search returned {(int)response.StatusCode}.", null, response.StatusCode);
+                $"E-Control {name} returned {(int)response.StatusCode}.", null, response.StatusCode);
         }
 
-        var stations = JsonNode.Parse(await response.Content.ReadAsStringAsync(cancellationToken))?.AsArray()
-            ?? throw new JsonException("E-Control search returned null instead of an array.");
-        return new SearchResult(stations.OfType<JsonObject>().Select(Read).ToList());
+        return JsonNode.Parse(await response.Content.ReadAsStringAsync(cancellationToken))
+            ?? throw new JsonException($"E-Control {name} returned null.");
     }
 
     /// <summary>A bare host name (<c>example.org</c>) becomes <c>https://example.org/</c>.</summary>
@@ -59,7 +85,7 @@ public sealed class EControlClient(HttpClient http, IProviderSettings settings)
                 ? absolute
                 : new Uri($"https://{referer.Trim().Trim('/')}/");
 
-    private static (StationDto, JsonElement) Read(JsonObject station)
+    private static (T Station, JsonElement Raw) Read<T>(JsonObject station)
     {
         foreach (var field in PersonalFields)
         {
@@ -67,6 +93,6 @@ public sealed class EControlClient(HttpClient http, IProviderSettings settings)
         }
 
         var raw = JsonSerializer.SerializeToElement(station);
-        return (raw.Deserialize<StationDto>(Json)!, raw);
+        return (raw.Deserialize<T>(Json)!, raw);
     }
 }

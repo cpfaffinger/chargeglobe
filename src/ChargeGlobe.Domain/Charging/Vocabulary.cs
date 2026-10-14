@@ -96,6 +96,39 @@ public enum Lifecycle
     REMOVED,
 }
 
+/// <summary>
+/// How a driver can start and pay a session at an EVSE. Members with an OCPI 2.2.1 <c>Capability</c>
+/// counterpart carry its name; the others (app, QR code, website, charging contract, cash) follow the
+/// same style, because OCPI has no value for them but AFIR and the sources do.
+/// </summary>
+public enum AuthMethod
+{
+    /// <summary>Charging card or key fob at the RFID reader.</summary>
+    RFID_READER,
+
+    /// <summary>App of the operator or of a charging card provider.</summary>
+    APP,
+
+    /// <summary>QR code on the station, usually leading to a web payment.</summary>
+    QR_CODE,
+
+    /// <summary>Payment on a website.</summary>
+    WEBSITE,
+
+    /// <summary>Charging card or contract of an e-mobility provider, without telling the medium.</summary>
+    CHARGING_CONTRACT,
+    CREDIT_CARD_PAYABLE,
+    DEBIT_CARD_PAYABLE,
+
+    /// <summary>Contactless (NFC) payment card at a terminal.</summary>
+    CONTACTLESS_CARD_SUPPORT,
+    CHIP_CARD_SUPPORT,
+
+    /// <summary>Payment terminal with PIN pad.</summary>
+    PED_TERMINAL,
+    CASH,
+}
+
 /// <summary>Whether an EVSE carries a real EVSE-ID or a surrogate assigned by chargeglobe.</summary>
 public enum IdentityKind
 {

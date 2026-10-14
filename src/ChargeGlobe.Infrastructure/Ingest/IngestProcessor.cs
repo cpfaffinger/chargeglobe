@@ -110,7 +110,9 @@ public sealed class IngestProcessor(AppDbContext db)
             record.Seen(at, item.SnapshotId);
         }
 
-        var operatorId = await ResolveOperatorAsync(snapshot, country, cancellationToken);
+        // The operator belongs to the country of its EVSE-ID prefix, which may differ from the address (CH*ECU in Austria).
+        var operatorCountry = snapshot.OperatorCountry is { } given && IsCountryCode(given) ? given : country;
+        var operatorId = await ResolveOperatorAsync(snapshot, operatorCountry, cancellationToken);
         var attributes = new AttributeWriter(db, sourceKey, EntityType.LOCATION, location.Id, at);
         await attributes.SetAsync("name", snapshot.Name, value => location.Name = value, cancellationToken);
         await attributes.SetAsync("address", snapshot.Address.Street, value => location.Address = value, cancellationToken);
@@ -124,6 +126,20 @@ public sealed class IngestProcessor(AppDbContext db)
         await attributes.SetAsync("operator_id", operatorId?.ToString(), _ => location.OperatorId = operatorId, cancellationToken);
         await attributes.SetAsync("access", snapshot.Access?.ToString(), _ => location.Access = snapshot.Access ?? AccessType.PUBLIC, cancellationToken);
         await attributes.SetAsync("opening_times", OpeningTimesJson(snapshot.OpeningTimes), value => location.OpeningTimes = value, cancellationToken);
+        if (snapshot.Facilities is { } facilities)
+        {
+            // A source that describes the facilities owns all of them; null means it does not know the value.
+            await attributes.SetAsync("green_energy", Text(facilities.GreenEnergy), _ => location.GreenEnergy = facilities.GreenEnergy, cancellationToken);
+            await attributes.SetAsync("free_parking", Text(facilities.FreeParking), _ => location.FreeParking = facilities.FreeParking, cancellationToken);
+            await attributes.SetAsync("roofed_parking", Text(facilities.RoofedParking), _ => location.RoofedParking = facilities.RoofedParking, cancellationToken);
+            await attributes.SetAsync(
+                "barrier_free_parking_spaces",
+                facilities.BarrierFreeParkingSpaces?.ToString(CultureInfo.InvariantCulture),
+                _ => location.BarrierFreeParkingSpaces = facilities.BarrierFreeParkingSpaces,
+                cancellationToken);
+            await attributes.SetAsync("price_url", facilities.PriceUrl, value => location.PriceUrl = value, cancellationToken);
+        }
+
         Touch(location, attributes.Changed, at);
         _locations++;
 
@@ -211,6 +227,17 @@ public sealed class IngestProcessor(AppDbContext db)
             JsonSerializer.Serialize(snapshot.Connectors, Json),
             _ => ApplyConnectors(evse, snapshot.Connectors),
             cancellationToken);
+        // Null means the source does not tell; the attribute is then left to the sources that do.
+        if (snapshot.AuthMethods is { } methods)
+        {
+            await attributes.SetAsync("auth_methods", string.Join(',', methods), _ => evse.AuthMethods = methods, cancellationToken);
+        }
+
+        if (snapshot.Roaming is { } roaming)
+        {
+            await attributes.SetAsync("roaming", Text(roaming), _ => evse.Roaming = roaming, cancellationToken);
+        }
+
         Touch(evse, attributes.Changed, at);
         _evses++;
         return evse;
@@ -347,6 +374,8 @@ public sealed class IngestProcessor(AppDbContext db)
                 ["twentyfourseven"] = times.TwentyFourSeven,
                 ["description"] = times.Description,
             });
+
+    private static string? Text(bool? value) => value is { } flag ? (flag ? "true" : "false") : null;
 
     private static bool IsCountryCode(string value) => value is [>= 'A' and <= 'Z', >= 'A' and <= 'Z'];
 

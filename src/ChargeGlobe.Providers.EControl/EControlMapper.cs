@@ -20,10 +20,16 @@ public sealed class EControlMapper
 
     private readonly IReadOnlyDictionary<string, ConnectorMappingEntry> _connectors;
 
-    public EControlMapper(StatusMapping statusMapping, IReadOnlyDictionary<string, ConnectorMappingEntry> connectorMapping)
+    private readonly IReadOnlyDictionary<string, AuthMethod> _authMethods;
+
+    public EControlMapper(
+        StatusMapping statusMapping,
+        IReadOnlyDictionary<string, ConnectorMappingEntry> connectorMapping,
+        IReadOnlyDictionary<string, AuthMethod> authMapping)
     {
         StatusMapping = statusMapping;
         _connectors = new Dictionary<string, ConnectorMappingEntry>(connectorMapping, StringComparer.OrdinalIgnoreCase);
+        _authMethods = new Dictionary<string, AuthMethod>(authMapping, StringComparer.OrdinalIgnoreCase);
     }
 
     public StatusMapping StatusMapping { get; }
@@ -32,7 +38,8 @@ public sealed class EControlMapper
     public static EControlMapper CreateDefault() =>
         new(
             StatusMapping.FromJson(ReadResource("status-mapping.json")),
-            JsonSerializer.Deserialize<Dictionary<string, ConnectorMappingEntry>>(ReadResource("connector-mapping.json"), Json)!);
+            JsonSerializer.Deserialize<Dictionary<string, ConnectorMappingEntry>>(ReadResource("connector-mapping.json"), Json)!,
+            JsonSerializer.Deserialize<Dictionary<string, AuthMethod>>(ReadResource("auth-mapping.json"), Json)!);
 
     /// <summary>External ID of a station: <c>&lt;country&gt;*&lt;operator&gt;*&lt;stationId&gt;</c>.</summary>
     public static string? StationExternalId(StationDto station) =>
@@ -54,11 +61,11 @@ public sealed class EControlMapper
             return null;
         }
 
-        var country = station.CountryId!;
         return new ProviderLocationSnapshot(
             externalId,
             station.Label,
-            new ProviderAddress(station.Street, station.PostCode, station.City, country),
+            // The register covers Austria; the country of the EVSE-ID (e.g. CH*ECU) is the operator's.
+            new ProviderAddress(station.Street, station.PostCode, station.City, EControlProvider.Country),
             new GeoPoint(lat, lon),
             station.OperatorName,
             station.OperatorId,
@@ -67,8 +74,31 @@ public sealed class EControlMapper
             OpeningTimes(station.OpeningHours),
             [.. Points(station).Select((point, index) => ToEvse(externalId, point, index))],
             observedAt,
-            raw);
+            raw,
+            station.CountryId,
+            new ProviderFacilities(
+                station.GreenEnergy, station.FreeParking, station.RoofedParking, station.BarrierFreeParkingPlaces, Url(station.PriceUrl)));
     }
+
+    /// <summary>The canonical standard and format of a connector key of either vocabulary; unknown keys map to UNKNOWN.</summary>
+    public ConnectorMappingEntry Connector(string key)
+    {
+        key = key.Trim();
+        return _connectors.TryGetValue(key, out var entry)
+            ? entry
+            : Enum.GetNames<ConnectorStandard>().FirstOrDefault(name => name.Equals(key, StringComparison.OrdinalIgnoreCase)) is { } name
+                ? new ConnectorMappingEntry(Enum.Parse<ConnectorStandard>(name), null)
+                : new ConnectorMappingEntry(ConnectorStandard.UNKNOWN, null);
+    }
+
+    /// <summary>Known authentication modes in the order of <see cref="AuthMethod"/>, without duplicates; unknown ones are dropped.</summary>
+    public IReadOnlyList<AuthMethod>? AuthMethods(IReadOnlyList<string>? modes) =>
+        modes is null
+            ? null
+            : [.. modes.Select(mode => _authMethods.TryGetValue(mode.Trim(), out var method) ? (AuthMethod?)method : null)
+                .OfType<AuthMethod>()
+                .Distinct()
+                .Order()];
 
     public IEnumerable<ProviderEvseStatus> ToStatuses(StationDto station, DateTimeOffset observedAt) =>
         StationExternalId(station) is not { } externalId
@@ -89,11 +119,11 @@ public sealed class EControlMapper
             : Points(station).Select((point, index) => point.FreeOfCharge == true
                 ? new ProviderPrice(
                     EvseExternalId(externalId, point, index), point.EvseId, null, null, "EUR",
-                    0m, null, 0m, null, null, null, "Ad-hoc (free of charge)", null, observedAt, raw)
+                    0m, null, 0m, null, null, null, "Ad-hoc (free of charge)", Url(station.PriceUrl), observedAt, raw)
                 : new ProviderPrice(
                     EvseExternalId(externalId, point, index), point.EvseId, null, null, "EUR",
                     Euro(point.PriceCentKwh), Euro(point.PriceCentMin), Euro(point.StartFeeCent),
-                    Euro(point.BlockingFeeCentMin), point.BlockingFeeFromMinute, null, "Ad-hoc", null, observedAt, raw));
+                    Euro(point.BlockingFeeCentMin), point.BlockingFeeFromMinute, null, "Ad-hoc", Url(station.PriceUrl), observedAt, raw));
 
     private ProviderEvseSnapshot ToEvse(string stationExternalId, PointDto point, int index)
     {
@@ -107,17 +137,15 @@ public sealed class EControlMapper
             maxPowerKw,
             powerType,
             [.. (point.ConnectorType ?? []).Where(type => type.Key is not null).Select(type => ToConnector(type.Key!, powerType, maxPowerKw))],
-            StatusMapping.Map(point.Status),
-            point.Status);
+            point.Status is null ? null : StatusMapping.Map(point.Status),
+            point.Status,
+            AuthMethods(point.AuthenticationMode),
+            point.Roaming);
     }
 
     private ProviderConnectorSnapshot ToConnector(string key, PowerType? powerType, decimal? maxPowerKw)
     {
-        var (standard, format) = _connectors.TryGetValue(key, out var entry)
-            ? (entry.Standard, entry.Format)
-            : Enum.GetNames<ConnectorStandard>().Contains(key)
-                ? (Enum.Parse<ConnectorStandard>(key), (ConnectorFormat?)null)
-                : (ConnectorStandard.UNKNOWN, null);
+        var (standard, format) = Connector(key);
         return new ProviderConnectorSnapshot(standard, format, powerType, maxPowerKw, null, null, key);
     }
 
@@ -143,7 +171,24 @@ public sealed class EControlMapper
 
     private static decimal? Euro(decimal? cent) => cent / 100m;
 
-    private static bool IsValid(double latitude, double longitude) => latitude is >= -90 and <= 90 && longitude is >= -180 and <= 180;
+    /// <summary>In range and not 0/0, the placeholder of records without a position.</summary>
+    private static bool IsValid(double latitude, double longitude) =>
+        latitude is >= -90 and <= 90 && longitude is >= -180 and <= 180 && (latitude, longitude) != (0, 0);
+
+    /// <summary>An absolute http(s) URL; a bare host with path (<c>www.example.at/tarife</c>) gets <c>https://</c>.</summary>
+    private static string? Url(string? value)
+    {
+        var text = value?.Trim();
+        if (string.IsNullOrEmpty(text))
+        {
+            return null;
+        }
+
+        var candidate = text.Contains("://", StringComparison.Ordinal) ? text : $"https://{text}";
+        return Uri.TryCreate(candidate, UriKind.Absolute, out var uri) && uri.Scheme is "https" or "http" && uri.Host.Contains('.', StringComparison.Ordinal)
+            ? uri.ToString()
+            : null;
+    }
 
     private static string ReadResource(string name)
     {

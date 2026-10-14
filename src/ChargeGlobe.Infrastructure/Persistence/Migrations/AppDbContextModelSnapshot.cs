@@ -108,6 +108,11 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string[]>("AuthMethods")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("auth_methods");
+
                     b.Property<Guid?>("ChargingStationId")
                         .HasColumnType("uuid")
                         .HasColumnName("charging_station_id");
@@ -164,6 +169,10 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                     b.Property<string>("PowerType")
                         .HasColumnType("text")
                         .HasColumnName("power_type");
+
+                    b.Property<bool?>("Roaming")
+                        .HasColumnType("boolean")
+                        .HasColumnName("roaming");
 
                     b.HasKey("Id");
 
@@ -297,6 +306,10 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("address");
 
+                    b.Property<int?>("BarrierFreeParkingSpaces")
+                        .HasColumnType("integer")
+                        .HasColumnName("barrier_free_parking_spaces");
+
                     b.Property<string>("City")
                         .HasColumnType("text")
                         .HasColumnName("city");
@@ -314,6 +327,14 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset>("FirstSeen")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("first_seen");
+
+                    b.Property<bool?>("FreeParking")
+                        .HasColumnType("boolean")
+                        .HasColumnName("free_parking");
+
+                    b.Property<bool?>("GreenEnergy")
+                        .HasColumnType("boolean")
+                        .HasColumnName("green_energy");
 
                     b.Property<DateTimeOffset?>("LastConfirmedAt")
                         .HasColumnType("timestamp with time zone")
@@ -344,10 +365,18 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("postal_code");
 
+                    b.Property<string>("PriceUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("price_url");
+
                     b.Property<string>("RegionCode")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("text")
                         .HasColumnName("region_code");
+
+                    b.Property<bool?>("RoofedParking")
+                        .HasColumnType("boolean")
+                        .HasColumnName("roofed_parking");
 
                     b.HasKey("Id");
 

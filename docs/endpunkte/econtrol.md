@@ -3,65 +3,99 @@
 | | |
 |---|---|
 | Analysiert am | 2026-10-14 |
-| Analysiert von | Claude (Agent) mit dem API-Key des Betreibers, 8 lesende Requests |
-| Methode | Antworten von `GET /search` ausgewertet, Felder gegen die HA-Integration ([docs/07](../07-bestandsanalyse-apps-at.md)) abgeglichen; zusätzlich die Spezifikation „Ladestellenverzeichnis“ v2.0 (Swagger 2.0, `host` `api.e-control.at`, `basePath` `/charge/1.0`), vom Betreiber am 2026-10-14 als Datei bereitgestellt (nicht im Repo; die Beispielwerte einzelner Felder sind kein gültiges JSON) |
+| Analysiert von | Claude (Agent) mit dem API-Key des Betreibers; Live-Probe auf srv-dev2 (Key nur im Speicher, entschlüsselt über den Config-Service, nie ausgegeben), rund 60 lesende Requests |
+| Methode | Antworten aller Endpunkte unten ausgewertet (Pfad-Statistik über die vollständigen Antworten, Wertelisten, Abgleich `/search` ↔ DATEX-Status für 535 Ladepunkte in Wien); Spezifikation „Ladestellenverzeichnis“ v2.0 (Swagger 2.0, `host` `api.e-control.at`, `basePath` `/charge/1.0`, vom Betreiber als Datei bereitgestellt, nicht im Repo; die Beispielwerte einzelner Felder sind kein gültiges JSON) |
 | Tier | 0 |
-| Zugang | eigener, kostenloser API-Key (Registrierung unter admin.ladestellen.at), an eine Domain gebunden: Header `apiKey: <key>` und `Referer: https://<registrierte Domain>/` |
+| Zugang | eigener, kostenloser API-Key (Registrierung unter admin.ladestellen.at), an eine Domain gebunden: Header `apiKey: <key>` und `Referer: https://<registrierte Domain>/`. Die Spezifikation deklariert kein Security-Schema; welche Endpunkte ein Key nutzen darf, zeigt erst der Aufruf (`401`) |
 | ToS geprüft | Nutzungsbedingungen wurden vom Betreiber bei der Registrierung akzeptiert (Click-Wrap); ihr Wortlaut ist noch nicht im Projekt archiviert. Bekannte Punkte laut Wiedergabe Dritter ([docs/08](../08-datenquellen-und-recht.md)): 2.500 Requests/h, max. 30 parallel, Quellenangabe mit Logo, Quartalsstatistik, Go-Live-Meldung, Weiterverbreitung nur nach schriftlicher Freigabe |
 | Lizenz / Attribution | „Datenquelle: Ladestellenverzeichnis der E-Control (ladestellen.at)“ (Descriptor `AttributionText`, Tabelle `source`) |
-| Rate-Limit beobachtet | keines (nur 8 Requests); erzwungen werden 40 Requests/min (2.400/h) mit Burst 10 je Prozess |
-| Capabilities | StaticInventory · EvseIds · LiveStatusPerEvse · AdHocPrice · BulkByBoundingBox (per adaptivem Suchraster) |
+| Rate-Limit beobachtet | keines; erzwungen werden 40 Requests/min (2.400/h) mit Burst 10 je Prozess und clusterweit |
+| Capabilities | StaticInventory · EvseIds · LiveStatusPerEvse · AdHocPrice · BulkAll (Register seitenweise) · BulkByBoundingBox (Live-Status per Suchraster) |
 
 Konfiguration (Config-Service, Scope `provider:econtrol`, Admin-UI `/admin/settings`): `provider.enabled`, `provider.api_key` (Secret, verschlüsselt), `provider.referer` (registrierte Domain; ein bloßer Hostname wird zu `https://<host>/` ergänzt), `provider.regions` (Default `AT-9,AT-3,AT-4,AT-1`), `provider.interval.inventory_minutes` (Default 1 Tag) und `provider.interval.status_minutes` (Default 15 min: ein Durchgang über die vier Startregionen braucht einige hundert Suchen, vier Durchgänge pro Stunde bleiben unter 2.400 Requests). Der Key steht nie in Repo, `.env` oder Logs.
 
+## Welcher Endpunkt wofür
+
+| Daten | Endpunkt | Warum |
+|---|---|---|
+| Inventar (Standorte, Ladepunkte, Stecker, Zahlungsarten, Roaming, Ökostrom, Parken, Preis-URL) | `GET /search/stations` seitenweise | ganz Österreich in 17 Requests (≈ 37 MB), reichste Felder |
+| Ad-hoc-Preise | `GET /search/stations` seitenweise | dieselben Seiten, Preise je Ladepunkt |
+| Live-Status | `GET /search` über das Suchraster | einziger Endpunkt mit aktuellem Status je Ladepunkt; `/search/stations` hat keinen Status, die DATEX-Status-Publikation ist Stunden alt (siehe unten) |
+| Health-Probe | `GET /search` (Wien, Stephansplatz) | billig und prüft den Status-Pfad |
+
 ## Endpunkte
 
-### `GET https://api.e-control.at/charge/1.0/search?latitude={lat}&longitude={lon}`
-- Parameter: `latitude`, `longitude` (WGS 84, Dezimalpunkt).
-- Header: `apiKey`, `Referer` (siehe oben). Ohne gültigen Key: `401` mit deutschem Erklärtext.
-- Antwort: JSON-Array der 100 nächsten Stationen (`distance` in km, aufsteigend), jede mit `points[]` inkl. Live-Status und Ad-hoc-Preis. Vollständiges, sanitisiertes Beispiel mit erfundenen Stationen: `fixtures/econtrol/search-wien.json`.
+### `GET https://api.e-control.at/charge/1.0/search/stations?fromIndex={n}&maxResults={m}` – Register
+- Live geprüft am 2026-10-14: `200`, `totalResults` 16.070 Stationen, 41.136 Ladepunkte. `maxResults` wird bei **1.000** gekappt (20.000 liefert ebenfalls 1.000); eine Seite sind 2–4 MB, keine gzip-Kompression, kein `ETag`/`Last-Modified`.
+- Antwort: `{ "totalResults", "fromIndex", "endIndex" (inklusiv), "stations": [...] }`. Die Stationen tragen dieselben Inhalte wie bei `/search`, aber mit anderen Namen (`evseCountryId`/`evseOperatorId`/`evseStationId`, `status` statt `stationStatus`, `location.latitude/longitude`; je Ladepunkt `energyInKw`, `connectorTypes`, `electricityTypes`, `authenticationModes`, `priceInCentPerKwh`, `priceInCentPerMin`) und **ohne Status der Ladepunkte**. Sanitisierter Auszug mit sechs echten Stationen (Kontaktfelder durch Platzhalter ersetzt): `fixtures/econtrol/stations-register.json`.
+- Weitere Filter laut Spezifikation (nicht genutzt): `stationStatuses`, `evseId` (Wildcard `%`), `connectorTypes`, `minEnergyInKw`, `maxEnergyInKw`, `providers`, `roaming`, `freeOfCharge`, `latitude`/`longitude`/`maxDistanceInKm`.
+- Beobachtete Werte (gesamtes Register):
+  - `status`: `ACTIVE` 15.954, `INACTIVE` 116 – inaktive Stationen überspringt der Adapter.
+  - `evseCountryId`: `AT` 15.122, `CH` 843 (eCarUp), `DK` 81, `DE` 19, `NL` 4, `IT` 1 – alle Stationen liegen in Österreich, das Land der EVSE-ID ist das des Betreibers.
+  - 52 Stationen haben die Koordinaten 0/0 (Platzhalter) und werden als „ohne gültige Koordinaten“ übersprungen.
+  - `authenticationModes`: `APP` 35.019, `RFID_READER` 34.644, `CREDIT_CARD` 20.689, `CHARGING_CONTRACT` 12.250, `QR` 10.572, `WEBSITE` 7.131, `DEBIT_CARD` 5.282, `CONTACTLESS_CARD_SUPPORT` 2.526, `CHIP_CARD_SUPPORT` 432, `CASH` 224, `PED_TERMINAL` 7.
+  - `roaming` („roaming contracts accepted“): `true` 36.766, `false` 3.194, `null` 1.176.
+  - `greenEnergy` `true` bei 9.482 Stationen; `freeParking` 8.066; `roofedParking` 261; `barrierFreeParkingPlaces` > 0 bei 843; `priceUrl` bei 1.948.
+  - `providers` ist nur bei 315 Stationen befüllt, mit Werten wie „MGAtech GmbH“, „Best in Parking Garagen GmbH & Co KG“ – das sind Dienstleister des Betreibers, **keine akzeptierten Ladekarten**; nicht übernommen. Welche Ladekarten gehen, sagt nur `roaming`.
+  - `electronicPaymentProviders` (Zahlungsdienstleister wie „card complete Service Bank AG“, „TeleCash from Fiserv“) bei 11 % der Ladepunkte; nicht übernommen, die Zahlungsart steht in `authenticationModes`.
+
+### `GET https://api.e-control.at/charge/1.0/search?latitude={lat}&longitude={lon}` – Umkreissuche mit Live-Status
+- Parameter: `latitude`, `longitude` (WGS 84, Dezimalpunkt); laut Spezifikation zusätzlich `capacity` (Mindestleistung kW) und `types` (Steckertypen).
+- Antwort: JSON-Array der 100 nächsten Stationen (`distance` in km, aufsteigend), jede mit `points[]` inkl. **Live-Status** und Ad-hoc-Preis; eine Antwort sind rund 0,5 MB. Vollständiges, sanitisiertes Beispiel mit erfundenen Stationen: `fixtures/econtrol/search-wien.json`.
 ```json
 [{ "countryId": "AT", "operatorId": "TST", "stationId": "ETEST0001", "stationStatus": "ACTIVE",
    "label": "…", "street": "…", "postCode": "1010", "city": "Wien",
    "location": { "lat": 48.2085, "lon": 16.3731 }, "distance": 0.012, "operatorName": "…",
+   "greenEnergy": true, "freeParking": false, "roofedParking": false, "barrierFreeParkingPlaces": 0, "priceUrl": null,
    "openingHours": [{ "fromWeekday": "MONDAY", "fromTime": "00:00", "toWeekday": "SUNDAY", "toTime": "24:00" }],
-   "points": [{ "evseId": "AT*TST*ETEST0001*1", "capacityKw": 22, "freeOfCharge": false,
+   "points": [{ "evseId": "AT*TST*ETEST0001*1", "capacityKw": 22, "freeOfCharge": false, "roaming": true,
                 "priceCentKwh": 59, "priceCentMin": null, "blockingFeeCentMin": 10, "blockingFeeFromMinute": 240, "startFeeCent": 0,
+                "authenticationMode": ["RFID_READER", "APP"],
                 "connectorType": [{ "key": "STYPE2", "legacy": true, "consumerName": "TYPE_2_AC" }],
                 "electricityType": ["AC_3_PHASE"], "status": "AVAILABLE" }] }]
 ```
-- Personenbezogene Felder (`contactName`, `phoneCountryCode`, `regionCode` = Telefonvorwahl, `phoneNumber`, `extensionNumber`, `email`, `owner`) entfernt der Client sofort; sie landen weder im Ingest-Modell noch in `raw_snapshot` (DSGVO, [docs/08](../08-datenquellen-und-recht.md)).
-- Mapping auf Ingest-Modell (`EControlMapper`):
-  - `countryId*operatorId*stationId` → `ProviderLocationSnapshot.ExternalId`; `label`, `street`/`postCode`/`city`, `location`, `operatorName`, `operatorId`; `Access = PUBLIC` (das Verzeichnis enthält nur öffentlich zugängliche Ladepunkte)
-  - `openingHours`: genau `MONDAY 00:00 – SUNDAY 24:00` → `TwentyFourSeven`, sonst Text
-  - `points[].evseId` → `ProviderEvseSnapshot.EvseId` (roh) und `ExternalId`; ohne EVSE-ID `<Station>#<Position>`
-  - `capacityKw` → `MaxPowerKw` (EVSE und Stecker); `electricityType` mit genau einem OCPI-Wert → `PowerType`, sonst `null`
-  - `status` → `Status` (Tabelle unten), Rohwert in `StatusRaw`
-  - Preise: Cent → Euro (`priceCentKwh`, `priceCentMin`, `startFeeCent` → `SessionFee`, `blockingFeeCentMin`, `blockingFeeFromMinute`); `freeOfCharge: true` → 0 €/kWh und 0 € Sessiongebühr; immer Ad-hoc (`EmpKey = null`), Währung EUR
+- Ohne gültigen Key: `401` mit deutschem Erklärtext.
 
-### Laut Spezifikation, noch nicht live geprüft
-Die Spezifikation deklariert kein Security-Schema; alle Operationen nennen `401`/`403` als mögliche Antwort, der Zugriff hängt also vom Key und seinen Rechten ab. Live geprüft ist bisher nur `GET /search`; `/stations` und `/countries/AT/stations` (ohne Betreiber) antworteten `401` und stehen nicht in der Spezifikation.
+### Personenbezogene Daten
+`contactName`, `phoneCountryCode`, `regionCode` (= Telefonvorwahl), `phoneNumber`, `extensionNumber`, `email` und `owner` entfernt der Client sofort bei beiden Endpunkten; sie landen weder im Ingest-Modell noch in `raw_snapshot` (DSGVO, [docs/08](../08-datenquellen-und-recht.md)). `operatorName` bleibt, obwohl einzelne Betreiber Privatpersonen sind (Pflichtangabe des Registers).
 
-| Endpunkt | Inhalt laut Spezifikation | Nutzen für chargeglobe |
-|---|---|---|
-| `GET /datex2/versions` | unterstützte DATEX-II-Versionen (derzeit ein eigener Endpunkt je Version) | Health-Probe für den Bulk-Zugang |
-| `GET /datex2/v3.5/energy-infrastructure-table-publication` | **alle** Sites, Stationen und Ladepunkte (`EnergyInfrastructureTablePublication`; JSON oder XML) mit Betreiber, Lage, Öffnungszeiten, Tarifinformation (`rates`), Zugangs- und Authentifizierungsarten | Inventar in **einem** Request statt Suchraster |
-| `GET /datex2/v3.5/energy-infrastructure-status-publication` | Status **aller** Ladepunkte (`RefillPointStatus.status`: `AVAILABLE`, `BLOCKED`, `CHARGING`, `FAULTED`, `INOPERATIVE`, `OCCUPIED`, `OUT_OF_ORDER`, `OUT_OF_STOCK`, `PLANNED`, `REMOVED`, `RESERVED`, `UNAVAILABLE`) mit `lastUpdated` je Ladepunkt, dazu `openingStatus`, `fault`, `newRates` | Status in **einem** Request, `lastUpdated` als `source_reported_at` (Latenz messbar); eigenes Status-Mapping nötig |
-| `GET /search/stations` | Filtersuche mit Paging (`fromIndex`, `maxResults`; Antwort mit `totalResults`, `fromIndex`, `endIndex`), Filter u. a. `stationStatuses`, `evseId` (Wildcard `%`), `connectorTypes`, `minEnergyInKw`, `providers`, `roaming`, `freeOfCharge`, Koordinaten + `maxDistanceInKm` | Fallback für einen vollständigen Abzug ohne Raster; gezielte Abfrage einzelner EVSEs |
-| `GET /search?latitude=&longitude=` | wie oben beschrieben; zusätzlich Filter `capacity` (Mindestleistung kW) und `types` (Steckertypen) | derzeit genutzt |
-| `GET /countries/{cc}/operators/basic` | Basisdaten aller Betreiber eines Landes | Betreiber-Stammdaten und Filter |
-| `GET /countries/{cc}/operators/{op}/stations`, `…/stations/{id}`, `…/points/{evseId}` | Stationen eines Betreibers bzw. ein Ladepunkt („based on user permissions“) | vermutlich nur für eigene Betreiberdaten; nicht für den Abzug |
-| `GET /enumerations/connectorTypes`, `electricityTypes`, `authenticationModes`, `electronicPaymentProviders`, `providers`, `vehicleTypes`, `smartServices` | Wertelisten der Quelle | Mapping-Tabellen gegen die vollständige Liste prüfen; `providers` als Startkatalog der EMPs |
-| `GET /nutscodes`, `GET /point-data-export/region-codes`, `GET /point-data-export/xlsx?regionCodes=` | NUTS-1-Codes; Export als Excel je Bezirk/Bundesland | nicht benötigt (Regionen aus OSM, Excel nicht maschinenfreundlich) |
-
-Zusätzliche Felder je Station bzw. Ladepunkt, die das Ingest-Modell noch nicht übernimmt: `providers`/`otherProviders` (akzeptierte Ladekarten bzw. Anbieter), `electronicPaymentProviders`, `authenticationModes`, `roaming`, `priceUrl`, `contractBasedPayment`, `greenEnergy`, `austrianEcoLabel`, `freeParking`, `roofedParking`, `illuminatedParking`, `parkingPlaces`, `barrierFreeParkingPlaces`, `vehicleTypes` und maximale Fahrzeugmaße, `smartService`, `nutsCode`, `timezone`, Koordinaten je Ladepunkt.
+### Mapping auf das Ingest-Modell (`EControlMapper`)
+`/search/stations` wird im Client auf die Form von `/search` (`StationDto`) gebracht; der Mapper kennt nur diese Form.
+- `countryId*operatorId*stationId` → `ProviderLocationSnapshot.ExternalId`; `label`, `street`/`postCode`/`city`, `location`, `operatorName`, `operatorId`; Adressland immer `AT` (das Verzeichnis ist österreichisch), `countryId` → `OperatorCountry` (Land der EVSE-ID, z. B. `CH` für eCarUp); `Access = PUBLIC` (das Verzeichnis enthält nur öffentlich zugängliche Ladepunkte).
+- `greenEnergy`, `freeParking`, `roofedParking`, `barrierFreeParkingPlaces`, `priceUrl` → `Facilities`; `priceUrl` wird eine absolute http(s)-Adresse (`www.example.at/tarife.pdf` → `https://www.example.at/tarife.pdf`), sonst `null`.
+- `openingHours`: genau `MONDAY 00:00 – SUNDAY 24:00` → `TwentyFourSeven`, sonst Text.
+- `points[].evseId` → `ProviderEvseSnapshot.EvseId` (roh) und `ExternalId`; ohne EVSE-ID `<Station>#<Position>`.
+- `capacityKw` → `MaxPowerKw` (EVSE und Stecker); `electricityType` mit genau einem OCPI-Wert → `PowerType`, sonst `null`.
+- `authenticationMode(s)` → `AuthMethods` (Tabelle unten), `roaming` → `Roaming`.
+- `status` → `Status` (Tabelle unten), Rohwert in `StatusRaw`; ohne Status (Register) bleibt beides `null`, es entsteht keine Statusmeldung.
+- Preise: Cent → Euro (`priceCentKwh`, `priceCentMin`, `startFeeCent` → `SessionFee`, `blockingFeeCentMin`, `blockingFeeFromMinute`); `freeOfCharge: true` → 0 €/kWh und 0 € Sessiongebühr; immer Ad-hoc (`EmpKey = null`), Währung EUR, `TariffUrl` = Preis-URL der Station.
 
 ### Abdeckung einer Fläche
-`SearchGrid` sucht vom Mittelpunkt einer Zelle aus; ist die Antwort eine volle Seite (100) und liegt die entfernteste Station näher als die Zellecken, wird die Zelle geviertelt. Dichte Gebiete (Wiener Innenstadt: 100 Stationen in 1,2 km) bekommen so feine, ländliche grobe Zellen. Unter 50 m halber Diagonale wird nicht mehr geteilt; ein Lauf endet nach 1.000 Requests (Warnung im Log). Ohne Bounding Box gilt ganz Österreich.
+- **Register:** ein Lauf liest alle Seiten (`fromIndex` += Seitengröße, bis `totalResults` erreicht oder eine Seite leer ist; höchstens 1.000 Requests) und behält die Stationen in der Bounding Box des Plans. Der Inventar-Plan gilt für alle Regionen aus `provider.regions` gemeinsam (Region `AT-9,AT-3,AT-4,AT-1`, Box = umschließendes Rechteck), weil jeder Lauf ohnehin das ganze Register liest.
+- **Suchraster:** `SearchGrid` sucht vom Mittelpunkt einer Zelle aus; ist die Antwort eine volle Seite (100) und liegt die entfernteste Station näher als die Zellecken, wird die Zelle geviertelt. Dichte Gebiete (Wiener Innenstadt: 100 Stationen in 1,2 km) bekommen so feine, ländliche grobe Zellen. Unter 50 m halber Diagonale wird nicht mehr geteilt; ein Lauf endet nach 1.000 Requests (Warnung im Log). Je Region ein Status-Plan.
+
+### DATEX II v3.5 (geprüft, nicht genutzt)
+| Endpunkt | Ergebnis am 2026-10-14 |
+|---|---|
+| `GET /datex2/versions` | `200`, `[{"name":"v3.5"}]` |
+| `GET /datex2/v3.5/energy-infrastructure-table-publication` | `200`, **217 MB** JSON (5 s), 16.069 Sites, 41.134 Stationen mit je genau einem Ladepunkt; Profil `ladestellen.at` 5.0.3. Station-ID = `<Site-ID>-<EVSE-ID>`, Site-ID = `<Land>-<operatorId>-<stationId>`. Enthält Betreiber mit Kontaktdaten (Telefon, E-Mail), Adresse, Öffnungszeiten, Stecker (`maxPowerAtSocket` in W), `authenticationAndIdentificationMethods` (`APPS`, `RFID`, `CREDIT_CARD`, `WEBSITE`, `DEBIT_CARD`, `NFC`, `CASH_PAYMENT`, `PINPAD`), `isGreenEnergy`, Fahrzeugmaße – aber **kein** Roaming, keine Preis-URL und kein Parken; gegenüber `/search/stations` sechsmal größer und ärmer |
+| `GET /datex2/v3.5/energy-infrastructure-status-publication` | `200`, **74 MB** JSON (1,7 s), Status aller 41.134 Ladepunkte mit `lastUpdated` (Unix-ms) je Ladepunkt, Station und Site, `openingStatus`, `newRates` (kWh- und Minutenpreise). Beobachtete Status: `AVAILABLE`, `CHARGING`, `UNKNOWN`, `INOPERATIVE`, `OUT_OF_ORDER`, `BLOCKED`, `PLANNED`, `RESERVED` (`UNKNOWN` fehlt in der Werteliste der Spezifikation) |
+
+Der Status-Snapshot ist **nicht live**: `publicationTime` war beim Abruf um 16:49 UTC 14:42 UTC, die jüngste Änderung (`lastUpdated`) 13:40 UTC; bei 535 Ladepunkten in Wien wich er in 22 % der Fälle vom gleichzeitigen `/search` ab (z. B. 50 × `AVAILABLE` laut `/search`, `CHARGING` laut DATEX). Die Messreihe zur Erneuerungsrate steht unter „Offene Punkte“. Deshalb kommt der Status weiter aus `/search`. Für den generischen DATEX-II-Adapter (Mobilithek, NAP) bleibt die Publikation ein gutes Testobjekt.
+
+### Weitere Endpunkte
+| Endpunkt | Ergebnis am 2026-10-14 |
+|---|---|
+| `GET /countries/AT/operators/basic` | `200`, 1.124 Betreiber (`operatorId`, `type`, `organization`, `firstName`, `lastName`) – bei Privatpersonen Vor- und Nachname; noch nicht genutzt |
+| `GET /enumerations/connectorTypes` | `200`, 63 Schlüssel (Fixture `fixtures/econtrol/enumerations-connectorTypes.json`; ein Schlüssel hat ein Leerzeichen am Ende: `DOMESTIC_B `) |
+| `GET /enumerations/authenticationModes` | `200`, 11 Schlüssel (Fixture `fixtures/econtrol/enumerations-authenticationModes.json`) |
+| `GET /enumerations/vehicleTypes` | `200`, `CAR`, `LIGHT_VEHICLE`, `TRUCK`, `BUS`, `VAN` |
+| `GET /enumerations/providers`, `electronicPaymentProviders`, `electricityTypes`, `smartServices` | `401` mit diesem Key |
+| `GET /countries/{cc}/operators/{op}/stations`, `…/points/{evseId}`, `GET /nutscodes`, `GET /point-data-export/*` | nicht geprüft (eigene Betreiberdaten bzw. Excel-Export) |
 
 ## Status-Mapping
 
-Datei `src/ChargeGlobe.Providers.EControl/Mapping/status-mapping.json`. Beobachtet wurden nur OCPI-Werte (`AVAILABLE`, `CHARGING`, `OUTOFORDER`, `UNKNOWN`, `BLOCKED`, `INOPERATIVE`).
+Datei `src/ChargeGlobe.Providers.EControl/Mapping/status-mapping.json`. In `/search` beobachtet: `AVAILABLE`, `CHARGING`, `OUTOFORDER`, `UNKNOWN`, `BLOCKED`, `INOPERATIVE`.
 
 | Rohwert | OCPI-Status |
 |---|---|
@@ -71,25 +105,44 @@ Datei `src/ChargeGlobe.Providers.EControl/Mapping/status-mapping.json`. Beobacht
 
 ## Stecker-Mapping
 
-Datei `src/ChargeGlobe.Providers.EControl/Mapping/connector-mapping.json`; zwei Vokabulare, Legacy-Schlüssel (`legacy: true`) nennen auch Steckdose/Kabel.
+Datei `src/ChargeGlobe.Providers.EControl/Mapping/connector-mapping.json`; zwei Vokabulare, Legacy-Schlüssel (`legacy: true`) nennen auch Steckdose/Kabel. Ein Test prüft alle 63 Schlüssel der Werteliste der Quelle.
 
 | Rohwert | ConnectorStandard | Format |
 |---|---|---|
 | `STYPE2` | `IEC_62196_T2` | `SOCKET` |
 | `CTYPE2` | `IEC_62196_T2` | `CABLE` |
+| `STYPE3` | `IEC_62196_T3C` | `SOCKET` |
 | `CTYPE1` | `IEC_62196_T1` | `CABLE` |
+| `CCCS1`, `IEC_62196_T1_COMBO` | `IEC_62196_T1_COMBO` | `CABLE` |
 | `CCCS2`, `IEC_62196_T2_COMBO` | `IEC_62196_T2_COMBO` | `CABLE` |
-| `IEC_62196_T1_COMBO` | `IEC_62196_T1_COMBO` | `CABLE` |
 | `CG105`, `CHADEMO` | `CHADEMO` | `CABLE` |
-| `DOMESTIC_F` | `DOMESTIC_F` | `SOCKET` |
-| übriger OCPI-Name (z. B. `IEC_62196_T2`) | gleichnamig | `null` |
+| `CTESLA` | `TESLA_S` | `CABLE` |
+| `S309-1P-16A`, `S309-3P-16A`, `S309-3P-32A` | `IEC_60309_2_single_16`, `IEC_60309_2_three_16`, `IEC_60309_2_three_32` | `SOCKET` |
+| `SBS1361` | `DOMESTIC_G` | `SOCKET` |
+| `SCEE-7-8`, `DOMESTIC_F` | `DOMESTIC_F` | `SOCKET` |
+| `S309-1P-32A`, `OTHER1PHMAX16A`, `OTHER1PHOVER16A`, `OTHER3PH` | `UNKNOWN` (kein OCPI-Wert) | `SOCKET` |
+| `MCS` | `UNKNOWN` (kein OCPI-2.2.1-Wert) | `CABLE` |
+| `PAN`, `WINDUCTIVE`, `WRESONANT`, `UNDETERMINED`, `UNKNOWN` | `UNKNOWN` | `null` |
+| übriger OCPI-Name, ohne Rücksicht auf Groß-/Kleinschreibung und Leerzeichen (z. B. `IEC_60309_2_THREE_64`, `DOMESTIC_B `) | gleichnamig | `null` |
 | alles andere | `UNKNOWN` (Rohwert in `RawType`) | `null` |
 
+## Zahlungs- und Authentifizierungsarten
+
+Datei `src/ChargeGlobe.Providers.EControl/Mapping/auth-mapping.json` → kanonisch `AuthMethod` ([docs/03](../03-datenmodell.md)); unbekannte Werte fallen weg, Duplikate auch. Ein Test prüft alle 11 Schlüssel der Werteliste.
+
+| Rohwert | AuthMethod |
+|---|---|
+| `RFID_READER`, `APP`, `WEBSITE`, `CHARGING_CONTRACT`, `CONTACTLESS_CARD_SUPPORT`, `CHIP_CARD_SUPPORT`, `PED_TERMINAL`, `CASH` | gleichnamig |
+| `QR` | `QR_CODE` |
+| `CREDIT_CARD` | `CREDIT_CARD_PAYABLE` |
+| `DEBIT_CARD` | `DEBIT_CARD_PAYABLE` |
+
 ## Preisdarstellung
-Je Ladepunkt der Ad-hoc-Preis des Betreibers: kWh-Preis und/oder Minutenpreis, Startgebühr, Blockiergebühr ab Minute X, Kennzeichen „kostenlos“. EMP-Tarife liefert die Quelle nicht.
+Je Ladepunkt der Ad-hoc-Preis des Betreibers: kWh-Preis und/oder Minutenpreis, Startgebühr, Blockiergebühr ab Minute X, Kennzeichen „kostenlos“, dazu die Preis-URL der Station. EMP-Tarife liefert die Quelle nicht.
 
 ## Offene Punkte / Risiken
 - Wortlaut der Nutzungsbedingungen archivieren; Weiterverbreitung (API-Ausgabe von chargeglobe) schriftlich mit support@ladestellen.at klären; Go-Live-Meldung, Logo-Attribution und Quartalsstatistik umsetzen.
 - Die registrierte Domain ist derzeit ein Platzhalter (`ogb.net`); bei Wechsel nur `provider.referer` ändern.
-- Requests laufen durch zwei Budgets: 40/min je Prozess im Adapter und clusterweit in `provider_rate_budget` (ebenfalls 40/min, Burst 10). Die tatsächliche Anzahl Suchen je Durchgang ist erst mit Live-Daten messbar (`poll_plan.last_result`, Crawler-Log).
-- Ob der Key die DATEX-II-Publikationen und `/search/stations` nutzen darf, ist offen (401/403 laut Spezifikation möglich); ebenso Antwortgröße, Aktualisierungsrate des Status und ob die Publikationen dieselben EVSE-IDs und Stationen wie `/search` liefern.
+- Requests laufen durch zwei Budgets: 40/min je Prozess im Adapter und clusterweit in `provider_rate_budget` (ebenfalls 40/min, Burst 10). Die tatsächliche Anzahl Suchen je Status-Durchgang ist mit Live-Daten in `poll_plan.last_result` und im Crawler-Log zu messen.
+- Erneuerungsrate der DATEX-Status-Publikation: Abrufe um 16:49 und 17:00 UTC lieferten beide den Stand von 14:42 UTC.
+- Inaktive Stationen werden übersprungen; ein früher aktiver Standort bleibt dadurch aktiv, bis es eine Lebenszyklus-Logik für Standorte gibt, die eine Quelle nicht mehr meldet.

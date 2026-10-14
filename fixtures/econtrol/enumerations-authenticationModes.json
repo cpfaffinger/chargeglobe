@@ -1,0 +1,46 @@
+[
+  {
+    "key": "QR",
+    "description": "Can be accessed through dynamic or individual QR code payment."
+  },
+  {
+    "key": "CHARGING_CONTRACT",
+    "description": "Can be accessed through a charging card or charging contract."
+  },
+  {
+    "key": "CHIP_CARD_SUPPORT",
+    "description": "Can be accessed through a chip card reader."
+  },
+  {
+    "key": "PED_TERMINAL",
+    "description": "Can be accessed through PIN entry on a terminal."
+  },
+  {
+    "key": "CASH",
+    "description": "Can be accessed through direct payment in cash."
+  },
+  {
+    "key": "RFID_READER",
+    "description": "Can be accessed through direct RFID payment."
+  },
+  {
+    "key": "CREDIT_CARD",
+    "description": "Can be accessed through direct payment with credit card."
+  },
+  {
+    "key": "DEBIT_CARD",
+    "description": "Can be accessed through direct payment with debit card."
+  },
+  {
+    "key": "APP",
+    "description": "Can be accessed through direct payment with an app."
+  },
+  {
+    "key": "CONTACTLESS_CARD_SUPPORT",
+    "description": "Can be accessed through direct NFC payment."
+  },
+  {
+    "key": "WEBSITE",
+    "description": "Can be accessed through Website payment."
+  }
+]

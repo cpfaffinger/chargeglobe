@@ -57,8 +57,24 @@ public sealed class PollScheduler(
             jobs.Add((JobType.STATUS_POLL, status));
         }
 
-        return [.. jobs.SelectMany(job => regions.Select(region => new PollPlanSpec(descriptor.Key, job.Type, region.Code, region.Bbox, job.Interval)))];
+        return [.. jobs.SelectMany(job => Bulk(descriptor, job.Type) && regions.Count > 0
+            ? [new PollPlanSpec(descriptor.Key, job.Type, string.Join(',', regions.Select(region => region.Code)), Envelope(regions), job.Interval)]
+            : regions.Select(region => new PollPlanSpec(descriptor.Key, job.Type, region.Code, region.Bbox, job.Interval)))];
     }
+
+    /// <summary>
+    /// A provider that returns everything in one go (<see cref="ProviderCapabilities.BulkAll"/>) reads its inventory
+    /// once for all regions: one plan named after the region codes, covering their envelope.
+    /// </summary>
+    private static bool Bulk(ProviderDescriptor descriptor, JobType type) =>
+        type == JobType.INVENTORY_FULL && descriptor.Capabilities.HasFlag(ProviderCapabilities.BulkAll);
+
+    private static BoundingBox Envelope(IReadOnlyList<(string Code, BoundingBox Bbox)> regions) =>
+        new(
+            regions.Min(region => region.Bbox.MinLongitude),
+            regions.Min(region => region.Bbox.MinLatitude),
+            regions.Max(region => region.Bbox.MaxLongitude),
+            regions.Max(region => region.Bbox.MaxLatitude));
 
     private TimeSpan? Minutes(string key, string scope, TimeSpan? fallback) =>
         config.Get<int?>(key, scope) is { } minutes ? TimeSpan.FromMinutes(minutes) : fallback;

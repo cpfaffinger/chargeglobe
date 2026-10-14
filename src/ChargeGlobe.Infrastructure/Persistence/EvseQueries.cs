@@ -66,6 +66,8 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             evse.PowerType?.ToString(),
             [.. evse.Connectors.OrderBy(connector => connector.Ordinal).Select(connector => new ConnectorDetail(
                 connector.Standard.ToString(), connector.Format?.ToString(), connector.PowerType?.ToString(), connector.MaxPowerKw))],
+            [.. evse.AuthMethods.Select(method => method.ToString())],
+            evse.Roaming,
             status,
             evse.FirstSeen,
             evse.LastSeen,

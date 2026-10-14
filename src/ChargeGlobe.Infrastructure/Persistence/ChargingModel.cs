@@ -2,6 +2,7 @@ using ChargeGlobe.Domain;
 using ChargeGlobe.Domain.Charging;
 using ChargeGlobe.Domain.Provenance;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MultiPolygon = NetTopologySuite.Geometries.MultiPolygon;
 using Point = NetTopologySuite.Geometries.Point;
@@ -21,6 +22,15 @@ internal static class ChargingModel
     private static readonly ValueConverter<GeoPoint, Point> GeoPointConverter = new(
         point => new Point(point.Longitude, point.Latitude) { SRID = Srid },
         point => new GeoPoint(point.Y, point.X));
+
+    private static readonly ValueConverter<IReadOnlyList<AuthMethod>, string[]> AuthMethodsConverter = new(
+        methods => methods.Select(method => method.ToString()).ToArray(),
+        names => names.Select(name => Enum.Parse<AuthMethod>(name)).ToList());
+
+    private static readonly ValueComparer<IReadOnlyList<AuthMethod>> AuthMethodsComparer = new(
+        (left, right) => left!.SequenceEqual(right!),
+        methods => methods.Aggregate(0, (hash, method) => HashCode.Combine(hash, method)),
+        methods => methods.ToList());
 
     /// <summary>Enums are stored as their names (OCPI strings), not as numbers.</summary>
     public static void ConfigureConventions(ModelConfigurationBuilder builder)
@@ -92,6 +102,10 @@ internal static class ChargingModel
             entity.ToTable("evse");
             entity.HasIndex(evse => evse.EvseIdNorm).IsUnique();
             entity.Property(evse => evse.MaxPowerKw).HasPrecision(7, 2);
+            // Stored as text[] of the enum names, like the other enums.
+            entity.Property(evse => evse.AuthMethods)
+                .HasConversion(AuthMethodsConverter, AuthMethodsComparer)
+                .HasColumnType("text[]");
             entity.HasOne<Location>().WithMany().HasForeignKey(evse => evse.LocationId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne<ChargingStation>().WithMany().HasForeignKey(evse => evse.ChargingStationId).OnDelete(DeleteBehavior.SetNull);
             entity.HasOne<Operator>().WithMany().HasForeignKey(evse => evse.OperatorId).OnDelete(DeleteBehavior.SetNull);

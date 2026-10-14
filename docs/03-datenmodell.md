@@ -29,10 +29,12 @@ Operator (CPO) ─┬─ 1..n ─ Location ─ 1..n ─ ChargingStation? ─ 1..
 | `region` | `code` (PK, `AT-9` Wien, `AT-3` NÖ, …), `name`, `geom geography(MultiPolygon,4326)` (GiST) | ISO 3166-2 Codes; die neun Bundesländer kommen aus OpenStreetMap (Grenzrelationen `admin_level=4`, ODbL, „© OpenStreetMap contributors“) als vereinfachtes GeoJSON im Repo (`src/ChargeGlobe.Infrastructure/Persistence/Seed/regions-at.geojson`, neu erzeugbar mit `scripts/regions/build-regions-at.sh`); die API schreibt fehlende oder geänderte Regionen beim Start (`RegionSeeder`) und berechnet dann `location.region_code` aller Standorte neu |
 | `operator` | `id`, `name`, `country`, `operator_id` (z. B. `EVN`, eindeutig je `country`), `website`, `is_cpo`, `is_emp` | EVSE-ID-Präfix `AT*EVN` → Operator |
 | `emp` | `id`, `name`, `app_name`, `country` | Ladekarten-/App-Anbieter (ÖAMTC ePower, Electroverse, …); ein Unternehmen kann CPO und EMP sein |
-| `location` | `id uuid`, `name`, `address`, `postal_code`, `city`, `country`, `geom geography(Point,4326)` (GiST), `operator_id`, `region_code`, `opening_times jsonb` (OCPI `Hours`), `access` (`PUBLIC`/`RESTRICTED`), `lifecycle` (`ACTIVE`/`PLANNED`/`REMOVED`), `first_seen`, `last_seen`, `last_confirmed_at` | `region_code` setzt der Trigger `location_assign_region` bei Insert und bei Änderung von `geom` (Region, deren Polygon den Punkt enthält) |
+| `location` | `id uuid`, `name`, `address`, `postal_code`, `city`, `country`, `geom geography(Point,4326)` (GiST), `operator_id`, `region_code`, `opening_times jsonb` (OCPI `Hours`), `access` (`PUBLIC`/`RESTRICTED`), `green_energy` (100 % erneuerbar laut Betreiber, OCPI `EnergyMix.is_green_energy`), `free_parking`, `roofed_parking`, `barrier_free_parking_spaces` (Anzahl), `price_url` (Preisseite des Betreibers, OCPI `Tariff.tariff_alt_url`), `lifecycle` (`ACTIVE`/`PLANNED`/`REMOVED`), `first_seen`, `last_seen`, `last_confirmed_at` | `region_code` setzt der Trigger `location_assign_region` bei Insert und bei Änderung von `geom` (Region, deren Polygon den Punkt enthält) |
 | `charging_station` | `id`, `location_id`, `label`, `physical_reference` | optional; nur wenn Quelle Säulen-Ebene liefert |
-| `evse` | `id uuid`, `evse_id_norm` (UNIQUE, z. B. `ATEVNE12345`), `evse_id_display` (`AT*EVN*E1234*5`), `location_id`, `charging_station_id?`, `operator_id`, `max_power_kw`, `power_type` (OCPI: `AC_1_PHASE`, `AC_2_PHASE`, `AC_2_PHASE_SPLIT`, `AC_3_PHASE`, `DC`), `physical_reference`, `first_seen`, `last_seen`, `last_confirmed_at`, `lifecycle` (`ACTIVE`/`PLANNED`/`REMOVED`), `identity_kind` (`EVSE_ID` / `SURROGATE`) | Ladepunkte ohne bekannte EVSE-ID bekommen eine Surrogat-ID `XX*CG*E<16 Hex-Zeichen aus dem Zufallsteil der UUID>` und `identity_kind=SURROGATE`; `XX` ist kein Ländercode, Kollisionen mit echten IDs sind ausgeschlossen |
+| `evse` | `id uuid`, `evse_id_norm` (UNIQUE, z. B. `ATEVNE12345`), `evse_id_display` (`AT*EVN*E1234*5`), `location_id`, `charging_station_id?`, `operator_id`, `max_power_kw`, `power_type` (OCPI: `AC_1_PHASE`, `AC_2_PHASE`, `AC_2_PHASE_SPLIT`, `AC_3_PHASE`, `DC`), `physical_reference`, `auth_methods text[]` (Vokabular `AuthMethod`, siehe unten; leer = unbekannt), `roaming` (Ladekarten anderer Anbieter werden akzeptiert; `null` = unbekannt), `first_seen`, `last_seen`, `last_confirmed_at`, `lifecycle` (`ACTIVE`/`PLANNED`/`REMOVED`), `identity_kind` (`EVSE_ID` / `SURROGATE`) | Ladepunkte ohne bekannte EVSE-ID bekommen eine Surrogat-ID `XX*CG*E<16 Hex-Zeichen aus dem Zufallsteil der UUID>` und `identity_kind=SURROGATE`; `XX` ist kein Ländercode, Kollisionen mit echten IDs sind ausgeschlossen |
 | `connector` | `id`, `evse_id`, `ordinal` (ab 1, eindeutig je EVSE), `standard` (OCPI `ConnectorType`: `IEC_62196_T2`, `IEC_62196_T2_COMBO`, `CHADEMO`, `DOMESTIC_F`, `TESLA_S`, …, zusätzlich `UNKNOWN`), `format` (`SOCKET`/`CABLE`), `power_type`, `max_voltage`, `max_amperage`, `max_power_kw` | |
+
+**Zahlungs- und Authentifizierungsarten (`AuthMethod`)**, gespeichert in `evse.auth_methods`, sortiert in dieser Reihenfolge: `RFID_READER` (Ladekarte), `APP`, `QR_CODE`, `WEBSITE`, `CHARGING_CONTRACT` (Ladekarte oder Vertrag ohne Angabe des Mediums), `CREDIT_CARD_PAYABLE`, `DEBIT_CARD_PAYABLE`, `CONTACTLESS_CARD_SUPPORT` (NFC-Karte), `CHIP_CARD_SUPPORT`, `PED_TERMINAL` (Terminal mit PIN), `CASH`. Werte mit OCPI-2.2.1-Gegenstück (`Capability`) tragen dessen Namen; App, QR-Code, Website, Vertrag und Bargeld kennt OCPI nicht, AFIR und die Quellen schon. Ad-hoc bezahlbar ohne Vertrag ist ein Ladepunkt mit `QR_CODE`, `WEBSITE`, `CREDIT_CARD_PAYABLE`, `DEBIT_CARD_PAYABLE`, `CONTACTLESS_CARD_SUPPORT`, `CHIP_CARD_SUPPORT`, `PED_TERMINAL` oder `CASH`.
 
 ### Provenienz
 
@@ -121,7 +123,7 @@ Besonderheit **Tesla Supercharger**: Tesla vergibt EVSE-IDs im Roaming (sichtbar
 
 ### Quellen-Präzedenz je Attribut (Default, konfigurierbar)
 
-Umgesetzt ist die Vorstufe: Ein Attribut (`name`, `address`, `postal_code`, `city`, `geom`, `operator_id`, `access`, `opening_times` am Standort; `location_id`, `operator_id`, `max_power_kw`, `power_type`, `physical_reference`, `connectors` am EVSE) gehört der Quelle, die es zuerst gesetzt hat (`attribute_origin`); nur sie ändert es. Bleiben alle Werte gleich, wird die Entität bestätigt (`last_confirmed_at`), sonst nur gesehen (`last_seen`). Die folgende Tabelle ist das Ziel, sobald eine zweite Quelle angebunden ist:
+Umgesetzt ist die Vorstufe: Ein Attribut (`name`, `address`, `postal_code`, `city`, `geom`, `operator_id`, `access`, `opening_times`, `green_energy`, `free_parking`, `roofed_parking`, `barrier_free_parking_spaces`, `price_url` am Standort; `location_id`, `operator_id`, `max_power_kw`, `power_type`, `physical_reference`, `connectors`, `auth_methods`, `roaming` am EVSE) gehört der Quelle, die es zuerst gesetzt hat (`attribute_origin`); nur sie ändert es. Bleiben alle Werte gleich, wird die Entität bestätigt (`last_confirmed_at`), sonst nur gesehen (`last_seen`). Die folgende Tabelle ist das Ziel, sobald eine zweite Quelle angebunden ist:
 
 
 | Attribut | Reihenfolge |
@@ -133,7 +135,7 @@ Umgesetzt ist die Vorstufe: Ein Attribut (`name`, `address`, `postal_code`, `cit
 | Ad-hoc-Preis | amtliches Verzeichnis/NAP > CPO-App > EMP-App |
 | EMP-Tarif | jeweilige EMP-App > Tarifaggregatoren > manuelle Pflege |
 
-## Schema (Auszug aus den Migrationen `ChargingDomain` und `OccupancyHourly`)
+## Schema (Auszug aus den Migrationen `ChargingDomain`, `OccupancyHourly` und `EvseAuthAndFacilities`)
 
 Die Tabellen entstehen aus dem EF-Core-Modell (`src/ChargeGlobe.Infrastructure/Persistence/ChargingModel.cs`); was EF Core nicht modellieren kann, ergänzt die Migration per SQL:
 
@@ -152,6 +154,8 @@ CREATE TABLE evse (
   max_power_kw        numeric(7,2),
   power_type          text,
   physical_reference  text,
+  auth_methods        text[] NOT NULL DEFAULT '{}',  -- AuthMethod names
+  roaming             boolean,
   lifecycle           text NOT NULL,
   first_seen          timestamptz NOT NULL,
   last_seen           timestamptz NOT NULL,

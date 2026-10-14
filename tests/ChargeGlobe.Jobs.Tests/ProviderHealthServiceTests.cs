@@ -54,7 +54,7 @@ public class ProviderHealthServiceTests
         var synced = Assert.Single(registry.Calls);
         Assert.Equal(["alpha", "beta", "gamma"], synced.Select(source => source.Key));
         Assert.Equal(SourceTier.OFFICIAL, synced[0].Tier);
-        Assert.Equal(["StaticInventory", "EvseIds", "LiveStatusPerEvse", "AdHocPrice", "BulkByBoundingBox"], synced[0].Capabilities);
+        Assert.Equal(["StaticInventory", "EvseIds", "LiveStatusPerEvse", "AdHocPrice", "BulkByBoundingBox", "BulkAll"], synced[0].Capabilities);
         Assert.Equal((1, 0), (healthy.Probes, disabled.Probes));
         Assert.Contains("Provider alpha healthy: HTTP 200 in 42 ms", logger.Messages);
         Assert.Contains("Provider beta unhealthy: HTTP 401, E-Control search returned 401.", logger.Messages);

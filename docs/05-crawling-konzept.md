@@ -26,8 +26,8 @@
 ### 1. Billigsten Abfragemodus wählen
 Adapter deklarieren per Capability, was geht. Der Scheduler bevorzugt:
 
-1. `BulkAll` – ein Request liefert alle Status (ideal, z. B. OCPI-`Locations` mit Status, manche Web-Karten).
-2. `BulkByBoundingBox` – je Region ein Plan mit der Bounding-Box der Region (`poll_plan`); der Adapter zerlegt sie selbst, wenn die Quelle es verlangt (E-Control: adaptives Raster, siehe [Endpunkt-Notiz](endpunkte/econtrol.md)). Vorgesehen: persistierte Kacheln (`poll_tile`), damit leere Kacheln übersprungen werden.
+1. `BulkAll` – ein Request (oder eine Seitenfolge) liefert alles (ideal, z. B. OCPI-`Locations` mit Status, manche Web-Karten). Für das Inventar legt der Scheduler dann **einen** Plan für alle Regionen aus `provider.regions` an (Region z. B. `AT-9,AT-3,AT-4,AT-1`, Box = umschließendes Rechteck der Regionen) statt einen je Region; die E-Control liest so ihr Register (`GET /search/stations`, ganz Österreich in 17 Seiten). Ein Bulk-Status zählt nur, wenn er aktuell ist: die DATEX-II-Status-Publikation der E-Control ist ein Stunden alter Snapshot und wird nicht genutzt ([Endpunkt-Notiz](endpunkte/econtrol.md)).
+2. `BulkByBoundingBox` – je Region ein Plan mit der Bounding-Box der Region (`poll_plan`); der Adapter zerlegt sie selbst, wenn die Quelle es verlangt (E-Control: Live-Status per adaptivem Raster über `GET /search`, siehe [Endpunkt-Notiz](endpunkte/econtrol.md)). Vorgesehen: persistierte Kacheln (`poll_tile`), damit leere Kacheln übersprungen werden.
 3. `ByEvseId` – nur für Ladepunkte, die anders nicht erreichbar sind; streng rate-limitiert.
 
 ### 2. Adaptive Intervalle je Ladepunkt (vorgesehen)

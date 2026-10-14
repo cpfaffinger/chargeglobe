@@ -73,6 +73,52 @@ public class EControlClientTests
         handler.Respond = _ => StubHandler.Json("null");
         await Assert.ThrowsAsync<JsonException>(() => EControl.Client(handler).SearchAsync(point, CancellationToken.None));
     }
+
+    [Fact]
+    public async Task Register_page_is_requested_with_paging_and_mapped_to_the_common_form()
+    {
+        var handler = new StubHandler(_ => StubHandler.Json(EControl.Fixture("stations-register.json")));
+
+        var page = await EControl.Client(handler, new StubSettings("secret-key", "ogb.net")).SearchStationsAsync(2000, 1000, CancellationToken.None);
+
+        var request = Assert.Single(handler.Requests);
+        Assert.Equal("https://api.e-control.at/charge/1.0/search/stations?fromIndex=2000&maxResults=1000", request.RequestUri!.ToString());
+        Assert.Equal(["secret-key"], request.Headers.GetValues("apiKey"));
+        Assert.Equal(new Uri("https://ogb.net/"), request.Headers.Referrer);
+        Assert.Equal((6, 6), (page.TotalResults, page.Stations.Count));
+        var (station, raw) = page.Stations[0];
+        Assert.Equal(("AT", "VIE", "E1436905", "ACTIVE"), (station.CountryId, station.OperatorId, station.StationId, station.StationStatus));
+        Assert.Equal(new LatLonDto(48.197447999999994, 16.335987), station.Location);
+        Assert.Equal((true, false, false, 0), (station.GreenEnergy, station.FreeParking, station.RoofedParking, station.BarrierFreeParkingPlaces));
+        Assert.StartsWith("https://www.wienenergie.at/", station.PriceUrl, StringComparison.Ordinal);
+        var point = station.Points![0];
+        Assert.Equal(("AT*VIE*E1150650004*6", 11d, 56m, (string?)null), (point.EvseId, point.CapacityKw, point.PriceCentKwh, point.Status));
+        Assert.Equal(["APP", "RFID_READER", "CREDIT_CARD"], point.AuthenticationMode!);
+        Assert.Equal((true, "IEC_62196_T2"), (point.Roaming, point.ConnectorType![0].Key));
+        Assert.Equal(["AC_3_PHASE"], point.ElectricityType!);
+        Assert.False(raw.TryGetProperty("contactName", out _));
+        Assert.False(raw.TryGetProperty("owner", out _));
+        Assert.True(raw.TryGetProperty("evseStationId", out _));
+    }
+
+    [Fact]
+    public async Task Register_page_without_stations_or_total_is_empty_and_errors_name_the_endpoint()
+    {
+        var handler = new StubHandler(_ => StubHandler.Json("""{"stations":null}"""));
+
+        var page = await EControl.Client(handler).SearchStationsAsync(0, 1000, CancellationToken.None);
+        Assert.Equal((0, 0), (page.TotalResults, page.Stations.Count));
+
+        handler.Respond = _ => StubHandler.Json("""{"totalResults":1,"stations":[{"evseStationId":"E1","location":null,"points":null}]}""");
+        var bare = Assert.Single((await EControl.Client(handler).SearchStationsAsync(0, 1000, CancellationToken.None)).Stations).Station;
+        Assert.Equal("E1", bare.StationId);
+        Assert.Null(bare.Location);
+        Assert.Null(bare.Points);
+
+        handler.Respond = _ => StubHandler.Json("Registrierung notwendig", HttpStatusCode.Forbidden);
+        var forbidden = await Assert.ThrowsAsync<HttpRequestException>(() => EControl.Client(handler).SearchStationsAsync(0, 1000, CancellationToken.None));
+        Assert.Equal("E-Control search/stations returned 403.", forbidden.Message);
+    }
 }
 
 public class EControlMapperTests
@@ -92,6 +138,8 @@ public class EControlMapperTests
         Assert.Null(Mapper.ToLocation(Station(new LatLonDto(91, 16)), raw, EControl.Now, issues));
         Assert.Null(Mapper.ToLocation(Station(new LatLonDto(48, null)), raw, EControl.Now, issues));
         Assert.Null(Mapper.ToLocation(Station(new LatLonDto(48, 181)), raw, EControl.Now, issues));
+        // 0/0 is the placeholder of records without a position.
+        Assert.Null(Mapper.ToLocation(Station(new LatLonDto(0, 0)), raw, EControl.Now, issues));
 
         Assert.Equal(
             [(null, "Station without country, operator or station ID."), ("AT*TST*E1", "Station without valid coordinates.")],
@@ -110,6 +158,88 @@ public class EControlMapperTests
         Assert.Empty(location.Evses);
         Assert.Null(location.OpeningTimes);
         Assert.Equal(new GeoPoint(48.2, 16.37), location.Coordinates);
+    }
+
+    [Fact]
+    public void Facilities_payment_and_country_come_from_the_station_and_its_points()
+    {
+        var point = new PointDto(
+            "CH*ECU*E1", 11, false, 50, null, null, null, null, [new ConnectorTypeDto("STYPE2", true)], ["AC_3_PHASE"], null,
+            ["CREDIT_CARD", "APP", "SMS", "APP", " QR "], false);
+        var station = new StationDto(
+            "CH", "ECU", "E1", "ACTIVE", "Wallbox", "1010", "Wien", "Gasse 1", new LatLonDto(48.2, 16.37), null, "eCarUp AG", null, [point],
+            true, false, true, 2, "www.example.at/tarife.pdf");
+
+        var location = Mapper.ToLocation(station, JsonDocument.Parse("{}").RootElement, EControl.Now, [])!;
+
+        // The address lies in Austria; the EVSE-ID tells the country of the operator.
+        Assert.Equal(("AT", "CH", "ECU"), (location.Address!.Country, location.OperatorCountry, location.OperatorId));
+        Assert.Equal(new ProviderFacilities(true, false, true, 2, "https://www.example.at/tarife.pdf"), location.Facilities);
+        var evse = Assert.Single(location.Evses);
+        Assert.Equal([AuthMethod.APP, AuthMethod.QR_CODE, AuthMethod.CREDIT_CARD_PAYABLE], evse.AuthMethods!);
+        Assert.False(evse.Roaming);
+        // The register has no live status: the EVSE carries none instead of UNKNOWN.
+        Assert.Null(evse.Status);
+        Assert.Null(evse.StatusRaw);
+        Assert.Equal((ConnectorStandard.IEC_62196_T2, ConnectorFormat.SOCKET), (evse.Connectors[0].Standard, evse.Connectors[0].Format));
+    }
+
+    [Theory]
+    [InlineData(null, null)]
+    [InlineData("  ", null)]
+    [InlineData("https://www.wienenergie.at/tarife/", "https://www.wienenergie.at/tarife/")]
+    [InlineData(" http://example.org ", "http://example.org/")]
+    [InlineData("edriver.salzachsonne.at", "https://edriver.salzachsonne.at/")]
+    [InlineData("ftp://example.org/tarife", null)]
+    [InlineData("siehe App", null)]
+    [InlineData("localhost", null)]
+    public void Price_page_becomes_an_absolute_web_address_or_nothing(string? priceUrl, string? expected)
+    {
+        var station = new StationDto("AT", "TST", "E1", "ACTIVE", null, null, null, null, new LatLonDto(48, 16), null, null, null, null, PriceUrl: priceUrl);
+
+        Assert.Equal(expected, Mapper.ToLocation(station, JsonDocument.Parse("{}").RootElement, EControl.Now, [])!.Facilities!.PriceUrl);
+    }
+
+    [Fact]
+    public void Authentication_modes_without_a_list_stay_unknown()
+    {
+        Assert.Null(Mapper.AuthMethods(null));
+        Assert.Empty(Mapper.AuthMethods([])!);
+        Assert.Empty(Mapper.AuthMethods(["SMS"])!);
+    }
+
+    [Fact]
+    public void Every_connector_type_of_the_source_has_a_mapping()
+    {
+        using var enumeration = JsonDocument.Parse(EControl.Fixture("enumerations-connectorTypes.json"));
+        var keys = enumeration.RootElement.EnumerateArray().Select(item => item.GetProperty("key").GetString()!).ToList();
+
+        // Types without an OCPI 2.2.1 counterpart are mapped to UNKNOWN on purpose (Mapping/connector-mapping.json).
+        string[] withoutOcpiType =
+        [
+            "S309-1P-32A", "OTHER1PHMAX16A", "OTHER1PHOVER16A", "OTHER3PH", "PAN", "WINDUCTIVE", "WRESONANT", "UNDETERMINED", "UNKNOWN", "MCS",
+        ];
+        Assert.Equal(63, keys.Count);
+        Assert.Equal(
+            withoutOcpiType.Order(),
+            keys.Where(key => Mapper.Connector(key).Standard == ConnectorStandard.UNKNOWN).Order());
+
+        // The source lists one key with a trailing blank; OCPI-like keys are matched without regard to case.
+        Assert.Equal(ConnectorStandard.DOMESTIC_B, Mapper.Connector("DOMESTIC_B ").Standard);
+        Assert.Equal(ConnectorStandard.IEC_60309_2_three_64, Mapper.Connector("IEC_60309_2_THREE_64").Standard);
+        Assert.Equal(new ConnectorMappingEntry(ConnectorStandard.UNKNOWN, null), Mapper.Connector("NEW_TYPE"));
+    }
+
+    [Fact]
+    public void Every_authentication_mode_of_the_source_has_a_mapping()
+    {
+        using var enumeration = JsonDocument.Parse(EControl.Fixture("enumerations-authenticationModes.json"));
+        var keys = enumeration.RootElement.EnumerateArray().Select(item => item.GetProperty("key").GetString()!).ToList();
+
+        var methods = Mapper.AuthMethods(keys)!;
+
+        Assert.Equal(11, keys.Count);
+        Assert.Equal(Enum.GetValues<AuthMethod>(), methods);
     }
 
     [Fact]
@@ -304,7 +434,8 @@ public class EControlProviderTests
 
         Assert.Equal(("econtrol", SourceTier.OFFICIAL, "AT"), (descriptor.Key, descriptor.Tier, descriptor.Countries.Single()));
         Assert.True(descriptor.Capabilities.HasFlag(ProviderCapabilities.EvseIds | ProviderCapabilities.LiveStatusPerEvse | ProviderCapabilities.AdHocPrice));
-        Assert.False(descriptor.Capabilities.HasFlag(ProviderCapabilities.BulkAll));
+        // The register is read page by page in one go; the live status still needs the search grid.
+        Assert.True(descriptor.Capabilities.HasFlag(ProviderCapabilities.BulkAll | ProviderCapabilities.BulkByBoundingBox));
         // 2,500 requests per hour allowed by the terms of use.
         Assert.True(descriptor.RateLimit.PerMinute * 60 <= 2500);
         Assert.Contains("ladestellen.at", descriptor.AttributionText);
@@ -341,10 +472,64 @@ public class EControlProviderTests
         var handler = new StubHandler(_ => StubHandler.Json(page));
         var (provider, logger) = EControl.Provider(handler);
 
-        await provider.FetchPricesAsync(new PriceQuery(null, null), CancellationToken.None).ToListAsync();
+        await provider.FetchStatusAsync(new StatusQuery(null, null), CancellationToken.None).ToListAsync();
 
         Assert.Equal(EControlProvider.MaxRequestsPerRun, handler.Requests.Count);
         Assert.Contains($"E-Control fetch stopped after {EControlProvider.MaxRequestsPerRun} requests before the area was covered", logger.Messages);
+    }
+
+    [Fact]
+    public async Task Inventory_reads_the_register_page_by_page_until_the_total()
+    {
+        var handler = new StubHandler(request => StubHandler.Json(request.RequestUri!.Query.Contains("fromIndex=0", StringComparison.Ordinal)
+            ? RegisterPage(3, 48.2, 16.37, "A", "B")
+            : RegisterPage(3, 48.2, 16.37, "C")));
+
+        var locations = await EControl.Provider(handler).Provider.FetchInventoryAsync(new InventoryQuery(null, null, null), CancellationToken.None).ToListAsync();
+
+        Assert.Equal(["AT*TST*A", "AT*TST*B", "AT*TST*C"], locations.Select(location => location.ExternalId));
+        Assert.Equal(
+            ["?fromIndex=0&maxResults=1000", "?fromIndex=2&maxResults=1000"],
+            handler.Requests.Select(request => request.RequestUri!.Query));
+    }
+
+    [Fact]
+    public async Task Inventory_keeps_the_stations_in_the_box_and_stops_at_an_empty_page()
+    {
+        var calls = 0;
+        var handler = new StubHandler(_ => StubHandler.Json(++calls switch
+        {
+            1 => RegisterPage(10, 48.2, 16.37, "VIENNA"),
+            2 => RegisterPage(10, 47.07, 15.44, "GRAZ"),
+            _ => RegisterPage(10, 0, 0),
+        }));
+        var vienna = new BoundingBox(16.18, 48.11, 16.58, 48.33);
+
+        var locations = await EControl.Provider(handler).Provider.FetchInventoryAsync(new InventoryQuery(vienna, "AT", null), CancellationToken.None).ToListAsync();
+
+        Assert.Equal("AT*TST*VIENNA", Assert.Single(locations).ExternalId);
+        Assert.Equal(3, handler.Requests.Count);
+    }
+
+    [Fact]
+    public async Task A_register_that_never_ends_is_cut_at_the_budget()
+    {
+        var handler = new StubHandler(_ => StubHandler.Json(RegisterPage(int.MaxValue, 48.2, 16.37, "SAME")));
+        var (provider, logger) = EControl.Provider(handler);
+
+        await provider.FetchPricesAsync(new PriceQuery(null, null), CancellationToken.None).ToListAsync();
+
+        Assert.Equal(EControlProvider.MaxRequestsPerRun, handler.Requests.Count);
+        Assert.Contains($"E-Control fetch stopped after {EControlProvider.MaxRequestsPerRun} requests before the register was read", logger.Messages);
+    }
+
+    /// <summary>A register page with one active station per ID at the given position.</summary>
+    private static string RegisterPage(int total, double lat, double lon, params string[] ids)
+    {
+        var at = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"\"latitude\":{lat},\"longitude\":{lon}");
+        var stations = ids.Select(id =>
+            $"{{\"evseCountryId\":\"AT\",\"evseOperatorId\":\"TST\",\"evseStationId\":\"{id}\",\"status\":\"ACTIVE\",\"location\":{{{at}}},\"points\":[]}}");
+        return $"{{\"totalResults\":{total},\"stations\":[{string.Join(",", stations)}]}}";
     }
 
     [Theory]

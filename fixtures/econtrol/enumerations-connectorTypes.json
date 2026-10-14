@@ -1,0 +1,380 @@
+[
+  {
+    "key": "CCCS1",
+    "description": "Combined Charging System 1 (captive cabled) a.k.a. Combo 1",
+    "legacy": true,
+    "consumerName": "COMBO2_CCS_DC"
+  },
+  {
+    "key": "CCCS2",
+    "description": "Combined Charging System 2 (captive cabled) a.k.a. Combo 2",
+    "legacy": true,
+    "consumerName": "COMBO2_CCS_DC"
+  },
+  {
+    "key": "CG105",
+    "description": "JARI G105-1993 (captive cabled) a.k.a. CHAdeMO",
+    "legacy": true,
+    "consumerName": "CHADEMO_DC"
+  },
+  {
+    "key": "CTESLA",
+    "description": "Tesla Connector (captive cabled)",
+    "legacy": true,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "CTYPE1",
+    "description": "IEC62196-2 Type 1 connector (captive cabled) a.k.a. J1772",
+    "legacy": true,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "CTYPE2",
+    "description": "IEC62196-2 Type 2 connector (captive cabled) a.k.a. Mennekes connector",
+    "legacy": true,
+    "consumerName": "TYPE_2_AC"
+  },
+  {
+    "key": "S309-1P-16A",
+    "description": "16A 1 phase IEC60309 socket",
+    "legacy": true,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "S309-1P-32A",
+    "description": "32A 1 phase IEC60309 socket",
+    "legacy": true,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "S309-3P-16A",
+    "description": "16A 3 phase IEC60309 socket",
+    "legacy": true,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "S309-3P-32A",
+    "description": "32A 3 phase IEC60309 socket",
+    "legacy": true,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "SBS1361",
+    "description": "UK domestic socket a.k.a. 13Amp",
+    "legacy": true,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "SCEE-7-8",
+    "description": "CEE 7/7 16A socket. May represent 7/4 & 7/5 a.k.a Schuko",
+    "legacy": true,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "STYPE2",
+    "description": "IEC62196-2 Type 2 socket a.k.a. Mennekes connector",
+    "legacy": true,
+    "consumerName": "TYPE_2_AC"
+  },
+  {
+    "key": "STYPE3",
+    "description": "IEC62196-2 Type 2 socket a.k.a. Scame",
+    "legacy": true,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "OTHER1PHMAX16A",
+    "description": "Other single phase (domestic) sockets not mentioned above, rated at no more than 16A. CEE7/17, AS3112, NEMA 5-15, NEMA 5-20, JISC8303, TIS166, SI 32, CPCS-CCC, SEV1011, etc.",
+    "legacy": true,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "OTHER1PHOVER16A",
+    "description": "Other single phase sockets not mentioned above (over 16A)",
+    "legacy": true,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "OTHER3PH",
+    "description": "Other 3 phase sockets not mentioned above. NEMA14-30, NEMA14-50.",
+    "legacy": true,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "PAN",
+    "description": "Pantograph connector",
+    "legacy": true,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "WINDUCTIVE",
+    "description": "Wireless inductively coupled connection (generic)",
+    "legacy": true,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "WRESONANT",
+    "description": "Wireless resonant coupled connection (generic)",
+    "legacy": true,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "UNDETERMINED",
+    "description": "Yet to be determined (e.g. before plugged in)",
+    "legacy": true,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "UNKNOWN",
+    "description": "Unknown; not determinable",
+    "legacy": true,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "CHADEMO",
+    "description": "The connector type is CHAdeMO, DC",
+    "legacy": false,
+    "consumerName": "CHADEMO_DC"
+  },
+  {
+    "key": "CHAOJI",
+    "description": "The ChaoJi connector. The new generation charging connector, harmonized between CHAdeMO and GB/T. DC.",
+    "legacy": false,
+    "consumerName": "CHADEMO_DC"
+  },
+  {
+    "key": "DOMESTIC_A",
+    "description": "Standard/Domestic household, type \"A\", NEMA 1-15, 2 pins",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "DOMESTIC_B ",
+    "description": "Standard/Domestic household, type \"B\", NEMA 5-15, 3 pins",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "DOMESTIC_C",
+    "description": "Standard/Domestic household, type \"C\", CEE 7/17, 2 pins",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "DOMESTIC_D",
+    "description": "Standard/Domestic household, type \"D\", 3 pin",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "DOMESTIC_E",
+    "description": "Standard/Domestic household, type \"E\", CEE 7/5 3 pins",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "DOMESTIC_F",
+    "description": "Standard/Domestic household, type \"F\", CEE 7/4, Schuko, 3 pins",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "DOMESTIC_G",
+    "description": "Standard/Domestic household, type \"G\", BS 1363, Commonwealth, 3 pins",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "DOMESTIC_H",
+    "description": "Standard/Domestic household, type \"H\", SI-32, 3 pins",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "DOMESTIC_I",
+    "description": "Standard/Domestic household, type \"I\", AS 3112, 3 pins",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "DOMESTIC_J",
+    "description": "Standard/Domestic household, type \"J\", SEV 1011, 3 pins",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "DOMESTIC_K",
+    "description": "Standard/Domestic household, type \"K\", DS 60884-2-D1, 3 pins",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "DOMESTIC_L",
+    "description": "Standard/Domestic household, type \"L\", CEI 23-16-VII, 3 pins",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "DOMESTIC_M",
+    "description": "Standard/Domestic household, type \"M\", BS 546, 3 pins",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "DOMESTIC_N",
+    "description": "Standard/Domestic household, type \"N\", NBR 14136, 3 pins",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "DOMESTIC_O",
+    "description": "Standard/Domestic household, type \"O\", TIS 166-2549, 3 pins",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "GBT_AC",
+    "description": "Guobiao GB/T 20234.2 AC socket/connector",
+    "legacy": false,
+    "consumerName": "CHADEMO_DC"
+  },
+  {
+    "key": "GBT_DC",
+    "description": "Guobiao GB/T 20234.3 DC connector",
+    "legacy": false,
+    "consumerName": "CHADEMO_DC"
+  },
+  {
+    "key": "IEC_60309_2_SINGLE_16",
+    "description": "IEC 60309-2 Industrial Connector single phase 16 amperes (usually blue)",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "IEC_60309_2_THREE_16",
+    "description": "IEC 60309-2 Industrial Connector three phases 16 amperes (usually red)",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "IEC_60309_2_THREE_32",
+    "description": "IEC 60309-2 Industrial Connector three phases 32 amperes (usually red)",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "IEC_60309_2_THREE_64",
+    "description": "IEC 60309-2 Industrial Connector three phases 64 amperes (usually red)",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "IEC_62196_T1",
+    "description": "IEC 62196 Type 1 \"SAE J1772\"",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "IEC_62196_T1_COMBO",
+    "description": "Combo Type 1 based, DC",
+    "legacy": false,
+    "consumerName": "COMBO2_CCS_DC"
+  },
+  {
+    "key": "IEC_62196_T2",
+    "description": "IEC 62196 Type 2 \"Mennekes\"",
+    "legacy": false,
+    "consumerName": "TYPE_2_AC"
+  },
+  {
+    "key": "IEC_62196_T2_COMBO",
+    "description": "Combo Type 2 based, DC",
+    "legacy": false,
+    "consumerName": "COMBO2_CCS_DC"
+  },
+  {
+    "key": "IEC_62196_T3A",
+    "description": "IEC 62196 Type 3A",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "IEC_62196_T3C",
+    "description": "IEC 62196 Type 3C \"Scame\"",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "NEMA_5_20",
+    "description": "NEMA 5-20, 3 pins",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "NEMA_6_30",
+    "description": "NEMA 6-30, 3 pins",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "NEMA_6_50",
+    "description": "NEMA 6-50, 3 pins",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "NEMA_10_30",
+    "description": "NEMA 10-30, 3 pins",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "NEMA_10_50",
+    "description": "NEMA 10-50, 3 pins",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "NEMA_14_30",
+    "description": "NEMA 14-30, 3 pins, rating of 30 A",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "NEMA_14_50",
+    "description": "NEMA 14-50, 3 pins, rating of 50 A",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "PANTOGRAPH_BOTTOM_UP",
+    "description": "On-board Bottom-up-Pantograph typically for bus charging",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "PANTOGRAPH_TOP_DOWN",
+    "description": "Off-board Top-down-Pantograph typically for bus charging",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "TESLA_R",
+    "description": "Tesla Connector \"Roadster\"-type (round, 4 pin)",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "TESLA_S",
+    "description": "Tesla Connector \"Model-S\"-type (oval, 5 pin)",
+    "legacy": false,
+    "consumerName": "OTHER"
+  },
+  {
+    "key": "MCS",
+    "description": "Megawatt Charging System",
+    "legacy": false,
+    "consumerName": "MEGAWATT_CHARGING_SYSTEM_MCS"
+  }
+]
