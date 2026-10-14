@@ -40,7 +40,12 @@
             }
           ],
           "status": "AVAILABLE",
-          "statusRaw": "AVAILABLE"
+          "statusRaw": "AVAILABLE",
+          "authMethods": [
+            "RFID_READER",
+            "APP"
+          ],
+          "roaming": true
         },
         {
           "externalId": "AT*TST*ETEST0001*2",
@@ -61,7 +66,11 @@
             }
           ],
           "status": "CHARGING",
-          "statusRaw": "CHARGING"
+          "statusRaw": "CHARGING",
+          "authMethods": [
+            "APP"
+          ],
+          "roaming": true
         }
       ],
       "observedAt": "2026-10-14T08:00:00+00:00",
@@ -191,6 +200,14 @@
             "maxVehicleWidth": null
           }
         ]
+      },
+      "operatorCountry": "AT",
+      "facilities": {
+        "greenEnergy": true,
+        "freeParking": false,
+        "roofedParking": false,
+        "barrierFreeParkingSpaces": 0,
+        "priceUrl": null
       }
     },
     {
@@ -242,7 +259,11 @@
             }
           ],
           "status": "OUTOFORDER",
-          "statusRaw": "OUTOFORDER"
+          "statusRaw": "OUTOFORDER",
+          "authMethods": [
+            "RFID_READER"
+          ],
+          "roaming": true
         },
         {
           "externalId": "AT*TST*ETEST0002#2",
@@ -272,7 +293,9 @@
             }
           ],
           "status": "UNKNOWN",
-          "statusRaw": "WARTUNG"
+          "statusRaw": "WARTUNG",
+          "authMethods": [],
+          "roaming": false
         }
       ],
       "observedAt": "2026-10-14T08:00:00+00:00",
@@ -423,6 +446,14 @@
             "maxVehicleWidth": null
           }
         ]
+      },
+      "operatorCountry": "AT",
+      "facilities": {
+        "greenEnergy": false,
+        "freeParking": true,
+        "roofedParking": false,
+        "barrierFreeParkingSpaces": 1,
+        "priceUrl": "https://example.org/preise"
       }
     }
   ],
@@ -462,76 +493,6 @@
       "statusRaw": "WARTUNG",
       "observedAt": "2026-10-14T08:00:00+00:00",
       "sourceReportedAt": null
-    }
-  ],
-  "prices": [
-    {
-      "externalId": "AT*TST*ETEST0001*1",
-      "evseId": "AT*TST*ETEST0001*1",
-      "canonicalEvseId": null,
-      "empKey": null,
-      "currency": "EUR",
-      "pricePerKwh": 0.59,
-      "pricePerMinute": null,
-      "sessionFee": 0,
-      "blockingFeePerMinute": 0.1,
-      "blockingAfterMinutes": 240,
-      "tariffElements": null,
-      "tariffName": "Ad-hoc",
-      "tariffUrl": null,
-      "observedAt": "2026-10-14T08:00:00+00:00",
-      "raw": null
-    },
-    {
-      "externalId": "AT*TST*ETEST0001*2",
-      "evseId": "AT*TST*ETEST0001*2",
-      "canonicalEvseId": null,
-      "empKey": null,
-      "currency": "EUR",
-      "pricePerKwh": 0.59,
-      "pricePerMinute": 0.02,
-      "sessionFee": 0.5,
-      "blockingFeePerMinute": null,
-      "blockingAfterMinutes": null,
-      "tariffElements": null,
-      "tariffName": "Ad-hoc",
-      "tariffUrl": null,
-      "observedAt": "2026-10-14T08:00:00+00:00",
-      "raw": null
-    },
-    {
-      "externalId": "AT*TST*ETEST0002*DC1",
-      "evseId": "AT*TST*ETEST0002*DC1",
-      "canonicalEvseId": null,
-      "empKey": null,
-      "currency": "EUR",
-      "pricePerKwh": 0.69,
-      "pricePerMinute": null,
-      "sessionFee": null,
-      "blockingFeePerMinute": 0.2,
-      "blockingAfterMinutes": 45,
-      "tariffElements": null,
-      "tariffName": "Ad-hoc",
-      "tariffUrl": null,
-      "observedAt": "2026-10-14T08:00:00+00:00",
-      "raw": null
-    },
-    {
-      "externalId": "AT*TST*ETEST0002#2",
-      "evseId": null,
-      "canonicalEvseId": null,
-      "empKey": null,
-      "currency": "EUR",
-      "pricePerKwh": 0,
-      "pricePerMinute": null,
-      "sessionFee": 0,
-      "blockingFeePerMinute": null,
-      "blockingAfterMinutes": null,
-      "tariffElements": null,
-      "tariffName": "Ad-hoc (free of charge)",
-      "tariffUrl": null,
-      "observedAt": "2026-10-14T08:00:00+00:00",
-      "raw": null
     }
   ]
 }

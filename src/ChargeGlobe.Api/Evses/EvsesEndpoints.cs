@@ -70,7 +70,8 @@ public static class EvsesEndpoints
             .WithDescription(
                 "Returns one EVSE by `evseId`: its EVSE-ID in any notation (`AT*VIE*E1234*1`, `AT-VIE-E1234-1`, " +
                 "`ATVIEE12341`, case-insensitive) or its internal UUID (`id` of `getLocation`). Contains the location " +
-                "with region code, the operator, power, current type, connectors, lifecycle and the current OCPI status " +
+                "with region code, the operator, power, current type, connectors, `authMethods` and `roaming` (as in " +
+                "`getLocation`), lifecycle and the current OCPI status " +
                 "with `since`, `observedAt`, `source` and `stale` (older than `map.status_max_age_minutes`). Unlike " +
                 "`getLocation` the status is not replaced by UNKNOWN when stale. EVSEs that are no longer active are " +
                 "returned too (`lifecycle`). 404 for an unknown EVSE. `meta.attribution` names the sources.")
@@ -99,6 +100,8 @@ public static class EvsesEndpoints
                         22m,
                         "AC_3_PHASE",
                         [new ConnectorDetail("IEC_62196_T2", "SOCKET", "AC_3_PHASE", 22m)],
+                        ["RFID_READER", "APP", "CREDIT_CARD_PAYABLE"],
+                        true,
                         new EvseCurrentStatus("CHARGING", At("2026-10-14T07:40:00Z"), At("2026-10-14T08:15:00Z"), "econtrol", false),
                         At("2026-03-01T06:00:00Z"),
                         At("2026-10-14T08:15:00Z"),

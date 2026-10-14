@@ -10,6 +10,8 @@ namespace ChargeGlobe.Providers.Abstractions;
 /// <summary>A location with its EVSEs as one source reports it.</summary>
 /// <param name="OperatorId">Three-character party ID, e.g. <c>EVN</c> (from the source or the EVSE-ID prefix).</param>
 /// <param name="Raw">Source record, kept in <c>raw_snapshot</c>.</param>
+/// <param name="OperatorCountry">ISO 3166-1 alpha-2 country of <paramref name="OperatorId"/> (the EVSE-ID prefix); null means the country of the address.</param>
+/// <param name="Facilities">Amenities and price page; null if the source does not tell them.</param>
 public sealed record ProviderLocationSnapshot(
     string ExternalId,
     string? Name,
@@ -21,7 +23,20 @@ public sealed record ProviderLocationSnapshot(
     ProviderOpeningTimes? OpeningTimes,
     IReadOnlyList<ProviderEvseSnapshot> Evses,
     DateTimeOffset ObservedAt,
-    JsonElement Raw);
+    JsonElement Raw,
+    string? OperatorCountry = null,
+    ProviderFacilities? Facilities = null);
+
+/// <summary>What a location offers besides charging; each value null if the source does not know it.</summary>
+/// <param name="GreenEnergy">100 % renewable energy.</param>
+/// <param name="BarrierFreeParkingSpaces">Number of barrier-free parking spaces.</param>
+/// <param name="PriceUrl">Page of the operator with the prices.</param>
+public sealed record ProviderFacilities(
+    bool? GreenEnergy,
+    bool? FreeParking,
+    bool? RoofedParking,
+    int? BarrierFreeParkingSpaces,
+    string? PriceUrl);
 
 /// <param name="Country">ISO 3166-1 alpha-2.</param>
 public sealed record ProviderAddress(string? Street, string? PostalCode, string? City, string Country);
@@ -33,6 +48,8 @@ public sealed record ProviderOpeningTimes(bool TwentyFourSeven, string? Descript
 /// <param name="PhysicalReference">Label printed on the station, e.g. <c>A2</c>.</param>
 /// <param name="StationExternalId">Charging station level, if the source has one.</param>
 /// <param name="Status">If the inventory response carries the status too.</param>
+/// <param name="AuthMethods">Ways to start and pay a session; null if the source does not tell them.</param>
+/// <param name="Roaming">Charging cards of other providers are accepted; null if unknown.</param>
 public sealed record ProviderEvseSnapshot(
     string ExternalId,
     string? EvseId,
@@ -42,7 +59,9 @@ public sealed record ProviderEvseSnapshot(
     PowerType? PowerType,
     IReadOnlyList<ProviderConnectorSnapshot> Connectors,
     EvseStatus? Status,
-    string? StatusRaw);
+    string? StatusRaw,
+    IReadOnlyList<AuthMethod>? AuthMethods = null,
+    bool? Roaming = null);
 
 /// <param name="Format">Null if the source does not tell socket from cable.</param>
 /// <param name="PowerType">Null if the source does not tell it.</param>

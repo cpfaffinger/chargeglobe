@@ -96,6 +96,21 @@ public sealed class Location : TrackedEntity
 
     public AccessType Access { get; set; } = AccessType.PUBLIC;
 
+    /// <summary>The operator states 100 % renewable energy (OCPI <c>EnergyMix.is_green_energy</c>); null if unknown.</summary>
+    public bool? GreenEnergy { get; set; }
+
+    /// <summary>Parking is free of charge while charging; null if unknown.</summary>
+    public bool? FreeParking { get; set; }
+
+    /// <summary>The parking spaces are covered (roof, garage); null if unknown.</summary>
+    public bool? RoofedParking { get; set; }
+
+    /// <summary>Number of barrier-free parking spaces; null if unknown.</summary>
+    public int? BarrierFreeParkingSpaces { get; set; }
+
+    /// <summary>Page of the operator with the prices (OCPI <c>Tariff.tariff_alt_url</c>).</summary>
+    public string? PriceUrl { get; set; }
+
     public Lifecycle Lifecycle { get; set; } = Lifecycle.ACTIVE;
 
     public static Location Create(GeoPoint coordinates, string country, DateTimeOffset seenAt)
@@ -166,6 +181,12 @@ public sealed class Evse : TrackedEntity
     public PowerType? PowerType { get; set; }
 
     public string? PhysicalReference { get; set; }
+
+    /// <summary>Ways to start and pay a session, ordered as declared in <see cref="AuthMethod"/>; empty if unknown.</summary>
+    public IReadOnlyList<AuthMethod> AuthMethods { get; set; } = [];
+
+    /// <summary>Charging cards of other providers are accepted (roaming contracts); null if unknown.</summary>
+    public bool? Roaming { get; set; }
 
     public Lifecycle Lifecycle { get; set; } = Lifecycle.ACTIVE;
 

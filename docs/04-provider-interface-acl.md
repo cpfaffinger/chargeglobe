@@ -70,9 +70,13 @@ public sealed record ProviderLocationSnapshot(
     AccessType? Access, ProviderOpeningTimes? OpeningTimes,
     IReadOnlyList<ProviderEvseSnapshot> Evses,
     DateTimeOffset ObservedAt,
-    JsonElement Raw);                             // Rohdatensatz für raw_snapshot
+    JsonElement Raw,                              // Rohdatensatz für raw_snapshot
+    string? OperatorCountry = null,               // Land des EVSE-ID-Präfixes (CH*ECU in Wien); null = Land der Adresse
+    ProviderFacilities? Facilities = null);       // null = Quelle kennt sie nicht
 
 public sealed record ProviderAddress(string? Street, string? PostalCode, string? City, string Country);
+public sealed record ProviderFacilities(           // je Wert null = unbekannt
+    bool? GreenEnergy, bool? FreeParking, bool? RoofedParking, int? BarrierFreeParkingSpaces, string? PriceUrl);
 public sealed record ProviderOpeningTimes(bool TwentyFourSeven, string? Description);
 
 public sealed record ProviderEvseSnapshot(
@@ -82,7 +86,9 @@ public sealed record ProviderEvseSnapshot(
     string? StationExternalId,                    // Säulen-Ebene, falls vorhanden
     decimal? MaxPowerKw, PowerType? PowerType,
     IReadOnlyList<ProviderConnectorSnapshot> Connectors,
-    EvseStatus? Status, string? StatusRaw);       // falls die Inventar-Antwort Status mitliefert
+    EvseStatus? Status, string? StatusRaw,        // falls die Inventar-Antwort Status mitliefert
+    IReadOnlyList<AuthMethod>? AuthMethods = null, // Zahlungs-/Authentifizierungsarten; null = unbekannt
+    bool? Roaming = null);                        // Ladekarten anderer Anbieter akzeptiert; null = unbekannt
 
 public sealed record ProviderConnectorSnapshot(
     ConnectorStandard Standard, ConnectorFormat Format, PowerType PowerType,
@@ -144,6 +150,8 @@ Laufzeit-Einstellungen eines Providers liegen im **zentralen Config-Service** (s
 | `provider.api_key` | secret | – | vom Anbieter ausgegebener Key; verschlüsselt gespeichert, nur über Admin-UI/API setzbar, nie lesbar zurückgegeben |
 | `provider.referer` | string | – | `Referer` für Quellen, die den Key an eine registrierte Domain binden; ein bloßer Hostname wird zu `https://<host>/` |
 
+Ein Wert `null` bei `Facilities`, `AuthMethods` oder `Roaming` heißt „die Quelle sagt nichts dazu“: der Merge lässt das Attribut dann unberührt. Liefert eine Quelle `Facilities`, gehören ihr alle fünf Werte (auch einzelne `null`).
+
 Der Adapter liest sie über `IProviderSettings` (Implementierung `ConfigProviderSettings` im Crawler). Intervalle, Rate-Limits und das Status-Mapping kommen vorerst aus dem Descriptor bzw. der JSON-Tabelle des Adapters; überschreibbare Einstellungen dafür (`provider.interval.*`, `provider.rate_limit.*`, `provider.status_mapping`) sind vorgesehen.
 
 Änderungen gelten ohne Neustart in allen Crawler-/Worker-Instanzen.
@@ -152,7 +160,7 @@ Der Adapter liest sie über `IProviderSettings` (Implementierung `ConfigProvider
 
 1. Quelle in [07](07-bestandsanalyse-apps-at.md) / [08](08-datenquellen-und-recht.md) dokumentieren (Endpunkte, Auth, Lizenz, Rate-Limit, Capabilities).
 2. Projekt `ChargeGlobe.Providers.<Key>` anlegen, Raw-DTOs aus 2–3 echten Antworten ableiten.
-3. Descriptor + Mapper + Status-Mapping-Tabelle.
-4. Fixtures + Replay-Test, Health-Probe.
+3. Descriptor + Mapper + Status-Mapping-Tabelle; Stecker- und Zahlungsarten ebenfalls als JSON-Tabelle. Bietet die Quelle Wertelisten an, liegen sie als Fixture bei und ein Test prüft, dass jeder Wert eine Abbildung hat.
+4. Fixtures + Replay-Test, Health-Probe. Liefert ein Request alles (`BulkAll`), bekommt das Inventar einen gemeinsamen Plan für alle Regionen statt einen je Region.
 5. Lokal gegen Region laufen lassen, `source_conflict`-Queue prüfen (typisch: Koordinaten-Offsets, Stecker-Freitext).
 6. Konfiguration + Attribution-Text in `source`-Tabelle; Eintrag in `docs/07` aktualisieren.

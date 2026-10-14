@@ -24,6 +24,7 @@ public static class Availability
 /// <summary>A location aggregated for map markers.</summary>
 /// <param name="StatusObservedAt">Newest status reading of its EVSEs; null if none.</param>
 /// <param name="Availability">One of the <see cref="Locations.Availability"/> values.</param>
+/// <param name="Facilities">Amenities and price page; each value null if no source knows it.</param>
 public sealed record LocationSummary(
     Guid Id,
     string? Name,
@@ -38,7 +39,15 @@ public sealed record LocationSummary(
     int EvsesAvailable,
     decimal? MaxPowerKw,
     DateTimeOffset? StatusObservedAt,
-    string Availability);
+    string Availability,
+    LocationFacilities Facilities);
+
+/// <param name="GreenEnergy">The operator states 100 % renewable energy.</param>
+/// <param name="FreeParking">Parking is free of charge while charging.</param>
+/// <param name="RoofedParking">The parking spaces are covered.</param>
+/// <param name="BarrierFreeParkingSpaces">Number of barrier-free parking spaces.</param>
+/// <param name="PriceUrl">Page of the operator with the prices.</param>
+public sealed record LocationFacilities(bool? GreenEnergy, bool? FreeParking, bool? RoofedParking, int? BarrierFreeParkingSpaces, string? PriceUrl);
 
 /// <summary>Attribution of a source whose data is part of a response (table <c>source</c>).</summary>
 public sealed record SourceAttribution(string Source, string Text, string License);
@@ -50,6 +59,8 @@ public sealed record ConnectorDetail(string Standard, string? Format, string? Po
 
 /// <param name="EvseId">EVSE-ID with separators; for a surrogate the chargeglobe ID <c>XX*CG*E…</c>.</param>
 /// <param name="Status">OCPI status, or <c>UNKNOWN</c> if there is none or it is older than the allowed age.</param>
+/// <param name="AuthMethods">Ways to start and pay a session (<c>AuthMethod</c> names); empty if unknown.</param>
+/// <param name="Roaming">Charging cards of other providers are accepted; null if unknown.</param>
 public sealed record EvseDetail(
     Guid Id,
     string EvseId,
@@ -59,7 +70,9 @@ public sealed record EvseDetail(
     DateTimeOffset? StatusObservedAt,
     decimal? MaxPowerKw,
     string? PowerType,
-    IReadOnlyList<ConnectorDetail> Connectors);
+    IReadOnlyList<ConnectorDetail> Connectors,
+    IReadOnlyList<string> AuthMethods,
+    bool? Roaming);
 
 public sealed record LocationDetail(LocationSummary Location, IReadOnlyList<EvseDetail> Evses, IReadOnlyList<SourceAttribution> Attribution);
 

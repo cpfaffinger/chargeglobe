@@ -1,38 +1,29 @@
 {
-  "STYPE2": {
-    "standard": "IEC_62196_T2",
-    "format": "SOCKET"
-  },
-  "CTYPE2": {
-    "standard": "IEC_62196_T2",
-    "format": "CABLE"
-  },
-  "CTYPE1": {
-    "standard": "IEC_62196_T1",
-    "format": "CABLE"
-  },
-  "CCCS2": {
-    "standard": "IEC_62196_T2_COMBO",
-    "format": "CABLE"
-  },
-  "CG105": {
-    "standard": "CHADEMO",
-    "format": "CABLE"
-  },
-  "IEC_62196_T2_COMBO": {
-    "standard": "IEC_62196_T2_COMBO",
-    "format": "CABLE"
-  },
-  "IEC_62196_T1_COMBO": {
-    "standard": "IEC_62196_T1_COMBO",
-    "format": "CABLE"
-  },
-  "CHADEMO": {
-    "standard": "CHADEMO",
-    "format": "CABLE"
-  },
-  "DOMESTIC_F": {
-    "standard": "DOMESTIC_F",
-    "format": "SOCKET"
-  }
+  "STYPE2": { "standard": "IEC_62196_T2", "format": "SOCKET" },
+  "CTYPE2": { "standard": "IEC_62196_T2", "format": "CABLE" },
+  "STYPE3": { "standard": "IEC_62196_T3C", "format": "SOCKET" },
+  "CTYPE1": { "standard": "IEC_62196_T1", "format": "CABLE" },
+  "CCCS1": { "standard": "IEC_62196_T1_COMBO", "format": "CABLE" },
+  "CCCS2": { "standard": "IEC_62196_T2_COMBO", "format": "CABLE" },
+  "CG105": { "standard": "CHADEMO", "format": "CABLE" },
+  "CTESLA": { "standard": "TESLA_S", "format": "CABLE" },
+  "S309-1P-16A": { "standard": "IEC_60309_2_single_16", "format": "SOCKET" },
+  "S309-1P-32A": { "standard": "UNKNOWN", "format": "SOCKET" },
+  "S309-3P-16A": { "standard": "IEC_60309_2_three_16", "format": "SOCKET" },
+  "S309-3P-32A": { "standard": "IEC_60309_2_three_32", "format": "SOCKET" },
+  "SBS1361": { "standard": "DOMESTIC_G", "format": "SOCKET" },
+  "SCEE-7-8": { "standard": "DOMESTIC_F", "format": "SOCKET" },
+  "OTHER1PHMAX16A": { "standard": "UNKNOWN", "format": "SOCKET" },
+  "OTHER1PHOVER16A": { "standard": "UNKNOWN", "format": "SOCKET" },
+  "OTHER3PH": { "standard": "UNKNOWN", "format": "SOCKET" },
+  "PAN": { "standard": "UNKNOWN", "format": null },
+  "WINDUCTIVE": { "standard": "UNKNOWN", "format": null },
+  "WRESONANT": { "standard": "UNKNOWN", "format": null },
+  "UNDETERMINED": { "standard": "UNKNOWN", "format": null },
+  "UNKNOWN": { "standard": "UNKNOWN", "format": null },
+  "MCS": { "standard": "UNKNOWN", "format": "CABLE" },
+  "IEC_62196_T2_COMBO": { "standard": "IEC_62196_T2_COMBO", "format": "CABLE" },
+  "IEC_62196_T1_COMBO": { "standard": "IEC_62196_T1_COMBO", "format": "CABLE" },
+  "CHADEMO": { "standard": "CHADEMO", "format": "CABLE" },
+  "DOMESTIC_F": { "standard": "DOMESTIC_F", "format": "SOCKET" }
 }

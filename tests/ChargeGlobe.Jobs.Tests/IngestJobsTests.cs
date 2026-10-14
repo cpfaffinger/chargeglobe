@@ -119,7 +119,7 @@ public class IngestJobsTests
         var synced = Assert.Single(plans.Synced);
         Assert.Equal("fake", synced.Provider);
         Assert.Equal(
-            [(JobType.INVENTORY_FULL, "AT-9", TimeSpan.FromDays(1)), (JobType.INVENTORY_FULL, "AT-1", TimeSpan.FromDays(1)),
+            [(JobType.INVENTORY_FULL, "AT-9,AT-1", TimeSpan.FromDays(1)),
              (JobType.STATUS_POLL, "AT-9", TimeSpan.FromMinutes(20)), (JobType.STATUS_POLL, "AT-1", TimeSpan.FromMinutes(20))],
             synced.Plans.Select(plan => (plan.JobType, plan.RegionCode, plan.Interval)));
         Assert.Contains("Provider fake: unknown regions ignored: XX-1", logger.Messages);
@@ -168,6 +168,28 @@ public class IngestJobsTests
         Assert.All(plans, plan => Assert.Equal((JobType.STATUS_POLL, TimeSpan.FromMinutes(15)), (plan.JobType, plan.Interval)));
         Assert.Equal(["AT-9", "AT-3", "AT-4", "AT-1"], plans.Select(plan => plan.RegionCode));
         Assert.Empty(scheduler.PlansFor(new StatusOnlySource { Defaults = new PollDefaults(null, null, null) }));
+    }
+
+    [Fact]
+    public void A_bulk_source_reads_its_inventory_once_for_the_envelope_of_all_regions()
+    {
+        var (runner, _, _, _) = Runner(new FakeSource());
+        var scheduler = new PollScheduler(
+            new ServiceCollection().BuildServiceProvider().GetRequiredService<IServiceScopeFactory>(), [], new EnabledSettings(),
+            new StubConfig([]), runner, new JobOptions(JobRole.Crawler, "c"), TimeProvider.System, new ListLogger<PollScheduler>());
+
+        var bulk = scheduler.PlansFor(new FakeSource()).Where(plan => plan.JobType == JobType.INVENTORY_FULL).ToList();
+        var perRegion = scheduler.PlansFor(new FakeSource { Capabilities = ProviderCapabilities.StaticInventory })
+            .Where(plan => plan.JobType == JobType.INVENTORY_FULL)
+            .ToList();
+
+        var plan = Assert.Single(bulk);
+        Assert.Equal("AT-9,AT-3,AT-4,AT-1", plan.RegionCode);
+        // Envelope of Vienna, Lower Austria, Upper Austria and Burgenland.
+        Assert.Equal(
+            (12.74, 46.83, 17.17, 49.03),
+            (plan.Bbox.MinLongitude, plan.Bbox.MinLatitude, plan.Bbox.MaxLongitude, plan.Bbox.MaxLatitude));
+        Assert.Equal(["AT-9", "AT-3", "AT-4", "AT-1"], perRegion.Select(item => item.RegionCode));
     }
 
     [Fact]
@@ -234,7 +256,9 @@ public class IngestJobsTests
 
         public List<InventoryQuery> InventoryQueries { get; } = [];
 
-        public ProviderDescriptor Descriptor => EControlProvider.DescriptorValue with { Key = Key };
+        public ProviderCapabilities Capabilities { get; init; } = EControlProvider.DescriptorValue.Capabilities;
+
+        public ProviderDescriptor Descriptor => EControlProvider.DescriptorValue with { Key = Key, Capabilities = Capabilities };
 
         public async IAsyncEnumerable<ProviderLocationSnapshot> FetchInventoryAsync(
             InventoryQuery query, [EnumeratorCancellation] CancellationToken cancellationToken)

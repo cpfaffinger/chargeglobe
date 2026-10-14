@@ -25,7 +25,7 @@
 - [x] Continuous Aggregate `evse_occupancy_hourly` (stündlich je EVSE, Real-Time-Aggregation, Refresh-Policy)
 - [x] Region-Seed: die neun Bundesländer aus OSM-Grenzen (`regions-at.geojson`, ODbL, Skript `scripts/regions/build-regions-at.sh`), Import beim API-Start, `location.region_code` wird neu berechnet; `RegionBounds` aus den Polygonen abgeleitet
 - [ ] Matching-Heuristiken (Geo + Operator), Quellen-Präzedenz je Attribut, adaptive Intervalle
-- [x] Adapter **E-Control** (Inventar + Status + Ad-hoc-Preis über `GET /search` mit adaptivem Raster, Health-Probe im Crawler, Provider-Einstellungen je Quelle im Config-Service) – Tier 0
+- [x] Adapter **E-Control** (Inventar und Ad-hoc-Preis seitenweise aus dem Register `GET /search/stations` – ganz Österreich in 17 Requests, ein Inventar-Plan für alle Regionen –, Live-Status über `GET /search` mit adaptivem Raster, Health-Probe im Crawler, Provider-Einstellungen je Quelle im Config-Service) – Tier 0. Die DATEX-II-Publikationen der Quelle sind live geprüft, der Status-Snapshot ist aber Stunden alt und wird nicht genutzt ([Endpunkt-Notiz](endpunkte/econtrol.md))
 - [ ] Adapter **OpenStreetMap** (Overpass) und **OpenChargeMap** als Ergänzung/Plausibilisierung
 - [ ] Adaptive Statusabfrage, Metriken
 - [x] API v1: `GET /evses/{evseId}` (EVSE-ID in jeder Schreibweise oder UUID), Statushistorie, Belegung (`evse:read`)
@@ -33,16 +33,17 @@
 - [x] Angular: Karte mit MapLibre und OSM-Vektorkacheln (OpenFreeMap, `GET /map/config`) als anonyme Startseite, eigener Standort per Geolocation ([ADR-0007](adr/0007-karte-standort-routing.md))
 - [x] `GET /locations` (bbox, aggregiert, Attribution) und `GET /locations/{id}`; Ladepunkt-Marker mit Clustering, Status-Farben, Legende, Infokarte und Quellenangabe
 - [x] Design auf Angular-Basis ([ADR-0012](adr/0012-design-system-und-theming.md)): Angular Material 3 + CDK, Palette „Volt“ und Roboto Flex (selbst gehostet), Light/Dark/System über `ThemeService` mit Umschalter in Toolbar bzw. Seitenmenü, Karte mit dunklem Stil (`map.style_url_dark`) und Markern in Statusfarbe mit Symbol, Stepper im Setup, Akkordeon mit Suche in den Einstellungen, Tabelle mit Paginator im Postausgang, Seiten außer der Karte als Lazy-Chunks
-- [ ] **E-Control-Abruf über die Bulk-Endpunkte** (Spezifikation siehe [Endpunkt-Notiz](endpunkte/econtrol.md)): zuerst mit dem Key prüfen, ob `GET /datex2/v3.5/energy-infrastructure-table-publication` (Inventar) und `…-status-publication` (Status aller Ladepunkte mit `lastUpdated`) erreichbar sind; dann Inventar und Status je ein Request statt Suchraster (Status-Intervall von 15 auf 1–5 min, `lastUpdated` als Quellzeitpunkt für Latenz), DATEX-Status-Mapping (`FAULTED`, `OUT_OF_ORDER`, `UNAVAILABLE`, …). Fallback: `GET /search/stations` mit Paging (`fromIndex`, `maxResults`). Der DATEX-Teil wird der Kern des generischen DATEX-II-Adapters (Phase 3)
-- [ ] Zusatzattribute aus E-Control ins Ingest-Modell: akzeptierte Ladekarten (`providers`), Zahlungs- und Authentifizierungsarten, Roaming, Preis-URL, Ökostrom, Parken (kostenlos, überdacht, barrierefrei), Fahrzeugtypen/-maße; Wertelisten über `/enumerations/*` gegen die Mapping-Tabellen prüfen
-- [ ] Filter in der Karte (Stecker, Leistung, Betreiber, nur frei; mit den Zusatzattributen auch Ladekarte, Ad-hoc-Zahlung, Roaming, Ökostrom, barrierefrei)
+- [x] Zusatzattribute aus E-Control: Zahlungs- und Authentifizierungsarten (`AuthMethod`), Roaming, Preis-URL, Ökostrom, Parken (kostenlos, überdacht, barrierefreie Plätze) im Ingest-Modell, in `location`/`evse` und in `GET /locations`, `GET /locations/{id}`, `GET /evses/{evseId}`; Stecker- und Zahlungsarten-Tabellen gegen die Wertelisten der Quelle geprüft. `providers` sind Dienstleister, keine Ladekarten, und werden nicht übernommen
+- [ ] Filter in der Karte (Stecker, Leistung, Betreiber, nur frei, Ad-hoc-Zahlung, Roaming, Ökostrom, barrierefrei)
+- [ ] Ad-hoc-Preise aus E-Control speichern (`PRICE_POLL` aus dem Register, `price_observation`, `GET /evses/{evseId}/prices`)
+- [ ] Lebenszyklus: Standorte und EVSEs, die eine Quelle nicht mehr meldet oder als inaktiv führt, auf `REMOVED` setzen
 - [x] Angular: Standort-Detailseite `/locations/:id` (angemeldet, `evse:read`) mit Status-Timeline je EVSE und Heatmap Wochentag × Stunde, Link „Details“ in der Infokarte
 - [x] Ersteinrichtung: Setup-Assistent `/setup` bei leerer Instanz (erster Admin mit Setup-Token aus dem API-Log, danach Datenquelle E-Control und SMTP), `GET /setup`, `POST /setup/admin`; Registrierung bis dahin geschlossen
 - [ ] Angular: Admin (Nutzer, Rollen, API-Keys)
 - [ ] Nutzer- und Rollenverwaltung in der API (`/users`, `/roles`, `GET /audit-log`)
 - [ ] Customizings: `GET/PUT /me/preferences`, Favoriten, Einstellungsseite
 - [ ] Routing: Compose-Service `routing` (Valhalla, OSM-Extrakt Österreich), `IRoutingEngine`, `POST /routes`, Routen-Layer in der Karte
-- [ ] Erste EMP-Tarife: 2–3 Ladekarten-Anbieter mit Tarif-Editor (manuell gepflegt), Szenario-Preisvergleich; EMP-Katalog aus `/enumerations/providers` der E-Control vorbefüllen, Zuordnung Ladepunkt ↔ akzeptierte Ladekarten aus `providers`
+- [ ] Erste EMP-Tarife: 2–3 Ladekarten-Anbieter mit Tarif-Editor (manuell gepflegt), Szenario-Preisvergleich; welche Ladekarte an welchem Ladepunkt geht, liefert die E-Control nicht (nur `roaming` ja/nein) – Quelle dafür sind die Roaming-Listen der EMPs ([07](07-bestandsanalyse-apps-at.md))
 
 ### Phase 2 – Preise & Tier-1/2-Quellen
 - [ ] Analyse und Adapter je Anbieter nach Priorität aus [07](07-bestandsanalyse-apps-at.md) (Web-Karten zuerst)
@@ -55,7 +56,7 @@
 
 ### Phase 3 – DACH
 - [ ] Generischer **OCPI-Adapter** (zuerst für die Schweizer BFE-API, die ab November 2026 öffentlich OCPI liefert)
-- [ ] Generischer **DATEX-II-Adapter** (Mobilithek-AFIR-Angebote, Bundesnetzagentur-Register als Inventar-Fallback), aufbauend auf dem DATEX-v3.5-Abruf der E-Control (Phase 1)
+- [ ] Generischer **DATEX-II-Adapter** (Mobilithek-AFIR-Angebote, Bundesnetzagentur-Register als Inventar-Fallback), getestet an den DATEX-v3.5-Publikationen der E-Control
 - [ ] Mehrsprachigkeit (de/en/it/fr) in API-Texten und Frontend
 
 ### Phase 4 – Italien

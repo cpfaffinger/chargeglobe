@@ -245,6 +245,46 @@ public class IngestPipelineTests(IntegrationFactory factory) : IClassFixture<Int
     }
 
     [Fact]
+    public async Task Facilities_and_payment_data_are_merged_and_kept_when_a_record_does_not_tell_them()
+    {
+        var (locations, _, code) = Fixture();
+        var ring = locations.Single(location => location.Name == "Testladepark Ring");
+        // The EVSE-ID prefix belongs to a Swiss operator although the station is in Vienna.
+        await EnqueueAsync(Locations([ring with { OperatorCountry = "CH" }]));
+        await DrainAsync();
+
+        var evses = await EvsesAsync(code);
+        var location = await factory.WithDbAsync(db => db.Locations.SingleAsync(l => l.Id == evses[0].LocationId));
+        Assert.Equal(
+            ((bool?)false, (bool?)true, (bool?)false, (int?)1, "https://example.org/preise"),
+            (location.GreenEnergy, location.FreeParking, location.RoofedParking, location.BarrierFreeParkingSpaces, location.PriceUrl));
+        var dc = Assert.Single(evses, evse => evse.EvseIdDisplay == $"AT*{code}*ETEST0002*DC1");
+        Assert.Equal([AuthMethod.RFID_READER], dc.AuthMethods);
+        Assert.True(dc.Roaming);
+        var surrogate = Assert.Single(evses, evse => evse.IdentityKind == IdentityKind.SURROGATE);
+        Assert.Empty(surrogate.AuthMethods);
+        Assert.False(surrogate.Roaming);
+        var @operator = await factory.WithDbAsync(db => db.Operators.SingleAsync(op => op.OperatorId == code));
+        Assert.Equal(("CH", "AT"), (@operator.Country, location.Country));
+
+        // A record without facilities and payment data leaves them untouched; an invalid operator country falls back to the address.
+        await EnqueueAsync(Locations([ring with
+        {
+            ObservedAt = T0.AddHours(1),
+            OperatorCountry = "c1",
+            Facilities = null,
+            Evses = [.. ring.Evses.Select(evse => evse with { AuthMethods = null, Roaming = null })],
+        }]));
+        await DrainAsync();
+
+        var kept = await factory.WithDbAsync(db => db.Locations.SingleAsync(l => l.Id == location.Id));
+        Assert.Equal(((bool?)true, "https://example.org/preise"), (kept.FreeParking, kept.PriceUrl));
+        var keptDc = (await EvsesAsync(code)).Single(evse => evse.Id == dc.Id);
+        Assert.Equal(([AuthMethod.RFID_READER], (bool?)true), (keptDc.AuthMethods, keptDc.Roaming));
+        Assert.True(await factory.WithDbAsync(db => db.Operators.AnyAsync(op => op.OperatorId == code && op.Country == "AT")));
+    }
+
+    [Fact]
     public async Task Records_of_deleted_entities_are_relearned_and_locations_without_country_are_skipped()
     {
         var (locations, _, code) = Fixture();

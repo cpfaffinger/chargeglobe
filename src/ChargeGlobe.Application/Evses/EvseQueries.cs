@@ -28,6 +28,8 @@ public sealed record EvseCurrentStatus(string Status, DateTimeOffset? Since, Dat
 /// <param name="EvseId">EVSE-ID with separators; for a surrogate the chargeglobe ID <c>XX*CG*E…</c>.</param>
 /// <param name="HasEvseId">False for a surrogate ID assigned by chargeglobe.</param>
 /// <param name="Lifecycle"><c>ACTIVE</c>, <c>PLANNED</c> or <c>REMOVED</c>.</param>
+/// <param name="AuthMethods">Ways to start and pay a session (<c>AuthMethod</c> names); empty if unknown.</param>
+/// <param name="Roaming">Charging cards of other providers are accepted; null if unknown.</param>
 public sealed record EvseView(
     Guid Id,
     string EvseId,
@@ -39,6 +41,8 @@ public sealed record EvseView(
     decimal? MaxPowerKw,
     string? PowerType,
     IReadOnlyList<ConnectorDetail> Connectors,
+    IReadOnlyList<string> AuthMethods,
+    bool? Roaming,
     EvseCurrentStatus Status,
     DateTimeOffset FirstSeen,
     DateTimeOffset LastSeen,

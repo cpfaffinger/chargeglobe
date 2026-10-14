@@ -76,6 +76,13 @@ public class LocationsApiTests(IntegrationFactory factory) : IClassFixture<Integ
         Assert.Equal(48.2085, stephansplatz.GetProperty("latitude").GetDouble(), 6);
         Assert.Equal(16.3731, stephansplatz.GetProperty("longitude").GetDouble(), 6);
         Assert.Equal("OUT_OF_ORDER", data[1].GetProperty("availability").GetString());
+        var facilities = stephansplatz.GetProperty("facilities");
+        Assert.Equal(
+            (true, false, false, 0, JsonValueKind.Null),
+            (facilities.GetProperty("greenEnergy").GetBoolean(), facilities.GetProperty("freeParking").GetBoolean(),
+             facilities.GetProperty("roofedParking").GetBoolean(), facilities.GetProperty("barrierFreeParkingSpaces").GetInt32(),
+             facilities.GetProperty("priceUrl").ValueKind));
+        Assert.Equal("https://example.org/preise", data[1].GetProperty("facilities").GetProperty("priceUrl").GetString());
         var meta = body.GetProperty("meta");
         Assert.Equal((2, 500, false), (meta.GetProperty("returned").GetInt32(), meta.GetProperty("limit").GetInt32(), meta.GetProperty("truncated").GetBoolean()));
         Assert.Equal("Datenquelle: Ladestellenverzeichnis der E-Control (ladestellen.at)", meta.GetProperty("attribution")[0].GetProperty("text").GetString());
@@ -87,6 +94,8 @@ public class LocationsApiTests(IntegrationFactory factory) : IClassFixture<Integ
         var graz = await GetJsonAsync(client, "/api/v1/locations?bbox=15.3,47.0,15.5,47.1");
         var empty = Assert.Single(graz.GetProperty("data").EnumerateArray());
         Assert.Equal((0, "UNKNOWN", JsonValueKind.Null), (empty.GetProperty("evsesTotal").GetInt32(), empty.GetProperty("availability").GetString(), empty.GetProperty("operator").ValueKind));
+        // No source told its facilities.
+        Assert.All(empty.GetProperty("facilities").EnumerateObject(), property => Assert.Equal(JsonValueKind.Null, property.Value.ValueKind));
         Assert.Empty(graz.GetProperty("meta").GetProperty("attribution").EnumerateArray());
     }
 
@@ -122,6 +131,10 @@ public class LocationsApiTests(IntegrationFactory factory) : IClassFixture<Integ
         var connector = evses[0].GetProperty("connectors")[0];
         Assert.Equal(("IEC_62196_T2", "SOCKET", "AC_3_PHASE"), (connector.GetProperty("standard").GetString(), connector.GetProperty("format").GetString(), connector.GetProperty("powerType").GetString()));
         Assert.Equal(JsonValueKind.Null, evses[1].GetProperty("connectors")[0].GetProperty("format").ValueKind);
+        Assert.Equal(["RFID_READER", "APP"], evses[0].GetProperty("authMethods").EnumerateArray().Select(item => item.GetString()));
+        Assert.Equal(["APP"], evses[1].GetProperty("authMethods").EnumerateArray().Select(item => item.GetString()));
+        Assert.True(evses[0].GetProperty("roaming").GetBoolean());
+        Assert.True(detail.GetProperty("data").GetProperty("location").GetProperty("facilities").GetProperty("greenEnergy").GetBoolean());
         Assert.Equal("Test Operator GmbH", detail.GetProperty("data").GetProperty("location").GetProperty("operator").GetString());
         Assert.Equal("econtrol", detail.GetProperty("meta").GetProperty("attribution")[0].GetProperty("source").GetString());
 

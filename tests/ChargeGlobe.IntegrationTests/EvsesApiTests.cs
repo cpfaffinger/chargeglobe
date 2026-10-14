@@ -123,6 +123,8 @@ public class EvsesApiTests(IntegrationFactory factory) : IClassFixture<Integrati
         Assert.Equal(("Test Operator GmbH", "TST"), (data.GetProperty("operator").GetProperty("name").GetString(), data.GetProperty("operator").GetProperty("operatorId").GetString()));
         Assert.Equal((22m, "AC_3_PHASE"), (data.GetProperty("maxPowerKw").GetDecimal(), data.GetProperty("powerType").GetString()));
         Assert.Equal("IEC_62196_T2", data.GetProperty("connectors")[0].GetProperty("standard").GetString());
+        Assert.Equal(["RFID_READER", "APP"], data.GetProperty("authMethods").EnumerateArray().Select(item => item.GetString()));
+        Assert.True(data.GetProperty("roaming").GetBoolean());
         var status = data.GetProperty("status");
         Assert.Equal(("AVAILABLE", "econtrol", false), (status.GetProperty("status").GetString(), status.GetProperty("source").GetString(), status.GetProperty("stale").GetBoolean()));
         Assert.True(data.GetProperty("lastSeen").GetDateTimeOffset() >= data.GetProperty("firstSeen").GetDateTimeOffset());

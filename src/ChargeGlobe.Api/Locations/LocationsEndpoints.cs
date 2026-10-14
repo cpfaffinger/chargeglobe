@@ -43,7 +43,8 @@ public static class LocationsEndpoints
         2,
         22m,
         DateTimeOffset.Parse("2026-10-14T08:15:00Z", CultureInfo.InvariantCulture),
-        Availability.Available);
+        Availability.Available,
+        new LocationFacilities(true, false, true, 2, "https://www.wienenergie.at/privat/produkte/e-mobilitaet/"));
 
     public static IEndpointRouteBuilder MapLocationsEndpoints(this IEndpointRouteBuilder endpoints)
     {
@@ -57,7 +58,9 @@ public static class LocationsEndpoints
                 "to the centre of the box first, at most `limit` (1–2000, default 500); `meta.truncated` tells whether " +
                 "more exist. Each location carries its EVSE counts: `evsesAvailable` counts EVSEs whose current status " +
                 "is AVAILABLE and not older than the setting `map.status_max_age_minutes`; `availability` summarises " +
-                "them as AVAILABLE, OCCUPIED, OUT_OF_ORDER or UNKNOWN. `meta.attribution` lists the sources of the " +
+                "them as AVAILABLE, OCCUPIED, OUT_OF_ORDER or UNKNOWN. `facilities` tells green energy (100 % renewable " +
+                "as stated by the operator), free and roofed parking, the number of barrier-free parking spaces and the " +
+                "operator's price page (`priceUrl`); each is null if no source knows it. `meta.attribution` lists the sources of the " +
                 "data and the attribution text that must be shown with it. Public, no credentials needed.")
             .Produces<LocationsResponse>()
             .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
@@ -71,7 +74,11 @@ public static class LocationsEndpoints
             .WithDescription(
                 "Returns one active location (`id` from `listLocations`) with all its EVSEs: EVSE-ID (`hasEvseId` false " +
                 "for an ID assigned by chargeglobe), current OCPI status with `statusSince` and `statusObservedAt` " +
-                "(UNKNOWN if older than `map.status_max_age_minutes`), maximum power, current type and connectors. " +
+                "(UNKNOWN if older than `map.status_max_age_minutes`), maximum power, current type, connectors, " +
+                "`authMethods` (how a session is started and paid: RFID_READER, APP, QR_CODE, WEBSITE, CHARGING_CONTRACT, " +
+                "CREDIT_CARD_PAYABLE, DEBIT_CARD_PAYABLE, CONTACTLESS_CARD_SUPPORT, CHIP_CARD_SUPPORT, PED_TERMINAL, CASH; " +
+                "empty if unknown) and `roaming` (charging cards of other providers accepted; null if unknown). " +
+                "The location carries `facilities` as in `listLocations`. " +
                 "`meta.attribution` names the sources. 404 for an unknown or inactive location. Public.")
             .Produces<LocationDetailResponse>()
             .ProducesProblem(StatusCodes.Status404NotFound)
@@ -90,7 +97,9 @@ public static class LocationsEndpoints
                                 DateTimeOffset.Parse("2026-10-14T08:15:00Z", CultureInfo.InvariantCulture),
                                 22m,
                                 "AC_3_PHASE",
-                                [new ConnectorDetail("IEC_62196_T2", "SOCKET", "AC_3_PHASE", 22m)]),
+                                [new ConnectorDetail("IEC_62196_T2", "SOCKET", "AC_3_PHASE", 22m)],
+                                ["RFID_READER", "APP", "CREDIT_CARD_PAYABLE"],
+                                true),
                         ]),
                     new AttributionMeta([ExampleAttribution])));
 

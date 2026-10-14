@@ -1,0 +1,694 @@
+{
+  "totalResults": 6,
+  "fromIndex": 0,
+  "endIndex": 5,
+  "stations": [
+    {
+      "evseCountryId": "AT",
+      "evseOperatorId": "VIE",
+      "evseStationId": "E1436905",
+      "status": "ACTIVE",
+      "label": "öff. Wipark - Westbahnhof",
+      "description": null,
+      "postCode": "1150",
+      "city": "Wien",
+      "street": "Felberstraße 1",
+      "location": {
+        "latitude": 48.197447999999994,
+        "longitude": 16.335987
+      },
+      "distance": null,
+      "contactName": "Max Mustermann",
+      "phoneCountryCode": "+43",
+      "regionCode": "1",
+      "phoneNumber": "5550100",
+      "extensionNumber": null,
+      "email": "max.mustermann@example.org",
+      "website": "https://www.wienenergie.at/privat/produkte/e-mobilitaet/",
+      "directions": null,
+      "greenEnergy": true,
+      "austrianEcoLabel": false,
+      "freeParking": false,
+      "roofedParking": false,
+      "illuminatedParking": false,
+      "cateringService": false,
+      "bathroomsAvailable": false,
+      "restingFacilities": false,
+      "otherOfferings": null,
+      "parkingPlaces": 0,
+      "barrierFreeParkingPlaces": 0,
+      "operatorName": "Wien Energie GmbH",
+      "owner": "Erika Musterfrau",
+      "openingHours": [
+        {
+          "fromWeekday": "MONDAY",
+          "fromTime": "00:00",
+          "toWeekday": "SUNDAY",
+          "toTime": "24:00"
+        }
+      ],
+      "personPresence": "Selbstbedienung, kein Personal vor Ort.",
+      "priceUrl": "https://www.wienenergie.at/privat/produkte/e-mobilitaet/unterwegs-laden/tanke-tarife/",
+      "points": [
+        {
+          "evseId": "AT*VIE*E1150650004*6",
+          "energyInKw": 11,
+          "location": {
+            "latitude": 48.197447999999994,
+            "longitude": 16.335987
+          },
+          "roaming": true,
+          "freeOfCharge": false,
+          "priceInCentPerKwh": 56,
+          "priceInCentPerMin": null,
+          "blockingFeeCentMin": 5,
+          "blockingFeeFromMinute": 721,
+          "startFeeCent": 0,
+          "authenticationModes": [
+            "APP",
+            "RFID_READER",
+            "CREDIT_CARD"
+          ],
+          "otherAuthenticationModes": null,
+          "electronicPaymentProviders": [],
+          "otherElectronicPaymentProviders": null,
+          "connectorTypes": [
+            {
+              "key": "IEC_62196_T2",
+              "description": "IEC 62196 Type 2 \"Mennekes\"",
+              "legacy": false,
+              "consumerName": "TYPE_2_AC"
+            }
+          ],
+          "electricityTypes": [
+            "AC_3_PHASE"
+          ],
+          "vehicleTypes": [
+            "CAR"
+          ],
+          "otherVehicleTypes": null,
+          "maxVehicleWeight": null,
+          "maxVehicleHeight": null,
+          "maxVehicleLength": null,
+          "maxVehicleWidth": null
+        },
+        {
+          "evseId": "AT*VIE*E1150650004*1",
+          "energyInKw": 11,
+          "location": {
+            "latitude": 48.197447999999994,
+            "longitude": 16.335987
+          },
+          "roaming": true,
+          "freeOfCharge": false,
+          "priceInCentPerKwh": 56,
+          "priceInCentPerMin": null,
+          "blockingFeeCentMin": 5,
+          "blockingFeeFromMinute": 721,
+          "startFeeCent": 0,
+          "authenticationModes": [
+            "APP",
+            "RFID_READER",
+            "CREDIT_CARD"
+          ],
+          "otherAuthenticationModes": null,
+          "electronicPaymentProviders": [],
+          "otherElectronicPaymentProviders": null,
+          "connectorTypes": [
+            {
+              "key": "IEC_62196_T2",
+              "description": "IEC 62196 Type 2 \"Mennekes\"",
+              "legacy": false,
+              "consumerName": "TYPE_2_AC"
+            }
+          ],
+          "electricityTypes": [
+            "AC_3_PHASE"
+          ],
+          "vehicleTypes": [
+            "CAR"
+          ],
+          "otherVehicleTypes": null,
+          "maxVehicleWeight": null,
+          "maxVehicleHeight": null,
+          "maxVehicleLength": null,
+          "maxVehicleWidth": null
+        }
+      ],
+      "providers": [],
+      "otherProviders": null
+    },
+    {
+      "evseCountryId": "CH",
+      "evseOperatorId": "ECU",
+      "evseStationId": "E37HDH2HDZAY8Z5GH56MZ8S9YLW",
+      "status": "ACTIVE",
+      "label": "Wallbox01",
+      "description": null,
+      "postCode": "1010",
+      "city": "Wien",
+      "street": "Johannesgasse 14/20-21",
+      "location": {
+        "latitude": 48.2038072,
+        "longitude": 16.3751451
+      },
+      "distance": null,
+      "contactName": "Max Mustermann",
+      "phoneCountryCode": "+43",
+      "regionCode": "1",
+      "phoneNumber": "5550100",
+      "extensionNumber": null,
+      "email": "max.mustermann@example.org",
+      "website": null,
+      "directions": null,
+      "greenEnergy": false,
+      "austrianEcoLabel": false,
+      "freeParking": false,
+      "roofedParking": false,
+      "illuminatedParking": false,
+      "cateringService": false,
+      "bathroomsAvailable": false,
+      "restingFacilities": false,
+      "otherOfferings": null,
+      "parkingPlaces": 0,
+      "barrierFreeParkingPlaces": 0,
+      "operatorName": "eCarUp AG",
+      "owner": "Erika Musterfrau",
+      "openingHours": [],
+      "personPresence": "Unbekannt",
+      "priceUrl": null,
+      "points": [
+        {
+          "evseId": "CH*ECU*E37HDH2HDZAY8Z5GH56MZ8S9YLW",
+          "energyInKw": 11,
+          "location": null,
+          "roaming": null,
+          "freeOfCharge": null,
+          "priceInCentPerKwh": 50.0,
+          "priceInCentPerMin": 200,
+          "blockingFeeCentMin": 0,
+          "blockingFeeFromMinute": 0,
+          "startFeeCent": 0,
+          "authenticationModes": [],
+          "otherAuthenticationModes": null,
+          "electronicPaymentProviders": [],
+          "otherElectronicPaymentProviders": null,
+          "connectorTypes": [
+            {
+              "key": "CTYPE2",
+              "description": "IEC62196-2 Type 2 connector (captive cabled) a.k.a. Mennekes connector",
+              "legacy": true,
+              "consumerName": "TYPE_2_AC"
+            }
+          ],
+          "electricityTypes": [
+            "AC_3_PHASE"
+          ],
+          "vehicleTypes": [],
+          "otherVehicleTypes": null,
+          "maxVehicleWeight": null,
+          "maxVehicleHeight": null,
+          "maxVehicleLength": null,
+          "maxVehicleWidth": null
+        }
+      ],
+      "providers": [],
+      "otherProviders": null
+    },
+    {
+      "evseCountryId": "AT",
+      "evseOperatorId": "STQ",
+      "evseStationId": "E*1000*0134",
+      "status": "ACTIVE",
+      "label": "Stromquelle LAX2 oekostrom 3",
+      "description": null,
+      "postCode": "1100",
+      "city": "Wien",
+      "street": "Laxenburger Straße 2",
+      "location": {
+        "latitude": 48.18436,
+        "longitude": 16.37257
+      },
+      "distance": null,
+      "contactName": "Max Mustermann",
+      "phoneCountryCode": "+43",
+      "regionCode": "1",
+      "phoneNumber": "5550100",
+      "extensionNumber": null,
+      "email": "max.mustermann@example.org",
+      "website": "https://www.stromquelle.at/",
+      "directions": null,
+      "greenEnergy": false,
+      "austrianEcoLabel": false,
+      "freeParking": true,
+      "roofedParking": false,
+      "illuminatedParking": false,
+      "cateringService": false,
+      "bathroomsAvailable": false,
+      "restingFacilities": false,
+      "otherOfferings": null,
+      "parkingPlaces": 0,
+      "barrierFreeParkingPlaces": 0,
+      "operatorName": "Stromquelle Energietechnik GmbH",
+      "owner": "Erika Musterfrau",
+      "openingHours": [],
+      "personPresence": "Selbstbedienung, kein Personal vor Ort.",
+      "priceUrl": "www.stromquelle.at/wp-content/uploads/SQ_Tarifblatt.pdf",
+      "points": [
+        {
+          "evseId": "AT*STQ*E*1000*0134",
+          "energyInKw": 22,
+          "location": {
+            "latitude": 48.18436,
+            "longitude": 16.37257
+          },
+          "roaming": true,
+          "freeOfCharge": false,
+          "priceInCentPerKwh": 45,
+          "priceInCentPerMin": 1.67,
+          "blockingFeeCentMin": 0,
+          "blockingFeeFromMinute": 0,
+          "startFeeCent": 0,
+          "authenticationModes": [],
+          "otherAuthenticationModes": null,
+          "electronicPaymentProviders": [],
+          "otherElectronicPaymentProviders": null,
+          "connectorTypes": [
+            {
+              "key": "CTYPE2",
+              "description": "IEC62196-2 Type 2 connector (captive cabled) a.k.a. Mennekes connector",
+              "legacy": true,
+              "consumerName": "TYPE_2_AC"
+            }
+          ],
+          "electricityTypes": [
+            "AC_3_PHASE"
+          ],
+          "vehicleTypes": [
+            "LIGHT_VEHICLE",
+            "CAR"
+          ],
+          "otherVehicleTypes": null,
+          "maxVehicleWeight": null,
+          "maxVehicleHeight": null,
+          "maxVehicleLength": null,
+          "maxVehicleWidth": null
+        }
+      ],
+      "providers": [],
+      "otherProviders": null
+    },
+    {
+      "evseCountryId": "AT",
+      "evseOperatorId": "055",
+      "evseStationId": "EGT01",
+      "status": "ACTIVE",
+      "label": "GTGraz01",
+      "description": "Nur für Klienten der Grazer Treuhand Steuerberatung GmbH & Partner KG.",
+      "postCode": "8010",
+      "city": "Graz",
+      "street": "Petersgasse 128a",
+      "location": {
+        "latitude": 47.05959321418888,
+        "longitude": 15.464850739096416
+      },
+      "distance": null,
+      "contactName": "Max Mustermann",
+      "phoneCountryCode": "+43",
+      "regionCode": "1",
+      "phoneNumber": "5550100",
+      "extensionNumber": null,
+      "email": "max.mustermann@example.org",
+      "website": "https://www.grazertreuhand.at/",
+      "directions": null,
+      "greenEnergy": true,
+      "austrianEcoLabel": false,
+      "freeParking": false,
+      "roofedParking": false,
+      "illuminatedParking": false,
+      "cateringService": false,
+      "bathroomsAvailable": false,
+      "restingFacilities": false,
+      "otherOfferings": null,
+      "parkingPlaces": 0,
+      "barrierFreeParkingPlaces": 0,
+      "operatorName": "GRAZER TREUHAND STEUERBERATUNG GmbH & Partner KG",
+      "owner": "Erika Musterfrau",
+      "openingHours": [
+        {
+          "fromWeekday": "MONDAY",
+          "fromTime": "08:00",
+          "toWeekday": "THURSDAY",
+          "toTime": "16:30"
+        },
+        {
+          "fromWeekday": "FRIDAY",
+          "fromTime": "08:00",
+          "toWeekday": "MONDAY",
+          "toTime": "13:00"
+        }
+      ],
+      "personPresence": "Selbstbedienung, kein Personal vor Ort.",
+      "priceUrl": null,
+      "points": [
+        {
+          "evseId": "AT*055*EEGT01",
+          "energyInKw": 22,
+          "location": null,
+          "roaming": false,
+          "freeOfCharge": null,
+          "priceInCentPerKwh": null,
+          "priceInCentPerMin": null,
+          "blockingFeeCentMin": 0,
+          "blockingFeeFromMinute": 0,
+          "startFeeCent": 0,
+          "authenticationModes": [
+            "RFID_READER"
+          ],
+          "otherAuthenticationModes": null,
+          "electronicPaymentProviders": [],
+          "otherElectronicPaymentProviders": null,
+          "connectorTypes": [
+            {
+              "key": "CTYPE2",
+              "description": "IEC62196-2 Type 2 connector (captive cabled) a.k.a. Mennekes connector",
+              "legacy": true,
+              "consumerName": "TYPE_2_AC"
+            }
+          ],
+          "electricityTypes": [],
+          "vehicleTypes": [
+            "CAR"
+          ],
+          "otherVehicleTypes": null,
+          "maxVehicleWeight": null,
+          "maxVehicleHeight": null,
+          "maxVehicleLength": null,
+          "maxVehicleWidth": null
+        }
+      ],
+      "providers": [],
+      "otherProviders": null
+    },
+    {
+      "evseCountryId": "AT",
+      "evseOperatorId": "002",
+      "evseStationId": "EJJZ5U89RX0G",
+      "status": "INACTIVE",
+      "label": "Testladestation",
+      "description": "Und eine Beschreibung gibt es auch dazu",
+      "postCode": "1150",
+      "city": "Wien",
+      "street": "Stättermayergasse 33",
+      "location": {
+        "latitude": 48.19880955128427,
+        "longitude": 16.326617730688483
+      },
+      "distance": null,
+      "contactName": "Max Mustermann",
+      "phoneCountryCode": "+43",
+      "regionCode": "1",
+      "phoneNumber": "5550100",
+      "extensionNumber": null,
+      "email": "max.mustermann@example.org",
+      "website": null,
+      "directions": null,
+      "greenEnergy": true,
+      "austrianEcoLabel": false,
+      "freeParking": false,
+      "roofedParking": false,
+      "illuminatedParking": false,
+      "cateringService": false,
+      "bathroomsAvailable": false,
+      "restingFacilities": false,
+      "otherOfferings": null,
+      "parkingPlaces": 0,
+      "barrierFreeParkingPlaces": 0,
+      "operatorName": "Smart Mobility Power GmbH",
+      "owner": "Erika Musterfrau",
+      "openingHours": [],
+      "personPresence": "Selbstbedienung, kein Personal vor Ort.",
+      "priceUrl": null,
+      "points": [
+        {
+          "evseId": "AT*002*E200101*1",
+          "energyInKw": 12,
+          "location": null,
+          "roaming": false,
+          "freeOfCharge": false,
+          "priceInCentPerKwh": null,
+          "priceInCentPerMin": null,
+          "blockingFeeCentMin": 0,
+          "blockingFeeFromMinute": 0,
+          "startFeeCent": 0,
+          "authenticationModes": [
+            "APP",
+            "RFID_READER",
+            "CONTACTLESS_CARD_SUPPORT",
+            "DEBIT_CARD",
+            "CASH",
+            "CREDIT_CARD",
+            "WEBSITE"
+          ],
+          "otherAuthenticationModes": "SMS",
+          "electronicPaymentProviders": [],
+          "otherElectronicPaymentProviders": null,
+          "connectorTypes": [
+            {
+              "key": "CTESLA",
+              "description": "Tesla Connector (captive cabled)",
+              "legacy": true,
+              "consumerName": "OTHER"
+            },
+            {
+              "key": "CTYPE1",
+              "description": "IEC62196-2 Type 1 connector (captive cabled) a.k.a. J1772",
+              "legacy": true,
+              "consumerName": "OTHER"
+            },
+            {
+              "key": "CCCS1",
+              "description": "Combined Charging System 1 (captive cabled) a.k.a. Combo 1",
+              "legacy": true,
+              "consumerName": "COMBO2_CCS_DC"
+            },
+            {
+              "key": "S309-1P-16A",
+              "description": "16A 1 phase IEC60309 socket",
+              "legacy": true,
+              "consumerName": "OTHER"
+            },
+            {
+              "key": "WRESONANT",
+              "description": "Wireless resonant coupled connection (generic)",
+              "legacy": true,
+              "consumerName": "OTHER"
+            },
+            {
+              "key": "S309-3P-16A",
+              "description": "16A 3 phase IEC60309 socket",
+              "legacy": true,
+              "consumerName": "OTHER"
+            },
+            {
+              "key": "OTHER3PH",
+              "description": "Other 3 phase sockets not mentioned above. NEMA14-30, NEMA14-50.",
+              "legacy": true,
+              "consumerName": "OTHER"
+            },
+            {
+              "key": "S309-1P-32A",
+              "description": "32A 1 phase IEC60309 socket",
+              "legacy": true,
+              "consumerName": "OTHER"
+            },
+            {
+              "key": "CTYPE2",
+              "description": "IEC62196-2 Type 2 connector (captive cabled) a.k.a. Mennekes connector",
+              "legacy": true,
+              "consumerName": "TYPE_2_AC"
+            },
+            {
+              "key": "UNKNOWN",
+              "description": "Unknown; not determinable",
+              "legacy": true,
+              "consumerName": "OTHER"
+            },
+            {
+              "key": "STYPE2",
+              "description": "IEC62196-2 Type 2 socket a.k.a. Mennekes connector",
+              "legacy": true,
+              "consumerName": "TYPE_2_AC"
+            },
+            {
+              "key": "PAN",
+              "description": "Pantograph connector",
+              "legacy": true,
+              "consumerName": "OTHER"
+            },
+            {
+              "key": "OTHER1PHOVER16A",
+              "description": "Other single phase sockets not mentioned above (over 16A)",
+              "legacy": true,
+              "consumerName": "OTHER"
+            },
+            {
+              "key": "SCEE-7-8",
+              "description": "CEE 7/7 16A socket. May represent 7/4 & 7/5 a.k.a Schuko",
+              "legacy": true,
+              "consumerName": "OTHER"
+            },
+            {
+              "key": "STYPE3",
+              "description": "IEC62196-2 Type 2 socket a.k.a. Scame",
+              "legacy": true,
+              "consumerName": "OTHER"
+            },
+            {
+              "key": "WINDUCTIVE",
+              "description": "Wireless inductively coupled connection (generic)",
+              "legacy": true,
+              "consumerName": "OTHER"
+            },
+            {
+              "key": "OTHER1PHMAX16A",
+              "description": "Other single phase (domestic) sockets not mentioned above, rated at no more than 16A. CEE7/17, AS3112, NEMA 5-15, NEMA 5-20, JISC8303, TIS166, SI 32, CPCS-CCC, SEV1011, etc.",
+              "legacy": true,
+              "consumerName": "OTHER"
+            },
+            {
+              "key": "CCCS2",
+              "description": "Combined Charging System 2 (captive cabled) a.k.a. Combo 2",
+              "legacy": true,
+              "consumerName": "COMBO2_CCS_DC"
+            },
+            {
+              "key": "CG105",
+              "description": "JARI G105-1993 (captive cabled) a.k.a. CHAdeMO",
+              "legacy": true,
+              "consumerName": "CHADEMO_DC"
+            },
+            {
+              "key": "S309-3P-32A",
+              "description": "32A 3 phase IEC60309 socket",
+              "legacy": true,
+              "consumerName": "OTHER"
+            }
+          ],
+          "electricityTypes": [
+            "DC"
+          ],
+          "vehicleTypes": [
+            "LIGHT_VEHICLE",
+            "CAR",
+            "TRUCK"
+          ],
+          "otherVehicleTypes": "Boot",
+          "maxVehicleWeight": null,
+          "maxVehicleHeight": null,
+          "maxVehicleLength": null,
+          "maxVehicleWidth": null
+        },
+        {
+          "evseId": "AT*002*E2001*5",
+          "energyInKw": 15,
+          "location": {
+            "latitude": 48.198523499134545,
+            "longitude": 16.325340999197394
+          },
+          "roaming": true,
+          "freeOfCharge": true,
+          "priceInCentPerKwh": 12,
+          "priceInCentPerMin": 13,
+          "blockingFeeCentMin": 0,
+          "blockingFeeFromMinute": 0,
+          "startFeeCent": 0,
+          "authenticationModes": [],
+          "otherAuthenticationModes": null,
+          "electronicPaymentProviders": [],
+          "otherElectronicPaymentProviders": null,
+          "connectorTypes": [
+            {
+              "key": "CTESLA",
+              "description": "Tesla Connector (captive cabled)",
+              "legacy": true,
+              "consumerName": "OTHER"
+            },
+            {
+              "key": "CG105",
+              "description": "JARI G105-1993 (captive cabled) a.k.a. CHAdeMO",
+              "legacy": true,
+              "consumerName": "CHADEMO_DC"
+            },
+            {
+              "key": "CCCS1",
+              "description": "Combined Charging System 1 (captive cabled) a.k.a. Combo 1",
+              "legacy": true,
+              "consumerName": "COMBO2_CCS_DC"
+            },
+            {
+              "key": "CCCS2",
+              "description": "Combined Charging System 2 (captive cabled) a.k.a. Combo 2",
+              "legacy": true,
+              "consumerName": "COMBO2_CCS_DC"
+            }
+          ],
+          "electricityTypes": [
+            "DC"
+          ],
+          "vehicleTypes": [],
+          "otherVehicleTypes": null,
+          "maxVehicleWeight": null,
+          "maxVehicleHeight": null,
+          "maxVehicleLength": null,
+          "maxVehicleWidth": null
+        }
+      ],
+      "providers": [],
+      "otherProviders": null
+    },
+    {
+      "evseCountryId": "AT",
+      "evseOperatorId": "1W6",
+      "evseStationId": "E1",
+      "status": "ACTIVE",
+      "label": "Type 2 2x 11 KW",
+      "description": null,
+      "postCode": "2361",
+      "city": "Laxenburg",
+      "street": "Eduard Hartmann Platz 5",
+      "location": {
+        "latitude": 0,
+        "longitude": 0
+      },
+      "distance": null,
+      "contactName": "Max Mustermann",
+      "phoneCountryCode": "+43",
+      "regionCode": "1",
+      "phoneNumber": "5550100",
+      "extensionNumber": null,
+      "email": "max.mustermann@example.org",
+      "website": null,
+      "directions": null,
+      "greenEnergy": false,
+      "austrianEcoLabel": false,
+      "freeParking": false,
+      "roofedParking": false,
+      "illuminatedParking": false,
+      "cateringService": false,
+      "bathroomsAvailable": false,
+      "restingFacilities": false,
+      "otherOfferings": null,
+      "parkingPlaces": 0,
+      "barrierFreeParkingPlaces": 0,
+      "operatorName": "IIASA",
+      "owner": "Erika Musterfrau",
+      "openingHours": [],
+      "personPresence": "Selbstbedienung, kein Personal vor Ort.",
+      "priceUrl": null,
+      "points": [],
+      "providers": [],
+      "otherProviders": null
+    }
+  ]
+}

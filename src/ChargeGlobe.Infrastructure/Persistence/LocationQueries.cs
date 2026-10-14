@@ -32,7 +32,9 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
                        (count(e.id) FILTER (WHERE c.status = ANY({OccupiedStatuses}) AND c.observed_at >= {fresh}))::int AS "EvsesOccupied",
                        (count(e.id) FILTER (WHERE c.status = ANY({FaultedStatuses}) AND c.observed_at >= {fresh}))::int AS "EvsesFaulted",
                        max(e.max_power_kw) AS "MaxPowerKw",
-                       max(c.observed_at) AS "StatusObservedAt"
+                       max(c.observed_at) AS "StatusObservedAt",
+                       l.green_energy AS "GreenEnergy", l.free_parking AS "FreeParking", l.roofed_parking AS "RoofedParking",
+                       l.barrier_free_parking_spaces AS "BarrierFreeParkingSpaces", l.price_url AS "PriceUrl"
                 FROM location l
                 LEFT JOIN operator o ON o.id = l.operator_id
                 LEFT JOIN evse e ON e.location_id = l.id AND e.lifecycle = 'ACTIVE'
@@ -82,7 +84,9 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
                 evse.MaxPowerKw,
                 evse.PowerType?.ToString(),
                 [.. evse.Connectors.OrderBy(connector => connector.Ordinal).Select(connector => new ConnectorDetail(
-                    connector.Standard.ToString(), connector.Format?.ToString(), connector.PowerType?.ToString(), connector.MaxPowerKw))]))
+                    connector.Standard.ToString(), connector.Format?.ToString(), connector.PowerType?.ToString(), connector.MaxPowerKw))],
+                [.. evse.AuthMethods.Select(method => method.ToString())],
+                evse.Roaming))
             .ToList();
         var summary = new LocationSummary(
             location.Id,
@@ -101,7 +105,8 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
             Availability.Of(
                 details.Count(evse => evse.Status == nameof(EvseStatus.AVAILABLE)),
                 details.Count(evse => OccupiedStatuses.Contains(evse.Status)),
-                details.Count(evse => FaultedStatuses.Contains(evse.Status))));
+                details.Count(evse => FaultedStatuses.Contains(evse.Status))),
+            new LocationFacilities(location.GreenEnergy, location.FreeParking, location.RoofedParking, location.BarrierFreeParkingSpaces, location.PriceUrl));
         return new LocationDetail(summary, details, await AttributionAsync([id], cancellationToken));
     }
 
@@ -156,8 +161,19 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
 
         public DateTimeOffset? StatusObservedAt { get; set; }
 
+        public bool? GreenEnergy { get; set; }
+
+        public bool? FreeParking { get; set; }
+
+        public bool? RoofedParking { get; set; }
+
+        public int? BarrierFreeParkingSpaces { get; set; }
+
+        public string? PriceUrl { get; set; }
+
         public LocationSummary ToSummary() =>
             new(Id, Name, Address, PostalCode, City, Country, Latitude, Longitude, Operator, EvsesTotal, EvsesAvailable, MaxPowerKw,
-                StatusObservedAt, Availability.Of(EvsesAvailable, EvsesOccupied, EvsesFaulted));
+                StatusObservedAt, Availability.Of(EvsesAvailable, EvsesOccupied, EvsesFaulted),
+                new LocationFacilities(GreenEnergy, FreeParking, RoofedParking, BarrierFreeParkingSpaces, PriceUrl));
     }
 }
