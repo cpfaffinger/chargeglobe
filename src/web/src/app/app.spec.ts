@@ -271,6 +271,26 @@ describe('App with its routes', () => {
       http.expectOne('/api/v1/mail/outbox?page=1&pageSize=25').flush({ data: [], meta: { total: 0, page: 1, pageSize: 25 } });
     });
 
+    it('opens /admin/tariffs only with tariff:write and shows the link only then', async () => {
+      auth.me.set(ME);
+      auth.hasPermission.and.callFake((permission) => permission === 'settings:read');
+
+      await navigate('/admin/tariffs');
+
+      expect(router.url).toBe('/');
+      http.expectOne('/api/v1/map/config');
+
+      auth.hasPermission.and.callFake((permission) => permission === 'tariff:write');
+      await navigate('/admin/tariffs');
+
+      expect(router.url).toBe('/admin/tariffs');
+      expect(text(root(), 'h1')).toBe('Tarife');
+      expect(root().querySelector('#admin-tab-tariffs')).not.toBeNull();
+      http.expectOne('/api/v1/emps').flush({ data: [] });
+      http.expectOne('/api/v1/tariffs').flush({ data: [] });
+      http.expectOne('/api/v1/operators?limit=100').flush({ data: [] });
+    });
+
     it('redirects anonymous visitors from /admin/mail to the login', async () => {
       await navigate('/admin/mail');
 

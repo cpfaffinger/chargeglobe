@@ -113,10 +113,11 @@ describe('AdminTariffsPage', () => {
     await settle();
   }
 
+  /** Chooses options by value; a multiple select of Angular writes them as "0: 'op-1'". */
   function select(selector: string, values: string[]): void {
     const element = root().querySelector<HTMLSelectElement>(selector)!;
     for (const option of Array.from(element.options)) {
-      option.selected = values.includes(option.value);
+      option.selected = values.some((value) => option.value === value || option.value.endsWith(`'${value}'`));
     }
     element.dispatchEvent(new Event('change'));
   }
