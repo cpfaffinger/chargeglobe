@@ -46,6 +46,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<ILocationQueries, LocationQueries>();
         services.AddScoped<IEvseQueries, EvseQueries>();
         services.AddScoped<ISearchQueries, SearchQueries>();
+        services.AddScoped<IOperatorQueries, OperatorQueries>();
         services.AddScoped<IngestProcessor>();
         services.AddScoped<IIngestQueue, IngestQueue>();
         services.AddScoped<IPollPlanStore, PollPlanStore>();

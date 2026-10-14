@@ -11,6 +11,7 @@ import { MAP_CONFIG, fakeAuth, fakeBrowser, fakeMapEngine, fakeViewport, flush, 
 import { BrowserCapabilities } from './browser-capabilities';
 import { MapConfigService } from './map-config.service';
 import { GeolocateEvent, MapEngine, MapViewOptions } from './map-engine';
+import { MARKERS, markerOf } from './availability';
 import { Bbox, LocationsResponse, LocationsService } from './locations.service';
 import { HOME_VIEW_KEY, LAST_VIEW_KEY, MapView, MapViewStore } from './map-view.store';
 import { FILTERS_STORAGE_KEY, MapFilterStore, NO_FILTERS } from './map-filters';
@@ -457,7 +458,9 @@ describe('HomePage (map)', () => {
       await render();
       expect(root().querySelector('#data-attribution')).toBeNull();
       expect(Array.from(root().querySelectorAll('#legend li')).map((item) => item.textContent?.trim())).toEqual([
-        'frei',
+        'frei bis 22 kW',
+        'frei 23–149 kW',
+        'frei ab 150 kW',
         'belegt',
         'außer Betrieb',
         'Status unbekannt',
@@ -676,12 +679,14 @@ describe('HomePage (map)', () => {
       await settle();
 
       expect(Array.from(root().querySelectorAll('#legend li')).map((item) => item.textContent!.trim())).toEqual([
-        'frei',
+        'frei bis 22 kW',
+        'frei 23–149 kW',
+        'frei ab 150 kW',
         'belegt',
         'außer Betrieb',
         'Status unbekannt',
       ]);
-      expect(root().querySelectorAll('#legend app-icon').length).toBe(4);
+      expect(root().querySelectorAll('#legend app-icon').length).toBe(6);
       expect(root().querySelector<HTMLElement>('#location-card .status-dot')!.style.background).toBe('var(--cg-status-available)');
     });
 
@@ -859,5 +864,17 @@ describe('MapViewStore', () => {
     store.saveLast(view);
     expect(store.home()).toEqual(view);
     expect(store.last()).toBeNull();
+  });
+});
+
+describe('markerOf', () => {
+  it('colours free locations by the power that is free and the others by availability', () => {
+    expect(markerOf({ availability: 'AVAILABLE', maxAvailablePowerKw: null })).toBe('AVAILABLE');
+    expect(markerOf({ availability: 'AVAILABLE', maxAvailablePowerKw: 22 })).toBe('AVAILABLE');
+    expect(markerOf({ availability: 'AVAILABLE', maxAvailablePowerKw: 22.1 })).toBe('AVAILABLE_FAST');
+    expect(markerOf({ availability: 'AVAILABLE', maxAvailablePowerKw: 149 })).toBe('AVAILABLE_FAST');
+    expect(markerOf({ availability: 'AVAILABLE', maxAvailablePowerKw: 150 })).toBe('AVAILABLE_HPC');
+    expect(markerOf({ availability: 'OCCUPIED', maxAvailablePowerKw: null })).toBe('OCCUPIED');
+    expect(MARKERS.AVAILABLE_HPC.token).toBe('--cg-power-hpc');
   });
 });

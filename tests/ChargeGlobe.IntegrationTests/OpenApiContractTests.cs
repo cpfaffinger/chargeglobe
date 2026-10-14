@@ -76,7 +76,7 @@ public class OpenApiContractTests(IntegrationFactory factory)
             {
                 "confirmEmail", "createApiKey", "createInitialAdmin", "deleteRole", "getCrawlerStatus", "getEvse", "getEvseOccupancy",
                 "getEvseStatusHistory", "getHealth", "getLocation", "getMapConfig", "getMe", "getSetting", "getSetupStatus", "getUser",
-                "listApiKeys", "listCrawlerRuns", "listLocations", "listMailOutbox", "listPermissions", "listRoles", "listSettings",
+                "listApiKeys", "listCrawlerRuns", "listLocations", "listMailOutbox", "listOperators", "listPermissions", "listRoles", "listSettings",
                 "listUsers", "login", "logout", "putRole", "refreshToken", "register", "requestPasswordReset", "resendConfirmation",
                 "resetPassword", "revokeApiKey", "search", "sendTestMail", "sendUserConfirmationMail", "setUserApproval", "setUserEnabled",
                 "setUserRoles", "updateSetting",
@@ -131,10 +131,10 @@ public class OpenApiContractTests(IntegrationFactory factory)
             .Where(parameter => parameter.GetProperty("in").GetString() == "query")
             .ToDictionary(parameter => parameter.GetProperty("name").GetString()!, parameter => parameter.GetProperty("schema"));
         Assert.Superset(
-            new HashSet<string> { "bbox", "limit", "connector", "minPowerKw", "operator", "availableOnly", "adHoc", "roaming", "greenEnergy", "barrierFree" },
+            new HashSet<string> { "bbox", "limit", "connector", "minPowerKw", "maxPowerKw", "operator", "operatorId", "availableOnly", "adHoc", "roaming", "greenEnergy", "barrierFree" },
             parameters.Keys.ToHashSet());
         Assert.Contains("array", parameters["connector"].GetRawText());
-        foreach (var filter in new[] { "connector", "minPowerKw", "operator", "availableOnly", "adHoc", "roaming", "greenEnergy", "barrierFree" })
+        foreach (var filter in new[] { "connector", "minPowerKw", "maxPowerKw", "operator", "operatorId", "availableOnly", "adHoc", "roaming", "greenEnergy", "barrierFree" })
         {
             Assert.Contains($"`{filter}", operation.GetProperty("description").GetString());
         }

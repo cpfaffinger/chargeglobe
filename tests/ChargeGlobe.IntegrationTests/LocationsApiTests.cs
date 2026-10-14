@@ -50,6 +50,17 @@ public class LocationsApiTests(IntegrationFactory factory) : IClassFixture<Integ
             return db.SaveChangesAsync();
         });
 
+        // A second operator with one location in Innsbruck, outside the boxes of the other tests.
+        await factory.WithDbAsync(db =>
+        {
+            var other = Operator.Create("Alpenstrom Laden GmbH", "AT", "ALP");
+            var innsbruck = Location.Create(new GeoPoint(47.2692, 11.4041), "AT", now);
+            innsbruck.OperatorId = other.Id;
+            db.Operators.Add(other);
+            db.Locations.Add(innsbruck);
+            return db.SaveChangesAsync();
+        });
+
         // The Schuko socket of "Testladepark Ring" (no EVSE-ID, no roaming) takes payment cards: the ad-hoc filter finds it.
         await factory.WithDbAsync(db => db.Database.ExecuteSqlRawAsync(
             "UPDATE evse SET auth_methods = ARRAY['CREDIT_CARD_PAYABLE'] WHERE identity_kind = 'SURROGATE'"));
@@ -77,6 +88,8 @@ public class LocationsApiTests(IntegrationFactory factory) : IClassFixture<Integ
         Assert.Equal((2, 1, "AVAILABLE"), (stephansplatz.GetProperty("evsesTotal").GetInt32(), stephansplatz.GetProperty("evsesAvailable").GetInt32(), stephansplatz.GetProperty("availability").GetString()));
         Assert.Equal(22m, stephansplatz.GetProperty("maxPowerKw").GetDecimal());
         Assert.Equal("Test Operator GmbH", stephansplatz.GetProperty("operator").GetString());
+        Assert.Equal(22m, stephansplatz.GetProperty("maxAvailablePowerKw").GetDecimal());
+        Assert.Equal(JsonValueKind.Null, data[1].GetProperty("maxAvailablePowerKw").ValueKind);
         Assert.Equal(48.2085, stephansplatz.GetProperty("latitude").GetDouble(), 6);
         Assert.Equal(16.3731, stephansplatz.GetProperty("longitude").GetDouble(), 6);
         Assert.Equal("OUT_OF_ORDER", data[1].GetProperty("availability").GetString());
@@ -122,6 +135,10 @@ public class LocationsApiTests(IntegrationFactory factory) : IClassFixture<Integ
     [InlineData("greenEnergy=true", "Teststation Stephansplatz")]
     [InlineData("barrierFree=TRUE", "Testladepark Ring")]
     [InlineData("greenEnergy=true&barrierFree=true", "")]
+    [InlineData("maxPowerKw=50", "Teststation Stephansplatz|Testladepark Ring")]
+    [InlineData("maxPowerKw=10", "Testladepark Ring")]
+    [InlineData("minPowerKw=20&maxPowerKw=30", "Teststation Stephansplatz")]
+    [InlineData("connector=CHADEMO&maxPowerKw=50", "")]
     public async Task Filters_select_locations_with_a_matching_EVSE(string filters, string expected)
     {
         using var client = factory.Client();
@@ -148,6 +165,10 @@ public class LocationsApiTests(IntegrationFactory factory) : IClassFixture<Integ
     [InlineData("minPowerKw=abc", "minPowerKw")]
     [InlineData("minPowerKw=0", "minPowerKw")]
     [InlineData("minPowerKw=1001", "minPowerKw")]
+    [InlineData("maxPowerKw=x", "maxPowerKw")]
+    [InlineData("maxPowerKw=0", "maxPowerKw")]
+    [InlineData("minPowerKw=100&maxPowerKw=50", "maxPowerKw")]
+    [InlineData("operatorId=nope", "operatorId")]
     [InlineData("availableOnly=yes", "availableOnly")]
     [InlineData("adHoc=1", "adHoc")]
     [InlineData("roaming=no", "roaming")]
@@ -160,6 +181,53 @@ public class LocationsApiTests(IntegrationFactory factory) : IClassFixture<Integ
         var problem = await (await client.GetAsync($"/api/v1/locations?bbox={ViennaBox}&{filters}")).AssertProblemAsync(HttpStatusCode.UnprocessableEntity);
 
         Assert.True(problem.GetProperty("errors").TryGetProperty(field, out _));
+    }
+
+    [Fact]
+    public async Task Operators_are_listed_by_number_of_locations_and_filter_the_map()
+    {
+        using var client = factory.Client();
+
+        var all = await GetJsonAsync(client, "/api/v1/operators");
+        var operators = all.GetProperty("data").EnumerateArray().ToList();
+        Assert.Equal(["Test Operator GmbH", "Alpenstrom Laden GmbH"], operators.Select(item => item.GetProperty("name").GetString()));
+        Assert.Equal((2, "TST"), (operators[0].GetProperty("locations").GetInt32(), operators[0].GetProperty("operatorId").GetString()));
+        Assert.Equal((2, 20), (all.GetProperty("meta").GetProperty("returned").GetInt32(), all.GetProperty("meta").GetProperty("limit").GetInt32()));
+        var test = operators[0].GetProperty("id").GetString();
+        var alpen = operators[1].GetProperty("id").GetString();
+
+        Assert.Equal("Alpenstrom Laden GmbH", Assert.Single((await GetJsonAsync(client, "/api/v1/operators?q=%20alp%20")).GetProperty("data").EnumerateArray()).GetProperty("name").GetString());
+        Assert.Equal("Test Operator GmbH", Assert.Single((await GetJsonAsync(client, "/api/v1/operators?q=tst")).GetProperty("data").EnumerateArray()).GetProperty("name").GetString());
+        Assert.Empty((await GetJsonAsync(client, "/api/v1/operators?q=xyz")).GetProperty("data").EnumerateArray());
+        Assert.Equal(alpen, Assert.Single((await GetJsonAsync(client, $"/api/v1/operators?id={alpen}")).GetProperty("data").EnumerateArray()).GetProperty("id").GetString());
+        Assert.Single((await GetJsonAsync(client, "/api/v1/operators?limit=1")).GetProperty("data").EnumerateArray());
+
+        Assert.Equal(2, (await GetJsonAsync(client, $"/api/v1/locations?bbox={ViennaBox}&operatorId={test}")).GetProperty("data").GetArrayLength());
+        Assert.Equal(2, (await GetJsonAsync(client, $"/api/v1/locations?bbox={ViennaBox}&operatorId={alpen},{test}")).GetProperty("data").GetArrayLength());
+        Assert.Equal(0, (await GetJsonAsync(client, $"/api/v1/locations?bbox={ViennaBox}&operatorId={alpen}")).GetProperty("data").GetArrayLength());
+    }
+
+    [Theory]
+    [InlineData("id=nope", "id")]
+    [InlineData("limit=0", "limit")]
+    [InlineData("limit=101", "limit")]
+    public async Task Invalid_operator_queries_are_rejected(string query, string field)
+    {
+        using var client = factory.Client();
+
+        var problem = await (await client.GetAsync($"/api/v1/operators?{query}")).AssertProblemAsync(HttpStatusCode.UnprocessableEntity);
+
+        Assert.True(problem.GetProperty("errors").TryGetProperty(field, out _));
+    }
+
+    [Fact]
+    public async Task A_too_long_operator_query_is_rejected()
+    {
+        using var client = factory.Client();
+
+        var problem = await (await client.GetAsync($"/api/v1/operators?q={new string('a', 101)}")).AssertProblemAsync(HttpStatusCode.UnprocessableEntity);
+
+        Assert.True(problem.GetProperty("errors").TryGetProperty("q", out _));
     }
 
     [Fact]

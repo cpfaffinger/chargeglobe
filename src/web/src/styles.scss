@@ -27,6 +27,9 @@ html {
   --cg-status-occupied: light-dark(#b45309, #ffb870);
   --cg-status-out-of-order: light-dark(#b3261e, #ffb4ab);
   --cg-status-unknown: light-dark(#6f7976, #9aa39f);
+  // Free locations by the power that is free now (fast from 23 kW, high-power from 150 kW).
+  --cg-power-fast: light-dark(#0b62b8, #8ecbff);
+  --cg-power-hpc: light-dark(#6b3fa0, #d7b8ff);
   --cg-on-status: light-dark(#ffffff, #0f1416);
   --cg-shadow-color: light-dark(rgb(0 0 0 / 16%), rgb(0 0 0 / 50%));
   --cg-overlay-shadow: 0 1px 3px var(--cg-shadow-color), 0 4px 12px var(--cg-shadow-color);
