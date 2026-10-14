@@ -4,8 +4,8 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, Router, RouterStateSnapshot, UrlTree, provideRouter } from '@angular/router';
 import { ME, fakeAuth, validationError } from '../testing';
 import { AuthService } from './auth.service';
-import { requirePermission } from './permission.guard';
-import { attempt, describeError } from './problem';
+import { requireAnyPermission, requirePermission } from './permission.guard';
+import { attempt, describeError, problemCode } from './problem';
 
 describe('requirePermission', () => {
   let auth: ReturnType<typeof fakeAuth>;
@@ -38,6 +38,41 @@ describe('requirePermission', () => {
 
     expect(run('evse:read')).toBeTrue();
     expect(url(run('user:manage'))).toBe('/');
+  });
+});
+
+describe('requireAnyPermission', () => {
+  let auth: ReturnType<typeof fakeAuth>;
+
+  const run = () =>
+    TestBed.runInInjectionContext(() =>
+      requireAnyPermission(['user:read', 'jobs:read'])({} as ActivatedRouteSnapshot, { url: '/admin' } as RouterStateSnapshot),
+    );
+  const url = (result: unknown) => TestBed.inject(Router).serializeUrl(result as UrlTree);
+
+  beforeEach(() => {
+    auth = fakeAuth();
+    TestBed.configureTestingModule({ providers: [provideRouter([]), { provide: AuthService, useValue: auth }] });
+  });
+
+  it('redirects anonymous visitors to the login and lets in users with one of the permissions', () => {
+    expect(url(run())).toBe('/login?returnUrl=%2Fadmin');
+
+    auth.me.set(ME);
+    auth.hasPermission.and.returnValue(false);
+    expect(url(run())).toBe('/');
+
+    auth.hasPermission.and.callFake((permission) => permission === 'jobs:read');
+    expect(run()).toBeTrue();
+  });
+});
+
+describe('problemCode', () => {
+  it('reads the code of a problem response', () => {
+    expect(problemCode(new HttpErrorResponse({ status: 403, error: { title: 'Forbidden', code: 'account_disabled' } }))).toBe('account_disabled');
+    expect(problemCode(new HttpErrorResponse({ status: 401, error: { title: 'Unauthorized' } }))).toBeNull();
+    expect(problemCode(new HttpErrorResponse({ status: 0 }))).toBeNull();
+    expect(problemCode(new Error('offline'))).toBeNull();
   });
 });
 

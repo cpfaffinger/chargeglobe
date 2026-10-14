@@ -21,7 +21,7 @@ public class PermissionsTests
         Assert.Equal(
             [
                 "evse:read", "price:read", "route:read", "tariff:write", "conflict:resolve", "provider:manage",
-                "user:manage", "role:manage", "apikey:manage", "export:read", "settings:read", "settings:manage",
+                "user:read", "user:manage", "role:manage", "apikey:manage", "export:read", "settings:read", "settings:manage",
                 "jobs:read", "audit:read", "proposal:write",
             ],
             Permissions.AllKeys);

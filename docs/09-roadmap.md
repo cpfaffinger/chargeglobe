@@ -40,8 +40,10 @@
 - [ ] Lebenszyklus: Standorte und EVSEs, die eine Quelle nicht mehr meldet oder als inaktiv führt, auf `REMOVED` setzen
 - [x] Angular: Standort-Detailseite `/locations/:id` (angemeldet, `evse:read`) mit Status-Timeline je EVSE und Heatmap Wochentag × Stunde, Link „Details“ in der Infokarte
 - [x] Ersteinrichtung: Setup-Assistent `/setup` bei leerer Instanz (erster Admin mit Setup-Token aus dem API-Log, danach Datenquelle E-Control und SMTP), `GET /setup`, `POST /setup/admin`; Registrierung bis dahin geschlossen
-- [ ] Angular: Admin (Nutzer, Rollen, API-Keys)
-- [ ] Nutzer- und Rollenverwaltung in der API (`/users`, `/roles`, `GET /audit-log`)
+- [x] Administration `/admin` mit Unterseiten nach Kategorie (Nutzer, Rollen, Crawler, E-Mail, Einstellungen) und Dropdown in der Toolbar; Nutzer- und Rollenverwaltung in der API (`/users`, `/roles`, Permission `user:read`), Admin-Freischaltung neuer Konten (`auth.require_admin_approval`) und E-Mail-Bestätigung als Einstellung (`auth.require_confirmed_email`), Login-Codes mit deutschen Texten und „Bestätigungsmail erneut senden“; Setup-Assistent nur bei leerer Instanz
+- [x] Suche nach EVSE-ID, Name, Straße, PLZ und Ort (`GET /search`, `pg_trgm`) mit Suchfeld in der Toolbar, das zum Standort fliegt und die Infokarte öffnet
+- [ ] Standortdetails direkt in der Infokarte der Karte (angemeldet mit mehr Inhalt), gemerkter Kartenausschnitt, eigene Startposition mit Knopf „Startposition“, Laden der Karte ohne Blockaden
+- [ ] Angular: API-Keys fremder Konten, Audit-Log (`GET /audit-log`)
 - [ ] Customizings: `GET/PUT /me/preferences`, Favoriten, Einstellungsseite
 - [ ] Routing: Compose-Service `routing` (Valhalla, OSM-Extrakt Österreich), `IRoutingEngine`, `POST /routes`, Routen-Layer in der Karte
 - [ ] Erste EMP-Tarife: 2–3 Ladekarten-Anbieter mit Tarif-Editor (manuell gepflegt), Szenario-Preisvergleich; welche Ladekarte an welchem Ladepunkt geht, liefert die E-Control nicht (nur `roaming` ja/nein) – Quelle dafür sind die Roaming-Listen der EMPs ([07](07-bestandsanalyse-apps-at.md))

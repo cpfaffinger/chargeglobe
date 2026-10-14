@@ -42,9 +42,6 @@ interface Row {
       <p id="mail-link">
         SMTP-Zugang prüfen: <a routerLink="/admin/mail">Testmail senden und Postausgang ansehen</a>
       </p>
-      <p id="setup-link">
-        Datenquelle und E-Mail Schritt für Schritt: <a routerLink="/setup">Einrichtungsassistent</a>
-      </p>
     }
     <mat-form-field id="settings-search" subscriptSizing="dynamic">
       <app-icon matPrefix name="search" />

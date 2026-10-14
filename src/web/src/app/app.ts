@@ -6,9 +6,11 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { ADMIN_PAGES, AdminPageLink } from './admin/admin-pages';
 import { AuthService } from './auth/auth.service';
 import { AppIcon, IconName } from './design/icon';
 import { ThemeMode, ThemeService, Viewport } from './design/theme.service';
+import { LocationSearch } from './search/location-search';
 
 const THEMES: { mode: ThemeMode; label: string; icon: IconName }[] = [
   { mode: 'light', label: 'Hell', icon: 'light_mode' },
@@ -17,12 +19,15 @@ const THEMES: { mode: ThemeMode; label: string; icon: IconName }[] = [
 ];
 
 /**
- * Shell: Material toolbar with the navigation, on small screens (Viewport.mobile) a menu button that opens the
- * navigation as side sheet. The theme switch (light, dark, system) sits in the toolbar or in the side sheet.
+ * Shell: Material toolbar with the navigation and the search, on small screens (Viewport.mobile) a menu button that
+ * opens navigation and search as side sheet. The theme switch (light, dark, system) sits in the toolbar or in the side
+ * sheet. The admin pages are reached through "Administration": a drop-down with the overview and the permitted pages
+ * in the toolbar, the overview in the side sheet.
  */
 @Component({
   imports: [
     AppIcon,
+    LocationSearch,
     MatButtonModule,
     MatButtonToggleModule,
     MatMenuModule,
@@ -38,15 +43,28 @@ const THEMES: { mode: ThemeMode; label: string; icon: IconName }[] = [
     <ng-template #links>
       @if (auth.me(); as me) {
         <a matButton routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" id="nav-map" (click)="close()">Karte</a>
-        @if (auth.hasPermission('settings:read')) {
-          <a matButton routerLink="/admin/settings" routerLinkActive="active" id="nav-settings" (click)="close()">Einstellungen</a>
-        }
-        @if (auth.hasPermission('jobs:read')) {
-          <a matButton routerLink="/admin/crawler" routerLinkActive="active" id="nav-crawler" (click)="close()">Crawler</a>
-        }
-        @if (auth.hasPermission('settings:manage')) {
-          <a matButton routerLink="/admin/mail" routerLinkActive="active" id="nav-mail" (click)="close()">E-Mail</a>
-          <a matButton routerLink="/setup" routerLinkActive="active" id="nav-setup" (click)="close()">Einrichtung</a>
+        @if (adminPages(); as pages) {
+          @if (pages.length > 0) {
+            @if (viewport.mobile()) {
+              <a matButton routerLink="/admin" routerLinkActive="active" id="nav-admin" (click)="close()">Administration</a>
+            } @else {
+              <button
+                matButton
+                type="button"
+                id="nav-admin"
+                [class.active]="router.url.startsWith('/admin')"
+                [matMenuTriggerFor]="adminMenu"
+              >
+                Administration<app-icon name="expand_more" />
+              </button>
+              <mat-menu #adminMenu="matMenu">
+                <a mat-menu-item routerLink="/admin" id="admin-menu-overview">Übersicht</a>
+                @for (page of pages; track page.path) {
+                  <a mat-menu-item [routerLink]="'/admin/' + page.path" [id]="'admin-menu-' + page.path">{{ page.label }}</a>
+                }
+              </mat-menu>
+            }
+          }
         }
         <a matButton routerLink="/account" routerLinkActive="active" id="nav-account" title="Mein Konto" (click)="close()">{{ me.email }}</a>
         <button matButton type="button" id="logout" (click)="logout()"><app-icon name="logout" />Abmelden</button>
@@ -59,6 +77,9 @@ const THEMES: { mode: ThemeMode; label: string; icon: IconName }[] = [
     <mat-sidenav-container class="shell">
       <mat-sidenav class="nav-sheet" mode="over" [opened]="menuOpen()" (closedStart)="menuOpen.set(false)">
         <a class="brand" routerLink="/" (click)="close()"><span class="logo"><app-icon name="bolt" /></span>chargeglobe</a>
+        @if (viewport.mobile()) {
+          <app-location-search (chosen)="close()" />
+        }
         <nav aria-label="Navigation">
           @if (viewport.mobile()) {
             <ng-container [ngTemplateOutlet]="links" />
@@ -90,6 +111,9 @@ const THEMES: { mode: ThemeMode; label: string; icon: IconName }[] = [
             </nav>
           }
           <span class="spacer"></span>
+          @if (!viewport.mobile()) {
+            <app-location-search />
+          }
           <button
             matIconButton
             type="button"
@@ -119,11 +143,16 @@ export class App {
   protected readonly auth = inject(AuthService);
   protected readonly theme = inject(ThemeService);
   protected readonly viewport = inject(Viewport);
-  private readonly router = inject(Router);
+  protected readonly router = inject(Router);
 
   protected readonly themes = THEMES;
   protected readonly currentTheme = computed(() => THEMES.find((option) => option.mode === this.theme.mode())!);
   protected readonly menuOpen = signal(false);
+
+  /** The admin pages the user may open; without any, there is no "Administration". */
+  protected adminPages(): AdminPageLink[] {
+    return ADMIN_PAGES.filter((page) => this.auth.hasPermission(page.permission));
+  }
 
   protected close(): void {
     this.menuOpen.set(false);

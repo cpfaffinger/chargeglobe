@@ -89,6 +89,14 @@ export class AuthService {
     await firstValueFrom(this.http.post(`${API}/auth/confirm-email`, { userId, token }));
   }
 
+  /** Asks for a new confirmation mail; the answer does not tell whether the address is registered. */
+  async resendConfirmation(email: string, language: string): Promise<string> {
+    const response = await firstValueFrom(
+      this.http.post<MessageResponse>(`${API}/auth/confirm-email/resend`, { email, language }),
+    );
+    return response.message;
+  }
+
   async requestPasswordReset(email: string, language: string): Promise<string> {
     const response = await firstValueFrom(
       this.http.post<MessageResponse>(`${API}/auth/password/forgot`, { email, language }),

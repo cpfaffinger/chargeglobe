@@ -155,7 +155,8 @@ public static class UsersEndpoints
             .Produces<RoleResponse>(StatusCodes.Status201Created)
             .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
             .ProducesProblem(StatusCodes.Status409Conflict)
-            .WithResponseExample(StatusCodes.Status200OK, new RoleResponse(ExampleRole));
+            .WithResponseExample(StatusCodes.Status200OK, new RoleResponse(ExampleRole))
+            .WithResponseExample(StatusCodes.Status201Created, new RoleResponse(ExampleRole with { Name = "Support", Users = 0, Default = false }));
 
         roles.MapDelete("/{name}", DeleteRoleAsync)
             .RequirePermission(Permissions.RoleManage)

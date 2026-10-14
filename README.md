@@ -43,7 +43,7 @@ curl -k https://localhost:5005/api/v1/health   # {"status":"ok","db":"ok"}
 docker compose logs api | grep "Setup required"   # Setup-Token für den Assistenten unter https://localhost:5005/setup
 ```
 
-Web-App: `https://localhost:5005` (self-signed Zertifikat, Ausnahme im Browser bestätigen) mit der Karte als Startseite; Kacheln, Schriften und Sprites lädt der Browser von `tiles.openfreemap.org` (Einstellung `map.style_url`). Beim ersten Start führt jede Seite zum Setup-Assistenten `/setup`: erstes Administrator-Konto mit dem Setup-Token aus dem API-Log anlegen, danach optional E-Control-Zugang und SMTP-Server eintragen (alternativ legt `ADMIN_EMAIL`/`ADMIN_INITIAL_PASSWORD` in `.env` den Admin automatisch an) · OpenAPI 3.1: `/openapi/v1.json` · Scalar UI: `/scalar`. Mails werden erst versendet, wenn ein Admin den SMTP-Zugang unter `/admin/settings` eingetragen (`mail.*`), unter `/admin/mail` mit einer Testmail geprüft und `mail.enabled` eingeschaltet hat; bis dahin bleiben sie in der Outbox, und mit `AUTH_REQUIRE_CONFIRMED_EMAIL=false` sind neue Konten sofort nutzbar. Build- und Testbefehle stehen in [CLAUDE.md](CLAUDE.md#befehle).
+Web-App: `https://localhost:5005` (self-signed Zertifikat, Ausnahme im Browser bestätigen) mit der Karte als Startseite; Kacheln, Schriften und Sprites lädt der Browser von `tiles.openfreemap.org` (Einstellung `map.style_url`). Beim ersten Start führt jede Seite zum Setup-Assistenten `/setup`: erstes Administrator-Konto mit dem Setup-Token aus dem API-Log anlegen, danach optional E-Control-Zugang und SMTP-Server eintragen (alternativ legt `ADMIN_EMAIL`/`ADMIN_INITIAL_PASSWORD` in `.env` den Admin automatisch an) · OpenAPI 3.1: `/openapi/v1.json` · Scalar UI: `/scalar`. Mails werden erst versendet, wenn ein Admin den SMTP-Zugang unter `/admin/settings` eingetragen (`mail.*`), unter `/admin/mail` mit einer Testmail geprüft und `mail.enabled` eingeschaltet hat; bis dahin bleiben sie in der Outbox, und mit der Einstellung `auth.require_confirmed_email = false` sind neue Konten sofort nutzbar. Die Administration liegt unter `/admin` (Nutzer, Rollen, Crawler, E-Mail, Einstellungen); der Setup-Assistent läuft nur einmal, bei leerer Instanz. Build- und Testbefehle stehen in [CLAUDE.md](CLAUDE.md#befehle).
 
 ## Repository-Struktur
 
@@ -64,7 +64,7 @@ chargeglobe/
 │  ├─ ChargeGlobe.Jobs/          # ein Host für beide Rollen (--role crawler|worker), Image chargeglobe-jobs, skalierbar
 │  │                             #   crawler: Source-Abgleich, Health-Probe, Lease-Scheduler + Abrufe → raw_snapshot, ingest_queue
 │  │                             #   worker: Mail-Zustellung, Ingest-Queue → Merge ins Ladepunkt-Modell, Retention; vorgesehen: Aggregate, Reconcile
-│  └─ web/                       # Angular-App: Karte (Startseite), Standort-Detail mit Timeline und Heatmap, Registrierung, Login, Passwort-Reset, Konto, Admin (Einstellungen, E-Mail)
+│  └─ web/                       # Angular-App: Karte (Startseite), Standort-Detail mit Timeline und Heatmap, Registrierung, Login, Passwort-Reset, Konto, Suche, Administration (Nutzer, Rollen, Crawler, E-Mail, Einstellungen)
 ├─ tests/
 │  ├─ ChargeGlobe.Api.Tests/         # Tests ohne Datenbank (WebApplicationFactory mit Stub, Einstellungen, Mail-Vorlagen)
 │  ├─ ChargeGlobe.Domain.Tests/

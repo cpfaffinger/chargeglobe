@@ -48,6 +48,8 @@ export interface MapHandle {
   showLocations(locations: LocationSummary[]): void;
   /** Switches base map style and marker colours, e.g. after a change between light and dark mode. */
   setTheme(theme: MapTheme): void;
+  /** Moves the view to a point (e.g. a search hit); the view change loads the locations there. */
+  flyTo(latitude: number, longitude: number, zoom: number): void;
   destroy(): void;
 }
 
@@ -170,6 +172,7 @@ export class MapLibreEngine extends MapEngine {
         // setStyle reloads the style; the style.load handler adds markers in the new colours.
         map.setStyle(next.styleUrl);
       },
+      flyTo: (latitude, longitude, zoom) => map.flyTo({ center: [longitude, latitude], zoom }),
       destroy: () => map.remove(),
     };
   }

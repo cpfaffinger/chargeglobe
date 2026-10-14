@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
-import { requirePermission } from './auth/permission.guard';
+import { ADMIN_PERMISSIONS } from './admin/admin-pages';
+import { requireAnyPermission, requirePermission } from './auth/permission.guard';
 import { HomePage } from './pages/home.page';
 import { requireSetupDone, setupAccess } from './setup/setup.service';
 
@@ -29,29 +30,46 @@ const pages: Routes = [
     loadComponent: () => import('./pages/account.page').then((page) => page.AccountPage),
     canActivate: [requirePermission()],
   },
-  // Mirrors x-required-permission of GET /api/v1/settings.
+  // Administration: the frame opens with any admin permission; every subpage mirrors x-required-permission of the
+  // endpoints it reads.
   {
-    path: 'admin/settings',
-    loadComponent: () => import('./pages/admin-settings.page').then((page) => page.AdminSettingsPage),
-    canActivate: [requirePermission('settings:read')],
-  },
-  // Mirrors x-required-permission of the /api/v1/mail endpoints.
-  {
-    path: 'admin/mail',
-    loadComponent: () => import('./pages/admin-mail.page').then((page) => page.AdminMailPage),
-    canActivate: [requirePermission('settings:manage')],
-  },
-  // Mirrors x-required-permission of the /api/v1/admin/crawler endpoints.
-  {
-    path: 'admin/crawler',
-    loadComponent: () => import('./pages/admin-crawler.page').then((page) => page.AdminCrawlerPage),
-    canActivate: [requirePermission('jobs:read')],
+    path: 'admin',
+    loadComponent: () => import('./pages/admin.page').then((page) => page.AdminPage),
+    canActivate: [requireAnyPermission(ADMIN_PERMISSIONS)],
+    children: [
+      { path: '', loadComponent: () => import('./pages/admin.page').then((page) => page.AdminOverviewPage) },
+      {
+        path: 'users',
+        loadComponent: () => import('./pages/admin-users.page').then((page) => page.AdminUsersPage),
+        canActivate: [requirePermission('user:read')],
+      },
+      {
+        path: 'roles',
+        loadComponent: () => import('./pages/admin-roles.page').then((page) => page.AdminRolesPage),
+        canActivate: [requirePermission('user:read')],
+      },
+      {
+        path: 'crawler',
+        loadComponent: () => import('./pages/admin-crawler.page').then((page) => page.AdminCrawlerPage),
+        canActivate: [requirePermission('jobs:read')],
+      },
+      {
+        path: 'mail',
+        loadComponent: () => import('./pages/admin-mail.page').then((page) => page.AdminMailPage),
+        canActivate: [requirePermission('settings:manage')],
+      },
+      {
+        path: 'settings',
+        loadComponent: () => import('./pages/admin-settings.page').then((page) => page.AdminSettingsPage),
+        canActivate: [requirePermission('settings:read')],
+      },
+    ],
   },
   { path: '**', redirectTo: '' },
 ];
 
 export const routes: Routes = [
-  // Open while no user exists; afterwards the onboarding of the remaining settings for settings:manage.
+  // Open only while no user exists; afterwards it leads to the map.
   {
     path: 'setup',
     loadComponent: () => import('./pages/setup.page').then((page) => page.SetupPage),

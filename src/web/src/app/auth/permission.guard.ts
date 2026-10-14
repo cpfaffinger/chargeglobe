@@ -19,3 +19,17 @@ export function requirePermission(permission?: string): CanActivateFn {
     return !permission || auth.hasPermission(permission) || router.createUrlTree(['/']);
   };
 }
+
+/** Like {@link requirePermission}, but one of the permissions is enough (e.g. for the overview of the administration). */
+export function requireAnyPermission(permissions: string[]): CanActivateFn {
+  return (_route, state) => {
+    const auth = inject(AuthService);
+    const router = inject(Router);
+
+    if (!auth.isAuthenticated()) {
+      return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
+    }
+
+    return permissions.some((permission) => auth.hasPermission(permission)) || router.createUrlTree(['/']);
+  };
+}
