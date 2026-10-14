@@ -136,6 +136,8 @@ public sealed class PollJobRunner(
     public async Task<(string Result, TimeSpan NextRunIn)> RunAsync(PollPlanLease lease, CancellationToken cancellationToken)
     {
         var jobId = Guid.CreateVersion7();
+        string result;
+        var nextRunIn = lease.Interval;
         try
         {
             await using var scope = scopeFactory.CreateAsyncScope();
@@ -143,16 +145,18 @@ public sealed class PollJobRunner(
             var count = lease.JobType == JobType.INVENTORY_FULL
                 ? await RunInventoryAsync(lease, jobId, queue, scope.ServiceProvider.GetRequiredService<IRawSnapshotStore>(), cancellationToken)
                 : await RunStatusAsync(lease, jobId, queue, cancellationToken);
-            var result = $"OK: {count} records, job {jobId}";
+            result = $"OK: {count} records, job {jobId}";
             logger.LogInformation("Job {JobType} {Provider} {Region} done: {Result}", lease.JobType, lease.ProviderKey, lease.RegionCode, result);
-            return (result, lease.Interval);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
             logger.LogWarning(
                 "Job {JobType} {Provider} {Region} failed: {Reason}", lease.JobType, lease.ProviderKey, lease.RegionCode, exception.Message);
-            return ($"FAILED: {exception.Message}", lease.Interval < RetryAfterFailure ? lease.Interval : RetryAfterFailure);
+            result = $"FAILED: {exception.Message}";
+            nextRunIn = lease.Interval < RetryAfterFailure ? lease.Interval : RetryAfterFailure;
         }
+
+        return (result, nextRunIn);
     }
 
     private async Task<int> RunInventoryAsync(

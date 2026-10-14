@@ -397,6 +397,8 @@ public class IngestPipelineTests(IntegrationFactory factory) : IClassFixture<Int
         time.Advance(TimeSpan.FromSeconds(49));
         Assert.Null(await budget.TryTakeAsync(key, policy, CancellationToken.None));
         Assert.Null(await budget.TryTakeAsync(key, policy with { PerDay = null }, CancellationToken.None));
+        var state = await factory.WithDbAsync(db => db.ProviderRateBudgets.SingleAsync(row => row.ProviderKey == key));
+        Assert.Equal((2, new DateTimeOffset(2026, 10, 16, 0, 0, 0, TimeSpan.Zero)), (state.DayCount, state.DayResetAt));
     }
 
     [Fact]
@@ -412,5 +414,6 @@ public class IngestPipelineTests(IntegrationFactory factory) : IClassFixture<Int
         Assert.True(await Acquire("worker-1"));
         time.Advance(TimeSpan.FromMinutes(6));
         Assert.True(await Acquire("worker-2"));
+        Assert.Equal("worker-2", (await factory.WithDbAsync(db => db.JobLeases.SingleAsync(lease => lease.JobName == job))).LeasedBy);
     }
 }
