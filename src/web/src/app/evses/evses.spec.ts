@@ -307,6 +307,7 @@ describe('LocationDetailPage', () => {
 
     const [first, second] = Array.from(page().querySelectorAll('.evse'));
     expect(text(first, 'h3')).toBe('AT*VIE*E1*1');
+    expect(first.querySelector('h3 a')!.getAttribute('href')).toBe('/evses/AT*VIE*E1*1');
     expect(text(first, '.status')).toBe('lädt');
     expect(first.querySelector<HTMLElement>('.status .status-dot')!.style.background).toBe('var(--cg-status-occupied)');
     expect(text(first, '.meta')).toMatch(/^seit 14\.10\.2026 \d\d:40 · bis 22 kW$/);

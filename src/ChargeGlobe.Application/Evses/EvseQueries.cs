@@ -2,8 +2,15 @@ using ChargeGlobe.Application.Locations;
 
 namespace ChargeGlobe.Application.Evses;
 
+/// <summary>Opening times in short form (OCPI <c>Hours</c>).</summary>
+/// <param name="TwentyFourSeven">Open around the clock.</param>
+/// <param name="Description">The times as text of the source, if not around the clock.</param>
+public sealed record OpeningTimes(bool TwentyFourSeven, string? Description);
+
 /// <summary>The location an EVSE belongs to.</summary>
 /// <param name="Region">ISO 3166-2 code of the region whose polygon contains the location; null if none is known.</param>
+/// <param name="Access"><c>PUBLIC</c> or <c>RESTRICTED</c> (e.g. customers only).</param>
+/// <param name="OpeningTimes">Null if no source knows them.</param>
 public sealed record EvseLocation(
     Guid Id,
     string? Name,
@@ -13,7 +20,20 @@ public sealed record EvseLocation(
     string Country,
     double Latitude,
     double Longitude,
-    string? Region);
+    string? Region,
+    string Access,
+    OpeningTimes? OpeningTimes,
+    LocationFacilities Facilities);
+
+/// <summary>A record of a source about the EVSE or its location (table <c>source_record</c>).</summary>
+/// <param name="Entity"><c>EVSE</c> or <c>LOCATION</c>.</param>
+/// <param name="ExternalId">Identifier of the record in the source.</param>
+public sealed record SourceReference(string Source, string Entity, string ExternalId, DateTimeOffset FirstSeen, DateTimeOffset LastSeen);
+
+/// <summary>Which source last confirmed an attribute (table <c>attribute_origin</c>).</summary>
+/// <param name="Entity"><c>EVSE</c> or <c>LOCATION</c>.</param>
+/// <param name="Attribute">Column name, e.g. <c>max_power_kw</c> or <c>address</c>.</param>
+public sealed record AttributeProvenance(string Entity, string Attribute, string Source, DateTimeOffset ObservedAt);
 
 /// <param name="OperatorId">Operator part of the EVSE-ID (e.g. <c>EVN</c>), if known.</param>
 public sealed record EvseOperator(Guid Id, string Name, string? OperatorId);
@@ -46,7 +66,9 @@ public sealed record EvseView(
     EvseCurrentStatus Status,
     DateTimeOffset FirstSeen,
     DateTimeOffset LastSeen,
-    DateTimeOffset? LastConfirmedAt);
+    DateTimeOffset? LastConfirmedAt,
+    IReadOnlyList<SourceReference> Sources,
+    IReadOnlyList<AttributeProvenance> Provenance);
 
 /// <summary>A period with constant status (table <c>evse_status_interval</c>).</summary>
 /// <param name="To">End of the period; null while it lasts.</param>

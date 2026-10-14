@@ -128,6 +128,34 @@ public class EvsesApiTests(IntegrationFactory factory) : IClassFixture<Integrati
         var status = data.GetProperty("status");
         Assert.Equal(("AVAILABLE", "econtrol", false), (status.GetProperty("status").GetString(), status.GetProperty("source").GetString(), status.GetProperty("stale").GetBoolean()));
         Assert.True(data.GetProperty("lastSeen").GetDateTimeOffset() >= data.GetProperty("firstSeen").GetDateTimeOffset());
+
+        // Additional data: access, opening times, facilities, source records and the origin of the attributes.
+        Assert.Equal("PUBLIC", location.GetProperty("access").GetString());
+        Assert.True(location.GetProperty("openingTimes").GetProperty("twentyFourSeven").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, location.GetProperty("openingTimes").GetProperty("description").ValueKind);
+        Assert.True(location.GetProperty("facilities").GetProperty("greenEnergy").GetBoolean());
+        Assert.Equal(
+            [$"EVSE econtrol {Available}", "LOCATION econtrol AT*TST*ETEST0001"],
+            data.GetProperty("sources").EnumerateArray().Select(source =>
+                $"{source.GetProperty("entity").GetString()} {source.GetProperty("source").GetString()} {source.GetProperty("externalId").GetString()}"));
+        var provenance = data.GetProperty("provenance").EnumerateArray()
+            .Select(origin => $"{origin.GetProperty("entity").GetString()}.{origin.GetProperty("attribute").GetString()}={origin.GetProperty("source").GetString()}")
+            .ToList();
+        Assert.Contains("EVSE.max_power_kw=econtrol", provenance);
+        Assert.Contains("LOCATION.address=econtrol", provenance);
+        Assert.Equal("EVSE", data.GetProperty("provenance")[0].GetProperty("entity").GetString());
+        Assert.All(data.GetProperty("provenance").EnumerateArray(), origin => Assert.True(origin.GetProperty("observedAt").GetDateTimeOffset() > DateTimeOffset.MinValue));
+    }
+
+    [Fact]
+    public async Task Opening_times_of_a_source_without_structured_hours_are_text()
+    {
+        var data = await GetDataAsync("/api/v1/evses/AT*TST*ETEST0002*DC1");
+
+        var openingTimes = data.GetProperty("location").GetProperty("openingTimes");
+        Assert.False(openingTimes.GetProperty("twentyFourSeven").GetBoolean());
+        Assert.Contains("SATURDAY", openingTimes.GetProperty("description").GetString());
+        Assert.Equal(1, data.GetProperty("location").GetProperty("facilities").GetProperty("barrierFreeParkingSpaces").GetInt32());
     }
 
     [Fact]
@@ -169,6 +197,9 @@ public class EvsesApiTests(IntegrationFactory factory) : IClassFixture<Integrati
 
         Assert.Equal(JsonValueKind.Null, response.GetProperty("data").GetProperty("operator").ValueKind);
         Assert.Empty(response.GetProperty("meta").GetProperty("attribution").EnumerateArray());
+        Assert.Equal(JsonValueKind.Null, response.GetProperty("data").GetProperty("location").GetProperty("openingTimes").ValueKind);
+        Assert.Empty(response.GetProperty("data").GetProperty("sources").EnumerateArray());
+        Assert.Empty(response.GetProperty("data").GetProperty("provenance").EnumerateArray());
     }
 
     [Theory]

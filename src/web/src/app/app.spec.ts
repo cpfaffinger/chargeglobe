@@ -294,6 +294,12 @@ describe('App with its routes', () => {
       expect(router.url).toBe('/locations/loc-1');
       http.expectOne('/api/v1/locations/loc-1').flush({ title: 'Not found' }, { status: 404, statusText: 'Not Found' });
 
+      await navigate('/evses/AT*TST*E1*1');
+      http.expectOne('/api/v1/evses/AT*TST*E1*1').flush({ title: 'Not found' }, { status: 404, statusText: 'Not Found' });
+      await flush();
+      await fixture.whenStable();
+      expect(text(root(), '#evse-notice')).toBe('Diesen Ladepunkt gibt es nicht.');
+
       await navigate('/admin/users');
       expect(text(root(), 'h1')).toBe('Nutzer');
       http.expectOne('/api/v1/users?page=1&pageSize=25').flush({ data: [], meta: { total: 0, page: 1, pageSize: 25 } });
