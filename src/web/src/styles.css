@@ -331,3 +331,28 @@ app-location-detail .connectors,
   height: 1.4rem;
   border-radius: 2px;
 }
+
+/* Setup wizard: the steps as a row, the current one highlighted. */
+#setup-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.5rem;
+  padding-left: 1.25rem;
+  color: #555;
+}
+
+#setup-steps .current {
+  font-weight: bold;
+  color: #1a1a1a;
+}
+
+app-setup .hint {
+  color: #555;
+  font-size: 0.9rem;
+}
+
+app-setup .setup-nav {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}

@@ -22,6 +22,9 @@ import { Setting, SettingsService } from '../settings/settings.service';
       <p id="mail-link">
         SMTP-Zugang prüfen: <a routerLink="/admin/mail">Testmail senden und Postausgang ansehen</a>
       </p>
+      <p id="setup-link">
+        Datenquelle und E-Mail Schritt für Schritt: <a routerLink="/setup">Einrichtungsassistent</a>
+      </p>
     }
     @if (busy()) {
       <p>Einstellungen werden geladen …</p>

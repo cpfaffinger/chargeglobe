@@ -51,7 +51,7 @@ Stack: **ASP.NET Core / C# / .NET 10 · Angular 22 / TypeScript · PostgreSQL 17
 
 - Die gesamte App läuft als **Docker-Compose-Stack**. Services: `db` (timescaledb-ha mit PostGIS), `api` (.NET), `crawler` (.NET, holt Daten von Quellen; skalierbar), `worker` (.NET, Ingest/Merge/Aggregation; skalierbar) – beide aus dem Projekt `ChargeGlobe.Jobs` (Image `chargeglobe-jobs`, `--role crawler|worker`), `web` (nginx: Angular-Build, statisch ausgeliefert, proxied `/api` zur API, terminiert TLS). Vorgesehen: `routing` (Valhalla, nicht exponiert).
 - **Konfiguration in zwei Schichten** ([ADR-0006](docs/adr/0006-konfiguration-env-minimal-config-service.md)):
-  - **`.env` = nur Infrastruktur und Bootstrap**, so minimal wie möglich: exponierter Port, DB-Zugang, JWT-Secret, Admin-Seed, E-Mail-Bestätigung an/aus (`AUTH_REQUIRE_CONFIRMED_EMAIL`), Anzahl Crawler-/Worker-Instanzen, Log-Level, Basis-URL. **`.env.example` listet immer alle verfügbaren Variablen** mit Default und Kommentar; eine neue Variable ohne Eintrag in `.env.example` ist ein Fehler.
+  - **`.env` = nur Infrastruktur und Bootstrap**, so minimal wie möglich: exponierter Port, DB-Zugang, JWT-Secret, optionaler Admin-Seed (leer = Setup-Assistent `/setup`), E-Mail-Bestätigung an/aus (`AUTH_REQUIRE_CONFIRMED_EMAIL`), Anzahl Crawler-/Worker-Instanzen, Log-Level, Basis-URL. **`.env.example` listet immer alle verfügbaren Variablen** mit Default und Kommentar; eine neue Variable ohne Eintrag in `.env.example` ist ein Fehler.
   - **Zentraler Config-Service in der App** für alles Fachliche (Provider an/aus, Intervalle, Rate-Limits, Regionen, Schwellwerte, Präzedenzen): Katalog der Einstellungen mit Typ, Default und Beschreibung im Code, Werte in der DB-Tabelle `app_setting`, änderbar über API (`settings:manage`) und Admin-UI (`/admin/settings`), wirksam ohne Neustart in allen Containern (Zugriff im Code nur über `IAppConfig`; neue Einstellungen werden in `SettingsCatalog` ergänzt). Keine fachlichen Einstellungen in `.env` oder `appsettings.json`.
 - **Skalierung**: `crawler` und `worker` sind zustandslos und werden über `CRAWLER_REPLICAS` / `WORKER_REPLICAS` in `.env` (Compose `deploy.replicas`) vervielfacht; Arbeitsverteilung über Lease-/Queue-Tabellen in Postgres (`FOR UPDATE SKIP LOCKED`), kein Message-Broker.
 - **Oberkante der App ist ein exponierter HTTPS-Port** (`CHARGEGLOBE_PORT`, Default `5005`, in `.env` änderbar), unter dem die Web-App inkl. `/api` erreichbar ist. Der Port spricht **ausschließlich HTTPS** mit einem **dauerhaft self-signed Zertifikat**, das der `web`-Container beim ersten Start erzeugt (Volume `tls`); HTTP-Requests werden umgeleitet. Die App sendet kein HSTS (`Strict-Transport-Security`); das wäre Sache des externen Loadbalancers. Intern (nginx → `api:8080`) bleibt es bei HTTP ([ADR-0009](docs/adr/0009-https-only-self-signed.md)).
@@ -98,15 +98,17 @@ dotnet run --project src/ChargeGlobe.Api                    # http://localhost:8
 dotnet run --project src/ChargeGlobe.Jobs -- --role crawler # oder --role worker
 
 # Compose-Stack
-cp .env.example .env                        # POSTGRES_PASSWORD, JWT_SIGNING_KEY: openssl rand -hex 32; ADMIN_EMAIL, ADMIN_INITIAL_PASSWORD: openssl rand -base64 18
+cp .env.example .env                        # POSTGRES_PASSWORD, JWT_SIGNING_KEY: openssl rand -hex 32; ADMIN_EMAIL/ADMIN_INITIAL_PASSWORD leer lassen → Setup-Assistent
 docker compose up -d --build
 curl -k https://localhost:5005/api/v1/health   # {"status":"ok","db":"ok"}; -k wegen self-signed Zertifikat
+curl -k https://localhost:5005/api/v1/setup        # {"required":true} solange kein Nutzer existiert
+docker compose logs api | grep "Setup required"     # Setup-Token für https://<host>:5005/setup (nach jedem API-Neustart neu)
 curl -k https://localhost:5005/api/v1/permissions   # Permission-Katalog (anonym)
 curl -k https://localhost:5005/api/v1/map/config    # Kartenkonfiguration aus dem Config-Service (anonym)
 curl -k "https://localhost:5005/api/v1/locations?bbox=16.2,48.1,16.6,48.3&limit=50"   # Standorte in Wien mit meta.attribution (anonym)
 curl -kI https://localhost:5005/maplibre/maplibre-gl-worker.mjs   # 200, Content-Type text/javascript (Worker der Karte)
 curl -k "https://localhost:5005/api/v1/evses/AT*TST*E1*1"   # ohne Token: 401 Problem Details (evse:read nötig)
-TOKEN=$(curl -sk -H 'Content-Type: application/json' -d "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_INITIAL_PASSWORD\"}" https://localhost:5005/api/v1/auth/login | sed 's/.*"accessToken":"\([^"]*\)".*/\1/')
+TOKEN=$(curl -sk -H 'Content-Type: application/json' -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}" https://localhost:5005/api/v1/auth/login | sed 's/.*"accessToken":"\([^"]*\)".*/\1/')
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/evses/<EVSE-ID oder UUID>"                  # 200: EVSE mit Standort, Steckern, aktuellem Status
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/evses/<EVSE-ID>/status/history"           # Statusintervalle der letzten 7 Tage (max. 90 Tage je Abfrage)
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/evses/<EVSE-ID>/occupancy?weeks=4"        # Matrix Wochentag × Stunde (Europe/Vienna)
