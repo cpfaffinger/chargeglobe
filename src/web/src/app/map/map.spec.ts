@@ -16,6 +16,7 @@ import { Bbox, LocationsResponse, LocationsService } from './locations.service';
 import { HOME_VIEW_KEY, LAST_VIEW_KEY, MapView, MapViewStore } from './map-view.store';
 import { FILTERS_STORAGE_KEY, MapFilterStore, NO_FILTERS } from './map-filters';
 import { MapLink } from './map-link';
+import { DEFAULT_MAP_OPTIONS, MapOptionsStore, OPTIONS_STORAGE_KEY } from './map-options';
 
 describe('MapConfigService', () => {
   it('loads the map configuration', async () => {
@@ -159,6 +160,7 @@ describe('HomePage (map)', () => {
     localStorage.removeItem(LAST_VIEW_KEY);
     localStorage.removeItem(HOME_VIEW_KEY);
     localStorage.removeItem(FILTERS_STORAGE_KEY);
+    localStorage.removeItem(OPTIONS_STORAGE_KEY);
     link = jasmine.createSpyObj<MapLink>('MapLink', ['read', 'write', 'fragment', 'share']);
     link.read.and.returnValue(null);
     TestBed.configureTestingModule({
@@ -185,6 +187,7 @@ describe('HomePage (map)', () => {
     localStorage.removeItem(LAST_VIEW_KEY);
     localStorage.removeItem(HOME_VIEW_KEY);
     localStorage.removeItem(FILTERS_STORAGE_KEY);
+    localStorage.removeItem(OPTIONS_STORAGE_KEY);
   });
 
   it('creates the map in its container with style, attribution, center and zoom of the configuration', async () => {
@@ -546,6 +549,42 @@ describe('HomePage (map)', () => {
       filters.set({ ...NO_FILTERS, greenEnergy: true, minPowerKw: 50 });
       await settle();
       expect(http.match(() => true)).toEqual([]);
+    });
+
+    it('opens the map options instead of filters and card and applies changed cluster options at once', async () => {
+      await render();
+      expect(options().cluster).toEqual(DEFAULT_MAP_OPTIONS);
+      await moveTo(vienna, response());
+      options().onSelect('loc-1');
+      await settle();
+
+      root().querySelector<HTMLButtonElement>('#options-toggle')!.click();
+      await settle();
+      await settle();
+      expect(root().querySelector('#location-card')).toBeNull();
+      expect(root().querySelector('#map-options')).not.toBeNull();
+      expect(root().querySelector('#options-toggle')!.getAttribute('aria-expanded')).toBe('true');
+
+      TestBed.inject(MapOptionsStore).set({ clusterRadius: 80 });
+      await settle();
+      expect(map.handle.setCluster).toHaveBeenCalledWith({ clusterRadius: 80, clusterMaxZoom: 13 });
+
+      root().querySelector<HTMLButtonElement>('#filter-toggle')!.click();
+      await settle();
+      expect(root().querySelector('#map-options')).toBeNull();
+      root().querySelector<HTMLButtonElement>('#options-toggle')!.click();
+      await settle();
+      expect(root().querySelector('app-map-filter-panel')).toBeNull();
+
+      root().querySelector<HTMLButtonElement>('#close-options')!.click();
+      await settle();
+      expect(root().querySelector('#map-options')).toBeNull();
+      root().querySelector<HTMLButtonElement>('#options-toggle')!.click();
+      await settle();
+      options().onSelect('loc-1');
+      await settle();
+      expect(root().querySelector('#map-options')).toBeNull();
+      expect(root().querySelector('#location-card')).not.toBeNull();
     });
 
     it('opens the filters instead of the card and closes them when a location is chosen', async () => {

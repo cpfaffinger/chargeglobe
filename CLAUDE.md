@@ -160,4 +160,4 @@ Vor einem neuen lokalen Coverage-Lauf alte Ergebnisse löschen (`tests/*/TestRes
 
 ## Nächste Schritte (Stand jetzt)
 
-Siehe `docs/09-roadmap.md`: Kartenoptionen (Cluster), Favoriten und Ad-hoc-Preise aus dem E-Control-Register (`PRICE_POLL`, `price_observation`, `GET /evses/{id}/prices`); außerdem Lizenz festlegen und die E-Control-Nutzungsbedingungen archivieren. API-Keys von Quellen werden nur im Admin-UI eingetragen (`provider.api_key`, Scope `provider:<key>`), nie in Dateien.
+Siehe `docs/09-roadmap.md`: Favoriten, Ad-hoc-Preise und Passwort ändern aus dem E-Control-Register (`PRICE_POLL`, `price_observation`, `GET /evses/{id}/prices`); außerdem Lizenz festlegen und die E-Control-Nutzungsbedingungen archivieren. API-Keys von Quellen werden nur im Admin-UI eingetragen (`provider.api_key`, Scope `provider:<key>`), nie in Dateien.

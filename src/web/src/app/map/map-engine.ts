@@ -5,6 +5,7 @@ import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import { ICONS } from '../design/icon';
 import { MARKERS, MARKER_KEYS, MarkerKey, markerOf } from './availability';
 import { Bbox, LocationSummary } from './locations.service';
+import { MapOptions } from './map-options';
 import { MapView } from './map-view.store';
 
 /** Base map style and marker colours of the current colour scheme, resolved from the theme tokens. */
@@ -28,6 +29,8 @@ export interface MapViewOptions {
   attribution: string;
   center: { latitude: number; longitude: number };
   zoom: number;
+  /** How nearby locations are combined (clusterRadius 0 = never). */
+  cluster: MapOptions;
   /** Results of the browser geolocation; the position itself never leaves the engine. */
   onGeolocate: (event: GeolocateEvent) => void;
   /** The visible area with center and zoom after loading and after every move or zoom. */
@@ -50,6 +53,8 @@ export interface MapHandle {
   showLocations(locations: LocationSummary[]): void;
   /** Switches base map style and marker colours, e.g. after a change between light and dark mode. */
   setTheme(theme: MapTheme): void;
+  /** Changes how nearby locations are combined, without reloading the map. */
+  setCluster(options: MapOptions): void;
   /** Moves the view to a point (e.g. a search hit); the view change loads the locations there. */
   flyTo(latitude: number, longitude: number, zoom: number): void;
   destroy(): void;
@@ -85,6 +90,12 @@ export class MapLibreEngine extends MapEngine {
     maplibre.setWorkerUrl(new URL(`maplibre/maplibre-gl-worker.mjs?v=${maplibre.getVersion()}`, document.baseURI).href);
 
     let theme = options.theme;
+    let cluster = options.cluster;
+    const clusterOptions = (value: MapOptions) => ({
+      cluster: value.clusterRadius > 0,
+      clusterRadius: value.clusterRadius,
+      clusterMaxZoom: value.clusterMaxZoom,
+    });
     const map = new maplibre.Map({
       container: options.container,
       style: theme.styleUrl,
@@ -125,7 +136,7 @@ export class MapLibreEngine extends MapEngine {
     // Every style load (the first one and each theme change) starts without the app's source, images and layers.
     map.on('style.load', () => {
       addMarkerImages(map, theme);
-      map.addSource(source, { type: 'geojson', data: toGeoJson(pending), cluster: true, clusterRadius: 50, clusterMaxZoom: 13 });
+      map.addSource(source, { type: 'geojson', data: toGeoJson(pending), ...clusterOptions(cluster) });
       map.addLayer({
         id: 'location-clusters',
         type: 'circle',
@@ -180,6 +191,12 @@ export class MapLibreEngine extends MapEngine {
         pending = locations;
         if (loaded) {
           (map.getSource(source) as GeoJSONSource).setData(toGeoJson(locations));
+        }
+      },
+      setCluster: (next) => {
+        cluster = next;
+        if (loaded) {
+          void (map.getSource(source) as GeoJSONSource).setClusterOptions(clusterOptions(next));
         }
       },
       setTheme: (next) => {
