@@ -93,5 +93,6 @@ services:
     volumes:
       - ./data/tls:/etc/nginx/tls
     ports:
-      # HTTPS only (self-signed certificate, docs/adr/0009).
-      - "${CHARGEGLOBE_PORT:-5005}:443"
+      # HTTPS only (self-signed certificate, docs/adr/0009). Behind a reverse proxy on the same host,
+      # CHARGEGLOBE_BIND_ADDRESS=127.0.0.1 keeps the port off the public interfaces.
+      - "${CHARGEGLOBE_BIND_ADDRESS:-0.0.0.0}:${CHARGEGLOBE_PORT:-5005}:443"

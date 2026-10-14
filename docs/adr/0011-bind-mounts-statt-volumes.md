@@ -26,7 +26,7 @@ Die Daten des Stacks (Postgres-Cluster, self-signed Zertifikat) sollen dort lieg
 - Rechte per manuellem `chown` dokumentieren: fehleranfällig bei jeder neuen Umgebung.
 
 ## Konsequenzen
-- Ein Deployment-Verzeichnis (`/opt/chargeglobe`) enthält Code, `.env` und Daten; Umzug = Stack stoppen, Verzeichnis kopieren, starten.
+- Ein Deployment-Verzeichnis (live `/etc/docker/compose/chargeglobe`) enthält Code, `.env` und Daten; Umzug = Stack stoppen, `.env` und `./data/postgres` kopieren (mit demselben Datenbank-Image, damit die TimescaleDB-Version passt), starten; `./data/tls` entsteht neu.
 - Löschen von `./data/` vernichtet alle Daten der Instanz einschließlich der verschlüsselten Secrets im Config-Service; Deploy-Anweisungen nennen deshalb `./data/` statt Volumes als „nicht löschen“.
 - Ein neuer Service mit persistenten Daten braucht ein Unterverzeichnis von `./data/` und, falls er nicht als root schreibt, einen Eintrag in `data-init`.
 - Ein Test in `ChargeGlobe.Api.Tests` prüft beide Compose-Dateien und die Dockerfiles: kein Top-Level-`volumes:`, kein `VOLUME`, jeder Mount beginnt mit `./`.
