@@ -405,6 +405,10 @@ public class IngestPipelineTests(IntegrationFactory factory) : IClassFixture<Int
         await WithStore(async store => { await store.CompleteAsync(viennaLease.Id, new string('x', 600), TimeSpan.FromMinutes(15), CancellationToken.None); return true; });
         var plan = await factory.WithDbAsync(db => db.PollPlans.SingleAsync(p => p.Id == viennaLease.Id));
         Assert.Equal((500, (string?)null), (plan.LastResult!.Length, plan.LeasedBy));
+        // Vienna runs again in 15 minutes, Burgenland is still due now.
+        var next = await WithStore(store => store.NextAsync(key, CancellationToken.None));
+        Assert.Equal((JobType.STATUS_POLL, "AT-1"), (next!.JobType, next.RegionCode));
+        Assert.Null(await WithStore(store => store.NextAsync("other", CancellationToken.None)));
 
         // Due again after the interval; the other lease is free again after it ran out.
         time.Advance(TimeSpan.FromMinutes(16));

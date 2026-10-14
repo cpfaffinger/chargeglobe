@@ -13,7 +13,7 @@ public sealed class PollTileStore(AppDbContext db, TimeProvider timeProvider) : 
     private const int MaxResultLength = 500;
 
     /// <summary>EVSEs from this power on count as fast chargers.</summary>
-    private const decimal FastChargerKw = 150m;
+    private const int FastChargerKw = 150;
 
     public async Task<TilePlanResult> RebuildAsync(
         string providerKey, BoundingBox box, int coverage, TileIntervals intervals, CancellationToken cancellationToken)
