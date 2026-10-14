@@ -24,6 +24,7 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
         var fresh = FreshSince();
         string[] connectors = [.. filter.Connectors];
         var operatorPattern = filter.Operator is null ? null : LikePattern.Contains(filter.Operator);
+        Guid[] operatorIds = [.. filter.OperatorIds];
         var centerLongitude = (box.MinLongitude + box.MaxLongitude) / 2;
         var centerLatitude = (box.MinLatitude + box.MaxLatitude) / 2;
         var rows = await db.Database
@@ -36,6 +37,7 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
                        (count(e.id) FILTER (WHERE c.status = ANY({OccupiedStatuses}) AND c.observed_at >= {fresh}))::int AS "EvsesOccupied",
                        (count(e.id) FILTER (WHERE c.status = ANY({FaultedStatuses}) AND c.observed_at >= {fresh}))::int AS "EvsesFaulted",
                        max(e.max_power_kw) AS "MaxPowerKw",
+                       max(e.max_power_kw) FILTER (WHERE c.status = 'AVAILABLE' AND c.observed_at >= {fresh}) AS "MaxAvailablePowerKw",
                        max(c.observed_at) AS "StatusObservedAt",
                        l.green_energy AS "GreenEnergy", l.free_parking AS "FreeParking", l.roofed_parking AS "RoofedParking",
                        l.barrier_free_parking_spaces AS "BarrierFreeParkingSpaces", l.price_url AS "PriceUrl"
@@ -46,12 +48,14 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
                 WHERE l.lifecycle = 'ACTIVE'
                   AND l.geom && ST_MakeEnvelope({box.MinLongitude}, {box.MinLatitude}, {box.MaxLongitude}, {box.MaxLatitude}, 4326)::geography
                   AND ({operatorPattern}::text IS NULL OR o.name ILIKE {operatorPattern}::text)
+                  AND (cardinality({operatorIds}::uuid[]) = 0 OR l.operator_id = ANY({operatorIds}::uuid[]))
                   AND (NOT {filter.GreenEnergy} OR l.green_energy)
                   AND (NOT {filter.BarrierFree} OR l.barrier_free_parking_spaces > 0)
                   AND (NOT {filter.FiltersEvses} OR EXISTS (
                         SELECT 1 FROM evse fe
                         WHERE fe.location_id = l.id AND fe.lifecycle = 'ACTIVE'
                           AND ({filter.MinPowerKw}::numeric IS NULL OR fe.max_power_kw >= {filter.MinPowerKw}::numeric)
+                          AND ({filter.MaxPowerKw}::numeric IS NULL OR fe.max_power_kw <= {filter.MaxPowerKw}::numeric)
                           AND (NOT {filter.AdHoc} OR fe.auth_methods && {AdHocMethods})
                           AND (NOT {filter.Roaming} OR fe.roaming)
                           AND (cardinality({connectors}::text[]) = 0 OR EXISTS (
@@ -122,7 +126,8 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
                 details.Count(evse => evse.Status == nameof(EvseStatus.AVAILABLE)),
                 details.Count(evse => OccupiedStatuses.Contains(evse.Status)),
                 details.Count(evse => FaultedStatuses.Contains(evse.Status))),
-            new LocationFacilities(location.GreenEnergy, location.FreeParking, location.RoofedParking, location.BarrierFreeParkingSpaces, location.PriceUrl));
+            new LocationFacilities(location.GreenEnergy, location.FreeParking, location.RoofedParking, location.BarrierFreeParkingSpaces, location.PriceUrl),
+            details.Where(evse => evse.Status == nameof(EvseStatus.AVAILABLE)).Max(evse => evse.MaxPowerKw));
         return new LocationDetail(summary, details, await AttributionAsync([id], cancellationToken));
     }
 
@@ -175,6 +180,8 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
 
         public decimal? MaxPowerKw { get; set; }
 
+        public decimal? MaxAvailablePowerKw { get; set; }
+
         public DateTimeOffset? StatusObservedAt { get; set; }
 
         public bool? GreenEnergy { get; set; }
@@ -190,6 +197,6 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
         public LocationSummary ToSummary() =>
             new(Id, Name, Address, PostalCode, City, Country, Latitude, Longitude, Operator, EvsesTotal, EvsesAvailable, MaxPowerKw,
                 StatusObservedAt, Availability.Of(EvsesAvailable, EvsesOccupied, EvsesFaulted),
-                new LocationFacilities(GreenEnergy, FreeParking, RoofedParking, BarrierFreeParkingSpaces, PriceUrl));
+                new LocationFacilities(GreenEnergy, FreeParking, RoofedParking, BarrierFreeParkingSpaces, PriceUrl), MaxAvailablePowerKw);
     }
 }

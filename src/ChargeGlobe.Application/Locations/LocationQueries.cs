@@ -25,6 +25,7 @@ public static class Availability
 /// <param name="StatusObservedAt">Newest status reading of its EVSEs; null if none.</param>
 /// <param name="Availability">One of the <see cref="Locations.Availability"/> values.</param>
 /// <param name="Facilities">Amenities and price page; each value null if no source knows it.</param>
+/// <param name="MaxAvailablePowerKw">Highest power among the EVSEs that are AVAILABLE now; null if none is.</param>
 public sealed record LocationSummary(
     Guid Id,
     string? Name,
@@ -40,7 +41,8 @@ public sealed record LocationSummary(
     decimal? MaxPowerKw,
     DateTimeOffset? StatusObservedAt,
     string Availability,
-    LocationFacilities Facilities);
+    LocationFacilities Facilities,
+    decimal? MaxAvailablePowerKw);
 
 /// <param name="GreenEnergy">The operator states 100 % renewable energy.</param>
 /// <param name="FreeParking">Parking is free of charge while charging.</param>
@@ -81,8 +83,10 @@ public sealed record LocationDetail(LocationSummary Location, IReadOnlyList<Evse
 /// matching location still cover all its EVSEs. A false flag means "no filter".
 /// </summary>
 /// <param name="Connectors">OCPI connector standards; one of them is enough. Empty: any.</param>
-/// <param name="MinPowerKw">Minimum maximum power of the EVSE.</param>
+/// <param name="MinPowerKw">Lowest allowed maximum power of the EVSE.</param>
+/// <param name="MaxPowerKw">Highest allowed maximum power of the EVSE.</param>
 /// <param name="Operator">Part of the operator name, case-insensitive.</param>
+/// <param name="OperatorIds">Operators of the location; one of them is enough. Empty: any.</param>
 /// <param name="AvailableOnly">At least one EVSE is AVAILABLE with a current status.</param>
 /// <param name="AdHoc">The EVSE can be paid ad hoc (<c>AuthMethods.AdHoc</c>).</param>
 /// <param name="Roaming">The EVSE accepts charging cards of other providers.</param>
@@ -91,7 +95,9 @@ public sealed record LocationDetail(LocationSummary Location, IReadOnlyList<Evse
 public sealed record LocationFilter(
     IReadOnlyList<string> Connectors,
     decimal? MinPowerKw,
+    decimal? MaxPowerKw,
     string? Operator,
+    IReadOnlyList<Guid> OperatorIds,
     bool AvailableOnly,
     bool AdHoc,
     bool Roaming,
@@ -99,7 +105,7 @@ public sealed record LocationFilter(
     bool BarrierFree)
 {
     /// <summary>Whether a condition on the EVSEs of a location applies.</summary>
-    public bool FiltersEvses => Connectors.Count > 0 || MinPowerKw is not null || AdHoc || Roaming;
+    public bool FiltersEvses => Connectors.Count > 0 || MinPowerKw is not null || MaxPowerKw is not null || AdHoc || Roaming;
 }
 
 /// <summary>Read model of the public map (no permission needed, docs/06 "Standorte").</summary>

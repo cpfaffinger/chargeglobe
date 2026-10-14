@@ -37,7 +37,8 @@
 - [x] Zusatzattribute aus E-Control: Zahlungs- und Authentifizierungsarten (`AuthMethod`), Roaming, Preis-URL, Ökostrom, Parken (kostenlos, überdacht, barrierefreie Plätze) im Ingest-Modell, in `location`/`evse` und in `GET /locations`, `GET /locations/{id}`, `GET /evses/{evseId}`; Stecker- und Zahlungsarten-Tabellen gegen die Wertelisten der Quelle geprüft. `providers` sind Dienstleister, keine Ladekarten, und werden nicht übernommen
 - [x] Filter in der Karte (Stecker, Leistung, Betreiber, nur frei, Ad-hoc-Zahlung, Roaming, Ökostrom, barrierefrei) in `GET /locations` und als Filterfenster, Zustand in Adresse und `localStorage`; Ansicht als `#map=zoom/breite/länge` in der Adresse und Knopf „Teilen“
 - [x] Eigene Seite je Ladepunkt `/evses/:evseId` mit Technik, Bezahlen und Zugang, Statusverlauf (24 h/7/30 Tage) mit Intervallliste, Auslastung (4/12 Wochen) und Herkunft der Daten; `GET /evses/{evseId}` liefert dafür Zugang, Öffnungszeiten, Ausstattung, Quell-Datensätze und Herkunft je Attribut
-- [ ] Betreiber-Filter als Liste aus der Datenbank (nach Zahl der Standorte, mit Suche), Leistungsfilter mit Minimum und Maximum, Farben freier Stationen nach Leistungsklasse
+- [x] Betreiber-Filter als Liste aus der Datenbank (`GET /operators`, nach Zahl der Standorte, mit Suche), Leistungsbereich mit Minimum und Maximum, Farben freier Stationen nach freier Leistung (bis 22, 23–149, ab 150 kW)
+- [ ] Kartenoptionen je Nutzer: Cluster-Radius und Zoomstufe, ab der nicht mehr zusammengefasst wird, mit „auf Standard zurücksetzen“
 - [ ] Favoriten (angemeldet): Stationen merken, Liste mit aktuellem Status (`/me/favorites`)
 - [ ] Ad-hoc-Preise aus E-Control speichern (`PRICE_POLL` aus dem Register, `price_observation`, `GET /evses/{evseId}/prices`)
 - [ ] Lebenszyklus: Standorte und EVSEs, die eine Quelle nicht mehr meldet oder als inaktiv führt, auf `REMOVED` setzen

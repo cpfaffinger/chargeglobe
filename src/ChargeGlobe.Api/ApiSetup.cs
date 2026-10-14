@@ -135,6 +135,7 @@ public static class ApiSetup
         app.MapCrawlerEndpoints();
         app.MapUsersEndpoints();
         app.MapSearchEndpoints();
+        app.MapOperatorsEndpoints();
         return app;
     }
 }

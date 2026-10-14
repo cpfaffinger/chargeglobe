@@ -3,14 +3,15 @@ import { Injectable } from '@angular/core';
 import type { FeatureCollection, Point } from 'geojson';
 import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import { ICONS } from '../design/icon';
-import { AVAILABILITIES, AVAILABILITY } from './availability';
-import { Availability, Bbox, LocationSummary } from './locations.service';
+import { MARKERS, MARKER_KEYS, MarkerKey, markerOf } from './availability';
+import { Bbox, LocationSummary } from './locations.service';
 import { MapView } from './map-view.store';
 
 /** Base map style and marker colours of the current colour scheme, resolved from the theme tokens. */
 export interface MapTheme {
   styleUrl: string;
-  status: Record<Availability, string>;
+  /** Per marker: free locations by power class, the others by availability. */
+  status: Record<MarkerKey, string>;
   /** Symbol on a status marker. */
   onStatus: string;
   /** Ring around markers, the surface colour. */
@@ -108,7 +109,7 @@ export class MapLibreEngine extends MapEngine {
       features: locations.map((location) => ({
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [location.longitude, location.latitude] },
-        properties: { id: location.id, availability: location.availability },
+        properties: { id: location.id, marker: markerOf(location) },
       })),
     });
     let pending: LocationSummary[] = [];
@@ -151,7 +152,7 @@ export class MapLibreEngine extends MapEngine {
         source,
         filter: ['!', ['has', 'point_count']],
         layout: {
-          'icon-image': ['concat', 'status-', ['get', 'availability']],
+          'icon-image': ['concat', 'status-', ['get', 'marker']],
           'icon-allow-overlap': true,
           'icon-ignore-placement': true,
         },
@@ -196,7 +197,7 @@ export class MapLibreEngine extends MapEngine {
 function addMarkerImages(map: MapLibreMap, theme: MapTheme): void {
   const ratio = 2;
   const size = 28 * ratio;
-  for (const key of AVAILABILITIES) {
+  for (const key of MARKER_KEYS) {
     const canvas = document.createElement('canvas');
     canvas.width = canvas.height = size;
     const context = canvas.getContext('2d')!;
@@ -211,7 +212,7 @@ function addMarkerImages(map: MapLibreMap, theme: MapTheme): void {
     context.translate((size - 24 * scale) / 2, (size - 24 * scale) / 2);
     context.scale(scale, scale);
     context.fillStyle = theme.onStatus;
-    context.fill(new Path2D(ICONS[AVAILABILITY[key].icon]));
+    context.fill(new Path2D(ICONS[MARKERS[key].icon]));
     map.addImage(`status-${key}`, context.getImageData(0, 0, size, size), { pixelRatio: ratio });
   }
 }

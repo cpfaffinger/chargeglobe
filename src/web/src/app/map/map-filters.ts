@@ -6,8 +6,11 @@ import { MapLink } from './map-link';
 export interface MapFilters {
   /** OCPI connector standards; one of them is enough. */
   connector: string[];
+  /** Power range of an EVSE in kW; null = open. */
   minPowerKw: number | null;
-  operator: string;
+  maxPowerKw: number | null;
+  /** Operators (ids of GET /api/v1/operators); one of them is enough. */
+  operatorId: string[];
   availableOnly: boolean;
   adHoc: boolean;
   roaming: boolean;
@@ -20,7 +23,8 @@ export type FilterFlag = 'availableOnly' | 'adHoc' | 'roaming' | 'greenEnergy' |
 export const NO_FILTERS: MapFilters = {
   connector: [],
   minPowerKw: null,
-  operator: '',
+  maxPowerKw: null,
+  operatorId: [],
   availableOnly: false,
   adHoc: false,
   roaming: false,
@@ -44,23 +48,33 @@ export const CONNECTORS: { standard: string; label: string }[] = [
   { standard: 'DOMESTIC_F', label: 'Schuko' },
 ];
 
-export const POWER_STEPS = [11, 22, 50, 150];
+/** Stops of the power slider in kW; the first means "no minimum", the last "no maximum". */
+export const POWER_STOPS = [0, 3.7, 11, 22, 50, 100, 150, 250, 400];
 
 export const FILTERS_STORAGE_KEY = 'chargeglobe.map.filters';
 
-const FILTER_KEYS = ['connector', 'minPowerKw', 'operator', ...FILTER_FLAGS.map((flag) => flag.key)];
+const FILTER_KEYS = ['connector', 'minPowerKw', 'maxPowerKw', 'operatorId', ...FILTER_FLAGS.map((flag) => flag.key)];
 
-const MAX_OPERATOR = 100;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const list = (value: unknown): string[] => [value ?? []].flat().flatMap((item: unknown) => String(item).split(','));
+
+const power = (value: unknown): number | null => {
+  const number = Number(value);
+  return number > 0 && number <= 1000 ? number : null;
+};
 
 /** Filters read from URL parameters or storage; unknown values are dropped. */
 export function parseFilters(params: Params): MapFilters {
-  const connectors = [params['connector'] ?? []].flat().flatMap((value: unknown) => String(value).split(','));
-  const power = Number(params['minPowerKw']);
+  const connectors = list(params['connector']);
   const flag = (key: FilterFlag) => params[key] === true || params[key] === 'true';
+  const min = power(params['minPowerKw']);
+  const max = power(params['maxPowerKw']);
   return {
     connector: CONNECTORS.map((item) => item.standard).filter((standard) => connectors.includes(standard)),
-    minPowerKw: power > 0 && power <= 1000 ? power : null,
-    operator: String(params['operator'] ?? '').trim().slice(0, MAX_OPERATOR),
+    minPowerKw: min,
+    maxPowerKw: max !== null && min !== null && max < min ? null : max,
+    operatorId: [...new Set(list(params['operatorId']).filter((id) => UUID.test(id)))],
     availableOnly: flag('availableOnly'),
     adHoc: flag('adHoc'),
     roaming: flag('roaming'),
@@ -78,8 +92,11 @@ export function filterParams(filters: MapFilters): Record<string, string | strin
   if (filters.minPowerKw !== null) {
     params['minPowerKw'] = String(filters.minPowerKw);
   }
-  if (filters.operator) {
-    params['operator'] = filters.operator;
+  if (filters.maxPowerKw !== null) {
+    params['maxPowerKw'] = String(filters.maxPowerKw);
+  }
+  if (filters.operatorId.length > 0) {
+    params['operatorId'] = filters.operatorId;
   }
   for (const { key } of FILTER_FLAGS) {
     if (filters[key]) {

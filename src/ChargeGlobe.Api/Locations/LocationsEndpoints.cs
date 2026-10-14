@@ -48,7 +48,8 @@ public static class LocationsEndpoints
         22m,
         DateTimeOffset.Parse("2026-10-14T08:15:00Z", CultureInfo.InvariantCulture),
         Availability.Available,
-        new LocationFacilities(true, false, true, 2, "https://www.wienenergie.at/privat/produkte/e-mobilitaet/"));
+        new LocationFacilities(true, false, true, 2, "https://www.wienenergie.at/privat/produkte/e-mobilitaet/"),
+        22m);
 
     public static IEndpointRouteBuilder MapLocationsEndpoints(this IEndpointRouteBuilder endpoints)
     {
@@ -64,20 +65,24 @@ public static class LocationsEndpoints
                 "is AVAILABLE and not older than the setting `map.status_max_age_minutes`; `availability` summarises " +
                 "them as AVAILABLE, OCCUPIED, OUT_OF_ORDER or UNKNOWN. `facilities` tells green energy (100 % renewable " +
                 "as stated by the operator), free and roofed parking, the number of barrier-free parking spaces and the " +
-                "operator's price page (`priceUrl`); each is null if no source knows it. `meta.attribution` lists the sources of the " +
+                "operator's price page (`priceUrl`); each is null if no source knows it. `maxAvailablePowerKw` is the highest " +
+                "power among the EVSEs that are AVAILABLE now (null if none is), e.g. to colour free locations by power. " +
+                "`meta.attribution` lists the sources of the " +
                 "data and the attribution text that must be shown with it. Public, no credentials needed.\n\n" +
                 "Optional filters (combined with AND; counts of a matching location still cover all its EVSEs):\n" +
                 "- `connector`: OCPI connector standard, repeatable or comma-separated, one of them is enough, e.g. " +
                 "`connector=IEC_62196_T2_COMBO&connector=CHADEMO` (values as in `getLocation`, case-insensitive).\n" +
-                "- `minPowerKw`: minimum power of an EVSE in kW (number above 0, at most 1000), e.g. `minPowerKw=150`.\n" +
+                "- `minPowerKw`, `maxPowerKw`: power range of an EVSE in kW (numbers above 0, at most 1000, min not above max), " +
+                "e.g. `minPowerKw=50&maxPowerKw=150`.\n" +
                 "- `operator`: part of the operator name, case-insensitive, at most 100 characters, e.g. `operator=wien energie`.\n" +
+                "- `operatorId`: operator ids from `listOperators`, repeatable, one of them is enough.\n" +
                 "- `availableOnly=true`: only locations with at least one AVAILABLE EVSE (`evsesAvailable` > 0).\n" +
                 "- `adHoc=true`: an EVSE can be paid without contract (QR_CODE, WEBSITE, CREDIT_CARD_PAYABLE, DEBIT_CARD_PAYABLE, " +
                 "CONTACTLESS_CARD_SUPPORT, CHIP_CARD_SUPPORT, PED_TERMINAL or CASH in `authMethods`).\n" +
                 "- `roaming=true`: an EVSE accepts charging cards of other providers.\n" +
                 "- `greenEnergy=true`: the location states 100 % renewable energy.\n" +
                 "- `barrierFree=true`: the location has barrier-free parking spaces.\n" +
-                "`connector`, `minPowerKw`, `adHoc` and `roaming` must hold for the same EVSE: `connector=IEC_62196_T2&minPowerKw=150` " +
+                "`connector`, `minPowerKw`, `maxPowerKw`, `adHoc` and `roaming` must hold for the same EVSE: `connector=IEC_62196_T2&minPowerKw=150` " +
                 "finds locations with a Type 2 EVSE of at least 150 kW, not a 22 kW Type 2 next to a 150 kW CCS charger. Flags take " +
                 "`true` or `false` (`false` = no filter). 422 with field errors for unknown connectors, invalid numbers or flags.")
             .Produces<LocationsResponse>()
@@ -130,7 +135,9 @@ public static class LocationsEndpoints
         int? limit,
         string[]? connector,
         string? minPowerKw,
+        string? maxPowerKw,
         string? @operator,
+        string[]? operatorId,
         string? availableOnly,
         string? adHoc,
         string? roaming,
@@ -143,6 +150,8 @@ public static class LocationsEndpoints
         var take = limit ?? DefaultLimit;
         var connectors = ParseConnectors(connector);
         var power = ParsePower(minPowerKw);
+        var maxPower = ParsePower(maxPowerKw);
+        var operatorIds = ParseIds(operatorId);
         var operatorPart = string.IsNullOrWhiteSpace(@operator) ? null : @operator.Trim();
         var flags = new Dictionary<string, bool?>
         {
@@ -157,6 +166,9 @@ public static class LocationsEndpoints
             .Require(take is >= 1 and <= MaxLimit, "limit", $"Must be between 1 and {MaxLimit}.")
             .Require(connectors is not null, "connector", "Must be OCPI connector standards such as IEC_62196_T2, IEC_62196_T2_COMBO or CHADEMO.")
             .Require(power is null or (> 0 and <= MaxPowerKw), "minPowerKw", $"Must be a number above 0 and at most {MaxPowerKw}.")
+            .Require(maxPower is null or (> 0 and <= MaxPowerKw), "maxPowerKw", $"Must be a number above 0 and at most {MaxPowerKw}.")
+            .Require(power is null || maxPower is null || power <= maxPower, "maxPowerKw", "Must not be below minPowerKw.")
+            .Require(operatorIds is not null, "operatorId", "Must be operator ids (UUIDs) from listOperators.")
             .Require(operatorPart is not { Length: > MaxOperatorLength }, "operator", $"Must have at most {MaxOperatorLength} characters.");
         foreach (var (name, value) in flags)
         {
@@ -169,7 +181,7 @@ public static class LocationsEndpoints
         }
 
         var filter = new LocationFilter(
-            connectors!, power, operatorPart, flags["availableOnly"]!.Value, flags["adHoc"]!.Value, flags["roaming"]!.Value,
+            connectors!, power, maxPower, operatorPart, operatorIds!, flags["availableOnly"]!.Value, flags["adHoc"]!.Value, flags["roaming"]!.Value,
             flags["greenEnergy"]!.Value, flags["barrierFree"]!.Value);
         var page = await queries.InBoundingBoxAsync(box!, filter, take, cancellationToken);
         return Results.Ok(new LocationsResponse(page.Locations, new LocationsMeta(page.Locations.Count, take, page.Truncated, page.Attribution)));
@@ -209,7 +221,24 @@ public static class LocationsEndpoints
         return [.. standards.Distinct()];
     }
 
-    /// <summary>The power filter: null if missing, -1 if not a number (rejected by the validation).</summary>
+    /// <summary>UUIDs (repeated and/or comma-separated); null if one is not a UUID.</summary>
+    public static IReadOnlyList<Guid>? ParseIds(string[]? values)
+    {
+        var ids = new List<Guid>();
+        foreach (var part in (values ?? []).SelectMany(value => value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)))
+        {
+            if (!Guid.TryParse(part, out var id))
+            {
+                return null;
+            }
+
+            ids.Add(id);
+        }
+
+        return [.. ids.Distinct()];
+    }
+
+    /// <summary>A power filter: null if missing, -1 if not a number (rejected by the validation).</summary>
     public static decimal? ParsePower(string? value) =>
         value is null ? null : decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out var power) ? power : -1;
 

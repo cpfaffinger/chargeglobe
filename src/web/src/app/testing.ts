@@ -74,6 +74,7 @@ export function locationSummary(overrides: Partial<LocationSummary> = {}): Locat
     maxPowerKw: 22,
     statusObservedAt: '2026-10-14T08:15:00Z',
     availability: 'AVAILABLE',
+    maxAvailablePowerKw: 22,
     ...overrides,
   };
 }

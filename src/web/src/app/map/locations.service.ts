@@ -29,6 +29,8 @@ export interface LocationSummary {
   maxPowerKw: number | null;
   statusObservedAt: string | null;
   availability: Availability;
+  /** Highest power among the EVSEs that are free now; null if none is. */
+  maxAvailablePowerKw: number | null;
 }
 
 export interface SourceAttribution {

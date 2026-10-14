@@ -16,7 +16,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { AppIcon } from '../design/icon';
 import { ThemeService, Viewport } from '../design/theme.service';
 import { LocationDetails } from '../evses/location-details';
-import { AVAILABILITIES, AVAILABILITY, resolveColors, tokenColor } from '../map/availability';
+import { MARKERS, MARKER_KEYS, MarkerKey, markerOf, resolveColors, tokenColor } from '../map/availability';
 import { BrowserCapabilities } from '../map/browser-capabilities';
 import { MapConfig, MapConfigService } from '../map/map-config.service';
 import { GeolocateEvent, MapEngine, MapHandle, MapTheme } from '../map/map-engine';
@@ -100,7 +100,7 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
               <p class="operator">{{ location.operator }}</p>
             }
             <p class="availability">
-              <span class="status-dot" [style.background]="color(location.availability)"><app-icon [name]="availability[location.availability].icon" /></span>
+              <span class="status-dot" [style.background]="color(marker(location))"><app-icon [name]="markers[marker(location)].icon" /></span>
               {{ location.evsesAvailable }} von {{ location.evsesTotal }} Ladepunkten frei
               @if (location.maxPowerKw !== null) {
                 · bis {{ location.maxPowerKw | number: '1.0-1' : 'en-US' }} kW
@@ -175,9 +175,9 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
     </div>
     <div id="map-legend-bar">
       <ul id="legend" aria-label="Legende">
-        @for (key of availabilities; track key) {
+        @for (key of markerKeys; track key) {
           <li>
-            <span class="status-dot" [style.background]="color(key)"><app-icon [name]="availability[key].icon" /></span>{{ availability[key].label }}
+            <span class="status-dot" [style.background]="color(key)"><app-icon [name]="markers[key].icon" /></span>{{ markers[key].label }}
           </li>
         }
       </ul>
@@ -233,10 +233,11 @@ export class HomePage {
   protected readonly attribution = signal<string[]>([]);
   protected readonly truncated = signal(false);
   protected readonly selected = signal<LocationSummary | null>(null);
-  protected readonly availability = AVAILABILITY;
-  protected readonly availabilities = AVAILABILITIES;
+  protected readonly markers = MARKERS;
+  protected readonly markerKeys = MARKER_KEYS;
+  protected readonly marker = markerOf;
   protected readonly limit = LocationsService.limit;
-  protected readonly color = (key: keyof typeof AVAILABILITY) => tokenColor(AVAILABILITY[key].token);
+  protected readonly color = (key: MarkerKey) => tokenColor(MARKERS[key].token);
 
   constructor() {
     // The renderer is the largest download; it loads while the configuration is on its way.
@@ -448,11 +449,11 @@ export class HomePage {
 
   /** Style and marker colours for the map renderer, resolved from the theme tokens of the current mode. */
   private mapTheme(dark: boolean): MapTheme {
-    const tokens = AVAILABILITIES.map((key) => AVAILABILITY[key].token);
+    const tokens = MARKER_KEYS.map((key) => MARKERS[key].token);
     const colors = resolveColors([...tokens, '--cg-on-status', '--mat-sys-surface', '--mat-sys-primary', '--mat-sys-on-primary']);
     return {
       styleUrl: dark ? this.config!.styleUrlDark : this.config!.styleUrl,
-      status: Object.fromEntries(AVAILABILITIES.map((key) => [key, colors[AVAILABILITY[key].token]])) as MapTheme['status'],
+      status: Object.fromEntries(MARKER_KEYS.map((key) => [key, colors[MARKERS[key].token]])) as MapTheme['status'],
       onStatus: colors['--cg-on-status'],
       ring: colors['--mat-sys-surface'],
       cluster: colors['--mat-sys-primary'],

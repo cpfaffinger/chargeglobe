@@ -14,6 +14,34 @@ export const AVAILABILITY: Record<Availability, { token: string; icon: IconName;
 
 export const AVAILABILITIES = Object.keys(AVAILABILITY) as Availability[];
 
+/** Marker of a location on the map: free locations by the power that is free now, the others by availability. */
+export type MarkerKey = 'AVAILABLE' | 'AVAILABLE_FAST' | 'AVAILABLE_HPC' | Exclude<Availability, 'AVAILABLE'>;
+
+/** Free power from which a location counts as fast (above) or high-power charging (from), in kW. */
+export const FAST_ABOVE_KW = 22;
+export const HPC_FROM_KW = 150;
+
+/** Colour token, symbol and legend text per marker, in the order of the legend. */
+export const MARKERS: Record<MarkerKey, { token: string; icon: IconName; label: string }> = {
+  AVAILABLE: { ...AVAILABILITY.AVAILABLE, label: `frei bis ${FAST_ABOVE_KW} kW` },
+  AVAILABLE_FAST: { token: '--cg-power-fast', icon: 'check', label: `frei ${FAST_ABOVE_KW + 1}–${HPC_FROM_KW - 1} kW` },
+  AVAILABLE_HPC: { token: '--cg-power-hpc', icon: 'check', label: `frei ab ${HPC_FROM_KW} kW` },
+  OCCUPIED: AVAILABILITY.OCCUPIED,
+  OUT_OF_ORDER: AVAILABILITY.OUT_OF_ORDER,
+  UNKNOWN: AVAILABILITY.UNKNOWN,
+};
+
+export const MARKER_KEYS = Object.keys(MARKERS) as MarkerKey[];
+
+/** The marker of a location; a free location without known power counts as up to 22 kW. */
+export function markerOf(location: { availability: Availability; maxAvailablePowerKw: number | null }): MarkerKey {
+  if (location.availability !== 'AVAILABLE') {
+    return location.availability;
+  }
+  const power = location.maxAvailablePowerKw ?? 0;
+  return power >= HPC_FROM_KW ? 'AVAILABLE_HPC' : power > FAST_ABOVE_KW ? 'AVAILABLE_FAST' : 'AVAILABLE';
+}
+
 /** CSS value of a token, for templates. */
 export const tokenColor = (token: string): string => `var(${token})`;
 
