@@ -24,6 +24,11 @@ const pages: Routes = [
     loadComponent: () => import('./pages/location-detail.page').then((page) => page.LocationDetailPage),
     canActivate: [requirePermission('evse:read')],
   },
+  {
+    path: 'evses/:evseId',
+    loadComponent: () => import('./pages/evse-detail.page').then((page) => page.EvseDetailPage),
+    canActivate: [requirePermission('evse:read')],
+  },
   // Signed-in users only; anonymous visitors are redirected to /login.
   {
     path: 'account',

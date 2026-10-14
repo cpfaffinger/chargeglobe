@@ -74,7 +74,12 @@ public static class EvsesEndpoints
                 "`getLocation`), lifecycle and the current OCPI status " +
                 "with `since`, `observedAt`, `source` and `stale` (older than `map.status_max_age_minutes`). Unlike " +
                 "`getLocation` the status is not replaced by UNKNOWN when stale. EVSEs that are no longer active are " +
-                "returned too (`lifecycle`). 404 for an unknown EVSE. `meta.attribution` names the sources.")
+                "returned too (`lifecycle`). The location also carries `access` (PUBLIC or RESTRICTED), `openingTimes` " +
+                "(`twentyFourSeven` and the source's text in `description`; null if unknown) and `facilities` as in " +
+                "`listLocations`. Additional data: `sources` lists the records of the sources about the EVSE and its location " +
+                "(`source`, `entity` EVSE or LOCATION, `externalId` in the source, `firstSeen`, `lastSeen`), `provenance` tells " +
+                "for each attribute (`entity`, `attribute` such as max_power_kw or address) which `source` confirmed it last " +
+                "and when (`observedAt`). 404 for an unknown EVSE. `meta.attribution` names the sources.")
             .Produces<EvseResponse>()
             .ProducesProblem(StatusCodes.Status404NotFound)
             .WithResponseExample(
@@ -94,7 +99,10 @@ public static class EvsesEndpoints
                             "AT",
                             48.2085,
                             16.3731,
-                            "AT-9"),
+                            "AT-9",
+                            "PUBLIC",
+                            new OpeningTimes(true, null),
+                            new LocationFacilities(true, false, true, 2, "https://www.wienenergie.at/privat/produkte/e-mobilitaet/")),
                         new EvseOperator(Guid.Parse("01990a3e-5b1d-7d42-8c3a-6e9f1a2b3c40"), "Wien Energie GmbH", "VIE"),
                         "1",
                         22m,
@@ -105,7 +113,15 @@ public static class EvsesEndpoints
                         new EvseCurrentStatus("CHARGING", At("2026-10-14T07:40:00Z"), At("2026-10-14T08:15:00Z"), "econtrol", false),
                         At("2026-03-01T06:00:00Z"),
                         At("2026-10-14T08:15:00Z"),
-                        At("2026-10-14T06:00:00Z")),
+                        At("2026-10-14T06:00:00Z"),
+                        [
+                            new SourceReference("econtrol", "LOCATION", "AT*VIE*E1234", At("2026-03-01T06:00:00Z"), At("2026-10-14T06:00:00Z")),
+                            new SourceReference("econtrol", "EVSE", ExampleEvseId, At("2026-03-01T06:00:00Z"), At("2026-10-14T06:00:00Z")),
+                        ],
+                        [
+                            new AttributeProvenance("LOCATION", "address", "econtrol", At("2026-10-14T06:00:00Z")),
+                            new AttributeProvenance("EVSE", "max_power_kw", "econtrol", At("2026-10-14T06:00:00Z")),
+                        ]),
                     ExampleMeta));
 
         evses.MapGet("/{evseId}/status/history", GetStatusHistoryAsync)

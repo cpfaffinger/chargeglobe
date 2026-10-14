@@ -1,4 +1,4 @@
-import { DatePipe, DecimalPipe, PercentPipe, formatDate, formatPercent } from '@angular/common';
+import { DatePipe, DecimalPipe, PercentPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
@@ -13,15 +13,14 @@ import {
   EvsesService,
   LocationDetailResponse,
   Occupancy,
-  OccupancyDay,
 } from './evses.service';
-import { Segment, combine, heatColor, statusOf, timeline } from './status';
+import { Segment, combine, statusOf, timeline } from './status';
+import { OccupancyHeatmap, StatusTimeline } from './status-charts';
 import { AVAILABILITY, tokenColor } from '../map/availability';
 
 /** Days of the status timeline and weeks of the occupancy matrix. */
 const TIMELINE_DAYS = 7;
 const OCCUPANCY_WEEKS = 4;
-const DAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
 type LoadState = 'loading' | 'error' | 'ready';
 
@@ -42,8 +41,10 @@ type LoadState = 'loading' | 'error' | 'ready';
     MatCardModule,
     MatChipsModule,
     MatProgressBarModule,
+    OccupancyHeatmap,
     PercentPipe,
     RouterLink,
+    StatusTimeline,
   ],
   selector: 'app-location-details',
   host: { '[class.compact]': '!header()' },
@@ -93,7 +94,11 @@ type LoadState = 'loading' | 'error' | 'ready';
             <mat-card-content>
               <div class="evse-head">
                 <h3>
-                  {{ evse.evseId }}
+                  @if (history) {
+                    <a class="evse-link" [routerLink]="['/evses', evse.evseId]">{{ evse.evseId }}</a>
+                  } @else {
+                    {{ evse.evseId }}
+                  }
                   @if (!evse.hasEvseId) {
                     <small>(ID von chargeglobe vergeben)</small>
                   }
@@ -126,20 +131,11 @@ type LoadState = 'loading' | 'error' | 'ready';
                   <p class="timeline-state error">Der Statusverlauf konnte nicht geladen werden.</p>
                 }
                 @default {
-                  <div class="timeline" role="img" [attr.aria-label]="'Statusverlauf der letzten ' + timelineDays + ' Tage'">
-                    @for (segment of segments(evse.id); track segment.from.getTime()) {
-                      <span
-                        class="segment"
-                        [style.left.%]="segment.left"
-                        [style.width.%]="segment.width"
-                        [style.background]="statusOf(segment.status).color"
-                        [title]="segmentTitle(segment)"
-                      ></span>
-                    }
-                  </div>
-                  <p class="timeline-axis">
-                    <span>{{ range().from | date: 'dd.MM. HH:mm' }}</span><span>jetzt</span>
-                  </p>
+                  <app-status-timeline
+                    [segments]="segments(evse.id)"
+                    [from]="range().from"
+                    [label]="'Statusverlauf der letzten ' + timelineDays + ' Tage'"
+                  />
                   @if (segments(evse.id).length === 0) {
                     <p class="timeline-state">Keine Statusmeldungen in den letzten {{ timelineDays }} Tagen.</p>
                   }
@@ -190,30 +186,7 @@ type LoadState = 'loading' | 'error' | 'ready';
                       Keine Statusmeldungen in den letzten {{ occupancyWeeks }} Wochen.
                     }
                   </p>
-                  <table id="heatmap">
-                    <thead>
-                      <tr>
-                        <th></th>
-                        @for (hour of hours; track hour) {
-                          <th scope="col">{{ hour % 3 === 0 ? hour : '' }}</th>
-                        }
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (day of heatmap.days; track day.weekday) {
-                        <tr>
-                          <th scope="row">{{ dayLabels[day.weekday - 1] }}</th>
-                          @for (share of day.chargingShare; track $index) {
-                            <td [style.background]="heatColor(share)" [title]="cellTitle(day, $index)"></td>
-                          }
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
-                  <p class="heatmap-legend">
-                    Anteil der Statusmeldungen „lädt“ je Stunde (Ortszeit Wien): hell = selten, kräftig = häufig,
-                    grau = keine Daten.
-                  </p>
+                  <app-occupancy-heatmap [days]="heatmap.days" />
                 }
               }
             </section>
@@ -241,10 +214,7 @@ export class LocationDetails {
 
   protected readonly timelineDays = TIMELINE_DAYS;
   protected readonly occupancyWeeks = OCCUPANCY_WEEKS;
-  protected readonly dayLabels = DAY_LABELS;
-  protected readonly hours = Array.from({ length: 24 }, (_, hour) => hour);
   protected readonly statusOf = statusOf;
-  protected readonly heatColor = heatColor;
   protected readonly availabilityColor = (key: keyof typeof AVAILABILITY) => tokenColor(AVAILABILITY[key].token);
   protected readonly availabilityIcon = (key: keyof typeof AVAILABILITY) => AVAILABILITY[key].icon;
 
@@ -324,17 +294,6 @@ export class LocationDetails {
           .join(' · '),
       )
       .join(', ');
-  }
-
-  protected segmentTitle(segment: Segment): string {
-    const format = (date: Date) => formatDate(date, 'dd.MM. HH:mm', 'en-US');
-    return `${statusOf(segment.status).label}: ${format(segment.from)} – ${format(segment.to)}`;
-  }
-
-  protected cellTitle(day: OccupancyDay, hour: number): string {
-    const share = day.chargingShare[hour];
-    const value = share === null ? 'keine Daten' : `${formatPercent(share, 'en-US', '1.0-0')} lädt`;
-    return `${DAY_LABELS[day.weekday - 1]} ${hour}–${hour + 1} Uhr: ${value} (${day.observations[hour]} Meldungen)`;
   }
 
   private async load(id: string): Promise<void> {

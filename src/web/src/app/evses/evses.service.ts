@@ -29,6 +29,55 @@ export interface LocationDetailResponse {
   meta: { attribution: SourceAttribution[] };
 }
 
+/** Facilities of a location; each value null if no source knows it. */
+export interface LocationFacilities {
+  greenEnergy: boolean | null;
+  freeParking: boolean | null;
+  roofedParking: boolean | null;
+  barrierFreeParkingSpaces: number | null;
+  priceUrl: string | null;
+}
+
+/** GET /api/v1/evses/{evseId}: master data, current status and the additional data of the sources. */
+export interface EvseView {
+  id: string;
+  evseId: string;
+  hasEvseId: boolean;
+  lifecycle: string;
+  location: {
+    id: string;
+    name: string | null;
+    address: string | null;
+    postalCode: string | null;
+    city: string | null;
+    country: string;
+    latitude: number;
+    longitude: number;
+    region: string | null;
+    access: string;
+    openingTimes: { twentyFourSeven: boolean; description: string | null } | null;
+    facilities: LocationFacilities;
+  };
+  operator: { id: string; name: string; operatorId: string | null } | null;
+  physicalReference: string | null;
+  maxPowerKw: number | null;
+  powerType: string | null;
+  connectors: ConnectorDetail[];
+  authMethods: string[];
+  roaming: boolean | null;
+  status: { status: string; since: string | null; observedAt: string | null; source: string | null; stale: boolean };
+  firstSeen: string;
+  lastSeen: string;
+  lastConfirmedAt: string | null;
+  sources: { source: string; entity: string; externalId: string; firstSeen: string; lastSeen: string }[];
+  provenance: { entity: string; attribute: string; source: string; observedAt: string }[];
+}
+
+export interface EvseResponse {
+  data: EvseView;
+  meta: { attribution: SourceAttribution[] };
+}
+
 /** Period with constant status; `to` is null while it lasts. */
 export interface StatusInterval {
   status: string;
@@ -80,6 +129,10 @@ export class EvsesService {
     return firstValueFrom(
       this.http.get<LocationDetailResponse>(`/api/v1/locations/${encodeURIComponent(id)}`),
     );
+  }
+
+  evse(evseId: string): Promise<EvseResponse> {
+    return firstValueFrom(this.http.get<EvseResponse>(`/api/v1/evses/${encodeURIComponent(evseId)}`));
   }
 
   history(evseId: string, from: Date, to: Date): Promise<StatusHistoryResponse> {

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using ChargeGlobe.Application.Evses;
 using ChargeGlobe.Application.Locations;
 using ChargeGlobe.Application.Settings;
@@ -39,6 +40,16 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
                 .FirstOrDefaultAsync(cancellationToken)
             : null;
         var current = await db.EvseStatusCurrent.AsNoTracking().FirstOrDefaultAsync(item => item.EvseId == evse.Id, cancellationToken);
+        var sources = await db.SourceRecords.AsNoTracking()
+            .Where(record => (record.EntityType == EntityType.EVSE && record.EntityId == evse.Id)
+                || (record.EntityType == EntityType.LOCATION && record.EntityId == location.Id))
+            .OrderBy(record => record.EntityType).ThenBy(record => record.SourceKey).ThenBy(record => record.ExternalId)
+            .ToListAsync(cancellationToken);
+        var provenance = await db.AttributeOrigins.AsNoTracking()
+            .Where(origin => (origin.EntityType == EntityType.EVSE && origin.EntityId == evse.Id)
+                || (origin.EntityType == EntityType.LOCATION && origin.EntityId == location.Id))
+            .OrderBy(origin => origin.EntityType).ThenBy(origin => origin.Attribute).ThenBy(origin => origin.SourceKey)
+            .ToListAsync(cancellationToken);
         var maxAge = TimeSpan.FromMinutes(config.Get<int>(SettingsCatalog.MapStatusMaxAgeMinutes));
         var status = current is null
             ? new EvseCurrentStatus(nameof(EvseStatus.UNKNOWN), null, null, null, true)
@@ -59,7 +70,10 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
                 location.Country,
                 location.Coordinates.Latitude,
                 location.Coordinates.Longitude,
-                location.RegionCode),
+                location.RegionCode,
+                location.Access.ToString(),
+                ParseOpeningTimes(location.OpeningTimes),
+                new LocationFacilities(location.GreenEnergy, location.FreeParking, location.RoofedParking, location.BarrierFreeParkingSpaces, location.PriceUrl)),
             @operator,
             evse.PhysicalReference,
             evse.MaxPowerKw,
@@ -71,7 +85,25 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             status,
             evse.FirstSeen,
             evse.LastSeen,
-            evse.LastConfirmedAt);
+            evse.LastConfirmedAt,
+            [.. sources.Select(record => new SourceReference(
+                record.SourceKey, record.EntityType.ToString(), record.ExternalId, record.FirstSeen, record.LastSeen))],
+            [.. provenance.Select(origin => new AttributeProvenance(origin.EntityType.ToString(), origin.Attribute, origin.SourceKey, origin.ObservedAt))]);
+    }
+
+    /// <summary>The OCPI <c>Hours</c> JSON written by the ingest (<c>twentyfourseven</c>, <c>description</c>).</summary>
+    private static OpeningTimes? ParseOpeningTimes(string? json)
+    {
+        if (json is null)
+        {
+            return null;
+        }
+
+        using var document = JsonDocument.Parse(json);
+        var root = document.RootElement;
+        return new OpeningTimes(
+            root.TryGetProperty("twentyfourseven", out var allDay) && allDay.ValueKind == JsonValueKind.True,
+            root.TryGetProperty("description", out var description) && description.ValueKind == JsonValueKind.String ? description.GetString() : null);
     }
 
     public async Task<IReadOnlyList<StatusInterval>> StatusHistoryAsync(
