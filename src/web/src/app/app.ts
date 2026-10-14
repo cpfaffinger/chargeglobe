@@ -10,6 +10,7 @@ import { ADMIN_PAGES, AdminPageLink } from './admin/admin-pages';
 import { AuthService } from './auth/auth.service';
 import { AppIcon, IconName } from './design/icon';
 import { ThemeMode, ThemeService, Viewport } from './design/theme.service';
+import { PreferencesService } from './preferences/preferences.service';
 import { LocationSearch } from './search/location-search';
 
 const THEMES: { mode: ThemeMode; label: string; icon: IconName }[] = [
@@ -155,6 +156,11 @@ export class App {
   protected readonly themes = THEMES;
   protected readonly currentTheme = computed(() => THEMES.find((option) => option.mode === this.theme.mode())!);
   protected readonly menuOpen = signal(false);
+
+  constructor() {
+    // Start position, filters and map options follow the signed-in account from the start.
+    inject(PreferencesService);
+  }
 
   /** The admin pages the user may open; without any, there is no "Administration". */
   protected adminPages(): AdminPageLink[] {

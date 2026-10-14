@@ -16,6 +16,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<FavoriteLocation> FavoriteLocations => Set<FavoriteLocation>();
 
+    public DbSet<UserPreferencesDocument> UserPreferences => Set<UserPreferencesDocument>();
+
     public DbSet<PriceObservation> PriceObservations => Set<PriceObservation>();
 
     public DbSet<EvsePriceCurrent> EvsePriceCurrent => Set<EvsePriceCurrent>();
@@ -97,6 +99,14 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.ToTable("user_permission");
             entity.HasKey(permission => new { permission.UserId, permission.Permission });
             entity.HasOne<AppUser>().WithMany().HasForeignKey(permission => permission.UserId);
+        });
+
+        builder.Entity<UserPreferencesDocument>(entity =>
+        {
+            entity.ToTable("user_preferences");
+            entity.HasKey(preferences => preferences.UserId);
+            entity.Property(preferences => preferences.Document).HasColumnType("jsonb");
+            entity.HasOne<AppUser>().WithOne().HasForeignKey<UserPreferencesDocument>(preferences => preferences.UserId).OnDelete(DeleteBehavior.Cascade);
         });
 
         builder.Entity<FavoriteLocation>(entity =>

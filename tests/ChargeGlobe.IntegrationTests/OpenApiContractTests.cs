@@ -75,9 +75,9 @@ public class OpenApiContractTests(IntegrationFactory factory)
             new[]
             {
                 "addFavorite", "changePassword", "confirmEmail", "createApiKey", "createInitialAdmin", "deleteRole", "getCrawlerStatus", "getEvse", "getEvseOccupancy", "getEvsePrices",
-                "getEvseStatusHistory", "getHealth", "getLocation", "getMapConfig", "getMe", "getSetting", "getSetupStatus", "getUser",
+                "getEvseStatusHistory", "getHealth", "getLocation", "getMapConfig", "getMe", "getPreferences", "getSetting", "getSetupStatus", "getUser",
                 "listApiKeys", "listCrawlerRuns", "listFavorites", "listLocations", "listMailOutbox", "listOperators", "listPermissions", "listRoles", "listSettings",
-                "listUsers", "login", "logout", "putRole", "refreshToken", "register", "removeFavorite", "requestPasswordReset", "resendConfirmation",
+                "listUsers", "login", "logout", "putPreferences", "putRole", "refreshToken", "register", "removeFavorite", "requestPasswordReset", "resendConfirmation",
                 "resetPassword", "revokeApiKey", "search", "sendTestMail", "sendUserConfirmationMail", "setUserApproval", "setUserEnabled",
                 "setUserRoles", "updateSetting",
             },

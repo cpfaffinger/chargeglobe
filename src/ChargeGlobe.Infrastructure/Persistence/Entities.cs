@@ -31,6 +31,17 @@ public sealed class UserPermission
     public required string Permission { get; set; }
 }
 
+/// <summary>The preferences document of an account (<c>IUserPreferences</c>).</summary>
+public sealed class UserPreferencesDocument
+{
+    public Guid UserId { get; set; }
+
+    /// <summary>JSON as validated by <c>PUT /me/preferences</c>.</summary>
+    public required string Document { get; set; }
+
+    public DateTimeOffset UpdatedAt { get; set; }
+}
+
 /// <summary>A location a user marked as favorite.</summary>
 public sealed class FavoriteLocation
 {
