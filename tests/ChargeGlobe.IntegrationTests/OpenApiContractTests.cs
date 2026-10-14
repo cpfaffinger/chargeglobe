@@ -123,6 +123,24 @@ public class OpenApiContractTests(IntegrationFactory factory)
     }
 
     [Fact]
+    public async Task The_map_filters_are_query_parameters_of_listLocations()
+    {
+        var operation = (await LoadAsync()).GetProperty("paths").GetProperty("/api/v1/locations").GetProperty("get");
+
+        var parameters = operation.GetProperty("parameters").EnumerateArray()
+            .Where(parameter => parameter.GetProperty("in").GetString() == "query")
+            .ToDictionary(parameter => parameter.GetProperty("name").GetString()!, parameter => parameter.GetProperty("schema"));
+        Assert.Superset(
+            new HashSet<string> { "bbox", "limit", "connector", "minPowerKw", "operator", "availableOnly", "adHoc", "roaming", "greenEnergy", "barrierFree" },
+            parameters.Keys.ToHashSet());
+        Assert.Contains("array", parameters["connector"].GetRawText());
+        foreach (var filter in new[] { "connector", "minPowerKw", "operator", "availableOnly", "adHoc", "roaming", "greenEnergy", "barrierFree" })
+        {
+            Assert.Contains($"`{filter}", operation.GetProperty("description").GetString());
+        }
+    }
+
+    [Fact]
     public async Task Scalar_ui_is_served()
     {
         var client = factory.Client();

@@ -129,6 +129,26 @@ public enum AuthMethod
     CASH,
 }
 
+/// <summary>Groups of <see cref="AuthMethod"/> values.</summary>
+public static class AuthMethods
+{
+    /// <summary>
+    /// Ad-hoc charging (AFIR): a session can be paid without a contract or app account, with a payment card at a
+    /// terminal or contactless, by QR code or on a website, or with cash.
+    /// </summary>
+    public static readonly IReadOnlyList<AuthMethod> AdHoc =
+    [
+        AuthMethod.QR_CODE,
+        AuthMethod.WEBSITE,
+        AuthMethod.CREDIT_CARD_PAYABLE,
+        AuthMethod.DEBIT_CARD_PAYABLE,
+        AuthMethod.CONTACTLESS_CARD_SUPPORT,
+        AuthMethod.CHIP_CARD_SUPPORT,
+        AuthMethod.PED_TERMINAL,
+        AuthMethod.CASH,
+    ];
+}
+
 /// <summary>Whether an EVSE carries a real EVSE-ID or a surrogate assigned by chargeglobe.</summary>
 public enum IdentityKind
 {

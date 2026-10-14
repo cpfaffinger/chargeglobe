@@ -17,9 +17,13 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
 
     private static readonly string[] FaultedStatuses = [nameof(EvseStatus.OUTOFORDER), nameof(EvseStatus.INOPERATIVE)];
 
-    public async Task<LocationPage> InBoundingBoxAsync(BoundingBox box, int limit, CancellationToken cancellationToken)
+    private static readonly string[] AdHocMethods = [.. AuthMethods.AdHoc.Select(method => method.ToString())];
+
+    public async Task<LocationPage> InBoundingBoxAsync(BoundingBox box, LocationFilter filter, int limit, CancellationToken cancellationToken)
     {
         var fresh = FreshSince();
+        string[] connectors = [.. filter.Connectors];
+        var operatorPattern = filter.Operator is null ? null : LikePattern.Contains(filter.Operator);
         var centerLongitude = (box.MinLongitude + box.MaxLongitude) / 2;
         var centerLatitude = (box.MinLatitude + box.MaxLatitude) / 2;
         var rows = await db.Database
@@ -41,7 +45,19 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
                 LEFT JOIN evse_status_current c ON c.evse_id = e.id
                 WHERE l.lifecycle = 'ACTIVE'
                   AND l.geom && ST_MakeEnvelope({box.MinLongitude}, {box.MinLatitude}, {box.MaxLongitude}, {box.MaxLatitude}, 4326)::geography
+                  AND ({operatorPattern}::text IS NULL OR o.name ILIKE {operatorPattern}::text)
+                  AND (NOT {filter.GreenEnergy} OR l.green_energy)
+                  AND (NOT {filter.BarrierFree} OR l.barrier_free_parking_spaces > 0)
+                  AND (NOT {filter.FiltersEvses} OR EXISTS (
+                        SELECT 1 FROM evse fe
+                        WHERE fe.location_id = l.id AND fe.lifecycle = 'ACTIVE'
+                          AND ({filter.MinPowerKw}::numeric IS NULL OR fe.max_power_kw >= {filter.MinPowerKw}::numeric)
+                          AND (NOT {filter.AdHoc} OR fe.auth_methods && {AdHocMethods})
+                          AND (NOT {filter.Roaming} OR fe.roaming)
+                          AND (cardinality({connectors}::text[]) = 0 OR EXISTS (
+                                SELECT 1 FROM connector fc WHERE fc.evse_id = fe.id AND fc.standard = ANY({connectors}::text[])))))
                 GROUP BY l.id, o.name
+                HAVING NOT {filter.AvailableOnly} OR count(e.id) FILTER (WHERE c.status = 'AVAILABLE' AND c.observed_at >= {fresh}) > 0
                 ORDER BY l.geom <-> ST_SetSRID(ST_MakePoint({centerLongitude}, {centerLatitude}), 4326)::geography, l.id
                 LIMIT {limit + 1}
                 """)

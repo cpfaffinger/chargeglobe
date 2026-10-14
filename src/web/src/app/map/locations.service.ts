@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { MapFilters, NO_FILTERS, filterParams } from './map-filters';
 
 /** Visible area of the map in WGS 84. */
 export interface Bbox {
@@ -49,10 +50,13 @@ export class LocationsService {
 
   private readonly http = inject(HttpClient);
 
-  inBox(box: Bbox): Promise<LocationsResponse> {
+  /** Locations in the box that match the filters (GET /api/v1/locations). */
+  inBox(box: Bbox, filters: MapFilters = NO_FILTERS): Promise<LocationsResponse> {
     const bbox = [box.west, box.south, box.east, box.north].map((value) => value.toFixed(5)).join(',');
     return firstValueFrom(
-      this.http.get<LocationsResponse>('/api/v1/locations', { params: { bbox, limit: LocationsService.limit } }),
+      this.http.get<LocationsResponse>('/api/v1/locations', {
+        params: { bbox, limit: LocationsService.limit, ...filterParams(filters) },
+      }),
     );
   }
 }

@@ -76,11 +76,37 @@ public sealed record EvseDetail(
 
 public sealed record LocationDetail(LocationSummary Location, IReadOnlyList<EvseDetail> Evses, IReadOnlyList<SourceAttribution> Attribution);
 
+/// <summary>
+/// Filters of the map. Connector, power, ad-hoc payment and roaming must hold for the same active EVSE; the counts of a
+/// matching location still cover all its EVSEs. A false flag means "no filter".
+/// </summary>
+/// <param name="Connectors">OCPI connector standards; one of them is enough. Empty: any.</param>
+/// <param name="MinPowerKw">Minimum maximum power of the EVSE.</param>
+/// <param name="Operator">Part of the operator name, case-insensitive.</param>
+/// <param name="AvailableOnly">At least one EVSE is AVAILABLE with a current status.</param>
+/// <param name="AdHoc">The EVSE can be paid ad hoc (<c>AuthMethods.AdHoc</c>).</param>
+/// <param name="Roaming">The EVSE accepts charging cards of other providers.</param>
+/// <param name="GreenEnergy">The location is supplied with 100 % renewable energy.</param>
+/// <param name="BarrierFree">The location has barrier-free parking spaces.</param>
+public sealed record LocationFilter(
+    IReadOnlyList<string> Connectors,
+    decimal? MinPowerKw,
+    string? Operator,
+    bool AvailableOnly,
+    bool AdHoc,
+    bool Roaming,
+    bool GreenEnergy,
+    bool BarrierFree)
+{
+    /// <summary>Whether a condition on the EVSEs of a location applies.</summary>
+    public bool FiltersEvses => Connectors.Count > 0 || MinPowerKw is not null || AdHoc || Roaming;
+}
+
 /// <summary>Read model of the public map (no permission needed, docs/06 "Standorte").</summary>
 public interface ILocationQueries
 {
-    /// <summary>Active locations in the box, nearest to its centre first, at most <paramref name="limit"/>.</summary>
-    Task<LocationPage> InBoundingBoxAsync(BoundingBox box, int limit, CancellationToken cancellationToken);
+    /// <summary>Active locations in the box that match the filter, nearest to its centre first, at most <paramref name="limit"/>.</summary>
+    Task<LocationPage> InBoundingBoxAsync(BoundingBox box, LocationFilter filter, int limit, CancellationToken cancellationToken);
 
     Task<LocationDetail?> FindAsync(Guid id, CancellationToken cancellationToken);
 }
