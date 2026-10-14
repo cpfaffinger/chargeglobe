@@ -1532,6 +1532,26 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                     b.ToTable("user_permission", (string)null);
                 });
 
+            modelBuilder.Entity("ChargeGlobe.Infrastructure.Persistence.UserPreferencesDocument", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("Document")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("document");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("user_preferences", (string)null);
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
                 {
                     b.Property<int>("Id")
@@ -1808,6 +1828,15 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                     b.HasOne("ChargeGlobe.Infrastructure.Persistence.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Infrastructure.Persistence.UserPreferencesDocument", b =>
+                {
+                    b.HasOne("ChargeGlobe.Infrastructure.Persistence.AppUser", null)
+                        .WithOne()
+                        .HasForeignKey("ChargeGlobe.Infrastructure.Persistence.UserPreferencesDocument", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

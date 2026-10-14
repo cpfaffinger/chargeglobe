@@ -80,6 +80,21 @@ describe('MapFilterStore', () => {
     expect(store({ connector: 'CHADEMO' }).filters()).toEqual({ ...NO_FILTERS, connector: ['CHADEMO'] });
   });
 
+  it('takes filters from elsewhere without touching the address and knows whether a link brought filters', () => {
+    const filters = store();
+    expect(filters.fromLink).toBeFalse();
+
+    filters.apply({ ...NO_FILTERS, adHoc: true });
+
+    expect(filters.filters().adHoc).toBeTrue();
+    expect(JSON.parse(localStorage.getItem(FILTERS_STORAGE_KEY)!)).toEqual({ adHoc: 'true' });
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('knows that a link brought filters', () => {
+    expect(store({ greenEnergy: 'true' }).fromLink).toBeTrue();
+  });
+
   it('starts with the stored filters without filters in the link', () => {
     localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify({ greenEnergy: 'true' }));
     const filters = store();

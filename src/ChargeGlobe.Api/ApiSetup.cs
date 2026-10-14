@@ -138,6 +138,7 @@ public static class ApiSetup
         app.MapSearchEndpoints();
         app.MapOperatorsEndpoints();
         app.MapFavoritesEndpoints();
+        app.MapPreferencesEndpoints();
         return app;
     }
 }

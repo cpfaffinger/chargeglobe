@@ -5,6 +5,7 @@ import { Router, provideRouter } from '@angular/router';
 import { App } from './app';
 import { appConfig } from './app.config';
 import { routes } from './app.routes';
+import { PreferencesService } from './preferences/preferences.service';
 import { SetupService } from './setup/setup.service';
 import { AuthService } from './auth/auth.service';
 import { BrowserCapabilities } from './map/browser-capabilities';
@@ -42,6 +43,8 @@ describe('App with its routes', () => {
         { provide: MapEngine, useValue: map.engine },
         { provide: BrowserCapabilities, useValue: fakeBrowser() },
         { provide: Viewport, useValue: viewport },
+        // The synchronization of the preferences has its own spec.
+        { provide: PreferencesService, useValue: {} },
       ],
     }).compileComponents();
 

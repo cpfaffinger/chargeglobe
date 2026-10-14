@@ -6,6 +6,7 @@ using ChargeGlobe.Application.Identity;
 using ChargeGlobe.Application.Ingest;
 using ChargeGlobe.Application.Locations;
 using ChargeGlobe.Application.Mail;
+using ChargeGlobe.Application.Preferences;
 using ChargeGlobe.Application.Settings;
 using ChargeGlobe.Application.Sources;
 using ChargeGlobe.Infrastructure.Health;
@@ -49,6 +50,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<ISearchQueries, SearchQueries>();
         services.AddScoped<IOperatorQueries, OperatorQueries>();
         services.AddScoped<IFavorites, Favorites>();
+        services.AddScoped<IUserPreferences, UserPreferences>();
         services.AddScoped<IngestProcessor>();
         services.AddScoped<IIngestQueue, IngestQueue>();
         services.AddScoped<IPollPlanStore, PollPlanStore>();

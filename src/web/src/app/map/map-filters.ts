@@ -117,31 +117,37 @@ export const countFilters = (filters: MapFilters): number => Object.keys(filterP
 export class MapFilterStore {
   private readonly router = inject(Router);
   private readonly link = inject(MapLink);
+  private readonly query = inject(ActivatedRoute).snapshot.queryParams;
 
-  readonly filters = signal<MapFilters>(this.initial(inject(ActivatedRoute).snapshot.queryParams));
+  /** The page was opened with filters in the address (a shared link); they win over saved ones. */
+  readonly fromLink = countFilters(parseFilters(this.query)) > 0;
+  readonly filters = signal<MapFilters>(this.fromLink ? parseFilters(this.query) : stored());
   readonly count = computed(() => countFilters(this.filters()));
 
+  /** A change of the user: kept in the browser and in the address. */
   set(filters: MapFilters): void {
-    this.filters.set(filters);
-    const params = filterParams(filters);
-    try {
-      localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(params));
-    } catch {
-      // Storage blocked: the filters hold until the page is closed.
-    }
+    this.apply(filters);
     // Parameters of filters that are off are removed from the URL, other parameters stay.
     const cleared = Object.fromEntries(FILTER_KEYS.map((key) => [key, null]));
+    const params = filterParams(filters);
     void this.router.navigate([], { queryParams: { ...cleared, ...params }, queryParamsHandling: 'merge', fragment: this.link.fragment(), replaceUrl: true });
   }
 
-  private initial(query: Params): MapFilters {
-    if (countFilters(parseFilters(query)) > 0) {
-      return parseFilters(query);
-    }
+  /** Filters from elsewhere (the preferences of the account): kept in the browser, the address stays. */
+  apply(filters: MapFilters): void {
+    this.filters.set(filters);
     try {
-      return parseFilters(JSON.parse(localStorage.getItem(FILTERS_STORAGE_KEY) ?? '{}') ?? {});
+      localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filterParams(filters)));
     } catch {
-      return NO_FILTERS;
+      // Storage blocked: the filters hold until the page is closed.
     }
+  }
+}
+
+function stored(): MapFilters {
+  try {
+    return parseFilters(JSON.parse(localStorage.getItem(FILTERS_STORAGE_KEY) ?? '{}') ?? {});
+  } catch {
+    return NO_FILTERS;
   }
 }

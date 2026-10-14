@@ -124,6 +124,7 @@ curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/users?q
 curl -k -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/roles        # Rollen mit Permissions (user:read); UI: /admin/roles
 curl -k -X PUT -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/me/favorites/<Standort-UUID>   # Favorit merken (204, idempotent); DELETE entfernt
 curl -k -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/me/favorites   # Favoriten mit aktuellem Status; UI: /favorites
+curl -k -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/me/preferences   # Startposition, Filter, Kartenoptionen des Kontos (updatedAt null = noch keine)
 curl -k -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/admin/crawler/status   # Budget, Pause, Abfragepunkte, Pläne, Queue (jobs:read); UI: /admin/crawler
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select template_key, status, attempts, last_error from email_outbox"
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select hypertable_name from timescaledb_information.hypertables where hypertable_schema = 'public'"   # evse_status_observation, location_status_observation
@@ -164,4 +165,4 @@ Vor einem neuen lokalen Coverage-Lauf alte Ergebnisse löschen (`tests/*/TestRes
 
 ## Nächste Schritte (Stand jetzt)
 
-Siehe `docs/09-roadmap.md`: Startposition, Filter und Kartenoptionen angemeldeter Nutzer in `/me/preferences` (geräteübergreifend), Mail-Absender auf `chargeglobe.net`; außerdem Lizenz festlegen und die E-Control-Nutzungsbedingungen archivieren. API-Keys von Quellen werden nur im Admin-UI eingetragen (`provider.api_key`, Scope `provider:<key>`), nie in Dateien.
+Siehe `docs/09-roadmap.md`: erste EMP-Tarife mit Tarif-Editor und Preisvergleich je Ladepunkt, Routing mit Valhalla, Mail-Absender auf `chargeglobe.net`; außerdem Lizenz festlegen und die E-Control-Nutzungsbedingungen archivieren. API-Keys von Quellen werden nur im Admin-UI eingetragen (`provider.api_key`, Scope `provider:<key>`), nie in Dateien.

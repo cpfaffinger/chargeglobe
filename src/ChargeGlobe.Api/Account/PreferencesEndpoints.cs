@@ -1,0 +1,146 @@
+using System.Globalization;
+using System.Security.Claims;
+using System.Text.Json;
+using ChargeGlobe.Api.Auth;
+using ChargeGlobe.Api.Locations;
+using ChargeGlobe.Api.OpenApi;
+using ChargeGlobe.Application.Preferences;
+
+namespace ChargeGlobe.Api.Account;
+
+/// <summary>Start position of the map.</summary>
+public sealed record HomePreference(double? Latitude, double? Longitude, double? Zoom);
+
+/// <summary>Filters of the map, as the query parameters of <c>listLocations</c>.</summary>
+public sealed record FilterPreferences(
+    IReadOnlyList<string>? Connector,
+    decimal? MinPowerKw,
+    decimal? MaxPowerKw,
+    IReadOnlyList<Guid>? OperatorId,
+    bool? AvailableOnly,
+    bool? AdHoc,
+    bool? Roaming,
+    bool? GreenEnergy,
+    bool? BarrierFree);
+
+/// <summary>How the map combines nearby locations.</summary>
+public sealed record MapOptionPreferences(int? ClusterRadius, int? ClusterMaxZoom);
+
+/// <param name="Home">Null: no start position (the map uses the default of the configuration).</param>
+/// <param name="Filters">Null: no filters.</param>
+/// <param name="MapOptions">Null: the defaults.</param>
+public sealed record PreferencesDocument(HomePreference? Home, FilterPreferences? Filters, MapOptionPreferences? MapOptions)
+{
+    public static readonly PreferencesDocument Empty = new(null, null, null);
+}
+
+/// <param name="UpdatedAt">Last change; null if the account has not stored preferences yet.</param>
+public sealed record PreferencesMeta(DateTimeOffset? UpdatedAt);
+
+public sealed record PreferencesResponse(PreferencesDocument Data, PreferencesMeta Meta);
+
+/// <summary>Preferences of the signed-in user across devices (docs/06, "Einstellungen").</summary>
+public static class PreferencesEndpoints
+{
+    public const int MaxOperators = 100;
+
+    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
+
+    private static readonly PreferencesDocument Example = new(
+        new HomePreference(48.2082, 16.3738, 12),
+        new FilterPreferences(["IEC_62196_T2_COMBO"], 50, null, [], true, false, false, false, false),
+        new MapOptionPreferences(60, 14));
+
+    public static IEndpointRouteBuilder MapPreferencesEndpoints(this IEndpointRouteBuilder endpoints)
+    {
+        var preferences = endpoints.MapGroup("/api/v1/me/preferences").WithTags("Account").RequirePermission(RequirePermissionAttribute.Authenticated);
+
+        preferences.MapGet("/", GetPreferencesAsync)
+            .WithName("getPreferences")
+            .WithSummary("Get the caller's preferences")
+            .WithDescription(
+                "Returns the preferences that follow the account across devices: `home` (start position of the map: " +
+                "`latitude`, `longitude`, `zoom`; null = default view), `filters` (the map filters with the names of the " +
+                "`listLocations` query parameters; null = none) and `mapOptions` (`clusterRadius` in pixels, 0 = never " +
+                "combine; `clusterMaxZoom`, the highest zoom level at which locations are combined; null = defaults). " +
+                "`meta.updatedAt` is null while the account has not stored preferences yet; the web app then uploads the " +
+                "values of the browser. Requires an account or API key, no specific permission.")
+            .Produces<PreferencesResponse>()
+            .WithResponseExample(
+                StatusCodes.Status200OK,
+                new PreferencesResponse(Example, new PreferencesMeta(DateTimeOffset.Parse("2026-10-14T08:00:00Z", CultureInfo.InvariantCulture))));
+
+        preferences.MapPut("/", PutPreferencesAsync)
+            .WithName("putPreferences")
+            .WithSummary("Replace the caller's preferences")
+            .WithDescription(
+                "Replaces the whole document (fields as in `getPreferences`); idempotent. Rules: `home` with all three " +
+                "values (latitude −90…90, longitude −180…180, zoom 0…24); `filters.connector` OCPI connector standards (as in " +
+                "`listLocations`, stored in upper case); `minPowerKw`/`maxPowerKw` above 0, at most 1000, min not above " +
+                "max; at most 100 `operatorId`; `mapOptions` with both values (`clusterRadius` 0…120, `clusterMaxZoom` 5…18). " +
+                "200 with the stored document; 422 with field errors such as `home.zoom` or `filters.connector`. A change " +
+                "is recorded in the audit log. Requires an account or API key, no specific permission.")
+            .Produces<PreferencesResponse>()
+            .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
+            .WithResponseExample(
+                StatusCodes.Status200OK,
+                new PreferencesResponse(Example, new PreferencesMeta(DateTimeOffset.Parse("2026-10-14T08:00:00Z", CultureInfo.InvariantCulture))));
+
+        return endpoints;
+    }
+
+    private static async Task<PreferencesResponse> GetPreferencesAsync(ClaimsPrincipal principal, IUserPreferences store, CancellationToken cancellationToken)
+    {
+        var stored = await store.GetAsync(principal.GetActor().UserId!.Value, cancellationToken);
+        return stored is null
+            ? new PreferencesResponse(PreferencesDocument.Empty, new PreferencesMeta(null))
+            : new PreferencesResponse(JsonSerializer.Deserialize<PreferencesDocument>(stored.Document, Json)!, new PreferencesMeta(stored.UpdatedAt));
+    }
+
+    private static async Task<IResult> PutPreferencesAsync(
+        PreferencesDocument request, ClaimsPrincipal principal, IUserPreferences store, CancellationToken cancellationToken)
+    {
+        var (document, invalid) = Validate(request);
+        if (invalid is not null)
+        {
+            return invalid;
+        }
+
+        var actor = principal.GetActor();
+        var stored = await store.PutAsync(actor.UserId!.Value, JsonSerializer.Serialize(document, Json), actor, cancellationToken);
+        return Results.Ok(new PreferencesResponse(document, new PreferencesMeta(stored.UpdatedAt)));
+    }
+
+    /// <summary>The document with normalized connector names, or the field errors.</summary>
+    private static (PreferencesDocument Document, IResult? Invalid) Validate(PreferencesDocument request)
+    {
+        var validation = new Validation();
+        if (request.Home is { } home)
+        {
+            validation
+                .Require(home.Latitude is >= -90 and <= 90, "home.latitude", "Must be between -90 and 90.")
+                .Require(home.Longitude is >= -180 and <= 180, "home.longitude", "Must be between -180 and 180.")
+                .Require(home.Zoom is >= 0 and <= 24, "home.zoom", "Must be between 0 and 24.");
+        }
+
+        var connectors = LocationsEndpoints.ParseConnectors([.. request.Filters?.Connector ?? []]);
+        if (request.Filters is { } filters)
+        {
+            validation
+                .Require(connectors is not null, "filters.connector", "Must be OCPI connector standards such as IEC_62196_T2 or CHADEMO.")
+                .Require(filters.MinPowerKw is null or (> 0 and <= LocationsEndpoints.MaxPowerKw), "filters.minPowerKw", "Must be above 0 and at most 1000.")
+                .Require(filters.MaxPowerKw is null or (> 0 and <= LocationsEndpoints.MaxPowerKw), "filters.maxPowerKw", "Must be above 0 and at most 1000.")
+                .Require(filters.MinPowerKw is null || filters.MaxPowerKw is null || filters.MinPowerKw <= filters.MaxPowerKw, "filters.maxPowerKw", "Must not be below minPowerKw.")
+                .Require(filters.OperatorId is not { Count: > MaxOperators }, "filters.operatorId", $"At most {MaxOperators} operators.");
+        }
+
+        if (request.MapOptions is { } options)
+        {
+            validation
+                .Require(options.ClusterRadius is >= 0 and <= 120, "mapOptions.clusterRadius", "Must be between 0 and 120.")
+                .Require(options.ClusterMaxZoom is >= 5 and <= 18, "mapOptions.clusterMaxZoom", "Must be between 5 and 18.");
+        }
+
+        return (request with { Filters = request.Filters is null ? null : request.Filters with { Connector = connectors } }, validation.ToResult());
+    }
+}
