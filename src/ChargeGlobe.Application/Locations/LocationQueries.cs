@@ -98,8 +98,6 @@ public sealed record LocationFilter(
     bool GreenEnergy,
     bool BarrierFree)
 {
-    public static readonly LocationFilter None = new([], null, null, false, false, false, false, false);
-
     /// <summary>Whether a condition on the EVSEs of a location applies.</summary>
     public bool FiltersEvses => Connectors.Count > 0 || MinPowerKw is not null || AdHoc || Roaming;
 }
