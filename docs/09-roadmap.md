@@ -17,8 +17,9 @@
 - [ ] OpenChargeMap-API-Key beantragen
 
 ### Phase 1 – MVP Ost-Österreich (Wien, NÖ, OÖ, Bgld)
-- [ ] Domain + Datenmodell + Migrationen (inkl. Hypertables)
-- [ ] `Providers.Abstractions`, Ingest-Pipeline, Matching-Kaskade (`EvseId` Value Object existiert bereits)
+- [x] Domain + Datenmodell + Migration `ChargingDomain` (PostGIS-Geometrie mit GiST, Hypertables mit Kompression/Retention, Region-Trigger)
+- [x] `Providers.Abstractions` (Descriptor, Capabilities, Quell-Interfaces, Ingest-Modell, Status-Mapping)
+- [ ] Ingest-Pipeline (Lease-Scheduler, `ingest_queue`), Matching-Kaskade, Region-Seed, Continuous Aggregate `evse_occupancy_hourly`
 - [ ] Adapter **E-Control** (Inventar + Status + Ad-hoc-Preis) – Tier 0, deckt bereits Status und Ad-hoc-Preis für ganz Österreich ab
 - [ ] Adapter **OpenStreetMap** (Overpass) und **OpenChargeMap** als Ergänzung/Plausibilisierung
 - [ ] Region-Polygone, Lease-Scheduler (`poll_plan`), `ingest_queue`, clusterweites Rate-Budget, adaptive Statusabfrage, Metriken

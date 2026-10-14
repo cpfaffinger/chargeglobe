@@ -15,6 +15,7 @@ COPY tests/ChargeGlobe.Domain.Tests/ChargeGlobe.Domain.Tests.csproj tests/Charge
 COPY tests/ChargeGlobe.Api.Tests/ChargeGlobe.Api.Tests.csproj tests/ChargeGlobe.Api.Tests/
 COPY tests/ChargeGlobe.Jobs.Tests/ChargeGlobe.Jobs.Tests.csproj tests/ChargeGlobe.Jobs.Tests/
 COPY tests/ChargeGlobe.IntegrationTests/ChargeGlobe.IntegrationTests.csproj tests/ChargeGlobe.IntegrationTests/
+COPY tests/ChargeGlobe.Providers.Tests/ChargeGlobe.Providers.Tests.csproj tests/ChargeGlobe.Providers.Tests/
 RUN dotnet tool restore && dotnet restore
 
 COPY src/ src/

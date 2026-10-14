@@ -26,33 +26,35 @@ Operator (CPO) ─┬─ 1..n ─ Location ─ 1..n ─ ChargingStation? ─ 1..
 
 | Tabelle | Wichtige Spalten | Anmerkung |
 |---|---|---|
-| `region` | `code` (`AT-9` Wien, `AT-3` NÖ, …), `name`, `geom geography(MultiPolygon)` | ISO 3166-2 Codes; Polygone aus OSM-Admin-Grenzen |
-| `operator` | `id`, `name`, `country`, `operator_id` (z. B. `EVN`), `website`, `is_cpo`, `is_emp` | EVSE-ID-Präfix `AT*EVN` → Operator |
+| `region` | `code` (PK, `AT-9` Wien, `AT-3` NÖ, …), `name`, `geom geography(MultiPolygon,4326)` (GiST) | ISO 3166-2 Codes; Polygone aus OSM-Admin-Grenzen (Seed vorgesehen) |
+| `operator` | `id`, `name`, `country`, `operator_id` (z. B. `EVN`, eindeutig je `country`), `website`, `is_cpo`, `is_emp` | EVSE-ID-Präfix `AT*EVN` → Operator |
 | `emp` | `id`, `name`, `app_name`, `country` | Ladekarten-/App-Anbieter (ÖAMTC ePower, Electroverse, …); ein Unternehmen kann CPO und EMP sein |
-| `location` | `id uuid`, `name`, `address`, `postal_code`, `city`, `country`, `geom geography(Point)`, `operator_id`, `region_id`, `opening_times jsonb`, `access` (`PUBLIC`/`RESTRICTED`), `first_seen`, `last_seen`, `last_confirmed_at`, `status` | `region_id` wird via PostGIS beim Insert berechnet |
+| `location` | `id uuid`, `name`, `address`, `postal_code`, `city`, `country`, `geom geography(Point,4326)` (GiST), `operator_id`, `region_code`, `opening_times jsonb` (OCPI `Hours`), `access` (`PUBLIC`/`RESTRICTED`), `lifecycle` (`ACTIVE`/`PLANNED`/`REMOVED`), `first_seen`, `last_seen`, `last_confirmed_at` | `region_code` setzt der Trigger `location_assign_region` bei Insert und bei Änderung von `geom` (Region, deren Polygon den Punkt enthält) |
 | `charging_station` | `id`, `location_id`, `label`, `physical_reference` | optional; nur wenn Quelle Säulen-Ebene liefert |
-| `evse` | `id uuid`, `evse_id_norm` (UNIQUE, z. B. `ATEVNE12345`), `evse_id_display` (`AT*EVN*E1234*5`), `location_id`, `charging_station_id?`, `operator_id`, `max_power_kw`, `current_type` (`AC_1_PHASE`, `AC_3_PHASE`, `DC`), `physical_reference`, `first_seen`, `last_seen`, `last_confirmed_at`, `lifecycle` (`ACTIVE`/`PLANNED`/`REMOVED`), `identity_kind` (`EVSE_ID` / `SURROGATE`) | Ladepunkte ohne bekannte EVSE-ID bekommen eine Surrogat-ID `XX*CG*E<uuid-kurz>` und `identity_kind=SURROGATE` |
-| `connector` | `id`, `evse_id`, `ordinal`, `standard` (OCPI: `IEC_62196_T2`, `IEC_62196_T2_COMBO`, `CHADEMO`, `DOMESTIC_F`, `TESLA_S`, …), `format` (`SOCKET`/`CABLE`), `power_type`, `max_voltage`, `max_amperage`, `max_power_kw` | |
+| `evse` | `id uuid`, `evse_id_norm` (UNIQUE, z. B. `ATEVNE12345`), `evse_id_display` (`AT*EVN*E1234*5`), `location_id`, `charging_station_id?`, `operator_id`, `max_power_kw`, `power_type` (OCPI: `AC_1_PHASE`, `AC_2_PHASE`, `AC_2_PHASE_SPLIT`, `AC_3_PHASE`, `DC`), `physical_reference`, `first_seen`, `last_seen`, `last_confirmed_at`, `lifecycle` (`ACTIVE`/`PLANNED`/`REMOVED`), `identity_kind` (`EVSE_ID` / `SURROGATE`) | Ladepunkte ohne bekannte EVSE-ID bekommen eine Surrogat-ID `XX*CG*E<16 Hex-Zeichen aus dem Zufallsteil der UUID>` und `identity_kind=SURROGATE`; `XX` ist kein Ländercode, Kollisionen mit echten IDs sind ausgeschlossen |
+| `connector` | `id`, `evse_id`, `ordinal` (ab 1, eindeutig je EVSE), `standard` (OCPI `ConnectorType`: `IEC_62196_T2`, `IEC_62196_T2_COMBO`, `CHADEMO`, `DOMESTIC_F`, `TESLA_S`, …, zusätzlich `UNKNOWN`), `format` (`SOCKET`/`CABLE`), `power_type`, `max_voltage`, `max_amperage`, `max_power_kw` | |
 
 ### Provenienz
 
 | Tabelle | Spalten | Zweck |
 |---|---|---|
-| `source` | `key` (`econtrol`, `ocm`, `osm`, `evn`, `oeamtc`, …), `tier`, `license`, `attribution_text`, `capabilities jsonb`, `enabled` | Registry der Quellen |
-| `source_record` | `source_key`, `external_id`, `entity_type` (`LOCATION`/`EVSE`/`CONNECTOR`), `entity_id`, `match_method` (`EVSE_ID_EXACT`, `EVSE_ID_NORMALIZED`, `GEO_OPERATOR_HEURISTIC`, `MANUAL`), `match_confidence`, `first_seen`, `last_seen`, `last_snapshot_id` | Quell-ID ↔ kanonische Entität (n:1) |
-| `attribute_origin` | `entity_type`, `entity_id`, `attribute` (`geom`, `max_power_kw`, `name`, …), `source_key`, `observed_at`, `value_hash` | welches Attribut stammt woher |
-| `raw_snapshot` | `id`, `source_key`, `job_id`, `fetched_at`, `request_fingerprint`, `content_hash`, `payload jsonb` (komprimiert), `http_status` | Replay; Retention 30 Tage, Dedupe über `content_hash` |
-| `source_conflict` | `entity_id`, `attribute`, `values jsonb` (je Quelle), `detected_at`, `resolved_at`, `resolution` | Review-Queue im Admin |
+| `source` | `key` (PK: `econtrol`, `ocm`, `osm`, `evn`, `oeamtc`, …), `display_name`, `tier` (`OFFICIAL`, `OPEN_DATA`, `PUBLIC_WEB`, `APP_BACKEND`, `PARTNER`), `license`, `attribution_text`, `capabilities text[]` (Namen der Provider-Capabilities) | Registry der Quellen; die Felder kommen aus dem Descriptor des Adapters. Ob ein Provider aktiv ist, steht im Config-Service (`enabled`, Scope `provider:<key>`), nicht hier |
+| `source_record` | PK `source_key` + `external_id` + `entity_type` (`LOCATION`/`EVSE`/`CONNECTOR`), `entity_id`, `match_method` (`EVSE_ID_EXACT`, `EVSE_ID_NORMALIZED`, `GEO_OPERATOR_HEURISTIC`, `MANUAL`, `CREATED` = Datensatz hat die Entität angelegt), `match_confidence` (0–1), `first_seen`, `last_seen`, `last_snapshot_id` | Quell-ID ↔ kanonische Entität (n:1) |
+| `attribute_origin` | PK `entity_type` + `entity_id` + `attribute` (`geom`, `max_power_kw`, `name`, …), `source_key`, `observed_at`, `value_hash` (SHA-256) | welches Attribut stammt woher |
+| `raw_snapshot` | `id` (bigint), `source_key`, `job_id`, `fetched_at`, `request_fingerprint`, `content_hash` (SHA-256 des Payloads), `payload jsonb`, `http_status` | Replay; Retention 30 Tage (Job vorgesehen), Dedupe über `source_key` + `content_hash` |
+| `source_conflict` | `id`, `entity_type`, `entity_id`, `attribute`, `values jsonb` (je Quelle), `detected_at`, `resolved_at`, `resolution` | Review-Queue im Admin (Index auf offene Konflikte) |
+
+`source_key` verweist fachlich auf `source.key`, ist aber bewusst kein Fremdschlüssel: Adapter können liefern, bevor ihre `source`-Zeile existiert, und die Zeitreihen sparen sich die Prüfung je Insert.
 
 ### Status (Zeitreihen)
 
 | Tabelle | Spalten | Anmerkung |
 |---|---|---|
-| `evse_status_observation` (Hypertable) | `time`, `evse_id`, `source_key`, `status` (OCPI-Enum), `source_status_raw` (Originalstring), `source_reported_at` (falls Quelle einen Zeitstempel liefert), `latency_ms` | jede Beobachtung jeder Quelle; Compression nach 7 Tagen, Retention 180 Tage |
-| `evse_status_interval` | `evse_id`, `status`, `valid_from`, `valid_to` (NULL = aktuell), `source_key`, `confidence` | nur bei Statuswechsel; Basis für Belegungshistorie und Auslastungsstatistik |
-| `evse_status_current` | `evse_id` (PK), `status`, `since`, `observed_at`, `source_key`, `stale` (bool, berechnet aus Alter) | denormalisiert für Karten-Queries |
-| `evse_occupancy_hourly` (Continuous Aggregate) | `bucket` (1 h), `evse_id`, `obs_charging`, `obs_available`, `obs_total` | für Heatmaps/Auslastung ohne Scan der Rohdaten |
-| `location_status_observation` (Hypertable) | `time`, `location_id`, `source_key`, `evses_total`, `evses_available` | für Quellen, die nur Standort-Summen liefern (z. B. „3 von 8 frei“) |
+| `evse_status_observation` (Hypertable, Tages-Chunks) | PK `evse_id` + `time` + `source_key`, `status` (OCPI-Enum), `source_status_raw` (Originalstring), `source_reported_at` (falls Quelle einen Zeitstempel liefert), `latency_ms` (`time` − `source_reported_at`) | jede Beobachtung jeder Quelle; Kompression nach 7 Tagen (segmentiert nach `evse_id`, `source_key`), Retention 180 Tage |
+| `evse_status_interval` | PK `evse_id` + `valid_from`, `status`, `valid_to` (NULL = aktuell), `source_key`, `confidence` (0–1) | nur bei Statuswechsel; höchstens ein offenes Intervall je EVSE (Unique-Index auf `evse_id` mit `valid_to IS NULL`); Basis für Belegungshistorie und Auslastungsstatistik |
+| `evse_status_current` | `evse_id` (PK), `status`, `since`, `observed_at`, `source_key` | denormalisiert für Karten-Queries; ob der Wert veraltet ist, wird beim Lesen aus `observed_at` berechnet (`IsStale`) |
+| `evse_occupancy_hourly` (Continuous Aggregate, vorgesehen) | `bucket` (1 h), `evse_id`, `obs_charging`, `obs_available`, `obs_total` | für Heatmaps/Auslastung ohne Scan der Rohdaten |
+| `location_status_observation` (Hypertable, Tages-Chunks) | PK `location_id` + `time` + `source_key`, `evses_total`, `evses_available` | für Quellen, die nur Standort-Summen liefern (z. B. „3 von 8 frei“); Kompression und Retention wie oben |
 
 **Status-Zusammenführung bei mehreren Quellen:** `evse_status_current` folgt der Quelle mit der höchsten Status-Präzedenz, die innerhalb ihres Frische-Fensters liegt (CPO-direkt > Roaming-EMP > Aggregator). Widersprüche innerhalb 60 s werden als `confidence < 1` markiert, nicht als Wechsel.
 
@@ -123,64 +125,43 @@ Besonderheit **Tesla Supercharger**: Tesla vergibt EVSE-IDs im Roaming (sichtbar
 | Ad-hoc-Preis | amtliches Verzeichnis/NAP > CPO-App > EMP-App |
 | EMP-Tarif | jeweilige EMP-App > Tarifaggregatoren > manuelle Pflege |
 
-## SQL-Skizze (Auszug)
+## Schema (Auszug aus der Migration `ChargingDomain`)
+
+Die Tabellen entstehen aus dem EF-Core-Modell (`src/ChargeGlobe.Infrastructure/Persistence/ChargingModel.cs`); was EF Core nicht modellieren kann, ergänzt die Migration per SQL:
 
 ```sql
-create extension if not exists postgis;
-create extension if not exists timescaledb;
+CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION IF NOT EXISTS timescaledb;
 
-create table evse (
-  id                  uuid primary key default gen_random_uuid(),
-  evse_id_norm        text not null unique,
-  evse_id_display     text not null,
-  identity_kind       text not null check (identity_kind in ('EVSE_ID','SURROGATE')),
-  location_id         uuid not null references location(id),
-  charging_station_id uuid references charging_station(id),
-  operator_id         uuid references operator(id),
+CREATE TABLE evse (
+  id                  uuid PRIMARY KEY,
+  evse_id_norm        text NOT NULL,            -- UNIQUE (IX_evse_evse_id_norm)
+  evse_id_display     text NOT NULL,
+  identity_kind       text NOT NULL,            -- EVSE_ID | SURROGATE
+  location_id         uuid NOT NULL REFERENCES location(id) ON DELETE RESTRICT,
+  charging_station_id uuid REFERENCES charging_station(id) ON DELETE SET NULL,
+  operator_id         uuid REFERENCES operator(id) ON DELETE SET NULL,
   max_power_kw        numeric(7,2),
-  current_type        text,
+  power_type          text,
   physical_reference  text,
-  lifecycle           text not null default 'ACTIVE',
-  first_seen          timestamptz not null default now(),
-  last_seen           timestamptz not null default now(),
+  lifecycle           text NOT NULL,
+  first_seen          timestamptz NOT NULL,
+  last_seen           timestamptz NOT NULL,
   last_confirmed_at   timestamptz
 );
 
-create table evse_status_observation (
-  time               timestamptz not null,
-  evse_id            uuid not null references evse(id),
-  source_key         text not null,
-  status             text not null,
-  source_status_raw  text,
-  source_reported_at timestamptz,
-  latency_ms         int
-);
-select create_hypertable('evse_status_observation', by_range('time', interval '1 day'));
-alter table evse_status_observation set (timescaledb.compress,
+-- je Hypertable (evse_status_observation, location_status_observation):
+SELECT create_hypertable('evse_status_observation', by_range('time', INTERVAL '1 day'));
+ALTER TABLE evse_status_observation SET (timescaledb.compress,
   timescaledb.compress_segmentby = 'evse_id, source_key',
-  timescaledb.compress_orderby   = 'time desc');
-select add_compression_policy('evse_status_observation', interval '7 days');
-select add_retention_policy('evse_status_observation', interval '180 days');
+  timescaledb.compress_orderby   = 'time DESC');
+SELECT add_compression_policy('evse_status_observation', INTERVAL '7 days');
+SELECT add_retention_policy('evse_status_observation', INTERVAL '180 days');
 
-create table evse_status_interval (
-  evse_id    uuid not null references evse(id),
-  status     text not null,
-  valid_from timestamptz not null,
-  valid_to   timestamptz,
-  source_key text not null,
-  confidence real not null default 1,
-  primary key (evse_id, valid_from)
-);
-create index on evse_status_interval (evse_id, valid_to) where valid_to is null;
-
-create materialized view evse_occupancy_hourly
-with (timescaledb.continuous) as
-select time_bucket('1 hour', time) as bucket, evse_id,
-       count(*) filter (where status = 'CHARGING')  as obs_charging,
-       count(*) filter (where status = 'AVAILABLE') as obs_available,
-       count(*)                                      as obs_total
-from evse_status_observation
-group by bucket, evse_id;
+CREATE TRIGGER location_assign_region BEFORE INSERT OR UPDATE OF geom ON location
+  FOR EACH ROW EXECUTE FUNCTION location_assign_region();   -- region_code per ST_Covers(region.geom, location.geom)
 ```
+
+Vorgesehen ist das Continuous Aggregate `evse_occupancy_hourly` (`time_bucket('1 hour', time)` je `evse_id` mit Zählern für `CHARGING`, `AVAILABLE` und gesamt); es braucht eine eigene Migration außerhalb einer Transaktion.
 
 Geo-Queries laufen über `location.geom` mit GiST-Index; die Karten-API liefert EVSE-Cluster per Server-Side-Tiles erst ab Phase 2, im MVP reicht bbox + Limit.

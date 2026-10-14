@@ -77,7 +77,7 @@ Preise sind fachlich der schwierigste Teil, weil Apps sie unterschiedlich zeigen
 
 | Situation | Umgang |
 |---|---|
-| App zeigt vollständigen Tarif am Ladepunkt (kWh, min ab X, Session, Blockiergebühr) | `PriceObservation` mit `TariffElements` → `tariff` wird automatisch angelegt/versioniert |
+| App zeigt vollständigen Tarif am Ladepunkt (kWh, min ab X, Session, Blockiergebühr) | `ProviderPrice` mit `TariffElements` → `tariff` wird automatisch angelegt/versioniert |
 | App zeigt nur „ab 0,59 €/kWh“ | flache `price_observation`; Tarif bleibt `null`; Vergleichsrechnung nur für kWh-Anteil, im UI als „unvollständig“ markiert |
 | EMP hat Flat-Tarif unabhängig vom Ladepunkt (z. B. ein Preis für alle AC-Punkte eines CPO-Netzes) | ein `tariff` je (EMP × CPO × Leistungsklasse), Assignment über Regeln statt pro EVSE |
 | Preis nur in PDF/Website | manuelle Pflege im Admin (Tarif-Editor), `verified_by=MANUAL`, mit Quelle-URL und Datum |

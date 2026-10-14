@@ -16,115 +16,100 @@ Quelle ──HTTP──▶ Adapter (Providers.<Quelle>)
 
 ## Vertrag (`ChargeGlobe.Providers.Abstractions`)
 
+Quelltext: `src/ChargeGlobe.Providers.Abstractions` (`Contract.cs`, `IngestModel.cs`, `StatusMapping.cs`). Das Projekt referenziert aus `ChargeGlobe.Domain` nur das OCPI-Vokabular (`EvseStatus`, `ConnectorStandard`, `ConnectorFormat`, `PowerType`, `AccessType`), `SourceTier` und `GeoPoint` – keine Entitäten.
+
 ```csharp
-public interface IProvider
-{
-    ProviderDescriptor Descriptor { get; }
-}
+public interface IProvider { ProviderDescriptor Descriptor { get; } }
 
 public sealed record ProviderDescriptor(
-    string Key,                       // "econtrol", "ocm", "osm", "evn", "oeamtc", "tesla", ...
+    string Key,                       // "econtrol", "ocm", "osm", "evn", ...; Settings-Scope provider:<key>
     string DisplayName,
-    SourceTier Tier,                  // Official, OpenData, PublicWeb, AppBackend, Partner
+    SourceTier Tier,                  // OFFICIAL, OPEN_DATA, PUBLIC_WEB, APP_BACKEND, PARTNER
     ProviderCapabilities Capabilities,
     string License,                   // z. B. "CC BY 4.0", "ODbL", "ToS – nur Anzeige"
     string AttributionText,
     IReadOnlyList<string> Countries,  // ISO 3166-1 alpha-2
-    PollDefaults PollDefaults,        // Inventar täglich, Status 5 min, Preise 24 h ...
-    RateLimitPolicy RateLimit);       // z. B. 60 req/min, Burst 10
+    PollDefaults PollDefaults,        // (TimeSpan? Inventory, TimeSpan? Status, TimeSpan? Prices)
+    RateLimitPolicy RateLimit);       // (int PerMinute, int Burst, int? PerDay)
 
 [Flags]
 public enum ProviderCapabilities
 {
-    None               = 0,
-    StaticInventory    = 1 << 0,  // liefert Standorte/EVSEs/Stecker
-    EvseIds            = 1 << 1,  // liefert EVSE-IDs (entscheidend für Matching)
-    LiveStatusPerEvse  = 1 << 2,  // Status je Ladepunkt
-    LiveStatusPerLocation = 1 << 3, // nur "x von y frei"
-    AdHocPrice         = 1 << 4,  // CPO-Ad-hoc-Preis
-    EmpTariff          = 1 << 5,  // Preis der eigenen Ladekarte/App
-    BulkByBoundingBox  = 1 << 6,  // Abfrage per bbox/Tile möglich (billig)
-    BulkAll            = 1 << 7,  // ein Request = alles (Export)
-    ByEvseId           = 1 << 8,  // Einzelabfrage je Ladepunkt (teuer)
-    DeltaSince         = 1 << 9,  // "geändert seit" wird unterstützt
-    Ocpi               = 1 << 10, // echtes OCPI → generischer Adapter
+    None = 0, StaticInventory = 1 << 0, EvseIds = 1 << 1, LiveStatusPerEvse = 1 << 2,
+    LiveStatusPerLocation = 1 << 3, AdHocPrice = 1 << 4, EmpTariff = 1 << 5,
+    BulkByBoundingBox = 1 << 6, BulkAll = 1 << 7, ByEvseId = 1 << 8, DeltaSince = 1 << 9, Ocpi = 1 << 10,
 }
 
-/// Inventar (Stammdaten).
 public interface IInventorySource : IProvider
-{
-    IAsyncEnumerable<ProviderLocationSnapshot> FetchInventoryAsync(
-        InventoryQuery query, CancellationToken ct);
-}
+{ IAsyncEnumerable<ProviderLocationSnapshot> FetchInventoryAsync(InventoryQuery query, CancellationToken ct); }
 
 /// Belegt-Status. Der Adapter wählt selbst den billigsten Weg (bbox > bulk > ids).
 public interface IStatusSource : IProvider
-{
-    IAsyncEnumerable<EvseStatusObservation> FetchStatusAsync(
-        StatusQuery query, CancellationToken ct);
-}
+{ IAsyncEnumerable<ProviderEvseStatus> FetchStatusAsync(StatusQuery query, CancellationToken ct); }
 
-/// Preise – Ad-hoc und/oder EMP-Tarife.
 public interface IPriceSource : IProvider
-{
-    IAsyncEnumerable<PriceObservation> FetchPricesAsync(
-        PriceQuery query, CancellationToken ct);
-}
+{ IAsyncEnumerable<ProviderPrice> FetchPricesAsync(PriceQuery query, CancellationToken ct); }
+
+/// Ein billiger Request, der Erreichbarkeit und unverändertes Format zeigt.
+public interface IProviderHealth : IProvider
+{ Task<ProviderProbeResult> ProbeAsync(CancellationToken ct); }
 
 public sealed record InventoryQuery(BoundingBox? Bbox, string? Country, DateTimeOffset? Since);
 public sealed record StatusQuery(BoundingBox? Bbox, IReadOnlyCollection<ProviderEvseRef>? Evses);
 public sealed record PriceQuery(BoundingBox? Bbox, IReadOnlyCollection<ProviderEvseRef>? Evses);
-
-/// Verweis auf einen Ladepunkt aus Sicht des Providers (Quell-ID + ggf. EVSE-ID).
 public sealed record ProviderEvseRef(string ExternalId, string? EvseId, Guid CanonicalEvseId);
+public sealed record BoundingBox(double MinLongitude, double MinLatitude, double MaxLongitude, double MaxLatitude); // validiert, Contains(GeoPoint)
 ```
 
 ### Ingest-Modell (bewusst flach, kein Domain-Objekt)
 
 ```csharp
 public sealed record ProviderLocationSnapshot(
-    string ExternalId,
-    string? Name,
-    Address? Address,
-    GeoPoint Coordinates,
+    string ExternalId, string? Name, ProviderAddress? Address, GeoPoint Coordinates,
     string? OperatorName, string? OperatorId,     // z. B. "EVN" (aus EVSE-ID-Präfix oder Quelle)
-    AccessType? Access,
-    OpeningTimes? OpeningTimes,
+    AccessType? Access, ProviderOpeningTimes? OpeningTimes,
     IReadOnlyList<ProviderEvseSnapshot> Evses,
     DateTimeOffset ObservedAt,
-    JsonElement Raw);                              // Rohdatensatz für raw_snapshot
+    JsonElement Raw);                             // Rohdatensatz für raw_snapshot
+
+public sealed record ProviderAddress(string? Street, string? PostalCode, string? City, string Country);
+public sealed record ProviderOpeningTimes(bool TwentyFourSeven, string? Description);
 
 public sealed record ProviderEvseSnapshot(
     string ExternalId,
-    string? EvseId,                                // unnormalisiert, wie geliefert
-    string? PhysicalReference,                     // Aufdruck an der Säule, z. B. "A2"
-    string? StationExternalId,                     // Säulen-Ebene, falls vorhanden
-    decimal? MaxPowerKw,
-    CurrentType? CurrentType,
+    string? EvseId,                               // unnormalisiert, wie geliefert
+    string? PhysicalReference,                    // Aufdruck an der Säule, z. B. "A2"
+    string? StationExternalId,                    // Säulen-Ebene, falls vorhanden
+    decimal? MaxPowerKw, PowerType? PowerType,
     IReadOnlyList<ProviderConnectorSnapshot> Connectors,
-    EvseStatus? Status,                            // falls die Inventar-Antwort Status mitliefert
-    string? StatusRaw);
+    EvseStatus? Status, string? StatusRaw);       // falls die Inventar-Antwort Status mitliefert
 
 public sealed record ProviderConnectorSnapshot(
     ConnectorStandard Standard, ConnectorFormat Format, PowerType PowerType,
     decimal? MaxPowerKw, int? MaxVoltage, int? MaxAmperage, string? RawType);
 
-public sealed record EvseStatusObservation(
+public sealed record ProviderEvseStatus(
     string ExternalId, string? EvseId, Guid? CanonicalEvseId,
     EvseStatus Status, string StatusRaw,
     DateTimeOffset ObservedAt,            // wann wir es gesehen haben
     DateTimeOffset? SourceReportedAt);    // Zeitstempel der Quelle, falls vorhanden
 
-public sealed record PriceObservation(
+public sealed record ProviderPrice(
     string ExternalId, string? EvseId, Guid? CanonicalEvseId,
-    string? EmpKey,                        // null = Ad-hoc
+    string? EmpKey,                       // null = Ad-hoc
     string Currency,
     decimal? PricePerKwh, decimal? PricePerMinute, decimal? SessionFee,
     decimal? BlockingFeePerMinute, int? BlockingAfterMinutes,
-    IReadOnlyList<TariffElement>? TariffElements,   // OCPI, wenn vollständig ableitbar
+    JsonElement? TariffElements,          // OCPI TariffElement[] als JSON, wenn vollständig ableitbar
     string? TariffName, string? TariffUrl,
     DateTimeOffset ObservedAt, JsonElement Raw);
+
+public sealed record ProviderMappingIssue(string ProviderKey, string? ExternalId, string Problem);
 ```
+
+### Status-Mapping
+
+`StatusMapping` ist die Tabelle Quell-String → OCPI-`EvseStatus`. Jeder Adapter liefert sie als JSON-Datei (`{"frei": "AVAILABLE", "besetzt": "CHARGING", …}`), geladen mit `StatusMapping.FromJson`; die Einstellung `status_mapping` des Providers ergänzt oder überschreibt Einträge (`WithOverrides`). Die Suche ignoriert Groß-/Kleinschreibung und umgebende Leerzeichen; unbekannte Strings ergeben `UNKNOWN`. Ziele müssen OCPI-Statusnamen sein (keine Zahlen, keine Kleinschreibung), sonst wirft das Laden.
 
 ## Regeln für Adapter
 

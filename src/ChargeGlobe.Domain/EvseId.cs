@@ -9,13 +9,17 @@ namespace ChargeGlobe.Domain;
 /// </summary>
 public sealed partial record EvseId
 {
-    private EvseId(string normalized)
+    private EvseId(string normalized, string display)
     {
         Normalized = normalized;
+        Display = display;
     }
 
     /// <summary>Upper-case form without separators, e.g. <c>ATEVNE12345</c>.</summary>
     public string Normalized { get; }
+
+    /// <summary>Upper-case form with <c>*</c> as separator, as delivered, e.g. <c>AT*EVN*E1234*5</c>.</summary>
+    public string Display { get; }
 
     public string CountryCode => Normalized[..2];
 
@@ -50,9 +54,13 @@ public sealed partial record EvseId
             return false;
         }
 
-        evseId = new EvseId(normalized);
+        evseId = new EvseId(normalized, candidate);
         return true;
     }
+
+    public bool Equals(EvseId? other) => other is not null && Normalized == other.Normalized;
+
+    public override int GetHashCode() => Normalized.GetHashCode(StringComparison.Ordinal);
 
     public override string ToString() => Normalized;
 

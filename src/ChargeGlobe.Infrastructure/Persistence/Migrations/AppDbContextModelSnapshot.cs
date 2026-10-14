@@ -5,6 +5,7 @@ using ChargeGlobe.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
@@ -21,7 +22,651 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                 .HasAnnotation("ProductVersion", "10.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "postgis");
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "timescaledb");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.ChargingStation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Label")
+                        .HasColumnType("text")
+                        .HasColumnName("label");
+
+                    b.Property<Guid>("LocationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("location_id");
+
+                    b.Property<string>("PhysicalReference")
+                        .HasColumnType("text")
+                        .HasColumnName("physical_reference");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LocationId");
+
+                    b.ToTable("charging_station", (string)null);
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.Connector", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("EvseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("evse_id");
+
+                    b.Property<string>("Format")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("format");
+
+                    b.Property<int?>("MaxAmperage")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_amperage");
+
+                    b.Property<decimal?>("MaxPowerKw")
+                        .HasPrecision(7, 2)
+                        .HasColumnType("numeric(7,2)")
+                        .HasColumnName("max_power_kw");
+
+                    b.Property<int?>("MaxVoltage")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_voltage");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("integer")
+                        .HasColumnName("ordinal");
+
+                    b.Property<string>("PowerType")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("power_type");
+
+                    b.Property<string>("Standard")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("standard");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EvseId", "Ordinal")
+                        .IsUnique();
+
+                    b.ToTable("connector", (string)null);
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.Evse", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("ChargingStationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("charging_station_id");
+
+                    b.Property<string>("EvseIdDisplay")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("evse_id_display");
+
+                    b.Property<string>("EvseIdNorm")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("evse_id_norm");
+
+                    b.Property<DateTimeOffset>("FirstSeen")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("first_seen");
+
+                    b.Property<string>("IdentityKind")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("identity_kind");
+
+                    b.Property<DateTimeOffset?>("LastConfirmedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_confirmed_at");
+
+                    b.Property<DateTimeOffset>("LastSeen")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_seen");
+
+                    b.Property<string>("Lifecycle")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("lifecycle");
+
+                    b.Property<Guid>("LocationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("location_id");
+
+                    b.Property<decimal?>("MaxPowerKw")
+                        .HasPrecision(7, 2)
+                        .HasColumnType("numeric(7,2)")
+                        .HasColumnName("max_power_kw");
+
+                    b.Property<Guid?>("OperatorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("operator_id");
+
+                    b.Property<string>("PhysicalReference")
+                        .HasColumnType("text")
+                        .HasColumnName("physical_reference");
+
+                    b.Property<string>("PowerType")
+                        .HasColumnType("text")
+                        .HasColumnName("power_type");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChargingStationId");
+
+                    b.HasIndex("EvseIdNorm")
+                        .IsUnique();
+
+                    b.HasIndex("LocationId");
+
+                    b.HasIndex("OperatorId");
+
+                    b.ToTable("evse", (string)null);
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.EvseStatusCurrent", b =>
+                {
+                    b.Property<Guid>("EvseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("evse_id");
+
+                    b.Property<DateTimeOffset>("ObservedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("observed_at");
+
+                    b.Property<DateTimeOffset>("Since")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("since");
+
+                    b.Property<string>("SourceKey")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("source_key");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.HasKey("EvseId");
+
+                    b.ToTable("evse_status_current", (string)null);
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.EvseStatusInterval", b =>
+                {
+                    b.Property<Guid>("EvseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("evse_id");
+
+                    b.Property<DateTimeOffset>("ValidFrom")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("valid_from");
+
+                    b.Property<double>("Confidence")
+                        .HasColumnType("double precision")
+                        .HasColumnName("confidence");
+
+                    b.Property<string>("SourceKey")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("source_key");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("ValidTo")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("valid_to");
+
+                    b.HasKey("EvseId", "ValidFrom");
+
+                    b.HasIndex("EvseId")
+                        .IsUnique()
+                        .HasFilter("valid_to IS NULL");
+
+                    b.ToTable("evse_status_interval", (string)null);
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.EvseStatusObservation", b =>
+                {
+                    b.Property<Guid>("EvseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("evse_id");
+
+                    b.Property<DateTimeOffset>("Time")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("time");
+
+                    b.Property<string>("SourceKey")
+                        .HasColumnType("text")
+                        .HasColumnName("source_key");
+
+                    b.Property<int?>("LatencyMs")
+                        .HasColumnType("integer")
+                        .HasColumnName("latency_ms");
+
+                    b.Property<DateTimeOffset?>("SourceReportedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("source_reported_at");
+
+                    b.Property<string>("SourceStatusRaw")
+                        .HasColumnType("text")
+                        .HasColumnName("source_status_raw");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.HasKey("EvseId", "Time", "SourceKey");
+
+                    b.ToTable("evse_status_observation", (string)null);
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.Location", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Access")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("access");
+
+                    b.Property<string>("Address")
+                        .HasColumnType("text")
+                        .HasColumnName("address");
+
+                    b.Property<string>("City")
+                        .HasColumnType("text")
+                        .HasColumnName("city");
+
+                    b.Property<Point>("Coordinates")
+                        .IsRequired()
+                        .HasColumnType("geography (point, 4326)")
+                        .HasColumnName("geom");
+
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("country");
+
+                    b.Property<DateTimeOffset>("FirstSeen")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("first_seen");
+
+                    b.Property<DateTimeOffset?>("LastConfirmedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_confirmed_at");
+
+                    b.Property<DateTimeOffset>("LastSeen")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_seen");
+
+                    b.Property<string>("Lifecycle")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("lifecycle");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<string>("OpeningTimes")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("opening_times");
+
+                    b.Property<Guid?>("OperatorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("operator_id");
+
+                    b.Property<string>("PostalCode")
+                        .HasColumnType("text")
+                        .HasColumnName("postal_code");
+
+                    b.Property<string>("RegionCode")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("text")
+                        .HasColumnName("region_code");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Coordinates");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Coordinates"), "gist");
+
+                    b.HasIndex("OperatorId");
+
+                    b.HasIndex("RegionCode");
+
+                    b.ToTable("location", (string)null);
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.LocationStatusObservation", b =>
+                {
+                    b.Property<Guid>("LocationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("location_id");
+
+                    b.Property<DateTimeOffset>("Time")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("time");
+
+                    b.Property<string>("SourceKey")
+                        .HasColumnType("text")
+                        .HasColumnName("source_key");
+
+                    b.Property<int>("EvsesAvailable")
+                        .HasColumnType("integer")
+                        .HasColumnName("evses_available");
+
+                    b.Property<int>("EvsesTotal")
+                        .HasColumnType("integer")
+                        .HasColumnName("evses_total");
+
+                    b.HasKey("LocationId", "Time", "SourceKey");
+
+                    b.ToTable("location_status_observation", (string)null);
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.Operator", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("country");
+
+                    b.Property<bool>("IsCpo")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_cpo");
+
+                    b.Property<bool>("IsEmp")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_emp");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<string>("OperatorId")
+                        .HasColumnType("text")
+                        .HasColumnName("operator_id");
+
+                    b.Property<string>("Website")
+                        .HasColumnType("text")
+                        .HasColumnName("website");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Country", "OperatorId")
+                        .IsUnique()
+                        .HasFilter("operator_id IS NOT NULL");
+
+                    b.ToTable("operator", (string)null);
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.Region", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasColumnType("text")
+                        .HasColumnName("code");
+
+                    b.Property<MultiPolygon>("Geom")
+                        .HasColumnType("geography (multipolygon, 4326)")
+                        .HasColumnName("geom");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.HasKey("Code");
+
+                    b.HasIndex("Geom");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Geom"), "gist");
+
+                    b.ToTable("region", (string)null);
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Domain.Provenance.AttributeOrigin", b =>
+                {
+                    b.Property<string>("EntityType")
+                        .HasColumnType("text")
+                        .HasColumnName("entity_type");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entity_id");
+
+                    b.Property<string>("Attribute")
+                        .HasColumnType("text")
+                        .HasColumnName("attribute");
+
+                    b.Property<DateTimeOffset>("ObservedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("observed_at");
+
+                    b.Property<string>("SourceKey")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("source_key");
+
+                    b.Property<string>("ValueHash")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("value_hash");
+
+                    b.HasKey("EntityType", "EntityId", "Attribute");
+
+                    b.ToTable("attribute_origin", (string)null);
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Domain.Provenance.RawSnapshot", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ContentHash")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content_hash");
+
+                    b.Property<DateTimeOffset>("FetchedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fetched_at");
+
+                    b.Property<int>("HttpStatus")
+                        .HasColumnType("integer")
+                        .HasColumnName("http_status");
+
+                    b.Property<string>("JobId")
+                        .HasColumnType("text")
+                        .HasColumnName("job_id");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("payload");
+
+                    b.Property<string>("RequestFingerprint")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("request_fingerprint");
+
+                    b.Property<string>("SourceKey")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("source_key");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FetchedAt");
+
+                    b.HasIndex("SourceKey", "ContentHash");
+
+                    b.ToTable("raw_snapshot", (string)null);
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Domain.Provenance.Source", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasColumnType("text")
+                        .HasColumnName("key");
+
+                    b.Property<string>("AttributionText")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("attribution_text");
+
+                    b.PrimitiveCollection<List<string>>("Capabilities")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("capabilities");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("display_name");
+
+                    b.Property<string>("License")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("license");
+
+                    b.Property<string>("Tier")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tier");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("source", (string)null);
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Domain.Provenance.SourceConflict", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Attribute")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("attribute");
+
+                    b.Property<DateTimeOffset>("DetectedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("detected_at");
+
+                    b.Property<Guid?>("EntityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entity_id");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("entity_type");
+
+                    b.Property<string>("Resolution")
+                        .HasColumnType("text")
+                        .HasColumnName("resolution");
+
+                    b.Property<DateTimeOffset?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at");
+
+                    b.Property<string>("Values")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("values");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DetectedAt")
+                        .HasFilter("resolved_at IS NULL");
+
+                    b.ToTable("source_conflict", (string)null);
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Domain.Provenance.SourceRecord", b =>
+                {
+                    b.Property<string>("SourceKey")
+                        .HasColumnType("text")
+                        .HasColumnName("source_key");
+
+                    b.Property<string>("ExternalId")
+                        .HasColumnType("text")
+                        .HasColumnName("external_id");
+
+                    b.Property<string>("EntityType")
+                        .HasColumnType("text")
+                        .HasColumnName("entity_type");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entity_id");
+
+                    b.Property<DateTimeOffset>("FirstSeen")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("first_seen");
+
+                    b.Property<DateTimeOffset>("LastSeen")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_seen");
+
+                    b.Property<long?>("LastSnapshotId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("last_snapshot_id");
+
+                    b.Property<double>("MatchConfidence")
+                        .HasColumnType("double precision")
+                        .HasColumnName("match_confidence");
+
+                    b.Property<string>("MatchMethod")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("match_method");
+
+                    b.HasKey("SourceKey", "ExternalId", "EntityType");
+
+                    b.HasIndex("EntityType", "EntityId");
+
+                    b.ToTable("source_record", (string)null);
+                });
 
             modelBuilder.Entity("ChargeGlobe.Infrastructure.Persistence.ApiKey", b =>
                 {
@@ -500,6 +1145,92 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.ChargingStation", b =>
+                {
+                    b.HasOne("ChargeGlobe.Domain.Charging.Location", null)
+                        .WithMany()
+                        .HasForeignKey("LocationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.Connector", b =>
+                {
+                    b.HasOne("ChargeGlobe.Domain.Charging.Evse", null)
+                        .WithMany("Connectors")
+                        .HasForeignKey("EvseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.Evse", b =>
+                {
+                    b.HasOne("ChargeGlobe.Domain.Charging.ChargingStation", null)
+                        .WithMany()
+                        .HasForeignKey("ChargingStationId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ChargeGlobe.Domain.Charging.Location", null)
+                        .WithMany()
+                        .HasForeignKey("LocationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ChargeGlobe.Domain.Charging.Operator", null)
+                        .WithMany()
+                        .HasForeignKey("OperatorId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.EvseStatusCurrent", b =>
+                {
+                    b.HasOne("ChargeGlobe.Domain.Charging.Evse", null)
+                        .WithOne()
+                        .HasForeignKey("ChargeGlobe.Domain.Charging.EvseStatusCurrent", "EvseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.EvseStatusInterval", b =>
+                {
+                    b.HasOne("ChargeGlobe.Domain.Charging.Evse", null)
+                        .WithMany()
+                        .HasForeignKey("EvseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.EvseStatusObservation", b =>
+                {
+                    b.HasOne("ChargeGlobe.Domain.Charging.Evse", null)
+                        .WithMany()
+                        .HasForeignKey("EvseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.Location", b =>
+                {
+                    b.HasOne("ChargeGlobe.Domain.Charging.Operator", null)
+                        .WithMany()
+                        .HasForeignKey("OperatorId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ChargeGlobe.Domain.Charging.Region", null)
+                        .WithMany()
+                        .HasForeignKey("RegionCode")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.LocationStatusObservation", b =>
+                {
+                    b.HasOne("ChargeGlobe.Domain.Charging.Location", null)
+                        .WithMany()
+                        .HasForeignKey("LocationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ChargeGlobe.Infrastructure.Persistence.ApiKey", b =>
                 {
                     b.HasOne("ChargeGlobe.Infrastructure.Persistence.AppUser", null)
@@ -585,6 +1316,11 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.Evse", b =>
+                {
+                    b.Navigation("Connectors");
                 });
 #pragma warning restore 612, 618
         }
