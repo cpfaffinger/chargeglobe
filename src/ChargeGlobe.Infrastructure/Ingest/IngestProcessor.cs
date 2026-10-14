@@ -109,16 +109,11 @@ public sealed class IngestProcessor(AppDbContext db)
     }
 
     /// <summary>
-    /// Every reading becomes an observation, written with one statement. A message that is processed again must not fail
-    /// on readings it already stored.
+    /// Every reading becomes an observation, written with one statement (empty arrays insert nothing). A message that is
+    /// processed again must not fail on readings it already stored.
     /// </summary>
     private async Task InsertObservationsAsync(string sourceKey, List<StatusReading> readings, CancellationToken cancellationToken)
     {
-        if (readings.Count == 0)
-        {
-            return;
-        }
-
         var observations = readings
             .Select(reading => EvseStatusObservation.Create(reading.EvseId, sourceKey, reading.Status, reading.Raw, reading.ObservedAt, reading.SourceReportedAt))
             .ToList();
