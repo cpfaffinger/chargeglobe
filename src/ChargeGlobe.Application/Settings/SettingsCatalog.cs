@@ -29,6 +29,16 @@ public static class SettingsCatalog
     public const string ProviderEnabled = "provider.enabled";
     public const string ProviderApiKey = "provider.api_key";
     public const string ProviderReferer = "provider.referer";
+    public const string ProviderRegions = "provider.regions";
+    public const string ProviderInventoryIntervalMinutes = "provider.interval.inventory_minutes";
+    public const string ProviderStatusIntervalMinutes = "provider.interval.status_minutes";
+
+    public const string IngestMaxAttempts = "ingest.max_attempts";
+    public const string IngestQueueRetentionDays = "ingest.queue_retention_days";
+    public const string IngestSnapshotRetentionDays = "ingest.snapshot_retention_days";
+
+    /// <summary>Start scope (docs/01): Vienna, Lower Austria, Upper Austria, Burgenland.</summary>
+    public const string DefaultRegions = "AT-9,AT-3,AT-4,AT-1";
 
     /// <summary>Scope kind of the provider settings; a value is stored for <c>provider:&lt;key&gt;</c>.</summary>
     public const string ProviderScopeKind = "provider";
@@ -98,6 +108,44 @@ public static class SettingsCatalog
             "API key issued by the source. Stored encrypted and never returned.")
         {
             ScopeKinds = [ProviderScopeKind],
+        },
+        new(ProviderRegions, SettingType.String, DefaultRegions,
+            "Comma-separated ISO 3166-2 codes of the Austrian states the crawler covers for this source " +
+            "(AT-1 … AT-9). Plans of removed regions are deleted on the next scheduler cycle.")
+        {
+            ScopeKinds = [ProviderScopeKind],
+        },
+        new(ProviderInventoryIntervalMinutes, SettingType.Int, null,
+            "Minutes between full inventory runs per region. Empty means the default of the adapter.")
+        {
+            ScopeKinds = [ProviderScopeKind],
+            Min = 5,
+            Max = 10_080,
+        },
+        new(ProviderStatusIntervalMinutes, SettingType.Int, null,
+            "Minutes between status polls per region. Empty means the default of the adapter. The request " +
+            "budget of the source wins: runs that do not fit are delayed, not dropped.")
+        {
+            ScopeKinds = [ProviderScopeKind],
+            Min = 1,
+            Max = 1_440,
+        },
+
+        new(IngestMaxAttempts, SettingType.Int, 5,
+            "Processing attempts per ingest message. After the last failure the message keeps its error and is not retried.")
+        {
+            Min = 1,
+            Max = 20,
+        },
+        new(IngestQueueRetentionDays, SettingType.Int, 7, "Days after which processed ingest messages are deleted.")
+        {
+            Min = 1,
+            Max = 365,
+        },
+        new(IngestSnapshotRetentionDays, SettingType.Int, 30, "Days after which raw source responses (raw_snapshot) are deleted.")
+        {
+            Min = 1,
+            Max = 365,
         },
         new(ProviderReferer, SettingType.String, null,
             "Referer sent with every request, for sources that bind the API key to the domain it was " +

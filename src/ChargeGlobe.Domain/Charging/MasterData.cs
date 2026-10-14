@@ -199,8 +199,11 @@ public sealed class Evse : TrackedEntity
         SetEvseId(evseId);
     }
 
+    /// <summary>Removes the connectors from the given ordinal on (a source now reports fewer).</summary>
+    public void RemoveConnectorsFrom(int ordinal) => _connectors.RemoveAll(connector => connector.Ordinal >= ordinal);
+
     /// <summary>Adds a connector with the next ordinal (1, 2, …).</summary>
-    public Connector AddConnector(ConnectorStandard standard, ConnectorFormat format, PowerType powerType)
+    public Connector AddConnector(ConnectorStandard standard, ConnectorFormat? format, PowerType? powerType)
     {
         var connector = Connector.Create(Id, _connectors.Count + 1, standard, format, powerType);
         _connectors.Add(connector);
@@ -238,9 +241,11 @@ public sealed class Connector
 
     public ConnectorStandard Standard { get; set; }
 
-    public ConnectorFormat Format { get; set; }
+    /// <summary>Null if no source tells socket from cable.</summary>
+    public ConnectorFormat? Format { get; set; }
 
-    public PowerType PowerType { get; set; }
+    /// <summary>Null if no source tells it.</summary>
+    public PowerType? PowerType { get; set; }
 
     public int? MaxVoltage { get; set; }
 
@@ -249,7 +254,7 @@ public sealed class Connector
     public decimal? MaxPowerKw { get; set; }
 
     internal static Connector Create(
-        Guid evseId, int ordinal, ConnectorStandard standard, ConnectorFormat format, PowerType powerType) =>
+        Guid evseId, int ordinal, ConnectorStandard standard, ConnectorFormat? format, PowerType? powerType) =>
         new()
         {
             Id = Guid.CreateVersion7(),

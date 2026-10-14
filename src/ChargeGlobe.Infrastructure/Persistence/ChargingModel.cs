@@ -133,7 +133,8 @@ internal static class ChargingModel
         {
             entity.ToTable("raw_snapshot");
             entity.Property(snapshot => snapshot.Payload).HasColumnType("jsonb");
-            entity.HasIndex(snapshot => new { snapshot.SourceKey, snapshot.ContentHash });
+            // Equal responses of a source are stored once (RawSnapshotStore upserts on this key).
+            entity.HasIndex(snapshot => new { snapshot.SourceKey, snapshot.ContentHash }).IsUnique();
             entity.HasIndex(snapshot => snapshot.FetchedAt);
         });
 

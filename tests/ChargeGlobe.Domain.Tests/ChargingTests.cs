@@ -149,6 +149,20 @@ public class ChargingTests
     }
 
     [Fact]
+    public void Connectors_may_leave_format_and_power_type_open_and_can_be_trimmed()
+    {
+        var evse = Evse.WithSurrogate(Guid.CreateVersion7(), T0);
+        evse.AddConnector(ConnectorStandard.IEC_62196_T2, null, null);
+        evse.AddConnector(ConnectorStandard.UNKNOWN, null, PowerType.AC_1_PHASE);
+        evse.AddConnector(ConnectorStandard.DOMESTIC_F, ConnectorFormat.SOCKET, null);
+
+        evse.RemoveConnectorsFrom(2);
+
+        var remaining = Assert.Single(evse.Connectors);
+        Assert.Equal((ConnectorStandard.IEC_62196_T2, (ConnectorFormat?)null, (PowerType?)null), (remaining.Standard, remaining.Format, remaining.PowerType));
+    }
+
+    [Fact]
     public void EvseStatusObservation_computes_the_latency_from_the_time_stamp_of_the_source()
     {
         var evseId = Guid.CreateVersion7();

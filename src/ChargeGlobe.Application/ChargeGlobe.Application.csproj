@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ChargeGlobe.Domain\ChargeGlobe.Domain.csproj" />
+    <ProjectReference Include="..\ChargeGlobe.Providers.Abstractions\ChargeGlobe.Providers.Abstractions.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

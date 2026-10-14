@@ -50,6 +50,35 @@ public class ProvenanceTests
     }
 
     [Fact]
+    public void SourceRecord_can_point_to_another_entity()
+    {
+        var record = SourceRecord.Create("econtrol", "4711", EntityType.EVSE, Guid.CreateVersion7(), MatchMethod.CREATED, 1, T0, 1);
+        var replacement = Guid.CreateVersion7();
+
+        record.Rematch(replacement, MatchMethod.EVSE_ID_EXACT, 0.9, T0.AddHours(1), 2);
+
+        Assert.Equal((replacement, MatchMethod.EVSE_ID_EXACT, 0.9, T0.AddHours(1), (long?)2),
+            (record.EntityId, record.MatchMethod, record.MatchConfidence, record.LastSeen, record.LastSnapshotId));
+        Assert.Throws<ArgumentOutOfRangeException>(() => record.Rematch(replacement, MatchMethod.MANUAL, -0.1, T0, null));
+    }
+
+    [Fact]
+    public void AttributeOrigin_compares_and_takes_over_values()
+    {
+        var origin = AttributeOrigin.Create(EntityType.LOCATION, Guid.CreateVersion7(), "name", "econtrol", "abc", T0);
+
+        Assert.True(origin.Matches("abc"));
+        Assert.False(origin.Matches("abd"));
+        Assert.False(origin.Matches(null));
+
+        origin.Update("osm", null, T0.AddDays(1));
+
+        Assert.Equal(("osm", Sha256OfEmpty, T0.AddDays(1)), (origin.SourceKey, origin.ValueHash, origin.ObservedAt));
+        Assert.True(origin.Matches(null));
+        Assert.Throws<ArgumentException>(() => origin.Update(" ", "x", T0));
+    }
+
+    [Fact]
     public void AttributeOrigin_stores_a_hash_of_the_value()
     {
         var entityId = Guid.CreateVersion7();

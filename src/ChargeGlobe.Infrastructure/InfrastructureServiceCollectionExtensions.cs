@@ -1,11 +1,13 @@
 using System.Data.Common;
 using ChargeGlobe.Application.Health;
 using ChargeGlobe.Application.Identity;
+using ChargeGlobe.Application.Ingest;
 using ChargeGlobe.Application.Mail;
 using ChargeGlobe.Application.Settings;
 using ChargeGlobe.Application.Sources;
 using ChargeGlobe.Infrastructure.Health;
 using ChargeGlobe.Infrastructure.Identity;
+using ChargeGlobe.Infrastructure.Ingest;
 using ChargeGlobe.Infrastructure.Mail;
 using ChargeGlobe.Infrastructure.Persistence;
 using ChargeGlobe.Infrastructure.Settings;
@@ -39,6 +41,12 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddScoped<AuditLog>();
         services.AddScoped<ISourceRegistry, SourceRegistry>();
+        services.AddScoped<IngestProcessor>();
+        services.AddScoped<IIngestQueue, IngestQueue>();
+        services.AddScoped<IPollPlanStore, PollPlanStore>();
+        services.AddScoped<IRawSnapshotStore, RawSnapshotStore>();
+        services.AddScoped<IJobLeases, JobLeases>();
+        services.AddSingleton<IProviderRateBudget, ProviderRateBudget>();
         services.AddSingleton<SettingsCache>();
         services.AddSingleton<IAppConfig, AppConfig>();
 

@@ -64,7 +64,6 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                         .HasColumnName("evse_id");
 
                     b.Property<string>("Format")
-                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("format");
 
@@ -86,7 +85,6 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                         .HasColumnName("ordinal");
 
                     b.Property<string>("PowerType")
-                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("power_type");
 
@@ -535,7 +533,8 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("FetchedAt");
 
-                    b.HasIndex("SourceKey", "ContentHash");
+                    b.HasIndex("SourceKey", "ContentHash")
+                        .IsUnique();
 
                     b.ToTable("raw_snapshot", (string)null);
                 });
@@ -950,6 +949,179 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                     b.HasIndex("Status", "CreatedAt");
 
                     b.ToTable("email_outbox", (string)null);
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Infrastructure.Persistence.IngestMessage", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempts");
+
+                    b.Property<DateTimeOffset>("EnqueuedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("enqueued_at");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("text")
+                        .HasColumnName("error");
+
+                    b.Property<Guid>("JobId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("job_id");
+
+                    b.Property<DateTimeOffset?>("NextAttemptAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("next_attempt_at");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("payload");
+
+                    b.Property<DateTimeOffset?>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("processed_at");
+
+                    b.Property<string>("ProviderKey")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("provider_key");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Id")
+                        .HasDatabaseName("IX_ingest_queue_pending")
+                        .HasFilter("processed_at IS NULL");
+
+                    b.HasIndex("ProcessedAt");
+
+                    b.ToTable("ingest_queue", (string)null);
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Infrastructure.Persistence.JobLease", b =>
+                {
+                    b.Property<string>("JobName")
+                        .HasColumnType("text")
+                        .HasColumnName("job_name");
+
+                    b.Property<DateTimeOffset>("LeaseUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("lease_until");
+
+                    b.Property<string>("LeasedBy")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("leased_by");
+
+                    b.HasKey("JobName");
+
+                    b.ToTable("job_lease", (string)null);
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Infrastructure.Persistence.PollPlan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<TimeSpan>("Interval")
+                        .HasColumnType("interval")
+                        .HasColumnName("interval");
+
+                    b.Property<string>("JobType")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("job_type");
+
+                    b.Property<string>("LastResult")
+                        .HasColumnType("text")
+                        .HasColumnName("last_result");
+
+                    b.Property<DateTimeOffset?>("LastRunAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_run_at");
+
+                    b.Property<DateTimeOffset?>("LeaseUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("lease_until");
+
+                    b.Property<string>("LeasedBy")
+                        .HasColumnType("text")
+                        .HasColumnName("leased_by");
+
+                    b.Property<double>("MaxLatitude")
+                        .HasColumnType("double precision")
+                        .HasColumnName("max_latitude");
+
+                    b.Property<double>("MaxLongitude")
+                        .HasColumnType("double precision")
+                        .HasColumnName("max_longitude");
+
+                    b.Property<double>("MinLatitude")
+                        .HasColumnType("double precision")
+                        .HasColumnName("min_latitude");
+
+                    b.Property<double>("MinLongitude")
+                        .HasColumnType("double precision")
+                        .HasColumnName("min_longitude");
+
+                    b.Property<DateTimeOffset>("NextRunAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("next_run_at");
+
+                    b.Property<string>("ProviderKey")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("provider_key");
+
+                    b.Property<string>("RegionCode")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("region_code");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NextRunAt");
+
+                    b.HasIndex("ProviderKey", "JobType", "RegionCode")
+                        .IsUnique();
+
+                    b.ToTable("poll_plan", (string)null);
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Infrastructure.Persistence.ProviderRateBudgetState", b =>
+                {
+                    b.Property<string>("ProviderKey")
+                        .HasColumnType("text")
+                        .HasColumnName("provider_key");
+
+                    b.Property<int>("DayCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("day_count");
+
+                    b.Property<DateTimeOffset>("DayResetAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("day_reset_at");
+
+                    b.Property<DateTimeOffset>("RefilledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("refilled_at");
+
+                    b.Property<double>("Tokens")
+                        .HasColumnType("double precision")
+                        .HasColumnName("tokens");
+
+                    b.HasKey("ProviderKey");
+
+                    b.ToTable("provider_rate_budget", (string)null);
                 });
 
             modelBuilder.Entity("ChargeGlobe.Infrastructure.Persistence.RefreshToken", b =>

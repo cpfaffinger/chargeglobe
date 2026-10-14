@@ -90,13 +90,18 @@ public static class JobServices
         if (options.Role == JobRole.Worker)
         {
             services.AddHostedService<MailDeliveryService>();
+            services.AddHostedService<IngestWorkerService>();
         }
         else
         {
-            // Source adapters run in the crawler role only; their settings come from the config service.
+            // Source adapters run in the crawler role only; their settings come from the config service,
+            // their requests count against the cluster-wide budget.
             services.AddSingleton<IProviderSettings, ConfigProviderSettings>();
+            services.AddSingleton<IProviderRequestBudget, ClusterRequestBudget>();
             services.AddEControlProvider();
+            services.AddSingleton<PollJobRunner>();
             services.AddHostedService<ProviderHealthService>();
+            services.AddHostedService<PollScheduler>();
         }
 
         return services;

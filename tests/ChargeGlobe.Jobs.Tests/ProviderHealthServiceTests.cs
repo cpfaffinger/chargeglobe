@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
 using ChargeGlobe.Application.Identity;
+using ChargeGlobe.Application.Ingest;
 using ChargeGlobe.Application.Settings;
 using ChargeGlobe.Application.Sources;
 using ChargeGlobe.Domain.Provenance;
@@ -105,6 +106,8 @@ public class ProviderHealthServiceTests
         var services = new ServiceCollection()
             .AddLogging()
             .AddSingleton<IAppConfig>(new StubConfig([]))
+            // Registered by the infrastructure in the real host.
+            .AddSingleton<IProviderRateBudget>(new FreeBudget())
             .AddJobs(JobOptions.Create("crawler", "crawler-1"));
 
         using var provider = services.BuildServiceProvider();
@@ -112,8 +115,15 @@ public class ProviderHealthServiceTests
         var keys = provider.GetServices<IProvider>().Select(item => item.Descriptor.Key).ToList();
         Assert.Equal(SettingsCatalog.ProviderKeys, keys);
         Assert.IsType<ConfigProviderSettings>(provider.GetRequiredService<IProviderSettings>());
+        Assert.IsType<ClusterRequestBudget>(provider.GetRequiredService<IProviderRequestBudget>());
         Assert.Contains(services, descriptor => descriptor.ImplementationType == typeof(ProviderHealthService));
         Assert.DoesNotContain(services, descriptor => descriptor.ImplementationType == typeof(MailDeliveryService));
+    }
+
+    private sealed class FreeBudget : IProviderRateBudget
+    {
+        public Task<TimeSpan?> TryTakeAsync(string providerKey, RateLimitPolicy policy, CancellationToken cancellationToken) =>
+            Task.FromResult<TimeSpan?>(null);
     }
 
     private sealed class StubRegistry : ISourceRegistry
