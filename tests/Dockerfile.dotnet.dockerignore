@@ -8,5 +8,7 @@ CLAUDE.local.md
 **/obj
 **/TestResults
 artifacts
+data
 docs
 src/web
+!src/web/Dockerfile

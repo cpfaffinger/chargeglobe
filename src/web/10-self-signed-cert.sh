@@ -1,7 +1,7 @@
 #!/bin/sh
 # Creates the self-signed certificate for the HTTPS-only port on first start
-# (docs/adr/0009). It lives in the "tls" volume so that a browser exception
-# survives image rebuilds.
+# (docs/adr/0009). It lives in the bind mount ./data/tls (docs/adr/0011), so that a
+# browser exception survives image rebuilds.
 set -eu
 
 dir=/etc/nginx/tls

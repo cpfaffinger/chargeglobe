@@ -15,7 +15,7 @@ Anbieter und Tarifmodelle hinweg. Alles wird über eine öffentliche API und ein
 | **Stack** | ASP.NET Core / C# / .NET 10 · Angular 22 / TypeScript · PostgreSQL (PostGIS + TimescaleDB) |
 | **Zugriff** | anonym ist nur die Karte nutzbar (Ladepunkte mit Basisdaten und aktuellem Status, eigener Standort); alle erweiterten Funktionen und persönlichen Einstellungen setzen ein Benutzerkonto voraus (kostenlose Selbstregistrierung); rollenbasierte Berechtigungen (RBAC) für Pflege/Admin; API-Keys und OpenAPI 3.1 für KI-Agenten und Integrationen |
 | **Karte** | MapLibre GL JS mit OpenStreetMap-Vektorkacheln (OpenFreeMap), eigener Standort; Routing über selbst gehostete OSM-Engine (geplant) |
-| **Betrieb** | Docker Compose, Konfiguration über `.env`, Web-App + API auf einem HTTPS-Port (Default 5005, self-signed Zertifikat); gültiges Zertifikat über externen Loadbalancer |
+| **Betrieb** | Docker Compose, Konfiguration über `.env`, Daten in Bind-Mounts unter `./data/` (keine Docker-Volumes), Web-App + API auf einem HTTPS-Port (Default 5005, self-signed Zertifikat); gültiges Zertifikat über externen Loadbalancer |
 | **Lizenz** | noch offen – Vorschlag siehe [docs/09-roadmap.md](docs/09-roadmap.md); die Region-Polygone (`src/ChargeGlobe.Infrastructure/Persistence/Seed/regions-at.geojson`) stammen aus OpenStreetMap, © OpenStreetMap contributors, ODbL 1.0 |
 
 ## Dokumentation
@@ -73,7 +73,8 @@ chargeglobe/
 │  ├─ Dockerfile.dotnet              # Test-Image für test-dotnet
 │  └─ run-dotnet-tests.sh            # Tests + Coverage-Gate im Container
 ├─ fixtures/                     # sanitisierte Beispiel-Responses je Provider + erwartetes Ingest-Modell (Replay-Tests)
-├─ docker-compose.yml            # db · api · crawler · worker · web, gesteuert über .env
+├─ docker-compose.yml            # data-init · db · api · crawler · worker · web, gesteuert über .env
+├─ data/                         # (entsteht beim Start, gitignored) Bind-Mounts: postgres/ (Datenbank), tls/ (Zertifikat)
 ├─ docker-compose.test.yml       # Testlauf statt App: test-db · test-smtp · test-dotnet · test-web (Projekt chargeglobe-test)
 ├─ scripts/test.sh               # ein Aufruf: bauen, beide Suiten, Coverage-Zusammenfassung, aufräumen
 ├─ scripts/regions/              # build-regions-at.sh: Bundesländer-Polygone aus OpenStreetMap (Overpass + PostGIS) → Persistence/Seed/regions-at.geojson

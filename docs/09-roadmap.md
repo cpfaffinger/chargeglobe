@@ -12,6 +12,7 @@
 - [x] Identity-Grundgerüst: ASP.NET Core Identity, Permission-Katalog, Standardrollen, Selbstregistrierung mit E-Mail-Bestätigung, Login (JWT), Passwort-Reset, API-Keys, `GET /me`, OpenAPI mit Security Schemes und `x-required-permission`; Admin-Seed-User aus `.env`; Mail-Port `IEmailSender` mit `email_outbox`; Angular-Seiten für Registrierung, Login und Passwort-Reset mit Guard nach Permission
 - [x] Mail-Service: SMTP-Versand der Outbox im Worker (MailKit) mit den Einstellungen `mail.*`, Backoff und Retention, `POST /mail/test`, `GET /mail/outbox`, Admin-Seite `/admin/mail` ([ADR-0008](adr/0008-zentraler-mail-service-smtp.md))
 - [x] Erstes Deployment auf den Dev-Server (`/opt/chargeglobe`)
+- [x] Persistente Daten nur in Bind-Mounts unter `./data/` statt Docker-Volumes ([ADR-0011](adr/0011-bind-mounts-statt-volumes.md))
 - [ ] Lizenz festlegen (siehe unten), `CONTRIBUTING.md`, Code of Conduct
 - [x] API-Key für das E-Control-Ladestellenverzeichnis (an eine Domain gebunden, derzeit Platzhalter; Key nur im Config-Service)
 - [ ] Nutzungsbedingungen der E-Control-API archivieren, Weiterverbreitung schriftlich klären, Go-Live-Meldung
