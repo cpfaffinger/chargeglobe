@@ -4,9 +4,20 @@ body {
   line-height: 1.5;
 }
 
+/* Header on top, the page fills the rest of the viewport (the map needs a fixed height). */
+app-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
 header {
   display: flex;
-  align-items: baseline;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  align-items: center;
   justify-content: space-between;
   padding: 0.5rem 1rem;
   border-bottom: 1px solid #ccc;
@@ -17,14 +28,70 @@ header h1 {
   font-size: 1.25rem;
 }
 
-header nav a {
-  margin-left: 1rem;
+header nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  align-items: center;
 }
 
 main {
+  flex: 1;
+  box-sizing: border-box;
+  width: 100%;
   max-width: 40rem;
   margin: 0 auto;
   padding: 1rem;
+}
+
+/* The map page uses the full width and height below the header. */
+main:has(> app-home) {
+  display: flex;
+  max-width: none;
+  padding: 0;
+}
+
+app-home {
+  position: relative;
+  display: block;
+  flex: 1;
+  min-height: 20rem;
+}
+
+#map {
+  position: absolute;
+  inset: 0;
+}
+
+#map-overlay {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 1;
+  max-width: min(24rem, calc(100% - 5rem));
+}
+
+#locate {
+  padding: 0.4rem 0.75rem;
+  font: inherit;
+  background: #fff;
+  border: 1px solid #999;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 20%);
+  cursor: pointer;
+}
+
+#map-notice {
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0.75rem;
+  background: #fff8e1;
+  border: 1px solid #e0b100;
+  border-radius: 4px;
+}
+
+/* The page's own "Mein Standort" button triggers the geolocate control; its icon would duplicate it. */
+.maplibregl-ctrl-group:has(> .maplibregl-ctrl-geolocate) {
+  display: none;
 }
 
 form label {
@@ -41,13 +108,6 @@ form input {
 
 .error {
   color: #b00020;
-}
-
-#map-placeholder {
-  padding: 3rem 1rem;
-  text-align: center;
-  background: #eef3f7;
-  border: 1px dashed #9ab;
 }
 
 app-setting-row {

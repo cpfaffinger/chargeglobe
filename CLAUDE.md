@@ -77,7 +77,7 @@ cat artifacts/coverage/Summary.txt          # erwartet: Line coverage: 100%
 # Angular (in src/web): Tests mit Coverage, Build, Dev-Server (proxied /api an localhost:8080)
 npm ci
 npx ng test --code-coverage --watch=false   # erwartet: Statements 100% (karma.conf.js bricht darunter ab); braucht CHROME_BIN (Chrome oder Edge)
-npx ng build
+npx ng build                                # maplibre-gl landet als eigener Lazy-Chunk ("Lazy chunk files … maplibre-gl")
 npx ng serve
 
 # EF-Core-Migrationen (Tool dotnet-ef aus dotnet-tools.json; braucht keine Datenbank)
@@ -97,6 +97,7 @@ docker compose up -d --build
 curl -k https://localhost:5005/api/v1/health   # {"status":"ok","db":"ok"}; -k wegen self-signed Zertifikat
 curl -k https://localhost:5005/api/v1/permissions   # Permission-Katalog (anonym)
 curl -k https://localhost:5005/api/v1/map/config    # Kartenkonfiguration aus dem Config-Service (anonym)
+curl -kI https://localhost:5005/maplibre/maplibre-gl-worker.mjs   # 200, Content-Type text/javascript (Worker der Karte)
 docker compose logs crawler worker          # Heartbeats beider Rollen (alle 30 s, mit aktuellem Wert von mail.enabled); worker: "Mail outbox: …"
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select template_key, status, attempts, last_error from email_outbox"
 docker compose down                         # Volumes pgdata und tls (Zertifikat) bleiben erhalten
@@ -122,4 +123,4 @@ Vor einem neuen lokalen Coverage-Lauf alte Ergebnisse löschen (`tests/*/TestRes
 
 ## Nächste Schritte (Stand jetzt)
 
-Siehe `docs/09-roadmap.md`: die Karte mit MapLibre/Geolocation ([ADR-0007](docs/adr/0007-karte-standort-routing.md)) als Einstieg in Phase 1; außerdem Lizenz festlegen, E-Control-API-Key beantragen.
+Siehe `docs/09-roadmap.md`: Phase 1 mit Domain und Datenmodell für Location/EVSE/Connector (Migrationen, `Providers.Abstractions` nach `docs/03`, `docs/04`), danach der Adapter für das E-Control-Ladestellenverzeichnis und die Ladepunkt-Marker auf der Karte; außerdem Lizenz festlegen, E-Control-API-Key beantragen.

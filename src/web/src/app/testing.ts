@@ -1,6 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { computed, signal } from '@angular/core';
 import { AuthService, Me } from './auth/auth.service';
+import { BrowserCapabilities } from './map/browser-capabilities';
+import { MapConfig } from './map/map-config.service';
+import { MapEngine, MapHandle } from './map/map-engine';
 
 /** Shared helpers for the specs. */
 
@@ -30,6 +33,38 @@ export function fakeAuth(me: Me | null = null) {
     'hasPermission',
   ]);
   return Object.assign(spies, { me: current, isAuthenticated: computed(() => current() !== null) });
+}
+
+/** Response of GET /api/v1/map/config with the defaults of the settings catalog. */
+export const MAP_CONFIG: MapConfig = {
+  styleUrl: 'https://tiles.openfreemap.org/styles/liberty',
+  attribution: '© OpenStreetMap contributors, OpenMapTiles',
+  center: { latitude: 48.2, longitude: 15.6 },
+  zoom: 7,
+};
+
+/** MapEngine double: WebGL is not reliably available in the headless test browser. */
+export function fakeMapEngine() {
+  const handle = jasmine.createSpyObj<MapHandle>('MapHandle', ['locate', 'destroy']);
+  handle.locate.and.returnValue(true);
+  const engine = jasmine.createSpyObj<MapEngine>('MapEngine', ['create']);
+  engine.create.and.resolveTo(handle);
+  return { engine, handle };
+}
+
+/** BrowserCapabilities double; by default the browser offers everything the map needs. */
+export function fakeBrowser() {
+  const browser = jasmine.createSpyObj<BrowserCapabilities>('BrowserCapabilities', [
+    'webGl',
+    'secureContext',
+    'geolocation',
+    'geolocationPermission',
+  ]);
+  browser.webGl.and.returnValue(true);
+  browser.secureContext.and.returnValue(true);
+  browser.geolocation.and.returnValue(true);
+  browser.geolocationPermission.and.resolveTo('prompt');
+  return browser;
 }
 
 /** A 422 problem response with one field error. */
