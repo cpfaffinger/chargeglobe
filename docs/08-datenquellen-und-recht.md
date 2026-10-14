@@ -58,6 +58,7 @@ Referenzen: [HA-Integration (MIT)](https://github.com/prusuino/ha_austrian_charg
 | Quelle | Inhalt | Lizenz | Nutzen |
 |---|---|---|---|
 | **OpenStreetMap** (Overpass) | 6.961 `amenity=charging_station` in AT (Zählung 13.10.2026) – deutlich weniger als 14.793 Ladestellen bei E-Control; teils `ref:EU:EVSE` | ODbL (Share-Alike bei Vermischung!) | Plausibilisierung von Koordinaten, Zusatzattribute (Parkplatz, Überdachung) |
+| **OpenStreetMap** (Overpass), Verwaltungsgrenzen | Grenzrelationen der neun Bundesländer (`admin_level=4`, `ISO3166-2` `AT-1` … `AT-9`), vereinfacht als `regions-at.geojson` im Repo | ODbL 1.0, Attribution „© OpenStreetMap contributors“ (steht in der Datei, in `docs/03` und im README) | genutzt: Tabelle `region`, daraus `location.region_code` und `region` in `GET /evses/{evseId}`; die Datei selbst ist eine abgeleitete Datenbank unter ODbL, Region-Codes in API-Antworten sind ein „Produced Work“ |
 | **OpenChargeMap** | 28 Netzwerke für AT; keine E-Control-Importe (fehlende Freigabe); API-Key Pflicht, > 10.000 Req/Tag absprechen | CC BY 4.0 (Beitragsdaten), Importquellen je POI | Ergänzung, Community-Fotos/Kommentare |
 | **Stadt Wien OGD** | WFS `ogdwien:ELADESTELLEOGD` (nur städtische 22-kW-Punkte, ~1.200) | CC BY 3.0 AT | gering, da in E-Control enthalten |
 | Land NÖ/OÖ/Bgld, Wien Energie, Linz AG | keine Ladestations-Open-Data gefunden [U] | – | – |
@@ -105,6 +106,6 @@ Referenzen: [HA-Integration (MIT)](https://github.com/prusuino/ha_austrian_charg
 1. E-Control-API-Key auf die Projekt-Domain registrieren, Terms archivieren, Limits (2.500/h, 30 parallel) hart im Adapter verankern.
 2. Attribution „Datenquelle: Ladestellenverzeichnis der E-Control (ladestellen.at)“ + Logo im Frontend und `meta.attribution` in der API; Go-Live-Mail; Quartalsstatistik automatisieren.
 3. Vor Bulk-Exports schriftliche Freigabe einholen (OSM-Präzedenz zeigt Kooperationsbereitschaft).
-4. OSM-Daten (ODbL) in eigener Quell-Schicht halten; keine Vermischung in Exporten ohne Share-Alike-Entscheidung.
+4. OSM-Daten (ODbL) in eigener Quell-Schicht halten; keine Vermischung in Exporten ohne Share-Alike-Entscheidung. Die Region-Polygone bleiben eine getrennte Datei unter ODbL mit Quellenangabe; in die Ladepunktdaten fließt nur der Region-Code ein.
 5. Tier-1/2-Quellen: nur anonym erreichbare Endpunkte, ToS prüfen und dokumentieren, Kill-Switch, Kontaktadresse im User-Agent; Takedown-Prozess.
 6. Alle Preis-/Tarifdaten mit Zeitstempel und Quelle versionieren.

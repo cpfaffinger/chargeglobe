@@ -119,6 +119,7 @@ public class EvsesApiTests(IntegrationFactory factory) : IClassFixture<Integrati
         var location = data.GetProperty("location");
         Assert.Equal(("Teststation Stephansplatz", "Wien", "AT"), (location.GetProperty("name").GetString(), location.GetProperty("city").GetString(), location.GetProperty("country").GetString()));
         Assert.Equal(48.2085, location.GetProperty("latitude").GetDouble(), 6);
+        Assert.Equal("AT-9", location.GetProperty("region").GetString());
         Assert.Equal(("Test Operator GmbH", "TST"), (data.GetProperty("operator").GetProperty("name").GetString(), data.GetProperty("operator").GetProperty("operatorId").GetString()));
         Assert.Equal((22m, "AC_3_PHASE"), (data.GetProperty("maxPowerKw").GetDecimal(), data.GetProperty("powerType").GetString()));
         Assert.Equal("IEC_62196_T2", data.GetProperty("connectors")[0].GetProperty("standard").GetString());

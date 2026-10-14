@@ -83,6 +83,9 @@ npx ng serve
 # Replay-Erwartung eines Adapters nach gewollter Mapping-Änderung neu schreiben (danach Diff von fixtures/<key>/*.expected.json prüfen)
 UPDATE_FIXTURES=1 dotnet test tests/ChargeGlobe.Providers.Tests
 
+# Region-Polygone aus OpenStreetMap neu erzeugen (Overpass + Wegwerf-Container mit PostGIS; braucht curl und Docker, z. B. auf srv-dev2)
+./scripts/regions/build-regions-at.sh       # schreibt src/ChargeGlobe.Infrastructure/Persistence/Seed/regions-at.geojson; die API übernimmt Änderungen beim nächsten Start
+
 # EF-Core-Migrationen (Tool dotnet-ef aus dotnet-tools.json; braucht keine Datenbank)
 dotnet tool restore
 dotnet tool run dotnet-ef migrations add <Name> --project src/ChargeGlobe.Infrastructure --output-dir Persistence/Migrations
@@ -111,6 +114,8 @@ docker compose logs crawler worker          # Heartbeats beider Rollen (alle 30 
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select template_key, status, attempts, last_error from email_outbox"
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select hypertable_name from timescaledb_information.hypertables where hypertable_schema = 'public'"   # evse_status_observation, location_status_observation
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select view_name, materialized_only from timescaledb_information.continuous_aggregates"   # evse_occupancy_hourly, f (Real-Time-Aggregation)
+docker compose exec db psql -U chargeglobe -d chargeglobe -c "select code, name, round(ST_Area(geom)/1e6) km2 from region order by 1"   # AT-1 … AT-9 aus dem OSM-Seed
+docker compose exec db psql -U chargeglobe -d chargeglobe -c "select region_code, count(*) from location group by 1 order by 1"   # Standorte je Bundesland
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select provider_key, job_type, region_code, next_run_at, leased_by, last_result from poll_plan order by 1,2,3"
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select count(*) filter (where processed_at is null) offen, count(*) filter (where error is not null) fehler from ingest_queue"
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select (select count(*) from location) standorte, (select count(*) from evse) evses, (select count(*) from evse_status_current) status"
@@ -137,4 +142,4 @@ Vor einem neuen lokalen Coverage-Lauf alte Ergebnisse löschen (`tests/*/TestRes
 
 ## Nächste Schritte (Stand jetzt)
 
-Siehe `docs/09-roadmap.md`: Region-Seed aus OSM-Grenzen, danach Filter in der Karte (Stecker, Leistung, Betreiber, nur frei) und Ad-hoc-Preise aus E-Control (`PRICE_POLL`, `price_observation`, `GET /evses/{id}/prices`); außerdem Lizenz festlegen und die E-Control-Nutzungsbedingungen archivieren. API-Keys von Quellen werden nur im Admin-UI eingetragen (`provider.api_key`, Scope `provider:<key>`), nie in Dateien.
+Siehe `docs/09-roadmap.md`: Filter in der Karte (Stecker, Leistung, Betreiber, nur frei) und Ad-hoc-Preise aus E-Control (`PRICE_POLL`, `price_observation`, `GET /evses/{id}/prices`); außerdem Lizenz festlegen und die E-Control-Nutzungsbedingungen archivieren. API-Keys von Quellen werden nur im Admin-UI eingetragen (`provider.api_key`, Scope `provider:<key>`), nie in Dateien.

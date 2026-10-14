@@ -92,6 +92,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<AccountService>();
         services.AddScoped<SessionService>();
         services.AddScoped<ApiKeyService>();
+        services.AddScoped<RegionSeeder>();
         services.AddScoped<DatabaseInitializer>();
         return services;
     }
