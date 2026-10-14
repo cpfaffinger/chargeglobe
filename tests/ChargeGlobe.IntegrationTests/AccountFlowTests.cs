@@ -322,9 +322,10 @@ public class AccountFlowTests(IntegrationFactory factory)
 
         Assert.Equal(HttpStatusCode.NoContent, (await client.SendAsync(Change(ownCookie, IntegrationFactory.Password, NewPassword))).StatusCode);
 
-        // The session that changed the password stays, the other one ends.
-        await (await factory.Client().SendAsync(Refresh(otherCookie))).AssertProblemAsync(HttpStatusCode.Unauthorized);
+        // The session that changed the password stays, the other one ends. (Checked in this order: presenting a revoked
+        // token ends every session of the account, as protection against copied tokens.)
         Assert.Equal(HttpStatusCode.OK, (await factory.Client().SendAsync(Refresh(ownCookie))).StatusCode);
+        await (await factory.Client().SendAsync(Refresh(otherCookie))).AssertProblemAsync(HttpStatusCode.Unauthorized);
         Assert.Equal(
             HttpStatusCode.Unauthorized,
             (await factory.Client().PostAsJsonAsync("/api/v1/auth/login", new { email, password = IntegrationFactory.Password })).StatusCode);
