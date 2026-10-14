@@ -386,11 +386,80 @@ app-location-details .details-state {
   gap: 8px;
 }
 
-#legend {
+// Legend and filter button, bottom left.
+#map-legend-bar {
   position: absolute;
   left: 12px;
   bottom: 40px;
   z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 240px);
+}
+
+#filter-toggle {
+  box-shadow: var(--cg-overlay-shadow);
+}
+
+.filter-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+  font: var(--mat-sys-label-small);
+}
+
+// Filters: a floating card above the legend; a bottom sheet on small screens.
+#filter-panel {
+  position: absolute;
+  left: 12px;
+  bottom: 96px;
+  z-index: 2;
+  width: min(380px, calc(100% - 24px));
+  max-height: calc(100% - 120px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  box-shadow: var(--cg-overlay-shadow);
+}
+
+#filter-panel .card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#filter-panel h2 {
+  margin: 0;
+  font: var(--mat-sys-title-medium);
+}
+
+#filter-panel h3 {
+  margin: 12px 0 4px;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-label-large);
+}
+
+#filter-panel .filter-operator {
+  width: 100%;
+  margin-top: 16px;
+}
+
+#filter-panel .filter-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+#legend {
   display: flex;
   flex-wrap: wrap;
   gap: 4px 16px;
@@ -447,15 +516,40 @@ app-location-details .details-state {
     border-radius: 28px 28px 0 0;
   }
 
-  app-home.has-card #map-actions {
+  app-home.has-card #map-actions,
+  app-home.has-filters #map-actions {
     display: none;
+  }
+
+  // The legend goes to the top (own rule below), the filter button stays bottom left.
+  #map-legend-bar {
+    display: contents;
+  }
+
+  #filter-toggle {
+    position: absolute;
+    left: 12px;
+    bottom: 40px;
+    z-index: 1;
+  }
+
+  #filter-panel {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-height: 75%;
+    border-radius: 28px 28px 0 0;
   }
 
   // Legend as a row of chips at the top (left of the zoom buttons), notices below it.
   // Two compact columns so all four states fit next to the map controls without scrolling.
   #legend {
+    position: absolute;
+    z-index: 1;
     top: 12px;
     bottom: auto;
+    left: 12px;
     right: 60px;
     display: grid;
     grid-template-columns: repeat(2, max-content);
@@ -473,6 +567,8 @@ app-location-details .details-state {
   }
 
   app-home.has-card #legend,
+  app-home.has-card #filter-toggle,
+  app-home.has-filters #filter-toggle,
   app-home.has-card #data-attribution {
     display: none;
   }

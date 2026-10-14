@@ -49,6 +49,10 @@ public class LocationsApiTests(IntegrationFactory factory) : IClassFixture<Integ
             db.Locations.Add(Location.Create(new GeoPoint(47.0707, 15.4395), "AT", now));
             return db.SaveChangesAsync();
         });
+
+        // The Schuko socket of "Testladepark Ring" (no EVSE-ID, no roaming) takes payment cards: the ad-hoc filter finds it.
+        await factory.WithDbAsync(db => db.Database.ExecuteSqlRawAsync(
+            "UPDATE evse SET auth_methods = ARRAY['CREDIT_CARD_PAYABLE'] WHERE identity_kind = 'SURROGATE'"));
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
@@ -97,6 +101,75 @@ public class LocationsApiTests(IntegrationFactory factory) : IClassFixture<Integ
         // No source told its facilities.
         Assert.All(empty.GetProperty("facilities").EnumerateObject(), property => Assert.Equal(JsonValueKind.Null, property.Value.ValueKind));
         Assert.Empty(graz.GetProperty("meta").GetProperty("attribution").EnumerateArray());
+    }
+
+    [Theory]
+    [InlineData("connector=IEC_62196_T2_COMBO", "Testladepark Ring")]
+    [InlineData("connector=chademo,iec_62196_t2", "Teststation Stephansplatz|Testladepark Ring")]
+    [InlineData("connector=CHADEMO&connector=IEC_62196_T2", "Teststation Stephansplatz|Testladepark Ring")]
+    [InlineData("minPowerKw=20", "Teststation Stephansplatz|Testladepark Ring")]
+    [InlineData("minPowerKw=50.5", "Testladepark Ring")]
+    [InlineData("connector=IEC_62196_T2&minPowerKw=50", "")]
+    [InlineData("connector=DOMESTIC_F&minPowerKw=100", "")]
+    [InlineData("operator=test%20OPERATOR", "Teststation Stephansplatz|Testladepark Ring")]
+    [InlineData("operator=100%25", "")]
+    [InlineData("availableOnly=true", "Teststation Stephansplatz")]
+    [InlineData("availableOnly=false", "Teststation Stephansplatz|Testladepark Ring")]
+    [InlineData("adHoc=true", "Testladepark Ring")]
+    [InlineData("adHoc=true&connector=IEC_62196_T2_COMBO", "")]
+    [InlineData("roaming=true&connector=DOMESTIC_F", "")]
+    [InlineData("roaming=true&connector=CHADEMO", "Testladepark Ring")]
+    [InlineData("greenEnergy=true", "Teststation Stephansplatz")]
+    [InlineData("barrierFree=TRUE", "Testladepark Ring")]
+    [InlineData("greenEnergy=true&barrierFree=true", "")]
+    public async Task Filters_select_locations_with_a_matching_EVSE(string filters, string expected)
+    {
+        using var client = factory.Client();
+
+        var body = await GetJsonAsync(client, $"/api/v1/locations?bbox={ViennaBox}&{filters}");
+
+        Assert.Equal(expected, string.Join('|', body.GetProperty("data").EnumerateArray().Select(item => item.GetProperty("name").GetString())));
+    }
+
+    [Fact]
+    public async Task Filters_keep_the_counts_of_all_EVSEs()
+    {
+        using var client = factory.Client();
+
+        var body = await GetJsonAsync(client, $"/api/v1/locations?bbox={ViennaBox}&minPowerKw=150&connector=IEC_62196_T2_COMBO");
+
+        var ring = Assert.Single(body.GetProperty("data").EnumerateArray());
+        Assert.Equal((2, 0, 150m), (ring.GetProperty("evsesTotal").GetInt32(), ring.GetProperty("evsesAvailable").GetInt32(), ring.GetProperty("maxPowerKw").GetDecimal()));
+    }
+
+    [Theory]
+    [InlineData("connector=FOO", "connector")]
+    [InlineData("connector=IEC_62196_T2,5", "connector")]
+    [InlineData("minPowerKw=abc", "minPowerKw")]
+    [InlineData("minPowerKw=0", "minPowerKw")]
+    [InlineData("minPowerKw=1001", "minPowerKw")]
+    [InlineData("availableOnly=yes", "availableOnly")]
+    [InlineData("adHoc=1", "adHoc")]
+    [InlineData("roaming=no", "roaming")]
+    [InlineData("greenEnergy=ja", "greenEnergy")]
+    [InlineData("barrierFree=on", "barrierFree")]
+    public async Task Invalid_filters_are_rejected(string filters, string field)
+    {
+        using var client = factory.Client();
+
+        var problem = await (await client.GetAsync($"/api/v1/locations?bbox={ViennaBox}&{filters}")).AssertProblemAsync(HttpStatusCode.UnprocessableEntity);
+
+        Assert.True(problem.GetProperty("errors").TryGetProperty(field, out _));
+    }
+
+    [Fact]
+    public async Task A_too_long_operator_filter_is_rejected()
+    {
+        using var client = factory.Client();
+
+        var problem = await (await client.GetAsync($"/api/v1/locations?bbox={ViennaBox}&operator={new string('a', 101)}")).AssertProblemAsync(HttpStatusCode.UnprocessableEntity);
+
+        Assert.True(problem.GetProperty("errors").TryGetProperty("operator", out _));
     }
 
     [Theory]

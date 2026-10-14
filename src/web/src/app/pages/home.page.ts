@@ -20,6 +20,9 @@ import { AVAILABILITIES, AVAILABILITY, resolveColors, tokenColor } from '../map/
 import { BrowserCapabilities } from '../map/browser-capabilities';
 import { MapConfig, MapConfigService } from '../map/map-config.service';
 import { GeolocateEvent, MapEngine, MapHandle, MapTheme } from '../map/map-engine';
+import { MapFilterPanel } from '../map/map-filter-panel';
+import { MapFilterStore, filterParams } from '../map/map-filters';
+import { MapLink, ShareResult } from '../map/map-link';
 import { MapView, MapViewStore } from '../map/map-view.store';
 import { Bbox, LocationSummary, LocationsService } from '../map/locations.service';
 import { MapFocus } from '../search/search.service';
@@ -57,6 +60,13 @@ const NOTICES: Record<MapNotice, string> = {
   'not-ready': 'Die Standortfunktion ist noch nicht bereit. Bitte versuche es gleich noch einmal.',
 };
 
+const SHARE_MESSAGES: Record<ShareResult, string | null> = {
+  shared: null,
+  cancelled: null,
+  copied: 'Der Link zu dieser Ansicht ist in der Zwischenablage.',
+  failed: 'Der Link konnte nicht kopiert werden. Kopiere die Adresse aus der Adresszeile.',
+};
+
 /** Whether the box `inner` lies within `outer`. */
 const covers = (outer: Bbox, inner: Bbox): boolean =>
   inner.west >= outer.west && inner.east <= outer.east && inner.south >= outer.south && inner.north <= outer.north;
@@ -69,9 +79,9 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
  * configuration. The position is processed in the browser only and never sent to the API.
  */
 @Component({
-  imports: [AppIcon, DatePipe, DecimalPipe, LocationDetails, MatButtonModule, MatCardModule, MatMenuModule, NgTemplateOutlet],
+  imports: [AppIcon, DatePipe, DecimalPipe, LocationDetails, MapFilterPanel, MatButtonModule, MatCardModule, MatMenuModule, NgTemplateOutlet],
   selector: 'app-home',
-  host: { '[class.has-card]': 'selected() !== null' },
+  host: { '[class.has-card]': 'selected() !== null', '[class.has-filters]': 'filtersOpen()' },
   template: `
     <ng-template #card>
       @if (selected(); as location) {
@@ -124,6 +134,9 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
       @if (homeSaved()) {
         <p id="home-saved" class="map-message" role="status">Dieser Ausschnitt ist jetzt deine Startposition.</p>
       }
+      @if (shareMessage(); as message) {
+        <p id="share-message" class="map-message" role="status">{{ message }}</p>
+      }
       @if (truncated()) {
         <p id="truncated" class="map-message" role="status">Es werden nur die nächsten {{ limit }} Standorte gezeigt – zoome hinein, um alle zu sehen.</p>
       }
@@ -134,10 +147,19 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
     @if (viewport.mobile()) {
       <ng-container [ngTemplateOutlet]="card" />
     }
+    @if (filtersOpen()) {
+      <!-- The filter controls are a chunk of their own, loaded when opened for the first time. -->
+      @defer (on immediate) {
+        <app-map-filter-panel (closed)="filtersOpen.set(false)" />
+      }
+    }
     <div id="map-actions">
       <div class="home-actions">
         <button matMiniFab type="button" id="home" [disabled]="!handle()" title="Zur Startposition" aria-label="Zur Startposition" (click)="goHome()">
           <app-icon name="home" />
+        </button>
+        <button matMiniFab type="button" id="share" [disabled]="!view()" title="Ansicht teilen" aria-label="Ansicht teilen" (click)="share()">
+          <app-icon name="share" />
         </button>
         <button matMiniFab type="button" id="home-menu" title="Startposition festlegen" aria-label="Startposition festlegen" [matMenuTriggerFor]="homeMenu">
           <app-icon name="more_vert" />
@@ -151,13 +173,21 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
         <app-icon name="my_location" />{{ locating() ? 'Standort wird gesucht …' : 'Mein Standort' }}
       </button>
     </div>
-    <ul id="legend" aria-label="Legende">
-      @for (key of availabilities; track key) {
-        <li>
-          <span class="status-dot" [style.background]="color(key)"><app-icon [name]="availability[key].icon" /></span>{{ availability[key].label }}
-        </li>
-      }
-    </ul>
+    <div id="map-legend-bar">
+      <ul id="legend" aria-label="Legende">
+        @for (key of availabilities; track key) {
+          <li>
+            <span class="status-dot" [style.background]="color(key)"><app-icon [name]="availability[key].icon" /></span>{{ availability[key].label }}
+          </li>
+        }
+      </ul>
+      <button matButton="tonal" type="button" id="filter-toggle" [attr.aria-expanded]="filtersOpen()" (click)="toggleFilters()">
+        <app-icon name="filter_list" />Filter
+        @if (filterStore.count() > 0) {
+          <span class="filter-count" [attr.aria-label]="filterStore.count() + ' aktiv'">{{ filterStore.count() }}</span>
+        }
+      </button>
+    </div>
     @if (attribution().length > 0) {
       <p id="data-attribution">{{ attribution().join(' · ') }}</p>
     }
@@ -171,6 +201,12 @@ export class HomePage {
   private readonly theme = inject(ThemeService);
   private readonly focus = inject(MapFocus);
   protected readonly views = inject(MapViewStore);
+  protected readonly filterStore = inject(MapFilterStore);
+  private readonly link = inject(MapLink);
+  /** The newest visible area, loaded again when the filters change. */
+  private box: Bbox | null = null;
+  /** Query parameters of the filters of the shown locations. */
+  private filterKey: string | null = null;
   /** Location of a search hit whose info card opens once the map has loaded it. */
   private pending: string | null = null;
   protected readonly viewport = inject(Viewport);
@@ -191,6 +227,8 @@ export class HomePage {
   /** The current view (center and zoom), known after the map has loaded. */
   protected readonly view = signal<MapView | null>(null);
   protected readonly homeSaved = signal(false);
+  protected readonly shareMessage = signal<string | null>(null);
+  protected readonly filtersOpen = signal(false);
   protected readonly locations = signal<LocationSummary[]>([]);
   protected readonly attribution = signal<string[]>([]);
   protected readonly truncated = signal(false);
@@ -221,6 +259,17 @@ export class HomePage {
           this.openPending();
         });
       }
+    });
+    // Other filters: the shown locations no longer fit; the visible area loads again.
+    effect(() => {
+      const key = JSON.stringify(filterParams(this.filterStore.filters()));
+      untracked(() => {
+        if (this.filterKey !== null && key !== this.filterKey && this.box) {
+          this.shown = null;
+          this.queue(this.box);
+        }
+        this.filterKey = key;
+      });
     });
     inject(DestroyRef).onDestroy(() => {
       this.destroyed = true;
@@ -256,6 +305,16 @@ export class HomePage {
     this.handle()!.flyTo(home.latitude, home.longitude, home.zoom);
   }
 
+  protected toggleFilters(): void {
+    this.filtersOpen.update((open) => !open);
+    this.selected.set(null);
+  }
+
+  /** Shares the address with view and filters (share sheet or clipboard). */
+  protected async share(): Promise<void> {
+    this.shareMessage.set(SHARE_MESSAGES[await this.link.share()]);
+  }
+
   protected setHome(): void {
     this.views.setHome(this.view()!);
     this.homeSaved.set(true);
@@ -280,7 +339,8 @@ export class HomePage {
       this.notice.set('webgl');
       return;
     }
-    const start = this.views.last() ?? this.views.home() ?? this.defaultView();
+    // A shared link wins over the last view of this browser.
+    const start = this.link.read() ?? this.views.last() ?? this.views.home() ?? this.defaultView();
     try {
       const handle = await this.engine.create({
         container: this.container().nativeElement,
@@ -290,7 +350,7 @@ export class HomePage {
         zoom: start.zoom,
         onGeolocate: (event) => this.geolocated(event),
         onViewChange: (bbox, view) => this.viewChanged(bbox, view),
-        onSelect: (id) => this.selected.set(this.locations().find((location) => location.id === id) ?? null),
+        onSelect: (id) => this.select(id),
       });
       if (this.destroyed) {
         handle.destroy();
@@ -304,11 +364,23 @@ export class HomePage {
     }
   }
 
-  /** Remembers the view and loads the locations of the visible area; the box is clamped to valid coordinates. */
+  private select(id: string): void {
+    this.selected.set(this.locations().find((location) => location.id === id) ?? null);
+    if (this.selected()) {
+      this.filtersOpen.set(false);
+    }
+  }
+
+  /**
+   * Remembers the view (browser storage and address) and loads the locations of the visible area; the box is clamped
+   * to valid coordinates.
+   */
   private viewChanged(bbox: Bbox, view: MapView): void {
     this.view.set(view);
     this.views.saveLast(view);
+    this.link.write(view);
     this.homeSaved.set(false);
+    this.shareMessage.set(null);
     const box: Bbox = {
       west: Math.max(-180, bbox.west),
       south: Math.max(-90, bbox.south),
@@ -316,10 +388,15 @@ export class HomePage {
       north: Math.min(90, bbox.north),
     };
     // Zoomed into an area whose locations are all shown and current: nothing new to load.
+    this.box = box;
     const shown = this.shown;
-    if (shown?.complete && Date.now() - shown.at < LOCATIONS_FRESH_MS && covers(shown.box, box)) {
+    if (!this.busy && shown?.complete && Date.now() - shown.at < LOCATIONS_FRESH_MS && covers(shown.box, box)) {
       return;
     }
+    this.queue(box);
+  }
+
+  private queue(box: Bbox): void {
     this.queued = box;
     if (!this.busy) {
       void this.loadLocations();
@@ -337,7 +414,7 @@ export class HomePage {
       const box = this.queued;
       this.queued = null;
       try {
-        const response = await this.locationsService.inBox(box);
+        const response = await this.locationsService.inBox(box, this.filterStore.filters());
         if (this.queued || this.destroyed) {
           continue;
         }

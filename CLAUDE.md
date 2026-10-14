@@ -109,6 +109,7 @@ docker compose logs api | grep "Setup required"     # Setup-Token für https://<
 curl -k https://localhost:5005/api/v1/permissions   # Permission-Katalog (anonym)
 curl -k https://localhost:5005/api/v1/map/config    # Kartenkonfiguration aus dem Config-Service (anonym)
 curl -k "https://localhost:5005/api/v1/locations?bbox=16.2,48.1,16.6,48.3&limit=50"   # Standorte in Wien mit meta.attribution (anonym)
+curl -k "https://localhost:5005/api/v1/locations?bbox=16.2,48.1,16.6,48.3&minPowerKw=150&connector=IEC_62196_T2_COMBO&availableOnly=true"   # mit Filtern; ungültiger connector → 422
 curl -kI https://localhost:5005/maplibre/maplibre-gl-worker.mjs   # 200, Content-Type text/javascript (Worker der Karte)
 curl -k "https://localhost:5005/api/v1/evses/AT*TST*E1*1"   # ohne Token: 401 Problem Details (evse:read nötig)
 TOKEN=$(curl -sk -H 'Content-Type: application/json' -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}" https://localhost:5005/api/v1/auth/login | sed 's/.*"accessToken":"\([^"]*\)".*/\1/')
@@ -158,4 +159,4 @@ Vor einem neuen lokalen Coverage-Lauf alte Ergebnisse löschen (`tests/*/TestRes
 
 ## Nächste Schritte (Stand jetzt)
 
-Siehe `docs/09-roadmap.md`: Filter in der Karte (Stecker, Leistung, Betreiber, nur frei, Ad-hoc-Zahlung, Roaming, Ökostrom, barrierefrei) und Ad-hoc-Preise aus dem E-Control-Register (`PRICE_POLL`, `price_observation`, `GET /evses/{id}/prices`); außerdem Lizenz festlegen und die E-Control-Nutzungsbedingungen archivieren. API-Keys von Quellen werden nur im Admin-UI eingetragen (`provider.api_key`, Scope `provider:<key>`), nie in Dateien.
+Siehe `docs/09-roadmap.md`: eigene Detailseite je Ladepunkt (`/evses/:evseId`) und Ad-hoc-Preise aus dem E-Control-Register (`PRICE_POLL`, `price_observation`, `GET /evses/{id}/prices`); außerdem Lizenz festlegen und die E-Control-Nutzungsbedingungen archivieren. API-Keys von Quellen werden nur im Admin-UI eingetragen (`provider.api_key`, Scope `provider:<key>`), nie in Dateien.

@@ -13,6 +13,8 @@ import { MapConfigService } from './map-config.service';
 import { GeolocateEvent, MapEngine, MapViewOptions } from './map-engine';
 import { Bbox, LocationsResponse, LocationsService } from './locations.service';
 import { HOME_VIEW_KEY, LAST_VIEW_KEY, MapView, MapViewStore } from './map-view.store';
+import { FILTERS_STORAGE_KEY, MapFilterStore, NO_FILTERS } from './map-filters';
+import { MapLink } from './map-link';
 
 describe('MapConfigService', () => {
   it('loads the map configuration', async () => {
@@ -37,6 +39,17 @@ describe('LocationsService', () => {
     http.expectOne('/api/v1/locations?bbox=16.20000,48.10000,16.60000,48.30000&limit=2000').flush(response);
 
     expect(await result).toEqual(response);
+
+    const filtered = TestBed.inject(LocationsService).inBox(
+      { west: 16.2, south: 48.1, east: 16.6, north: 48.3 },
+      { ...NO_FILTERS, connector: ['CHADEMO', 'IEC_62196_T2_COMBO'], minPowerKw: 150, adHoc: true },
+    );
+    http
+      .expectOne(
+        '/api/v1/locations?bbox=16.20000,48.10000,16.60000,48.30000&limit=2000&connector=CHADEMO&connector=IEC_62196_T2_COMBO&minPowerKw=150&adHoc=true',
+      )
+      .flush(response);
+    expect(await filtered).toEqual(response);
     http.verify();
   });
 });
@@ -98,6 +111,7 @@ describe('HomePage (map)', () => {
   let auth: ReturnType<typeof fakeAuth>;
   let viewport: ReturnType<typeof fakeViewport>;
   let evses: jasmine.SpyObj<EvsesService>;
+  let link: jasmine.SpyObj<MapLink>;
 
   const root = () => fixture.nativeElement as HTMLElement;
   /** View reported with every move in the specs. */
@@ -143,6 +157,9 @@ describe('HomePage (map)', () => {
     evses.location.and.returnValue(new Promise(() => undefined));
     localStorage.removeItem(LAST_VIEW_KEY);
     localStorage.removeItem(HOME_VIEW_KEY);
+    localStorage.removeItem(FILTERS_STORAGE_KEY);
+    link = jasmine.createSpyObj<MapLink>('MapLink', ['read', 'write', 'fragment', 'share']);
+    link.read.and.returnValue(null);
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
@@ -150,6 +167,7 @@ describe('HomePage (map)', () => {
         provideRouter([]),
         { provide: AuthService, useValue: auth },
         { provide: EvsesService, useValue: evses },
+        { provide: MapLink, useValue: link },
         { provide: Viewport, useValue: viewport },
         { provide: MapEngine, useValue: map.engine },
         { provide: BrowserCapabilities, useValue: browser },
@@ -165,6 +183,7 @@ describe('HomePage (map)', () => {
     TestBed.inject(ThemeService).set('system');
     localStorage.removeItem(LAST_VIEW_KEY);
     localStorage.removeItem(HOME_VIEW_KEY);
+    localStorage.removeItem(FILTERS_STORAGE_KEY);
   });
 
   it('creates the map in its container with style, attribution, center and zoom of the configuration', async () => {
@@ -194,6 +213,47 @@ describe('HomePage (map)', () => {
       root().querySelector<HTMLButtonElement>('#home-menu')!.click();
       await settle();
     }
+
+    it('opens at the view of a shared link before everything else and writes every view into the address', async () => {
+      localStorage.setItem(LAST_VIEW_KEY, JSON.stringify({ latitude: 48.3, longitude: 14.3, zoom: 13.5 }));
+      link.read.and.returnValue({ latitude: 47.07, longitude: 15.44, zoom: 15 });
+      await render();
+      expect(options()).toEqual(jasmine.objectContaining({ center: { latitude: 47.07, longitude: 15.44 }, zoom: 15 }));
+
+      options().onViewChange({ west: 16.3, south: 48.15, east: 16.45, north: 48.25 }, view);
+      http.expectOne('/api/v1/locations?bbox=16.30000,48.15000,16.45000,48.25000&limit=2000').flush({
+        data: [],
+        meta: { returned: 0, limit: 2000, truncated: false, attribution: [] },
+      });
+      expect(link.write).toHaveBeenCalledOnceWith(view);
+    });
+
+    it('shares the view and tells when the link was copied or could not be', async () => {
+      await render();
+      const share = () => root().querySelector<HTMLButtonElement>('#share')!;
+      expect(share().disabled).toBeTrue();
+      options().onViewChange({ west: 16.3, south: 48.15, east: 16.45, north: 48.25 }, view);
+      http.expectOne('/api/v1/locations?bbox=16.30000,48.15000,16.45000,48.25000&limit=2000').flush({
+        data: [],
+        meta: { returned: 0, limit: 2000, truncated: false, attribution: [] },
+      });
+      await settle();
+
+      link.share.and.resolveTo('copied');
+      share().click();
+      await settle();
+      expect(text(root(), '#share-message')).toBe('Der Link zu dieser Ansicht ist in der Zwischenablage.');
+
+      link.share.and.resolveTo('failed');
+      share().click();
+      await settle();
+      expect(text(root(), '#share-message')).toContain('konnte nicht kopiert werden');
+
+      link.share.and.resolveTo('shared');
+      share().click();
+      await settle();
+      expect(root().querySelector('#share-message')).toBeNull();
+    });
 
     it('opens at the last view, else at the start position, else at the configuration', async () => {
       localStorage.setItem(HOME_VIEW_KEY, JSON.stringify({ latitude: 47.8, longitude: 13.0, zoom: 10 }));
@@ -460,6 +520,58 @@ describe('HomePage (map)', () => {
       http.expectOne(east).flush(response());
       await settle();
       expect(root().querySelector('#map-notice')).toBeNull();
+    });
+
+    it('loads the visible area again with the filters and shows their number', async () => {
+      await render();
+      const filters = TestBed.inject(MapFilterStore);
+      expect(root().querySelector('.filter-count')).toBeNull();
+
+      // Before the map reported its area, a change only takes effect with the first load.
+      filters.set({ ...NO_FILTERS, greenEnergy: true });
+      await settle();
+      await moveTo(vienna, response(), `${url}&greenEnergy=true`);
+      expect(text(root(), '#filter-toggle .filter-count')).toBe('1');
+
+      filters.set({ ...NO_FILTERS, greenEnergy: true, minPowerKw: 50 });
+      await settle();
+      http.expectOne(`${url}&minPowerKw=50&greenEnergy=true`).flush(response());
+      await settle();
+      expect(text(root(), '#filter-toggle .filter-count')).toBe('2');
+
+      // The same filters again: nothing to load.
+      filters.set({ ...NO_FILTERS, greenEnergy: true, minPowerKw: 50 });
+      await settle();
+      expect(http.match(() => true)).toEqual([]);
+    });
+
+    it('opens the filters instead of the card and closes them when a location is chosen', async () => {
+      await render();
+      await moveTo(vienna, response());
+      options().onSelect('loc-1');
+      await settle();
+
+      root().querySelector<HTMLButtonElement>('#filter-toggle')!.click();
+      await settle();
+      await settle();
+      expect(root().querySelector('#location-card')).toBeNull();
+      expect(root().querySelector('#filter-panel')).not.toBeNull();
+      expect(root().classList).toContain('has-filters');
+      expect(root().querySelector('#filter-toggle')!.getAttribute('aria-expanded')).toBe('true');
+
+      root().querySelector<HTMLButtonElement>('#close-filters')!.click();
+      await settle();
+      expect(root().querySelector('#filter-panel')).toBeNull();
+
+      root().querySelector<HTMLButtonElement>('#filter-toggle')!.click();
+      await settle();
+      options().onSelect('unknown');
+      await settle();
+      expect(root().querySelector('#filter-panel')).not.toBeNull();
+      options().onSelect('loc-1');
+      await settle();
+      expect(root().querySelector('#filter-panel')).toBeNull();
+      expect(root().querySelector('#location-card')).not.toBeNull();
     });
 
     it('needs no request when zooming into an area that is loaded completely and recently', async () => {

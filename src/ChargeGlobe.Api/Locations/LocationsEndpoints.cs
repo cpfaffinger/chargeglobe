@@ -3,6 +3,7 @@ using ChargeGlobe.Api.Auth;
 using ChargeGlobe.Api.OpenApi;
 using ChargeGlobe.Application.Ingest;
 using ChargeGlobe.Application.Locations;
+using ChargeGlobe.Domain.Charging;
 using ChargeGlobe.Providers.Abstractions;
 
 namespace ChargeGlobe.Api.Locations;
@@ -24,6 +25,8 @@ public static class LocationsEndpoints
 {
     public const int DefaultLimit = 500;
     public const int MaxLimit = 2000;
+    public const int MaxPowerKw = 1000;
+    public const int MaxOperatorLength = 100;
 
     private static readonly SourceAttribution ExampleAttribution = new(
         "econtrol",
@@ -62,7 +65,21 @@ public static class LocationsEndpoints
                 "them as AVAILABLE, OCCUPIED, OUT_OF_ORDER or UNKNOWN. `facilities` tells green energy (100 % renewable " +
                 "as stated by the operator), free and roofed parking, the number of barrier-free parking spaces and the " +
                 "operator's price page (`priceUrl`); each is null if no source knows it. `meta.attribution` lists the sources of the " +
-                "data and the attribution text that must be shown with it. Public, no credentials needed.")
+                "data and the attribution text that must be shown with it. Public, no credentials needed.\n\n" +
+                "Optional filters (combined with AND; counts of a matching location still cover all its EVSEs):\n" +
+                "- `connector`: OCPI connector standard, repeatable or comma-separated, one of them is enough, e.g. " +
+                "`connector=IEC_62196_T2_COMBO&connector=CHADEMO` (values as in `getLocation`, case-insensitive).\n" +
+                "- `minPowerKw`: minimum power of an EVSE in kW (number above 0, at most 1000), e.g. `minPowerKw=150`.\n" +
+                "- `operator`: part of the operator name, case-insensitive, at most 100 characters, e.g. `operator=wien energie`.\n" +
+                "- `availableOnly=true`: only locations with at least one AVAILABLE EVSE (`evsesAvailable` > 0).\n" +
+                "- `adHoc=true`: an EVSE can be paid without contract (QR_CODE, WEBSITE, CREDIT_CARD_PAYABLE, DEBIT_CARD_PAYABLE, " +
+                "CONTACTLESS_CARD_SUPPORT, CHIP_CARD_SUPPORT, PED_TERMINAL or CASH in `authMethods`).\n" +
+                "- `roaming=true`: an EVSE accepts charging cards of other providers.\n" +
+                "- `greenEnergy=true`: the location states 100 % renewable energy.\n" +
+                "- `barrierFree=true`: the location has barrier-free parking spaces.\n" +
+                "`connector`, `minPowerKw`, `adHoc` and `roaming` must hold for the same EVSE: `connector=IEC_62196_T2&minPowerKw=150` " +
+                "finds locations with a Type 2 EVSE of at least 150 kW, not a 22 kW Type 2 next to a 150 kW CCS charger. Flags take " +
+                "`true` or `false` (`false` = no filter). 422 with field errors for unknown connectors, invalid numbers or flags.")
             .Produces<LocationsResponse>()
             .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
             .WithResponseExample(
@@ -109,20 +126,52 @@ public static class LocationsEndpoints
     }
 
     private static async Task<IResult> ListLocationsAsync(
-        string? bbox, int? limit, ILocationQueries queries, CancellationToken cancellationToken)
+        string? bbox,
+        int? limit,
+        string[]? connector,
+        string? minPowerKw,
+        string? @operator,
+        string? availableOnly,
+        string? adHoc,
+        string? roaming,
+        string? greenEnergy,
+        string? barrierFree,
+        ILocationQueries queries,
+        CancellationToken cancellationToken)
     {
         var box = ParseBoundingBox(bbox);
         var take = limit ?? DefaultLimit;
-        var invalid = new Validation()
+        var connectors = ParseConnectors(connector);
+        var power = ParsePower(minPowerKw);
+        var operatorPart = string.IsNullOrWhiteSpace(@operator) ? null : @operator.Trim();
+        var flags = new Dictionary<string, bool?>
+        {
+            ["availableOnly"] = ParseFlag(availableOnly),
+            ["adHoc"] = ParseFlag(adHoc),
+            ["roaming"] = ParseFlag(roaming),
+            ["greenEnergy"] = ParseFlag(greenEnergy),
+            ["barrierFree"] = ParseFlag(barrierFree),
+        };
+        var validation = new Validation()
             .Require(box is not null, "bbox", "Must be minLon,minLat,maxLon,maxLat in WGS 84 with min below max, e.g. 16.2,48.1,16.6,48.3.")
             .Require(take is >= 1 and <= MaxLimit, "limit", $"Must be between 1 and {MaxLimit}.")
-            .ToResult();
-        if (invalid is not null)
+            .Require(connectors is not null, "connector", "Must be OCPI connector standards such as IEC_62196_T2, IEC_62196_T2_COMBO or CHADEMO.")
+            .Require(power is null or (> 0 and <= MaxPowerKw), "minPowerKw", $"Must be a number above 0 and at most {MaxPowerKw}.")
+            .Require(operatorPart is not { Length: > MaxOperatorLength }, "operator", $"Must have at most {MaxOperatorLength} characters.");
+        foreach (var (name, value) in flags)
+        {
+            validation.Require(value is not null, name, "Must be true or false.");
+        }
+
+        if (validation.ToResult() is { } invalid)
         {
             return invalid;
         }
 
-        var page = await queries.InBoundingBoxAsync(box!, take, cancellationToken);
+        var filter = new LocationFilter(
+            connectors!, power, operatorPart, flags["availableOnly"]!.Value, flags["adHoc"]!.Value, flags["roaming"]!.Value,
+            flags["greenEnergy"]!.Value, flags["barrierFree"]!.Value);
+        var page = await queries.InBoundingBoxAsync(box!, filter, take, cancellationToken);
         return Results.Ok(new LocationsResponse(page.Locations, new LocationsMeta(page.Locations.Count, take, page.Truncated, page.Attribution)));
     }
 
@@ -141,6 +190,32 @@ public static class LocationsEndpoints
         await demand.RequestAsync(id, cancellationToken);
         return Results.Ok(new LocationDetailResponse(new LocationDetailData(detail.Location, detail.Evses), new AttributionMeta(detail.Attribution)));
     }
+
+    /// <summary>OCPI connector standards (repeated and/or comma-separated, any case); null if one is unknown.</summary>
+    public static IReadOnlyList<string>? ParseConnectors(string[]? values)
+    {
+        var standards = new List<string>();
+        foreach (var part in (values ?? []).SelectMany(value => value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)))
+        {
+            // Enum.TryParse also takes numbers; only names count.
+            if (!Enum.TryParse<ConnectorStandard>(part, ignoreCase: true, out var standard) || char.IsDigit(part[0]))
+            {
+                return null;
+            }
+
+            standards.Add(standard.ToString());
+        }
+
+        return [.. standards.Distinct()];
+    }
+
+    /// <summary>The power filter: null if missing, -1 if not a number (rejected by the validation).</summary>
+    public static decimal? ParsePower(string? value) =>
+        value is null ? null : decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out var power) ? power : -1;
+
+    /// <summary>false if missing (no filter), null if neither true nor false.</summary>
+    public static bool? ParseFlag(string? value) =>
+        value is null ? false : bool.TryParse(value, out var flag) ? flag : null;
 
     /// <summary>The box of the query parameter; null if it is missing or invalid.</summary>
     public static BoundingBox? ParseBoundingBox(string? value)
