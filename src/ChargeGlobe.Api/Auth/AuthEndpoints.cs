@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using ChargeGlobe.Api.OpenApi;
 using ChargeGlobe.Application.Mail;
 using ChargeGlobe.Infrastructure.Identity;
@@ -108,6 +109,19 @@ public static class AuthEndpoints
                 "10 characters). The token is valid for 24 hours and can be used once. On success all browser " +
                 "sessions of the user end; API keys stay valid. 204 on success, 422 for an invalid token or " +
                 "password. Public, rate-limited per IP.")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity);
+
+        auth.MapPost("/password/change", ChangePasswordAsync)
+            .WithName("changePassword")
+            .WithSummary("Change the password of the signed-in account")
+            .WithDescription(
+                "Takes `currentPassword` and `newPassword` (at least 10 characters, different from the current one). On " +
+                "success all other browser sessions of the account end (their refresh tokens are revoked; the session of " +
+                "the refresh cookie sent with the request stays), issued access tokens run out within 15 minutes, API keys " +
+                "stay valid. 204 on success; 422 with field errors for a wrong current password or an invalid new one. " +
+                "Requires an account, rate-limited per IP like the other /auth endpoints.")
+            .RequirePermission(RequirePermissionAttribute.Authenticated)
             .Produces(StatusCodes.Status204NoContent)
             .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity);
 
@@ -267,6 +281,28 @@ public static class AuthEndpoints
 
         await accounts.RequestPasswordResetAsync(email!, request.Language, cancellationToken);
         return Results.Json(new MessageResponse(ForgotMessage), statusCode: StatusCodes.Status202Accepted);
+    }
+
+    private static async Task<IResult> ChangePasswordAsync(
+        ChangePasswordRequest request, ClaimsPrincipal principal, HttpContext context, AccountService accounts, CancellationToken cancellationToken)
+    {
+        var passwordErrors = await accounts.ValidatePasswordAsync(request.NewPassword ?? string.Empty);
+        var invalid = new Validation()
+            .Require(!string.IsNullOrEmpty(request.CurrentPassword), "currentPassword", "Enter the current password.")
+            .Require(passwordErrors.Length == 0, "newPassword", passwordErrors)
+            .Require(request.NewPassword != request.CurrentPassword, "newPassword", "Must differ from the current password.")
+            .ToResult();
+        if (invalid is not null)
+        {
+            return invalid;
+        }
+
+        var actor = principal.GetActor();
+        var changed = await accounts.ChangePasswordAsync(
+            actor.UserId!.Value, request.CurrentPassword!, request.NewPassword!, context.Request.Cookies[RefreshCookie.Name], actor, cancellationToken);
+        return changed
+            ? Results.NoContent()
+            : new Validation().Require(false, "currentPassword", "The current password is wrong.").ToResult()!;
     }
 
     private static async Task<IResult> ResetPasswordAsync(

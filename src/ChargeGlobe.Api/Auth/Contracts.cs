@@ -36,6 +36,8 @@ public sealed record ForgotPasswordRequest(string? Email, string? Language);
 /// <param name="NewPassword">At least 10 characters.</param>
 public sealed record ResetPasswordRequest(Guid? UserId, string? Token, string? NewPassword);
 
+public sealed record ChangePasswordRequest(string? CurrentPassword, string? NewPassword);
+
 /// <param name="AccessToken">JWT for the <c>Authorization: Bearer</c> header.</param>
 /// <param name="TokenType">Always <c>Bearer</c>.</param>
 /// <param name="ExpiresIn">Lifetime of the access token in seconds.</param>

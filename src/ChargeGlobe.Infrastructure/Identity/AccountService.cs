@@ -186,6 +186,29 @@ public sealed class AccountService(
         await db.SaveChangesAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Changes the password after checking the current one (Identity renews the security stamp) and ends the other browser
+    /// sessions of the user: every refresh token except <paramref name="keepRefreshToken"/>. False for a wrong current password.
+    /// </summary>
+    public async Task<bool> ChangePasswordAsync(
+        Guid userId, string currentPassword, string newPassword, string? keepRefreshToken, Actor actor, CancellationToken cancellationToken)
+    {
+        var user = await users.FindByIdAsync(userId.ToString());
+        if (user is null || !(await users.ChangePasswordAsync(user, currentPassword, newPassword)).Succeeded)
+        {
+            return false;
+        }
+
+        var now = timeProvider.GetUtcNow();
+        var keep = keepRefreshToken is null ? null : Secrets.Hash(keepRefreshToken);
+        await db.RefreshTokens
+            .Where(refreshToken => refreshToken.UserId == user.Id && refreshToken.RevokedAt == null && (keep == null || refreshToken.TokenHash != keep))
+            .ExecuteUpdateAsync(update => update.SetProperty(refreshToken => refreshToken.RevokedAt, now), cancellationToken);
+        audit.Record("auth.password.change", $"user:{user.Id}", actor);
+        await db.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
     /// <summary>Sets a new password and ends all browser sessions of the user.</summary>
     public async Task<bool> ResetPasswordAsync(
         Guid userId, string token, string newPassword, CancellationToken cancellationToken)

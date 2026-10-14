@@ -298,6 +298,59 @@ public class AccountFlowTests(IntegrationFactory factory)
         await missingToken.AssertProblemAsync(HttpStatusCode.UnprocessableEntity);
     }
 
+    [Fact]
+    public async Task Changing_the_password_needs_the_current_one_and_ends_the_other_sessions()
+    {
+        const string NewPassword = "another long password";
+        var email = NewEmail();
+        var userId = await factory.CreateConfirmedUserAsync(email);
+        var (accessToken, ownCookie) = await factory.LoginAsync(email);
+        var (_, otherCookie) = await factory.LoginAsync(email);
+        var client = factory.Client(accessToken);
+
+        foreach (var (current, next, field) in new[]
+                 {
+                     ("wrong password!!", NewPassword, "currentPassword"),
+                     (null, NewPassword, "currentPassword"),
+                     (IntegrationFactory.Password, IntegrationFactory.Password, "newPassword"),
+                     (IntegrationFactory.Password, "short", "newPassword"),
+                 })
+        {
+            var problem = await (await client.SendAsync(Change(ownCookie, current, next))).AssertProblemAsync(HttpStatusCode.UnprocessableEntity);
+            Assert.True(problem.GetProperty("errors").TryGetProperty(field, out _), field);
+        }
+
+        Assert.Equal(HttpStatusCode.NoContent, (await client.SendAsync(Change(ownCookie, IntegrationFactory.Password, NewPassword))).StatusCode);
+
+        // The session that changed the password stays, the other one ends. (Checked in this order: presenting a revoked
+        // token ends every session of the account, as protection against copied tokens.)
+        Assert.Equal(HttpStatusCode.OK, (await factory.Client().SendAsync(Refresh(ownCookie))).StatusCode);
+        await (await factory.Client().SendAsync(Refresh(otherCookie))).AssertProblemAsync(HttpStatusCode.Unauthorized);
+        Assert.Equal(
+            HttpStatusCode.Unauthorized,
+            (await factory.Client().PostAsJsonAsync("/api/v1/auth/login", new { email, password = IntegrationFactory.Password })).StatusCode);
+        var (_, newCookie) = await factory.LoginAsync(email, NewPassword);
+        Assert.Contains(
+            "auth.password.change",
+            await factory.WithDbAsync(db => db.AuditLog.Where(entry => entry.Target == $"user:{userId}").Select(entry => entry.Action).ToListAsync()));
+
+        // Without a refresh cookie (e.g. a script with an access token) every session ends.
+        Assert.Equal(
+            HttpStatusCode.NoContent,
+            (await client.PostAsJsonAsync("/api/v1/auth/password/change", new { currentPassword = NewPassword, newPassword = IntegrationFactory.Password })).StatusCode);
+        await (await factory.Client().SendAsync(Refresh(newCookie))).AssertProblemAsync(HttpStatusCode.Unauthorized);
+
+        Assert.Equal(
+            HttpStatusCode.Unauthorized,
+            (await factory.Client().PostAsJsonAsync("/api/v1/auth/password/change", new { currentPassword = "x", newPassword = NewPassword })).StatusCode);
+    }
+
+    private static HttpRequestMessage Change(string cookie, string? currentPassword, string newPassword) =>
+        new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/password/change")
+        {
+            Content = JsonContent.Create(new { currentPassword, newPassword }),
+        }.WithRefreshCookie(cookie);
+
     private static HttpRequestMessage Refresh(string cookie) =>
         new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/refresh").WithRefreshCookie(cookie);
 }

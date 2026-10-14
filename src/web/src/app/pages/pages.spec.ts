@@ -273,6 +273,47 @@ describe('account pages', () => {
       expect(text(page(), '#db-status')).toBe('DB: unavailable');
     });
 
+    it('changes the password after checking the form and explains a wrong current password', async () => {
+      await open('/account');
+      http.expectOne('/api/v1/health').flush({ status: 'ok', db: 'ok' });
+      const form = page().querySelector<HTMLElement>('#password-change')!;
+      const fill = (current: string, next: string, repeat: string) => {
+        type(form, 'input[formControlName=currentPassword]', current);
+        type(form, 'input[formControlName=newPassword]', next);
+        type(form, 'input[formControlName=repeat]', repeat);
+        submit(form);
+      };
+
+      submit(form);
+      await settle();
+      expect(form.querySelectorAll('mat-error').length).toBe(3);
+
+      fill('old secret password', 'new secret password', 'other secret password');
+      await settle();
+      expect(text(form, '.error')).toBe('Die beiden neuen Passwörter stimmen nicht überein.');
+      expect(auth.changePassword).not.toHaveBeenCalled();
+
+      auth.changePassword.and.rejectWith(
+        new HttpErrorResponse({ status: 422, error: { title: 'Validation failed', errors: { currentPassword: ['The current password is wrong.'] } } }),
+      );
+      fill('old secret password', 'new secret password', 'new secret password');
+      await settle();
+      expect(text(form, '.error')).toBe('Das aktuelle Passwort ist falsch.');
+
+      auth.changePassword.and.rejectWith(validationError('Must differ from the current password.'));
+      fill('old secret password', 'new secret password', 'new secret password');
+      await settle();
+      expect(text(form, '.error')).toBe('Must differ from the current password.');
+
+      auth.changePassword.and.resolveTo();
+      fill('old secret password', 'new secret password', 'new secret password');
+      await settle();
+      expect(auth.changePassword).toHaveBeenCalledWith('old secret password', 'new secret password');
+      expect(text(form, '#password-changed')).toBe('Dein Passwort ist geändert. Auf anderen Geräten bist du abgemeldet.');
+      expect(form.querySelector('.error')).toBeNull();
+      expect(form.querySelector<HTMLInputElement>('input[formControlName=newPassword]')!.value).toBe('');
+    });
+
     it('shows "API: unavailable" when the health request fails', async () => {
       await open('/account');
 

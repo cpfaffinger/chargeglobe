@@ -133,6 +133,15 @@ describe('AuthService', () => {
     expect(await requested).toBe('sent');
   });
 
+  it('changes the password of the signed-in account', async () => {
+    const changed = auth.changePassword('old secret password', 'new secret password');
+    const request = http.expectOne('/api/v1/auth/password/change');
+    expect(request.request.body).toEqual({ currentPassword: 'old secret password', newPassword: 'new secret password' });
+    request.flush(null, { status: 204, statusText: 'No Content' });
+
+    await expectAsync(changed).toBeResolved();
+  });
+
   it('sets a new password with the reset token', async () => {
     const reset = auth.resetPassword('user-1', 'token-1', 'new secret password');
     const request = http.expectOne('/api/v1/auth/password/reset');

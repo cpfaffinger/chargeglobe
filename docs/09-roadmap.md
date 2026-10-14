@@ -49,6 +49,7 @@
 - [x] Standortdetails direkt in der Infokarte der Karte (für alle Ladepunkte mit Status und Steckern, mit `evse:read` Verlauf und Auslastung), gemerkter Kartenausschnitt und eigene Startposition im Browser mit Knopf „Startposition“, ein Standort-Request zugleich ohne Abfrage beim Hineinzoomen, MapLibre lädt parallel zur Konfiguration
 - [ ] Startposition und Kartenausschnitt angemeldeter Nutzer serverseitig in `/me/preferences` (geräteübergreifend)
 - [ ] Angular: API-Keys fremder Konten, Audit-Log (`GET /audit-log`)
+- [x] „Passwort ändern“ auf `/account` (`POST /auth/password/change`, beendet die anderen Sitzungen)
 - [ ] Customizings: `GET/PUT /me/preferences` (Startposition, Filter, Kartenoptionen geräteübergreifend), Einstellungsseite
 - [ ] Routing: Compose-Service `routing` (Valhalla, OSM-Extrakt Österreich), `IRoutingEngine`, `POST /routes`, Routen-Layer in der Karte
 - [ ] Erste EMP-Tarife: 2–3 Ladekarten-Anbieter mit Tarif-Editor (manuell gepflegt), Szenario-Preisvergleich; welche Ladekarte an welchem Ladepunkt geht, liefert die E-Control nicht (nur `roaming` ja/nein) – Quelle dafür sind die Roaming-Listen der EMPs ([07](07-bestandsanalyse-apps-at.md))
