@@ -56,10 +56,11 @@ chargeglobe/
 │  ├─ ChargeGlobe.Application/   # Ports (IEmailSender, IMailTransport, IAppConfig, …), Settings-Katalog, Mail-Vorlagen; vorgesehen: Ingest-Pipeline, Merge
 │  ├─ ChargeGlobe.Infrastructure/# EF Core + Npgsql (AppDbContext, Migrationen, PostGIS/TimescaleDB), ASP.NET Core Identity, Identity-Services, Mail-Outbox + SMTP (MailKit), Config-Service
 │  ├─ ChargeGlobe.Providers.Abstractions/  # Provider-Vertrag (ACL): Descriptor, Quell-Interfaces, Ingest-Modell, Status-Mapping
-│  ├─ ChargeGlobe.Providers.*/   # (geplant) je Quelle ein Adapter (EControl, OpenChargeMap, Osm, Evn, …)
+│  ├─ ChargeGlobe.Providers.EControl/  # Adapter E-Control-Ladestellenverzeichnis (offizielle API mit Key)
+│  ├─ ChargeGlobe.Providers.*/   # (geplant) weitere Adapter (OpenChargeMap, Osm, Evn, …)
 │  ├─ ChargeGlobe.Api/           # ASP.NET Core Minimal API, OpenAPI 3.1, Auth (JWT + API-Keys), Permission-Prüfung, Rate Limiting
 │  ├─ ChargeGlobe.Jobs/          # ein Host für beide Rollen (--role crawler|worker), Image chargeglobe-jobs, skalierbar
-│  │                             #   crawler: Lease-Scheduler + Provider-Abrufe → raw_snapshot, ingest_queue
+│  │                             #   crawler: Source-Abgleich + Health-Probe der Provider; vorgesehen: Lease-Scheduler + Abrufe → raw_snapshot, ingest_queue
 │  │                             #   worker: Mail-Zustellung; vorgesehen: Ingest-Queue-Verarbeitung, Merge, Aggregate, Reconcile
 │  └─ web/                       # Angular-App: Karte (Startseite), Registrierung, Login, Passwort-Reset, Konto, Admin (Einstellungen, E-Mail); vorgesehen: Ladepunkte, Detail
 ├─ tests/
@@ -70,7 +71,7 @@ chargeglobe/
 │  ├─ ChargeGlobe.IntegrationTests/  # API in-process gegen Postgres (Compose-Service test-db): Migration, Seed, Identity, OpenAPI
 │  ├─ Dockerfile.dotnet              # Test-Image für test-dotnet
 │  └─ run-dotnet-tests.sh            # Tests + Coverage-Gate im Container
-├─ fixtures/                     # (geplant) aufgezeichnete Beispiel-Responses je Provider (sanitisiert)
+├─ fixtures/                     # sanitisierte Beispiel-Responses je Provider + erwartetes Ingest-Modell (Replay-Tests)
 ├─ docker-compose.yml            # db · api · crawler · worker · web, gesteuert über .env
 ├─ docker-compose.test.yml       # Testlauf statt App: test-db · test-smtp · test-dotnet · test-web (Projekt chargeglobe-test)
 ├─ scripts/test.sh               # ein Aufruf: bauen, beide Suiten, Coverage-Zusammenfassung, aufräumen

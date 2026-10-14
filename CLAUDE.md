@@ -80,6 +80,9 @@ npx ng test --code-coverage --watch=false   # erwartet: Statements 100% (karma.c
 npx ng build                                # maplibre-gl landet als eigener Lazy-Chunk ("Lazy chunk files … maplibre-gl")
 npx ng serve
 
+# Replay-Erwartung eines Adapters nach gewollter Mapping-Änderung neu schreiben (danach Diff von fixtures/<key>/*.expected.json prüfen)
+UPDATE_FIXTURES=1 dotnet test tests/ChargeGlobe.Providers.Tests
+
 # EF-Core-Migrationen (Tool dotnet-ef aus dotnet-tools.json; braucht keine Datenbank)
 dotnet tool restore
 dotnet tool run dotnet-ef migrations add <Name> --project src/ChargeGlobe.Infrastructure --output-dir Persistence/Migrations
@@ -98,7 +101,7 @@ curl -k https://localhost:5005/api/v1/health   # {"status":"ok","db":"ok"}; -k w
 curl -k https://localhost:5005/api/v1/permissions   # Permission-Katalog (anonym)
 curl -k https://localhost:5005/api/v1/map/config    # Kartenkonfiguration aus dem Config-Service (anonym)
 curl -kI https://localhost:5005/maplibre/maplibre-gl-worker.mjs   # 200, Content-Type text/javascript (Worker der Karte)
-docker compose logs crawler worker          # Heartbeats beider Rollen (alle 30 s, mit aktuellem Wert von mail.enabled); worker: "Mail outbox: …"
+docker compose logs crawler worker          # Heartbeats beider Rollen (alle 30 s, mit aktuellem Wert von mail.enabled); worker: "Mail outbox: …"; crawler: "Provider econtrol healthy: …" (alle 15 min, nur mit provider.enabled)
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select template_key, status, attempts, last_error from email_outbox"
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select hypertable_name from timescaledb_information.hypertables"   # evse_status_observation, location_status_observation
 docker compose down                         # Volumes pgdata und tls (Zertifikat) bleiben erhalten
@@ -124,4 +127,4 @@ Vor einem neuen lokalen Coverage-Lauf alte Ergebnisse löschen (`tests/*/TestRes
 
 ## Nächste Schritte (Stand jetzt)
 
-Siehe `docs/09-roadmap.md`: Adapter für das E-Control-Ladestellenverzeichnis (`ChargeGlobe.Providers.EControl`), danach Ingest-Pipeline (Lease-Scheduler, `ingest_queue`), `GET /locations` und Ladepunkt-Marker auf der Karte; außerdem Lizenz festlegen.
+Siehe `docs/09-roadmap.md`: Ingest-Pipeline (Lease-Scheduler, `ingest_queue`, Merge in das Ladepunkt-Modell) mit dem E-Control-Adapter als erster Quelle, danach `GET /locations` und Ladepunkt-Marker auf der Karte; außerdem Lizenz festlegen und die E-Control-Nutzungsbedingungen archivieren. API-Keys von Quellen werden nur im Admin-UI eingetragen (`provider.api_key`, Scope `provider:<key>`), nie in Dateien.

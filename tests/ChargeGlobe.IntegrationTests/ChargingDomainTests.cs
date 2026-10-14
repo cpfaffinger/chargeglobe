@@ -1,7 +1,9 @@
+using ChargeGlobe.Application.Sources;
 using ChargeGlobe.Domain;
 using ChargeGlobe.Domain.Charging;
 using ChargeGlobe.Domain.Provenance;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using NetTopologySuite.Geometries;
 using Npgsql;
 using DomainLocation = ChargeGlobe.Domain.Charging.Location;
@@ -232,6 +234,27 @@ public class ChargingDomainTests(IntegrationFactory factory)
         var conflict = await factory.WithDbAsync(db => db.SourceConflicts.SingleAsync(item => item.EntityId == entityId));
         Assert.Null(conflict.ResolvedAt);
     }
+
+    [Fact]
+    public async Task Source_registry_creates_and_updates_sources_from_the_descriptors()
+    {
+        await EnsureMigratedAsync();
+        var key = $"reg{Guid.NewGuid():N}"[..12];
+
+        await SyncAsync(new SourceDescription(key, "Registry test", SourceTier.OFFICIAL, "Terms", "© Test", ["StaticInventory"]));
+        await SyncAsync(new SourceDescription(key, "Registry test v2", SourceTier.OFFICIAL, "Terms v2", "© Test", ["StaticInventory", "EvseIds"]));
+
+        var source = await factory.WithDbAsync(db => db.Sources.SingleAsync(item => item.Key == key));
+        Assert.Equal(("Registry test v2", "Terms v2"), (source.DisplayName, source.License));
+        Assert.Equal(["StaticInventory", "EvseIds"], source.Capabilities);
+    }
+
+    private Task<bool> SyncAsync(SourceDescription description) =>
+        factory.WithScopeAsync(async services =>
+        {
+            await services.GetRequiredService<ISourceRegistry>().SyncAsync([description], CancellationToken.None);
+            return true;
+        });
 
     /// <summary>The API applies the migrations on start; creating the client starts it.</summary>
     private async Task EnsureMigratedAsync()

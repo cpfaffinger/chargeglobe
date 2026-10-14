@@ -21,6 +21,7 @@ public sealed record StoredSettingValue(string Scope, JsonNode? Value, DateTimeO
 /// <param name="Min">Lower bound of an <c>int</c> or <c>number</c> setting.</param>
 /// <param name="Max">Upper bound of an <c>int</c> or <c>number</c> setting.</param>
 /// <param name="ScopeKinds">Scopes a value can be stored for: <c>global</c>, <c>provider</c>, <c>region</c>.</param>
+/// <param name="Scopes">The concrete scopes values can be stored for, e.g. <c>global</c> or <c>provider:econtrol</c>.</param>
 /// <param name="Value">Effective global value: the stored one or the default. A secret is shown as <c>********</c> if set, else null.</param>
 /// <param name="Stored">The stored values per scope; empty while only the default applies.</param>
 public sealed record SettingResponse(
@@ -32,6 +33,7 @@ public sealed record SettingResponse(
     double? Min,
     double? Max,
     IReadOnlyList<string> ScopeKinds,
+    IReadOnlyList<string> Scopes,
     JsonNode? Value,
     IReadOnlyList<StoredSettingValue> Stored);
 
@@ -60,6 +62,7 @@ public static class SettingsEndpoints
         1,
         65_535,
         [SettingDefinition.GlobalScope],
+        [SettingDefinition.GlobalScope],
         JsonValue.Create(2525),
         [
             new StoredSettingValue(
@@ -78,7 +81,8 @@ public static class SettingsEndpoints
             .WithSummary("List all settings with their current values")
             .WithDescription(
                 "Returns the complete catalog of functional settings: type, default, description, allowed " +
-                "values or bounds, and the values stored per scope. `value` is the effective global value " +
+                "values or bounds, the concrete scopes a value can be stored for (`scopes`, e.g. `global` or " +
+                "`provider:econtrol`), and the values stored per scope. `value` is the effective global value " +
                 "(stored value, else default). Secrets are never returned: a set secret is shown as " +
                 "`********`, an unset one as null.")
             .RequirePermission(Permissions.SettingsRead)
@@ -220,6 +224,7 @@ public static class SettingsEndpoints
             definition.Min,
             definition.Max,
             definition.ScopeKinds,
+            SettingsCatalog.EditableScopes(definition),
             global is null ? defaultValue?.DeepClone() : global.Value?.DeepClone(),
             values);
     }

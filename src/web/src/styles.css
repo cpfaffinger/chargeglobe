@@ -122,6 +122,12 @@ app-setting-row h3 {
   font-size: 1rem;
 }
 
+app-setting-row h3 .scope {
+  margin-left: 0.5rem;
+  font-weight: normal;
+  color: #555;
+}
+
 app-setting-row .description,
 app-setting-row .state {
   margin: 0.25rem 0;

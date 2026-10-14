@@ -47,6 +47,8 @@ Bei Bulk-Modi ist das Intervall je Kachel = Minimum der enthaltenen EVSE-Interva
 ### 3. Request-Budget je Provider
 `RateLimitPolicy` (z. B. 60/min, Burst 10) wird als **clusterweiter** Token-Bucket in Postgres (`provider_rate_budget`) umgesetzt, damit mehrere Crawler-Instanzen zusammen das Limit einhalten; die Werte sind im Config-Service änderbar. Zusätzlich ein **Tagesbudget**; bei Überschreitung werden Intervalle global gestreckt statt Requests fallen zu lassen. Antworten mit `429`/`503` → exponentielles Backoff mit Jitter, Beachtung von `Retry-After`, nach 5 Fehlern in Folge Circuit-Breaker für 10 min + Alarm.
 
+Umgesetzt ist bisher die Stufe im Adapter: `RateLimitingHandler` (Token-Bucket je Prozess aus der `RateLimitPolicy` des Descriptors) wartet vor jedem Request auf ein Token und wiederholt einen `429`/`503` mit `Retry-After` einmal nach der angekündigten Pause (höchstens 2 min). Clusterweites Budget, Tagesbudget, Backoff und Circuit-Breaker kommen mit dem Lease-Scheduler.
+
 ### 4. Change Detection & Dedupe
 - `content_hash` der Antwort: identische Antwort → nur `last_seen` aktualisieren, kein neuer Snapshot.
 - Statuswechsel → neues `evse_status_interval`, Domain-Event `EvseStatusChanged`.

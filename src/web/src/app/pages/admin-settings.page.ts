@@ -14,7 +14,10 @@ import { Setting, SettingsService } from '../settings/settings.service';
   selector: 'app-admin-settings',
   template: `
     <h2>Einstellungen</h2>
-    <p>Änderungen wirken ohne Neustart in allen Containern.</p>
+    <p>
+      Änderungen wirken ohne Neustart in allen Containern. Einstellungen mit dem Zusatz
+      <code>provider:…</code> gelten für die genannte Datenquelle.
+    </p>
     @if (auth.hasPermission('settings:manage')) {
       <p id="mail-link">
         SMTP-Zugang prüfen: <a routerLink="/admin/mail">Testmail senden und Postausgang ansehen</a>
@@ -27,11 +30,14 @@ import { Setting, SettingsService } from '../settings/settings.service';
       <p class="error" role="alert">{{ error }}</p>
     }
     @for (setting of settings(); track setting.key) {
-      <app-setting-row
-        [setting]="setting"
-        [canManage]="auth.hasPermission('settings:manage')"
-        (changed)="replace($event)"
-      />
+      @for (scope of setting.scopes; track scope) {
+        <app-setting-row
+          [setting]="setting"
+          [scope]="scope"
+          [canManage]="auth.hasPermission('settings:manage')"
+          (changed)="replace($event)"
+        />
+      }
     }
   `,
 })

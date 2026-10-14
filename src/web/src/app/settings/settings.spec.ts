@@ -18,13 +18,18 @@ function setting(overrides: Partial<Setting>): Setting {
     min: null,
     max: null,
     scopeKinds: ['global'],
+    scopes: ['global'],
     value: null,
     stored: [],
     ...overrides,
   };
 }
 
-const stored = (value: unknown) => [{ scope: 'global', value, updatedAt: '2026-10-14T08:15:00Z', updatedBy: ME.id }];
+const stored = (value: unknown, scope = 'global') => [{ scope, value, updatedAt: '2026-10-14T08:15:00Z', updatedBy: ME.id }];
+
+/** Provider-scoped settings of a source adapter (stored per "provider:<key>"). */
+const providerSetting = (overrides: Partial<Setting>): Setting =>
+  setting({ scopeKinds: ['provider'], scopes: ['provider:econtrol'], ...overrides });
 
 describe('SettingsService', () => {
   let service: SettingsService;
@@ -45,11 +50,11 @@ describe('SettingsService', () => {
     expect(await list).toEqual([setting({})]);
   });
 
-  it('stores a global value with PUT', async () => {
-    const updated = service.update('mail.smtp.port', 2525);
+  it('stores a value for a scope with PUT', async () => {
+    const updated = service.update('mail.smtp.port', 2525, 'global');
     const request = http.expectOne('/api/v1/settings/mail.smtp.port');
     expect(request.request.method).toBe('PUT');
-    expect(request.request.body).toEqual({ value: 2525 });
+    expect(request.request.body).toEqual({ value: 2525, scope: 'global' });
     request.flush(setting({ key: 'mail.smtp.port', value: 2525 }));
 
     expect((await updated).value).toBe(2525);
@@ -65,9 +70,10 @@ describe('SettingRow', () => {
   const control = <T extends HTMLElement = HTMLInputElement>(selector = 'input') => root().querySelector<T>(selector)!;
   const button = (name: 'save' | 'reset') => root().querySelector<HTMLButtonElement>(`button.${name}`)!;
 
-  async function render(value: Setting, canManage = true): Promise<void> {
+  async function render(value: Setting, canManage = true, scope = 'global'): Promise<void> {
     fixture = TestBed.createComponent(SettingRow);
     fixture.componentRef.setInput('setting', value);
+    fixture.componentRef.setInput('scope', scope);
     fixture.componentRef.setInput('canManage', canManage);
     emitted = [];
     fixture.componentInstance.changed.subscribe((updated) => emitted.push(updated));
@@ -109,7 +115,7 @@ describe('SettingRow', () => {
     button('save').click();
     await settle();
 
-    expect(service.update).toHaveBeenCalledOnceWith('mail.smtp.host', 'smtp.example.org');
+    expect(service.update).toHaveBeenCalledOnceWith('mail.smtp.host', 'smtp.example.org', 'global');
     expect(emitted).toEqual([updated]);
     expect(text(root(), '.saved')).toBe('· gespeichert');
     expect(button('save').disabled).toBeTrue();
@@ -127,12 +133,12 @@ describe('SettingRow', () => {
     await enter('2525');
     button('save').click();
     await settle();
-    expect(service.update).toHaveBeenCalledWith('mail.smtp.port', 2525);
+    expect(service.update).toHaveBeenCalledWith('mail.smtp.port', 2525, 'global');
 
     await enter('');
     button('save').click();
     await settle();
-    expect(service.update).toHaveBeenCalledWith('mail.smtp.port', null);
+    expect(service.update).toHaveBeenCalledWith('mail.smtp.port', null, 'global');
   });
 
   it('renders a checkbox for a bool', async () => {
@@ -148,7 +154,7 @@ describe('SettingRow', () => {
     button('save').click();
     await settle();
 
-    expect(service.update).toHaveBeenCalledOnceWith('mail.enabled', true);
+    expect(service.update).toHaveBeenCalledOnceWith('mail.enabled', true, 'global');
   });
 
   it('renders a select with the allowed values of an enum', async () => {
@@ -173,7 +179,7 @@ describe('SettingRow', () => {
     button('save').click();
     await settle();
 
-    expect(service.update).toHaveBeenCalledOnceWith('mail.smtp.security', 'ssl');
+    expect(service.update).toHaveBeenCalledOnceWith('mail.smtp.security', 'ssl', 'global');
   });
 
   it('never prefills a secret and only tells whether one is set', async () => {
@@ -197,7 +203,7 @@ describe('SettingRow', () => {
     button('reset').click();
     await settle();
 
-    expect(service.update).toHaveBeenCalledOnceWith('mail.smtp.port', null);
+    expect(service.update).toHaveBeenCalledOnceWith('mail.smtp.port', null, 'global');
     expect(emitted).toEqual([reset]);
   });
 
@@ -213,6 +219,41 @@ describe('SettingRow', () => {
     expect(control().value).toBe('70000');
     expect(root().querySelector('.saved')).toBeNull();
     expect(emitted).toEqual([]);
+  });
+
+  it('shows and stores the value of a provider scope', async () => {
+    const enabled = providerSetting({ key: 'provider.enabled', type: 'bool', default: false, value: false, stored: stored(true, 'provider:econtrol') });
+    service.update.and.resolveTo(enabled);
+    await render(providerSetting({ key: 'provider.enabled', type: 'bool', default: false, value: false }), true, 'provider:econtrol');
+
+    expect(text(root(), 'h3')).toBe('provider.enabled provider:econtrol');
+    expect(control().checked).toBeFalse();
+    expect(text(root(), '.state')).toBe('Standardwert aktiv');
+
+    control().checked = true;
+    control().dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+    button('save').click();
+    await settle();
+
+    expect(service.update).toHaveBeenCalledOnceWith('provider.enabled', true, 'provider:econtrol');
+
+    await render(enabled, true, 'provider:econtrol');
+    expect(control().checked).toBeTrue();
+    expect(text(root(), '.state')).toBe('Eigener Wert gespeichert');
+    expect(button('reset').disabled).toBeFalse();
+  });
+
+  it('tells per provider scope whether a secret is set', async () => {
+    const apiKey = providerSetting({ key: 'provider.api_key', type: 'secret', stored: stored('********', 'provider:econtrol') });
+
+    await render(apiKey, true, 'provider:econtrol');
+    expect(control().value).toBe('');
+    expect(control().placeholder).toBe('gesetzt');
+
+    await render(apiKey, true, 'provider:other');
+    expect(control().placeholder).toBe('nicht gesetzt');
+    expect(button('reset').disabled).toBeTrue();
   });
 
   it('is read-only without settings:manage', async () => {
@@ -258,7 +299,7 @@ describe('AdminSettingsPage', () => {
     service.update.and.resolveTo(setting({ key: 'mail.smtp.port', type: 'int', default: 587, value: 587 }));
     await render();
 
-    expect(Array.from(root().querySelectorAll('h3')).map((heading) => heading.textContent)).toEqual([
+    expect(Array.from(root().querySelectorAll('h3')).map((heading) => heading.textContent?.trim())).toEqual([
       'mail.smtp.host',
       'mail.smtp.port',
     ]);
@@ -269,11 +310,22 @@ describe('AdminSettingsPage', () => {
     await flush();
     await fixture.whenStable();
 
-    expect(service.update).toHaveBeenCalledOnceWith('mail.smtp.port', null);
+    expect(service.update).toHaveBeenCalledOnceWith('mail.smtp.port', null, 'global');
     expect(root().querySelectorAll<HTMLInputElement>('input')[1].value).toBe('587');
     expect(Array.from(root().querySelectorAll('.state')).map((state) => state.textContent?.trim().split(/\s+/)[0])).toEqual([
       'Standardwert',
       'Standardwert',
+    ]);
+  });
+
+  it('renders one row per scope of a setting', async () => {
+    auth.hasPermission.and.returnValue(true);
+    service.list.and.resolveTo([providerSetting({ key: 'provider.referer', scopes: ['provider:econtrol', 'provider:other'] })]);
+    await render();
+
+    expect(Array.from(root().querySelectorAll('h3 .scope')).map((scope) => scope.textContent)).toEqual([
+      'provider:econtrol',
+      'provider:other',
     ]);
   });
 

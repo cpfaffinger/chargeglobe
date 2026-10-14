@@ -9,6 +9,7 @@ COPY src/ChargeGlobe.Domain/ChargeGlobe.Domain.csproj src/ChargeGlobe.Domain/
 COPY src/ChargeGlobe.Application/ChargeGlobe.Application.csproj src/ChargeGlobe.Application/
 COPY src/ChargeGlobe.Infrastructure/ChargeGlobe.Infrastructure.csproj src/ChargeGlobe.Infrastructure/
 COPY src/ChargeGlobe.Providers.Abstractions/ChargeGlobe.Providers.Abstractions.csproj src/ChargeGlobe.Providers.Abstractions/
+COPY src/ChargeGlobe.Providers.EControl/ChargeGlobe.Providers.EControl.csproj src/ChargeGlobe.Providers.EControl/
 COPY src/ChargeGlobe.Api/ChargeGlobe.Api.csproj src/ChargeGlobe.Api/
 COPY src/ChargeGlobe.Jobs/ChargeGlobe.Jobs.csproj src/ChargeGlobe.Jobs/
 COPY tests/ChargeGlobe.Domain.Tests/ChargeGlobe.Domain.Tests.csproj tests/ChargeGlobe.Domain.Tests/
@@ -20,6 +21,8 @@ RUN dotnet tool restore && dotnet restore
 
 COPY src/ src/
 COPY tests/ tests/
+# Recorded, sanitized source responses for the replay tests (docs/04, rule 7).
+COPY fixtures/ fixtures/
 # Read by the test that keeps .env.example complete (ADR-0006).
 COPY .env.example docker-compose.yml ./
 RUN dotnet build --no-restore

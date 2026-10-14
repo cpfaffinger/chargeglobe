@@ -2,11 +2,16 @@ import { Component, computed, inject, input, output, signal } from '@angular/cor
 import { attempt } from '../auth/problem';
 import { Setting, SettingsService } from './settings.service';
 
-/** One setting, rendered from its catalog entry: the input control follows the type. */
+/** One setting in one scope, rendered from its catalog entry: the input control follows the type. */
 @Component({
   selector: 'app-setting-row',
   template: `
-    <h3>{{ setting().key }}</h3>
+    <h3>
+      {{ setting().key }}
+      @if (scope() !== 'global') {
+        <span class="scope">{{ scope() }}</span>
+      }
+    </h3>
     <p class="description">{{ setting().description }}</p>
     <div class="control">
       @switch (setting().type) {
@@ -44,13 +49,13 @@ import { Setting, SettingsService } from './settings.service';
         <button type="button" class="save" [disabled]="busy() || draft() === undefined" (click)="save()">
           Speichern
         </button>
-        <button type="button" class="reset" [disabled]="busy() || setting().stored.length === 0" (click)="reset()">
+        <button type="button" class="reset" [disabled]="busy() || !storedValue()" (click)="reset()">
           Zurücksetzen
         </button>
       }
     </div>
     <p class="state">
-      @if (setting().stored.length === 0) {
+      @if (!storedValue()) {
         Standardwert aktiv
       } @else {
         Eigener Wert gespeichert
@@ -68,6 +73,8 @@ export class SettingRow {
   private readonly settings = inject(SettingsService);
 
   readonly setting = input.required<Setting>();
+  /** "global", or e.g. "provider:econtrol" for the settings of a source adapter. */
+  readonly scope = input('global');
   readonly canManage = input(false);
 
   /** Emits the setting as returned by the API after a successful save or reset. */
@@ -82,15 +89,23 @@ export class SettingRow {
   protected readonly isSecret = computed(() => this.setting().type === 'secret');
   protected readonly isNumeric = computed(() => ['int', 'number'].includes(this.setting().type));
 
+  /** The value stored for this scope; undefined while the default applies. */
+  protected readonly storedValue = computed(() => this.setting().stored.find((value) => value.scope === this.scope()));
+
+  /** Global: the effective value from the API; other scopes: their stored value, else the default. */
+  protected readonly effective = computed(() =>
+    this.scope() === 'global' ? this.setting().value : (this.storedValue()?.value ?? this.setting().default),
+  );
+
   /** A secret is never prefilled: the API only tells whether one is set. */
   protected readonly current = computed(() =>
-    this.draft() !== undefined ? this.draft() : this.isSecret() ? '' : this.setting().value,
+    this.draft() !== undefined ? this.draft() : this.isSecret() ? '' : this.effective(),
   );
   protected readonly inputType = computed(() =>
     this.isSecret() ? 'password' : this.isNumeric() ? 'number' : 'text',
   );
   protected readonly placeholder = computed(() =>
-    this.isSecret() ? (this.setting().value === null ? 'nicht gesetzt' : 'gesetzt') : '',
+    this.isSecret() ? (this.storedValue() ? 'gesetzt' : 'nicht gesetzt') : '',
   );
 
   protected edit(event: Event): void {
@@ -115,7 +130,7 @@ export class SettingRow {
 
   private store(value: unknown): Promise<void> {
     return attempt(this.busy, this.errors, async () => {
-      this.changed.emit(await this.settings.update(this.setting().key, value));
+      this.changed.emit(await this.settings.update(this.setting().key, value, this.scope()));
       this.draft.set(undefined);
       this.saved.set(true);
     });

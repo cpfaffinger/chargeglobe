@@ -73,8 +73,8 @@ public class MailDeliveryServiceTests
 
     [Theory]
     [InlineData(JobRole.Worker, new[] { typeof(HeartbeatService), typeof(MailDeliveryService) })]
-    [InlineData(JobRole.Crawler, new[] { typeof(HeartbeatService) })]
-    public void Mail_delivery_runs_in_the_worker_role_only(JobRole role, Type[] expected)
+    [InlineData(JobRole.Crawler, new[] { typeof(HeartbeatService), typeof(ProviderHealthService) })]
+    public void Mail_delivery_runs_in_the_worker_role_and_provider_probes_in_the_crawler_role(JobRole role, Type[] expected)
     {
         var options = new JobOptions(role, "instance-1");
 
