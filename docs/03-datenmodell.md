@@ -41,7 +41,7 @@ Operator (CPO) ─┬─ 1..n ─ Location ─ 1..n ─ ChargingStation? ─ 1..
 | `source` | `key` (PK: `econtrol`, `ocm`, `osm`, `evn`, `oeamtc`, …), `display_name`, `tier` (`OFFICIAL`, `OPEN_DATA`, `PUBLIC_WEB`, `APP_BACKEND`, `PARTNER`), `license`, `attribution_text`, `capabilities text[]` (Namen der Provider-Capabilities) | Registry der Quellen; die Felder kommen aus dem Descriptor des Adapters. Ob ein Provider aktiv ist, steht im Config-Service (`enabled`, Scope `provider:<key>`), nicht hier |
 | `source_record` | PK `source_key` + `external_id` + `entity_type` (`LOCATION`/`EVSE`/`CONNECTOR`), `entity_id`, `match_method` (`EVSE_ID_EXACT`, `EVSE_ID_NORMALIZED`, `GEO_OPERATOR_HEURISTIC`, `MANUAL`, `CREATED` = Datensatz hat die Entität angelegt), `match_confidence` (0–1), `first_seen`, `last_seen`, `last_snapshot_id` | Quell-ID ↔ kanonische Entität (n:1) |
 | `attribute_origin` | PK `entity_type` + `entity_id` + `attribute` (`geom`, `max_power_kw`, `name`, …), `source_key`, `observed_at`, `value_hash` (SHA-256) | welches Attribut stammt woher |
-| `raw_snapshot` | `id` (bigint), `source_key`, `job_id`, `fetched_at`, `request_fingerprint`, `content_hash` (SHA-256 des Payloads), `payload jsonb`, `http_status` | Replay; Retention 30 Tage (Job vorgesehen), Dedupe über `source_key` + `content_hash` |
+| `raw_snapshot` | `id` (bigint), `source_key`, `job_id`, `fetched_at`, `request_fingerprint` (z. B. `location:<externe Id>`), `content_hash` (SHA-256 des Payloads), `payload jsonb`, `http_status` | Replay; eindeutig je `source_key` + `content_hash` (ein erneut gesehener Datensatz aktualisiert nur `fetched_at`/`job_id`); Retention `ingest.snapshot_retention_days` (30) |
 | `source_conflict` | `id`, `entity_type`, `entity_id`, `attribute`, `values jsonb` (je Quelle), `detected_at`, `resolved_at`, `resolution` | Review-Queue im Admin (Index auf offene Konflikte) |
 
 `source_key` verweist fachlich auf `source.key`, ist aber bewusst kein Fremdschlüssel: Adapter können liefern, bevor ihre `source`-Zeile existiert, und die Zeitreihen sparen sich die Prüfung je Insert.
@@ -56,7 +56,9 @@ Operator (CPO) ─┬─ 1..n ─ Location ─ 1..n ─ ChargingStation? ─ 1..
 | `evse_occupancy_hourly` (Continuous Aggregate, vorgesehen) | `bucket` (1 h), `evse_id`, `obs_charging`, `obs_available`, `obs_total` | für Heatmaps/Auslastung ohne Scan der Rohdaten |
 | `location_status_observation` (Hypertable, Tages-Chunks) | PK `location_id` + `time` + `source_key`, `evses_total`, `evses_available` | für Quellen, die nur Standort-Summen liefern (z. B. „3 von 8 frei“); Kompression und Retention wie oben |
 
-**Status-Zusammenführung bei mehreren Quellen:** `evse_status_current` folgt der Quelle mit der höchsten Status-Präzedenz, die innerhalb ihres Frische-Fensters liegt (CPO-direkt > Roaming-EMP > Aggregator). Widersprüche innerhalb 60 s werden als `confidence < 1` markiert, nicht als Wechsel.
+**Umgesetzt (eine Quelle):** Jeder Statuswert wird Beobachtung (`ON CONFLICT DO NOTHING`, damit eine erneut verarbeitete Nachricht nichts doppelt schreibt). Ist er neuer als `evse_status_current.observed_at` und ändert er den Status, wird das offene Intervall geschlossen und ein neues geöffnet; sonst wird nur `observed_at` fortgeschrieben. Ältere Werte ändern nichts.
+
+**Status-Zusammenführung bei mehreren Quellen (vorgesehen):** `evse_status_current` folgt der Quelle mit der höchsten Status-Präzedenz, die innerhalb ihres Frische-Fensters liegt (CPO-direkt > Roaming-EMP > Aggregator). Widersprüche innerhalb 60 s werden als `confidence < 1` markiert, nicht als Wechsel.
 
 ### Identität & Zugriff
 
@@ -74,10 +76,10 @@ Operator (CPO) ─┬─ 1..n ─ Location ─ 1..n ─ ChargingStation? ─ 1..
 |---|---|---|
 | `app_setting` | `key`, `scope` (`global`, `provider:<key>`, `region:<code>`), `value jsonb`, `updated_by`, `updated_at`; Primärschlüssel `key` + `scope` | Werte des zentralen Config-Service; Defaults und Typen (auch „Secret“) stehen im Katalog im Code, Secrets sind verschlüsselt (Schlüsselring in `data_protection_key`) |
 | `email_outbox` | `id`, `to`, `subject`, `body_text`, `body_html`, `template_key`, `status` (`QUEUED`, `SENT`, `FAILED`), `attempts`, `last_error`, `created_at`, `sent_at`, `next_attempt_at` | Postausgang des Mail-Service; der Worker versendet fällige Einträge (`status = QUEUED` und `next_attempt_at` leer oder erreicht), versendete werden nach `mail.retention_days` gelöscht |
-| `poll_plan` | `id`, `provider_key`, `job_type`, `region_code?`, `tile?`, `interval`, `next_run_at`, `leased_by?`, `lease_until?`, `last_run_at`, `last_result` | Arbeitsvorrat der Crawler; `SKIP LOCKED` |
-| `provider_rate_budget` | `provider_key`, `tokens`, `refilled_at`, `day_count`, `day_reset_at` | clusterweiter Token-Bucket |
-| `ingest_queue` | `id`, `provider_key`, `job_id`, `payload jsonb` (Ingest-Modell), `enqueued_at`, `leased_by?`, `lease_until?`, `attempts`, `error?` | Übergabe Crawler → Worker; Retention 7 Tage nach Verarbeitung |
-| `job_lease` | `job_name` (PK), `leased_by`, `lease_until` | Single-Runner-Jobs (Reconcile, Retention, Aggregate) |
+| `poll_plan` | `id`, `provider_key`, `job_type` (`INVENTORY_FULL`, `STATUS_POLL`), `region_code`, `min_longitude`/`min_latitude`/`max_longitude`/`max_latitude` (Bounding-Box der Region), `interval`, `next_run_at`, `leased_by?`, `lease_until?`, `last_run_at?`, `last_result?`; eindeutig je `provider_key` + `job_type` + `region_code` | Arbeitsvorrat der Crawler; Claim per `FOR UPDATE SKIP LOCKED`, Lease 1 h |
+| `provider_rate_budget` | `provider_key` (PK), `tokens`, `refilled_at`, `day_count`, `day_reset_at` (nächste Mitternacht UTC) | clusterweiter Token-Bucket; eine Zeilensperre je Token |
+| `ingest_queue` | `id` (bigint), `provider_key`, `job_id`, `payload jsonb` (`IngestBatch`: Standorte mit `raw_snapshot`-Id oder Statuswerte), `enqueued_at`, `attempts`, `next_attempt_at?`, `error?`, `processed_at?` | Übergabe Crawler → Worker; gesperrt wird per Zeilensperre in der Verarbeitungstransaktion statt per Lease-Spalten; Retention `ingest.queue_retention_days` nach Verarbeitung |
+| `job_lease` | `job_name` (PK), `leased_by`, `lease_until` | Single-Runner-Jobs (derzeit `ingest-retention`) |
 
 ### Preise
 
@@ -104,6 +106,9 @@ Die API berechnet pro Ladepunkt und EMP die **Szenario-Kosten** aus dem Tarif (`
 
 ### Matching-Kaskade für einen Quell-Datensatz
 
+Umgesetzt im `IngestProcessor` sind die Schritte 1, 2 und 5: EVSE-ID (gleiche Schreibweise → `EVSE_ID_EXACT`; ein Standort, dessen EVSE schon bekannt ist → `EVSE_ID_NORMALIZED`; gleiche normalisierte Form, andere Separatoren → `source_conflict` statt Merge), gelernter `source_record` (jede weitere Lieferung derselben Quell-Id), sonst neue Entität (`CREATED`, ohne EVSE-ID als Surrogat; liefert die Quelle später eine noch freie EVSE-ID, ersetzt sie das Surrogat, eine vergebene erzeugt einen Konflikt). Ein `source_record`, dessen Entität gelöscht wurde, wird neu zugeordnet. Die Geo-Heuristiken (3, 4) kommen mit der zweiten Quelle. Standorte ohne Ländercode werden übersprungen (nicht geraten).
+
+
 | Schritt | Methode | Confidence |
 |---|---|---|
 | 1 | EVSE-ID vorhanden und normalisiert gleich | 1.0 |
@@ -115,6 +120,9 @@ Die API berechnet pro Ladepunkt und EMP die **Szenario-Kosten** aus dem Tarif (`
 Besonderheit **Tesla Supercharger**: Tesla vergibt EVSE-IDs im Roaming (sichtbar in EMP-Apps und im amtlichen Verzeichnis), zeigt sie in der eigenen App aber nicht. Hier ist Schritt 3 (Operator `Tesla` + Geo + Stallanzahl) der Regelfall; die Station-Ebene der Tesla-Quelle wird dann über die amtliche Quelle auf einzelne EVSEs verteilt. Wenn eine Quelle nur Standort-Status liefert („3 von 8 frei“), wird das als `location_status_observation` gespeichert und **nicht** auf einzelne EVSEs geraten.
 
 ### Quellen-Präzedenz je Attribut (Default, konfigurierbar)
+
+Umgesetzt ist die Vorstufe: Ein Attribut (`name`, `address`, `postal_code`, `city`, `geom`, `operator_id`, `access`, `opening_times` am Standort; `location_id`, `operator_id`, `max_power_kw`, `power_type`, `physical_reference`, `connectors` am EVSE) gehört der Quelle, die es zuerst gesetzt hat (`attribute_origin`); nur sie ändert es. Bleiben alle Werte gleich, wird die Entität bestätigt (`last_confirmed_at`), sonst nur gesehen (`last_seen`). Die folgende Tabelle ist das Ziel, sobald eine zweite Quelle angebunden ist:
+
 
 | Attribut | Reihenfolge |
 |---|---|

@@ -104,6 +104,9 @@ curl -kI https://localhost:5005/maplibre/maplibre-gl-worker.mjs   # 200, Content
 docker compose logs crawler worker          # Heartbeats beider Rollen (alle 30 s, mit aktuellem Wert von mail.enabled); worker: "Mail outbox: …"; crawler: "Provider econtrol healthy: …" (alle 15 min, nur mit provider.enabled)
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select template_key, status, attempts, last_error from email_outbox"
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select hypertable_name from timescaledb_information.hypertables"   # evse_status_observation, location_status_observation
+docker compose exec db psql -U chargeglobe -d chargeglobe -c "select provider_key, job_type, region_code, next_run_at, leased_by, last_result from poll_plan order by 1,2,3"
+docker compose exec db psql -U chargeglobe -d chargeglobe -c "select count(*) filter (where processed_at is null) offen, count(*) filter (where error is not null) fehler from ingest_queue"
+docker compose exec db psql -U chargeglobe -d chargeglobe -c "select (select count(*) from location) standorte, (select count(*) from evse) evses, (select count(*) from evse_status_current) status"
 docker compose down                         # Volumes pgdata und tls (Zertifikat) bleiben erhalten
 
 # Testlauf auf dem Dev-Server (maßgeblicher Abnahmeweg, ADR-0010; per SSH laut CLAUDE.local.md).

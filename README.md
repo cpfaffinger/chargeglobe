@@ -53,15 +53,15 @@ chargeglobe/
 ├─ ChargeGlobe.sln
 ├─ src/
 │  ├─ ChargeGlobe.Domain/        # Ladepunkt-Modell (Location, EVSE, Connector, Operator, Region), Provenienz, Status-Zeitreihen, Value Objects (EvseId, GeoPoint), Permission-Katalog; vorgesehen: Tarife, Domain-Events
-│  ├─ ChargeGlobe.Application/   # Ports (IEmailSender, IMailTransport, IAppConfig, …), Settings-Katalog, Mail-Vorlagen; vorgesehen: Ingest-Pipeline, Merge
+│  ├─ ChargeGlobe.Application/   # Ports (IEmailSender, IAppConfig, IIngestQueue, IPollPlanStore, …), Settings-Katalog, Mail-Vorlagen, Ingest-Batch, Regionen
 │  ├─ ChargeGlobe.Infrastructure/# EF Core + Npgsql (AppDbContext, Migrationen, PostGIS/TimescaleDB), ASP.NET Core Identity, Identity-Services, Mail-Outbox + SMTP (MailKit), Config-Service
 │  ├─ ChargeGlobe.Providers.Abstractions/  # Provider-Vertrag (ACL): Descriptor, Quell-Interfaces, Ingest-Modell, Status-Mapping
 │  ├─ ChargeGlobe.Providers.EControl/  # Adapter E-Control-Ladestellenverzeichnis (offizielle API mit Key)
 │  ├─ ChargeGlobe.Providers.*/   # (geplant) weitere Adapter (OpenChargeMap, Osm, Evn, …)
 │  ├─ ChargeGlobe.Api/           # ASP.NET Core Minimal API, OpenAPI 3.1, Auth (JWT + API-Keys), Permission-Prüfung, Rate Limiting
 │  ├─ ChargeGlobe.Jobs/          # ein Host für beide Rollen (--role crawler|worker), Image chargeglobe-jobs, skalierbar
-│  │                             #   crawler: Source-Abgleich + Health-Probe der Provider; vorgesehen: Lease-Scheduler + Abrufe → raw_snapshot, ingest_queue
-│  │                             #   worker: Mail-Zustellung; vorgesehen: Ingest-Queue-Verarbeitung, Merge, Aggregate, Reconcile
+│  │                             #   crawler: Source-Abgleich, Health-Probe, Lease-Scheduler + Abrufe → raw_snapshot, ingest_queue
+│  │                             #   worker: Mail-Zustellung, Ingest-Queue → Merge ins Ladepunkt-Modell, Retention; vorgesehen: Aggregate, Reconcile
 │  └─ web/                       # Angular-App: Karte (Startseite), Registrierung, Login, Passwort-Reset, Konto, Admin (Einstellungen, E-Mail); vorgesehen: Ladepunkte, Detail
 ├─ tests/
 │  ├─ ChargeGlobe.Api.Tests/         # Tests ohne Datenbank (WebApplicationFactory mit Stub, Einstellungen, Mail-Vorlagen)

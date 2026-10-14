@@ -62,7 +62,7 @@
 
 ## Module (Projekte in der Solution)
 
-Die Solution `ChargeGlobe.sln` liegt im Repo-Root, Projekte unter `src/`, Testprojekte unter `tests/`: `ChargeGlobe.Domain.Tests`, `ChargeGlobe.Providers.Tests` (Provider-Vertrag; künftig auch Replay-Tests der Adapter), `ChargeGlobe.Jobs.Tests`, `ChargeGlobe.Api.Tests` (Api, Application und Infrastructure ohne Datenbank) und `ChargeGlobe.IntegrationTests` (API in-process gegen Postgres: Migration inkl. PostGIS/TimescaleDB, Seed, alle Identity-Abläufe, Schema des Ladepunkt-Modells, Vollständigkeit der OpenAPI-Beschreibung).
+Die Solution `ChargeGlobe.sln` liegt im Repo-Root, Projekte unter `src/`, Testprojekte unter `tests/`: `ChargeGlobe.Domain.Tests`, `ChargeGlobe.Providers.Tests` (Provider-Vertrag, Replay-Tests der Adapter), `ChargeGlobe.Jobs.Tests`, `ChargeGlobe.Api.Tests` (Api, Application und Infrastructure ohne Datenbank) und `ChargeGlobe.IntegrationTests` (API in-process gegen Postgres: Migration inkl. PostGIS/TimescaleDB, Seed, alle Identity-Abläufe, Schema des Ladepunkt-Modells, Ingest-Pipeline mit Queue, Merge, Plänen, Budget und Leases, Vollständigkeit der OpenAPI-Beschreibung).
 
 ### `ChargeGlobe.Domain`
 Reine C#-Klassen ohne Infrastruktur-Abhängigkeiten.
@@ -105,23 +105,23 @@ EF Core 10 + Npgsql: `AppDbContext` (`Persistence/`), Migrationen unter `Persist
 Ein Generic-Host-Projekt und ein Image (`chargeglobe-jobs`) für beide Hintergrund-Rollen. Die Rolle wird beim Start über `--role crawler|worker` gewählt (fehlende oder unbekannte Rolle bricht den Start ab); die Anzahl der Instanzen je Rolle steht in `.env` (`CRAWLER_REPLICAS`, `WORKER_REPLICAS`) und wird von Compose per `deploy.replicas` umgesetzt. Beide Rollen haben Datenbankzugang und nutzen den Config-Service (`AddInfrastructureCore`, `AddSettingsCacheRefresh`). Jede Instanz loggt beim Start und danach alle 30 s einen Heartbeat mit Rolle, Instanz-ID (Hostname des Containers) und dem aktuellen Wert von `mail.enabled`; daran ist sichtbar, dass eine Einstellungsänderung ohne Neustart ankommt. Eine Instanz je Rolle reicht für Phase 1.
 
 #### Rolle `crawler` (Container `crawler`, N Instanzen)
-Zustandslos, holt Daten von den Quellen:
+Zustandslos, holt Daten von den Quellen; nur Provider mit `provider.enabled = true`:
 
-- **Vorhanden**: `ProviderHealthService` gleicht alle 15 min die Tabelle `source` mit den Descriptoren der registrierten Adapter ab (`ISourceRegistry`) und prüft jeden Provider mit `provider.enabled = true` per `IProviderHealth.ProbeAsync` (Ergebnis im Log: HTTP-Status und Dauer bzw. Grund, z. B. fehlender Key). Gecrawlt wird noch nicht; das Folgende ist vorgesehen.
-
-- **Lease-Scheduler**: `poll_plan` (Provider × Region/Kachel × Jobtyp × Intervall × `next_run_at`) liegt in Postgres. Jede Instanz holt fällige Pläne mit `SELECT … FOR UPDATE SKIP LOCKED`, setzt `leased_by`/`lease_until` und führt sie aus; abgelaufene Leases werden von jeder Instanz übernommen. Damit verteilen sich N Instanzen ohne Koordinator.
-- **Rate-Limits je Provider sind clusterweit**: Token-Bucket-Zustand in Postgres (`provider_rate_budget`), nicht pro Prozess, damit N Crawler zusammen das Limit einhalten.
-- **Jobtypen**: `InventoryFull`, `InventoryDelta`, `StatusPoll`, `PricePoll` (siehe [05](05-crawling-konzept.md)).
-- Ergebnis jedes Jobs: `raw_snapshot` + bereits gemapptes Ingest-Modell als Nachricht in `ingest_queue` (Postgres-Tabelle, JSONB). Crawler schreiben nie in kanonische Tabellen.
-- Health/Metriken je Provider und Instanz (OpenTelemetry → Prometheus/Grafana): Requests, Fehlerquote, 429s, Datenfrische, Lease-Alter.
+- **`ProviderHealthService`**: gleicht alle 15 min die Tabelle `source` mit den Descriptoren der registrierten Adapter ab (`ISourceRegistry`) und prüft jeden aktiven Provider per `IProviderHealth.ProbeAsync` (Log: HTTP-Status und Dauer bzw. Grund, z. B. fehlender Key).
+- **Lease-Scheduler `PollScheduler`** (alle 15 s): legt je aktivem Provider die Pläne in `poll_plan` an bzw. gleicht sie ab – Jobtyp × Region aus `provider.regions` (Default `AT-9,AT-3,AT-4,AT-1`, Bounding-Boxes der Bundesländer aus `RegionBounds`, bis Regionspolygone geseedet sind) mit Intervall aus `provider.interval.inventory_minutes` / `provider.interval.status_minutes`, sonst aus `PollDefaults` des Descriptors; Pläne entfernter Regionen werden gelöscht. Danach holt die Instanz fällige Pläne einzeln per `UPDATE … WHERE id = (SELECT … FOR UPDATE SKIP LOCKED) RETURNING` mit `leased_by`/`lease_until` (1 h) und führt sie aus; abgelaufene Leases übernimmt jede Instanz. Erfolg: nächster Lauf nach dem Intervall; Fehler: nach höchstens 5 min, Grund in `last_result`.
+- **Jobtypen** (`JobType`): `INVENTORY_FULL` für Adapter mit `IInventorySource`, `STATUS_POLL` für `IStatusSource`. Vorgesehen: `INVENTORY_DELTA`, `PRICE_POLL`.
+- **`PollJobRunner`**: jeder Rohdatensatz landet einmal in `raw_snapshot` (Upsert über Quelle + `content_hash`), das gemappte Ingest-Modell in Batches (50 Standorte bzw. 500 Statuswerte) als JSONB in `ingest_queue`. Crawler schreiben nie in kanonische Tabellen.
+- **Request-Budget clusterweit**: jeder Request eines Adapters nimmt vor dem Senden ein Token aus `provider_rate_budget` (`ClusterRequestBudget` über `RequestBudgetHandler`; Token-Bucket aus `RateLimitPolicy` mit optionalem Tagesbudget, Wartezeit 100 ms – 1 min je Versuch), zusätzlich zum Token-Bucket je Prozess im Adapter.
+- Vorgesehen: Metriken je Provider und Instanz (OpenTelemetry → Prometheus/Grafana): Requests, Fehlerquote, 429s, Datenfrische, Lease-Alter.
 
 #### Rolle `worker` (Container `worker`, M Instanzen)
-Zustandslos, verarbeitet `ingest_queue` (ebenfalls `SKIP LOCKED`, Batches je Provider):
+Zustandslos:
 
-- Vorhanden: Mail-Zustellung (`MailDeliveryService`, siehe Mail-Service).
-- Vorgesehen: Identity Resolution, Merge, Change Detection, Status-Intervalle, Konflikt-Queue (siehe `Application`).
-- Periodische Aufgaben mit Single-Runner-Lease (`job_lease`-Tabelle): `Reconcile`, Continuous-Aggregate-Refresh, Retention, Statistiken, Permission-/Settings-Katalog-Abgleich.
-- **Adaptive Intervalle**: schreibt nach jedem Statuswechsel das neue Intervall in `poll_plan` zurück; der Crawler liest es beim nächsten Lease.
+- **Mail-Zustellung** (`MailDeliveryService`, siehe Mail-Service).
+- **`IngestWorkerService`** (alle 5 s): verarbeitet `ingest_queue` Nachricht für Nachricht. Je Nachricht eine Transaktion: Zeile mit `FOR UPDATE SKIP LOCKED` sperren, Merge (`IngestProcessor`), `processed_at` setzen, Commit – mehrere Worker greifen nie dieselbe Nachricht, und ein Abbruch hinterlässt keinen halben Merge. Ein Fehler rollt den Merge zurück (Savepoint), erhöht `attempts`, schreibt `error` und plant den nächsten Versuch nach 1, 2, 4 … min; nach `ingest.max_attempts` (Default 5) bleibt die Nachricht mit Fehler liegen.
+- **Merge** (`IngestProcessor`, Infrastructure): Identity Resolution nach [03](03-datenmodell.md#identity-resolution), Upsert von Operator, Location, EVSE und Steckern, `source_record` und `attribute_origin`; Statuswerte (auch die aus Inventar-Antworten) werden zu Beobachtungen, Intervallen und dem aktuellen Status (siehe [03](03-datenmodell.md#status-zeitreihen)).
+- **Retention** einmal täglich unter der Single-Runner-Lease `ingest-retention` (`job_lease`): verarbeitete Nachrichten nach `ingest.queue_retention_days` (7), Rohdaten nach `ingest.snapshot_retention_days` (30).
+- Vorgesehen: Reconcile, Continuous-Aggregate-Refresh, Statistiken, adaptive Intervalle (schreibt nach Statuswechseln das Intervall in `poll_plan` zurück).
 
 ### Zentraler Config-Service (Application + Infrastructure + Api + Jobs + web)
 - **Katalog im Code** (Application, `Settings/`): `SettingsCatalog` ist die vollständige Liste fachlicher Einstellungen. Eine `SettingDefinition` trägt Key, Typ (`string`, `int`, `number`, `bool`, `enum`, `secret`), Default (`null` = nicht gesetzt), englische Beschreibung, Validierung (erlaubte Enum-Werte, Min/Max) und die erlaubten Scope-Arten (`global`, `provider` als `provider:<key>`, `region` als `region:<code>`). Enthalten sind `auth.rate_limit_per_minute`, die `mail.*`-Keys aus [ADR-0008](adr/0008-zentraler-mail-service-smtp.md) (SMTP-Zugang, `mail.max_attempts`, `mail.retention_days`) und `map.style_url`, `map.attribution`, `map.start.latitude`, `map.start.longitude`, `map.start.zoom` ([ADR-0007](adr/0007-karte-standort-routing.md)); alle mit Scope `global`; dazu die Provider-Einstellungen `provider.enabled`, `provider.api_key` (Secret) und `provider.referer`, die nur je Quelle (`provider:<key>`) gespeichert werden. Die Schlüssel der Adapter stehen in `SettingsCatalog.ProviderKeys`; daraus ergeben sich die konkret editierbaren Scopes (`EditableScopes`).

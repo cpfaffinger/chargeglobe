@@ -12,7 +12,7 @@
 | Rate-Limit beobachtet | keines (nur 8 Requests); erzwungen werden 40 Requests/min (2.400/h) mit Burst 10 je Prozess |
 | Capabilities | StaticInventory · EvseIds · LiveStatusPerEvse · AdHocPrice · BulkByBoundingBox (per adaptivem Suchraster) |
 
-Konfiguration (Config-Service, Scope `provider:econtrol`, Admin-UI `/admin/settings`): `provider.enabled`, `provider.api_key` (Secret, verschlüsselt), `provider.referer` (registrierte Domain; ein bloßer Hostname wird zu `https://<host>/` ergänzt). Der Key steht nie in Repo, `.env` oder Logs.
+Konfiguration (Config-Service, Scope `provider:econtrol`, Admin-UI `/admin/settings`): `provider.enabled`, `provider.api_key` (Secret, verschlüsselt), `provider.referer` (registrierte Domain; ein bloßer Hostname wird zu `https://<host>/` ergänzt), `provider.regions` (Default `AT-9,AT-3,AT-4,AT-1`), `provider.interval.inventory_minutes` (Default 1 Tag) und `provider.interval.status_minutes` (Default 15 min: ein Durchgang über die vier Startregionen braucht einige hundert Suchen, vier Durchgänge pro Stunde bleiben unter 2.400 Requests). Der Key steht nie in Repo, `.env` oder Logs.
 
 ## Endpunkte
 
@@ -77,5 +77,5 @@ Je Ladepunkt der Ad-hoc-Preis des Betreibers: kWh-Preis und/oder Minutenpreis, S
 ## Offene Punkte / Risiken
 - Wortlaut der Nutzungsbedingungen archivieren; Weiterverbreitung (API-Ausgabe von chargeglobe) schriftlich mit support@ladestellen.at klären; Go-Live-Meldung, Logo-Attribution und Quartalsstatistik umsetzen.
 - Die registrierte Domain ist derzeit ein Platzhalter (`ogb.net`); bei Wechsel nur `provider.referer` ändern.
-- Das Rate-Limit gilt je Prozess; das clusterweite Budget (`provider_rate_budget`) kommt mit dem Lease-Scheduler.
+- Requests laufen durch zwei Budgets: 40/min je Prozess im Adapter und clusterweit in `provider_rate_budget` (ebenfalls 40/min, Burst 10). Die tatsächliche Anzahl Suchen je Durchgang ist erst mit Live-Daten messbar (`poll_plan.last_result`, Crawler-Log).
 - Aktualisierungsrate des Live-Status und ein Bulk-Endpunkt sind unbekannt (Swagger nicht lesbar).
