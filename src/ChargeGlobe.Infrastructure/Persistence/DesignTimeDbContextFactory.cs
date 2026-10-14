@@ -12,5 +12,6 @@ namespace ChargeGlobe.Infrastructure.Persistence;
 public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 {
     public AppDbContext CreateDbContext(string[] args) =>
-        new(new DbContextOptionsBuilder<AppDbContext>().UseNpgsql("Host=design-time.invalid;Database=chargeglobe").Options);
+        new(new DbContextOptionsBuilder<AppDbContext>().UseNpgsql(
+            "Host=design-time.invalid;Database=chargeglobe", npgsql => npgsql.UseNetTopologySuite()).Options);
 }

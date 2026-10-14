@@ -25,12 +25,13 @@ public static class InfrastructureServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddInfrastructureCore(this IServiceCollection services, string connectionString)
     {
-        services.AddSingleton(_ => NpgsqlDataSource.Create(connectionString));
+        // PostGIS types (location.geom) need the NetTopologySuite plugin on the data source and in EF Core.
+        services.AddSingleton(_ => new NpgsqlDataSourceBuilder(connectionString).UseNetTopologySuite().Build());
         services.AddSingleton<DbDataSource>(provider => provider.GetRequiredService<NpgsqlDataSource>());
         services.TryAddSingleton(TimeProvider.System);
 
         services.AddDbContext<AppDbContext>((provider, options) =>
-            options.UseNpgsql(provider.GetRequiredService<NpgsqlDataSource>()));
+            options.UseNpgsql(provider.GetRequiredService<NpgsqlDataSource>(), npgsql => npgsql.UseNetTopologySuite()));
 
         // One key ring for all containers, kept in the database so that it survives rebuilds.
         services.AddDataProtection().SetApplicationName("chargeglobe").PersistKeysToDbContext<AppDbContext>();
