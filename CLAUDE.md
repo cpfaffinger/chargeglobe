@@ -117,6 +117,7 @@ TOKEN=$(curl -sk -H 'Content-Type: application/json' -d "{\"email\":\"$EMAIL\",\
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/evses/<EVSE-ID oder UUID>"                  # 200: EVSE mit Standort, Steckern, aktuellem Status
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/evses/<EVSE-ID>/status/history"           # Statusintervalle der letzten 7 Tage (max. 90 Tage je Abfrage)
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/evses/<EVSE-ID>/occupancy?weeks=4"        # Matrix Wochentag × Stunde (Europe/Vienna)
+curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/evses/<EVSE-ID>/prices"                  # Ad-hoc-Preis, Verlauf, Kosten 30 kWh/40 min (price:read)
 docker compose logs crawler worker          # Heartbeats beider Rollen (alle 30 s); crawler (nur mit provider.enabled): "Job STATUS_POLL econtrol point 17/212 (…) started (HOT, last poll 6 min ago)", "… done: … requests …; 412/600 requests in the last hour; …", "E-Control register page 3/17 …", Pausen "… provider paused until …"; Health-Probe stündlich
 curl -k "https://localhost:5005/api/v1/search?q=stephansplatz"   # Suche nach EVSE-ID, Name, Straße, PLZ, Ort (anonym)
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/users?q=example.org"   # Konten mit Status und Rollen (user:read); UI: /admin/users
@@ -133,6 +134,7 @@ docker compose exec db psql -U chargeglobe -d chargeglobe -c "select provider_ke
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select provider_key, sum(requests) requests, count(*) runs from crawler_run where started_at > now() - interval '1 hour' group by 1"   # Abrufvolumen der letzten Stunde (≤ provider.request_budget_per_hour)
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select priority, count(*), min(last_polled_at) from poll_tile group by 1"   # Abfragepunkte je Priorität
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select * from provider_backoff"   # Pause/Sperre nach Fehlern der Quelle
+docker compose exec db psql -U chargeglobe -d chargeglobe -c "select (select count(*) from evse_price_current) aktuell, (select count(*) from price_observation) aenderungen"   # Ad-hoc-Preise nach einem Register-Durchlauf
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select count(*) filter (where processed_at is null) offen, count(*) filter (where error is not null) fehler from ingest_queue"
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select (select count(*) from location) standorte, (select count(*) from evse) evses, (select count(*) from evse_status_current) status"
 docker compose down                         # ./data (Postgres-Cluster, Zertifikat) bleibt erhalten, auch mit -v
@@ -162,4 +164,4 @@ Vor einem neuen lokalen Coverage-Lauf alte Ergebnisse löschen (`tests/*/TestRes
 
 ## Nächste Schritte (Stand jetzt)
 
-Siehe `docs/09-roadmap.md`: Ad-hoc-Preise aus dem E-Control-Register (`price_observation`, `GET /evses/{id}/prices`) und „Passwort ändern“ auf `/account`; außerdem Lizenz festlegen und die E-Control-Nutzungsbedingungen archivieren. API-Keys von Quellen werden nur im Admin-UI eingetragen (`provider.api_key`, Scope `provider:<key>`), nie in Dateien.
+Siehe `docs/09-roadmap.md`: „Passwort ändern“ auf `/account`, danach Startposition, Filter und Kartenoptionen angemeldeter Nutzer in `/me/preferences`; außerdem Lizenz festlegen und die E-Control-Nutzungsbedingungen archivieren. API-Keys von Quellen werden nur im Admin-UI eingetragen (`provider.api_key`, Scope `provider:<key>`), nie in Dateien.

@@ -46,7 +46,16 @@
             "APP",
             "CREDIT_CARD_PAYABLE"
           ],
-          "roaming": true
+          "roaming": true,
+          "adHocPrice": {
+            "currency": "EUR",
+            "pricePerKwh": 0.56,
+            "pricePerMinute": null,
+            "sessionFee": 0,
+            "blockingFeePerMinute": 0.05,
+            "blockingAfterMinutes": 721,
+            "freeOfCharge": false
+          }
         },
         {
           "externalId": "AT*VIE*E1150650004*1",
@@ -73,7 +82,16 @@
             "APP",
             "CREDIT_CARD_PAYABLE"
           ],
-          "roaming": true
+          "roaming": true,
+          "adHocPrice": {
+            "currency": "EUR",
+            "pricePerKwh": 0.56,
+            "pricePerMinute": null,
+            "sessionFee": 0,
+            "blockingFeePerMinute": 0.05,
+            "blockingAfterMinutes": 721,
+            "freeOfCharge": false
+          }
         }
       ],
       "observedAt": "2026-10-14T08:00:00+00:00",
@@ -253,7 +271,16 @@
           "status": null,
           "statusRaw": null,
           "authMethods": [],
-          "roaming": null
+          "roaming": null,
+          "adHocPrice": {
+            "currency": "EUR",
+            "pricePerKwh": 0.5,
+            "pricePerMinute": 2,
+            "sessionFee": 0,
+            "blockingFeePerMinute": 0,
+            "blockingAfterMinutes": 0,
+            "freeOfCharge": false
+          }
         }
       ],
       "observedAt": "2026-10-14T08:00:00+00:00",
@@ -375,7 +402,16 @@
           "status": null,
           "statusRaw": null,
           "authMethods": [],
-          "roaming": true
+          "roaming": true,
+          "adHocPrice": {
+            "currency": "EUR",
+            "pricePerKwh": 0.45,
+            "pricePerMinute": 0.0167,
+            "sessionFee": 0,
+            "blockingFeePerMinute": 0,
+            "blockingAfterMinutes": 0,
+            "freeOfCharge": false
+          }
         }
       ],
       "observedAt": "2026-10-14T08:00:00+00:00",
@@ -508,7 +544,16 @@
           "authMethods": [
             "RFID_READER"
           ],
-          "roaming": false
+          "roaming": false,
+          "adHocPrice": {
+            "currency": "EUR",
+            "pricePerKwh": null,
+            "pricePerMinute": null,
+            "sessionFee": 0,
+            "blockingFeePerMinute": 0,
+            "blockingAfterMinutes": 0,
+            "freeOfCharge": false
+          }
         }
       ],
       "observedAt": "2026-10-14T08:00:00+00:00",

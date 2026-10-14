@@ -12,6 +12,7 @@ import { FavoritesService } from '../favorites/favorites.service';
 import { LocationDetailPage } from '../pages/location-detail.page';
 import { ME, fakeAuth, flush, locationSummary, text } from '../testing';
 import { LocationDetails } from './location-details';
+import { EvsePricesResponse, PriceView, money, priceParts } from './prices';
 import {
   EvseDetail,
   EvsesService,
@@ -474,14 +475,107 @@ describe('LocationDetails (info card)', () => {
     await settle();
     const history = http.expectOne((request) => request.url === '/api/v1/evses/e-1/status/history');
     const occupancy = http.expectOne('/api/v1/evses/e-1/occupancy?weeks=4');
+    const price = http.expectOne('/api/v1/evses/e-1/prices');
     await show('loc-4');
     history.flush({ title: 'Error' }, { status: 500, statusText: 'Error' });
     occupancy.flush({ title: 'Error' }, { status: 500, statusText: 'Error' });
+    price.flush({ title: 'Error' }, { status: 500, statusText: 'Error' });
     await settle();
     http.expectOne('/api/v1/locations/loc-4').flush(response('loc-4', []));
     await settle();
 
     expect(text(root(), '#no-evses')).toBe('Für diesen Standort sind keine Ladepunkte bekannt.');
     expect(root().querySelector('.timeline-state')).toBeNull();
+  });
+});
+
+describe('LocationDetails with prices', () => {
+  let http: HttpTestingController;
+  let fixture: ComponentFixture<LocationDetails>;
+
+  const root = () => fixture.nativeElement as HTMLElement;
+  const priceView = (overrides: Partial<PriceView> = {}): PriceView => ({
+    source: 'econtrol',
+    currency: 'EUR',
+    pricePerKwh: 0.59,
+    pricePerMinute: null,
+    sessionFee: 0,
+    blockingFeePerMinute: 0.1,
+    blockingAfterMinutes: 240,
+    freeOfCharge: false,
+    exampleCost: 17.7,
+    ...overrides,
+  });
+  const prices = (current: EvsePricesResponse['data']['current']): EvsePricesResponse => ({
+    data: { id: 'e', evseId: 'e', tariffKind: 'AD_HOC', from: '', to: '', example: { kwh: 30, minutes: 40 }, current, history: [] },
+    meta: { attribution: [] },
+  });
+
+  async function settle(): Promise<void> {
+    await flush();
+    await fixture.whenStable();
+  }
+
+  beforeEach(() => {
+    const auth = fakeAuth(ME);
+    auth.hasPermission.and.callFake((permission) => permission === 'price:read');
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), { provide: AuthService, useValue: auth }],
+    });
+    http = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => http.verify());
+
+  it('shows the ad-hoc price of each EVSE with the cost of 30 kWh in 40 minutes, also without evse:read', async () => {
+    fixture = TestBed.createComponent(LocationDetails);
+    fixture.componentRef.setInput('locationId', 'loc-1');
+    await settle();
+    http
+      .expectOne('/api/v1/locations/loc-1')
+      .flush({ data: { location: locationSummary(), evses: [evse(), evse({ id: 'e-2' }), evse({ id: 'e-3' })] }, meta: { attribution: [] } });
+    await settle();
+    expect(Array.from(root().querySelectorAll('.price')).map((price) => price.textContent!.trim())).toEqual([
+      'Preis wird geladen …',
+      'Preis wird geladen …',
+      'Preis wird geladen …',
+    ]);
+
+    http.expectOne('/api/v1/evses/e-1/prices').flush(prices({ price: priceView(), since: '2026-10-01T00:00:00Z', observedAt: '2026-10-14T00:00:00Z' }));
+    http.expectOne('/api/v1/evses/e-2/prices').flush(prices(null));
+    http.expectOne('/api/v1/evses/e-3/prices').flush({ title: 'Error' }, { status: 500, statusText: 'Error' });
+    await settle();
+
+    const lines = Array.from(root().querySelectorAll('.price')).map((price) => price.textContent!.replace(/\s+/g, ' ').trim());
+    expect(lines).toEqual([
+      'Ad-hoc: 0,59 €/kWh · Blockiergebühr 0,10 €/min ab Minute 240 · 30 kWh in 40 min: 17,70 €',
+      'Kein Ad-hoc-Preis bekannt.',
+      'Der Preis konnte nicht geladen werden.',
+    ]);
+    expect(root().querySelector('.timeline, #heatmap')).toBeNull();
+  });
+});
+
+describe('price texts', () => {
+  /** Intl puts a non-breaking space before the currency sign. */
+  const nbsp = (texts: string[]) => texts.map((value) => value.replace(/ €/g, '\u00a0€'));
+
+  it('names every part of a price in German', () => {
+    const base: PriceView = {
+      source: 'econtrol',
+      currency: 'EUR',
+      pricePerKwh: 0.59,
+      pricePerMinute: 0.02,
+      sessionFee: 0.5,
+      blockingFeePerMinute: 0.1,
+      blockingAfterMinutes: null,
+      freeOfCharge: false,
+      exampleCost: 19,
+    };
+    expect(priceParts(base)).toEqual(nbsp(['0,59 €/kWh', '0,02 €/min', 'Startgebühr 0,50 €', 'Blockiergebühr 0,10 €/min']));
+    expect(priceParts({ ...base, freeOfCharge: true })).toEqual(['kostenlos']);
+    expect(priceParts({ ...base, pricePerKwh: null, pricePerMinute: null, sessionFee: null, blockingFeePerMinute: null })).toEqual(['keine Angaben']);
+    expect(money(0.1234, 'EUR')).toBe('0,1234\u00a0€');
+    expect(money(19, 'EUR')).toBe('19,00\u00a0€');
   });
 });

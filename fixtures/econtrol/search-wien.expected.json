@@ -45,7 +45,16 @@
             "RFID_READER",
             "APP"
           ],
-          "roaming": true
+          "roaming": true,
+          "adHocPrice": {
+            "currency": "EUR",
+            "pricePerKwh": 0.59,
+            "pricePerMinute": null,
+            "sessionFee": 0,
+            "blockingFeePerMinute": 0.1,
+            "blockingAfterMinutes": 240,
+            "freeOfCharge": false
+          }
         },
         {
           "externalId": "AT*TST*ETEST0001*2",
@@ -70,7 +79,16 @@
           "authMethods": [
             "APP"
           ],
-          "roaming": true
+          "roaming": true,
+          "adHocPrice": {
+            "currency": "EUR",
+            "pricePerKwh": 0.59,
+            "pricePerMinute": 0.02,
+            "sessionFee": 0.5,
+            "blockingFeePerMinute": null,
+            "blockingAfterMinutes": null,
+            "freeOfCharge": false
+          }
         }
       ],
       "observedAt": "2026-10-14T08:00:00+00:00",
@@ -263,7 +281,16 @@
           "authMethods": [
             "RFID_READER"
           ],
-          "roaming": true
+          "roaming": true,
+          "adHocPrice": {
+            "currency": "EUR",
+            "pricePerKwh": 0.69,
+            "pricePerMinute": null,
+            "sessionFee": null,
+            "blockingFeePerMinute": 0.2,
+            "blockingAfterMinutes": 45,
+            "freeOfCharge": false
+          }
         },
         {
           "externalId": "AT*TST*ETEST0002#2",
@@ -295,7 +322,16 @@
           "status": "UNKNOWN",
           "statusRaw": "WARTUNG",
           "authMethods": [],
-          "roaming": false
+          "roaming": false,
+          "adHocPrice": {
+            "currency": "EUR",
+            "pricePerKwh": null,
+            "pricePerMinute": null,
+            "sessionFee": null,
+            "blockingFeePerMinute": null,
+            "blockingAfterMinutes": null,
+            "freeOfCharge": true
+          }
         }
       ],
       "observedAt": "2026-10-14T08:00:00+00:00",

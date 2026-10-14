@@ -188,6 +188,66 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                     b.ToTable("evse", (string)null);
                 });
 
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.EvsePriceCurrent", b =>
+                {
+                    b.Property<Guid>("EvseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("evse_id");
+
+                    b.Property<string>("SourceKey")
+                        .HasColumnType("text")
+                        .HasColumnName("source_key");
+
+                    b.Property<string>("TariffKind")
+                        .HasColumnType("text")
+                        .HasColumnName("tariff_kind");
+
+                    b.Property<int?>("BlockingAfterMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("blocking_after_minutes");
+
+                    b.Property<decimal?>("BlockingFeePerMinute")
+                        .HasPrecision(10, 4)
+                        .HasColumnType("numeric(10,4)")
+                        .HasColumnName("blocking_fee_per_minute");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("currency");
+
+                    b.Property<bool>("FreeOfCharge")
+                        .HasColumnType("boolean")
+                        .HasColumnName("free_of_charge");
+
+                    b.Property<DateTimeOffset>("ObservedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("observed_at");
+
+                    b.Property<decimal?>("PricePerKwh")
+                        .HasPrecision(10, 4)
+                        .HasColumnType("numeric(10,4)")
+                        .HasColumnName("price_per_kwh");
+
+                    b.Property<decimal?>("PricePerMinute")
+                        .HasPrecision(10, 4)
+                        .HasColumnType("numeric(10,4)")
+                        .HasColumnName("price_per_minute");
+
+                    b.Property<decimal?>("SessionFee")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)")
+                        .HasColumnName("session_fee");
+
+                    b.Property<DateTimeOffset>("Since")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("since");
+
+                    b.HasKey("EvseId", "SourceKey", "TariffKind");
+
+                    b.ToTable("evse_price_current", (string)null);
+                });
+
             modelBuilder.Entity("ChargeGlobe.Domain.Charging.EvseStatusCurrent", b =>
                 {
                     b.Property<Guid>("EvseId")
@@ -458,6 +518,62 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                         .HasFilter("operator_id IS NOT NULL");
 
                     b.ToTable("operator", (string)null);
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.PriceObservation", b =>
+                {
+                    b.Property<Guid>("EvseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("evse_id");
+
+                    b.Property<DateTimeOffset>("Time")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("time");
+
+                    b.Property<string>("SourceKey")
+                        .HasColumnType("text")
+                        .HasColumnName("source_key");
+
+                    b.Property<string>("TariffKind")
+                        .HasColumnType("text")
+                        .HasColumnName("tariff_kind");
+
+                    b.Property<int?>("BlockingAfterMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("blocking_after_minutes");
+
+                    b.Property<decimal?>("BlockingFeePerMinute")
+                        .HasPrecision(10, 4)
+                        .HasColumnType("numeric(10,4)")
+                        .HasColumnName("blocking_fee_per_minute");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("currency");
+
+                    b.Property<bool>("FreeOfCharge")
+                        .HasColumnType("boolean")
+                        .HasColumnName("free_of_charge");
+
+                    b.Property<decimal?>("PricePerKwh")
+                        .HasPrecision(10, 4)
+                        .HasColumnType("numeric(10,4)")
+                        .HasColumnName("price_per_kwh");
+
+                    b.Property<decimal?>("PricePerMinute")
+                        .HasPrecision(10, 4)
+                        .HasColumnType("numeric(10,4)")
+                        .HasColumnName("price_per_minute");
+
+                    b.Property<decimal?>("SessionFee")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)")
+                        .HasColumnName("session_fee");
+
+                    b.HasKey("EvseId", "Time", "SourceKey", "TariffKind");
+
+                    b.ToTable("price_observation", (string)null);
                 });
 
             modelBuilder.Entity("ChargeGlobe.Domain.Charging.Region", b =>
@@ -1578,6 +1694,15 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
                 });
 
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.EvsePriceCurrent", b =>
+                {
+                    b.HasOne("ChargeGlobe.Domain.Charging.Evse", null)
+                        .WithMany()
+                        .HasForeignKey("EvseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ChargeGlobe.Domain.Charging.EvseStatusCurrent", b =>
                 {
                     b.HasOne("ChargeGlobe.Domain.Charging.Evse", null)
@@ -1623,6 +1748,15 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                     b.HasOne("ChargeGlobe.Domain.Charging.Location", null)
                         .WithMany()
                         .HasForeignKey("LocationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.PriceObservation", b =>
+                {
+                    b.HasOne("ChargeGlobe.Domain.Charging.Evse", null)
+                        .WithMany()
+                        .HasForeignKey("EvseId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

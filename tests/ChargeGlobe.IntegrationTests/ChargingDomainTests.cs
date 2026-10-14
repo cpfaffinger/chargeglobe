@@ -28,7 +28,7 @@ public class ChargingDomainTests(IntegrationFactory factory)
 
         // The materialization hypertable of the continuous aggregate lives in an internal schema.
         var hypertables = await QueryAsync("SELECT hypertable_name FROM timescaledb_information.hypertables WHERE hypertable_schema = 'public' ORDER BY 1");
-        Assert.Equal(["evse_status_observation", "location_status_observation"], hypertables);
+        Assert.Equal(["evse_status_observation", "location_status_observation", "price_observation"], hypertables);
 
         var policies = await QueryAsync(
             "SELECT hypertable_name || ':' || proc_name FROM timescaledb_information.jobs " +
@@ -39,6 +39,7 @@ public class ChargingDomainTests(IntegrationFactory factory)
                 "evse_status_observation:policy_retention",
                 "location_status_observation:policy_compression",
                 "location_status_observation:policy_retention",
+                "price_observation:policy_compression",
             ],
             policies);
 

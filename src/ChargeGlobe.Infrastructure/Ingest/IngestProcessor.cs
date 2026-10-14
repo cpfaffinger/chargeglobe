@@ -145,12 +145,37 @@ public sealed class IngestProcessor(AppDbContext db)
 
         foreach (var evseSnapshot in snapshot.Evses)
         {
-            if (await MergeEvseAsync(sourceKey, location.Id, operatorId, evseSnapshot, item.SnapshotId, at, cancellationToken) is { } evse
-                && evseSnapshot.Status is { } status)
+            if (await MergeEvseAsync(sourceKey, location.Id, operatorId, evseSnapshot, item.SnapshotId, at, cancellationToken) is not { } evse)
+            {
+                continue;
+            }
+
+            if (evseSnapshot.Status is { } status)
             {
                 readings.Add(new StatusReading(evse.Id, status, evseSnapshot.StatusRaw ?? status.ToString(), at, null));
             }
+
+            if (evseSnapshot.AdHocPrice is { } price)
+            {
+                await ApplyPriceAsync(evse.Id, sourceKey, price, at, cancellationToken);
+            }
         }
+    }
+
+    /// <summary>Keeps the current ad-hoc price of the EVSE; a changed price also goes into the history.</summary>
+    private async Task ApplyPriceAsync(Guid evseId, string sourceKey, PriceComponents price, DateTimeOffset at, CancellationToken cancellationToken)
+    {
+        var current = await db.EvsePriceCurrent.FindAsync([evseId, sourceKey, TariffKind.AD_HOC], cancellationToken);
+        if (current is null)
+        {
+            db.EvsePriceCurrent.Add(EvsePriceCurrent.Create(evseId, sourceKey, TariffKind.AD_HOC, price, at));
+        }
+        else if (!current.Observe(price, at))
+        {
+            return;
+        }
+
+        db.PriceObservations.Add(PriceObservation.Create(evseId, sourceKey, TariffKind.AD_HOC, price, at));
     }
 
     private async Task<Evse?> MergeEvseAsync(

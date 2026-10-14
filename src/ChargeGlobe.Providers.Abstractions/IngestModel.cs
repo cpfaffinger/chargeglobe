@@ -61,7 +61,8 @@ public sealed record ProviderEvseSnapshot(
     EvseStatus? Status,
     string? StatusRaw,
     IReadOnlyList<AuthMethod>? AuthMethods = null,
-    bool? Roaming = null);
+    bool? Roaming = null,
+    PriceComponents? AdHocPrice = null);
 
 /// <param name="Format">Null if the source does not tell socket from cable.</param>
 /// <param name="PowerType">Null if the source does not tell it.</param>

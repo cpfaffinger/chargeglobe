@@ -140,8 +140,19 @@ public sealed class EControlMapper
             point.Status is null ? null : StatusMapping.Map(point.Status),
             point.Status,
             AuthMethods(point.AuthenticationMode),
-            point.Roaming);
+            point.Roaming,
+            AdHocPrice(point));
     }
+
+    /// <summary>The ad-hoc price of a point in euros; null if the source tells none.</summary>
+    private static PriceComponents? AdHocPrice(PointDto point) =>
+        point.FreeOfCharge == true
+            ? new PriceComponents("EUR", null, null, null, null, null, true)
+            : point is { PriceCentKwh: null, PriceCentMin: null, StartFeeCent: null, BlockingFeeCentMin: null }
+                ? null
+                : new PriceComponents(
+                    "EUR", Euro(point.PriceCentKwh), Euro(point.PriceCentMin), Euro(point.StartFeeCent), Euro(point.BlockingFeeCentMin),
+                    point.BlockingFeeFromMinute, false);
 
     private ProviderConnectorSnapshot ToConnector(string key, PowerType? powerType, decimal? maxPowerKw)
     {
