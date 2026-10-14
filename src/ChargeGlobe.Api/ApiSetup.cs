@@ -14,9 +14,11 @@ using ChargeGlobe.Api.Settings;
 using ChargeGlobe.Api.Setup;
 using ChargeGlobe.Api.Tariffs;
 using ChargeGlobe.Application.Identity;
+using ChargeGlobe.Application.Routing;
 using ChargeGlobe.Application.Settings;
 using ChargeGlobe.Infrastructure;
 using ChargeGlobe.Infrastructure.Persistence;
+using ChargeGlobe.Infrastructure.Routing;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -49,6 +51,11 @@ public static class ApiSetup
         // key ring warm-up of Data Protection and the settings refresh, which both need its tables.
         services.Insert(0, ServiceDescriptor.Singleton<IHostedService, DatabaseInitializationService>());
         services.AddSettingsCacheRefresh();
+        services.AddHttpClient<IRoutingEngine, ValhallaRoutingEngine>(http =>
+        {
+            http.BaseAddress = ValhallaRoutingEngine.Address;
+            http.Timeout = ValhallaRoutingEngine.Timeout;
+        });
 
         // Binding errors answer 400 problem details in every environment instead of throwing.
         services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadRequest = false);

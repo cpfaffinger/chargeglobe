@@ -7,7 +7,6 @@ using ChargeGlobe.Application.Ingest;
 using ChargeGlobe.Application.Locations;
 using ChargeGlobe.Application.Mail;
 using ChargeGlobe.Application.Preferences;
-using ChargeGlobe.Application.Routing;
 using ChargeGlobe.Application.Settings;
 using ChargeGlobe.Application.Sources;
 using ChargeGlobe.Application.Tariffs;
@@ -16,7 +15,6 @@ using ChargeGlobe.Infrastructure.Identity;
 using ChargeGlobe.Infrastructure.Ingest;
 using ChargeGlobe.Infrastructure.Mail;
 using ChargeGlobe.Infrastructure.Persistence;
-using ChargeGlobe.Infrastructure.Routing;
 using ChargeGlobe.Infrastructure.Settings;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
@@ -78,20 +76,11 @@ public static class InfrastructureServiceCollectionExtensions
     public static IServiceCollection AddSettingsCacheRefresh(this IServiceCollection services) =>
         services.AddHostedService<SettingsCacheRefresher>();
 
-    /// <summary>Address of the routing engine inside the compose network (service <c>routing</c>, docs/adr/0007).</summary>
-    public static readonly Uri RoutingUrl = new("http://routing:8002/");
-
     /// <summary>Everything the API needs on top of <see cref="AddInfrastructureCore"/>.</summary>
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services, string connectionString, AuthSettings authSettings)
     {
         services.AddInfrastructureCore(connectionString);
-        services.AddHttpClient<IRoutingEngine, ValhallaRoutingEngine>(http =>
-        {
-            http.BaseAddress = RoutingUrl;
-            // A route through Austria takes well under a second; a hanging engine must not block the request.
-            http.Timeout = TimeSpan.FromSeconds(15);
-        });
         services.AddSingleton<IDatabaseProbe, DatabaseProbe>();
         services.AddSingleton(authSettings);
 

@@ -14,6 +14,12 @@ namespace ChargeGlobe.Infrastructure.Routing;
 /// </summary>
 public sealed partial class ValhallaRoutingEngine(HttpClient http, ILogger<ValhallaRoutingEngine> logger) : IRoutingEngine
 {
+    /// <summary>Address of the engine inside the compose network (service <c>routing</c>).</summary>
+    public static readonly Uri Address = new("http://routing:8002/");
+
+    /// <summary>A route through Austria takes well under a second; a hanging engine must not block the request.</summary>
+    public static readonly TimeSpan Timeout = TimeSpan.FromSeconds(15);
+
     public async Task<RouteResult> RouteAsync(IReadOnlyList<GeoPoint> waypoints, CancellationToken cancellationToken)
     {
         var request = new ValhallaRequest(

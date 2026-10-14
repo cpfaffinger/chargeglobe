@@ -1,10 +1,8 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
-using ChargeGlobe.Application.Identity;
 using ChargeGlobe.Application.Routing;
 using ChargeGlobe.Domain;
-using ChargeGlobe.Infrastructure;
 using ChargeGlobe.Infrastructure.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -33,7 +31,7 @@ public class RoutingTests
     private static (ValhallaRoutingEngine Engine, FakeHandler Handler) Engine(Func<HttpResponseMessage> respond)
     {
         var handler = new FakeHandler(respond);
-        var http = new HttpClient(handler) { BaseAddress = InfrastructureServiceCollectionExtensions.RoutingUrl };
+        var http = new HttpClient(handler) { BaseAddress = ValhallaRoutingEngine.Address };
         return (new ValhallaRoutingEngine(http, NullLogger<ValhallaRoutingEngine>.Instance), handler);
     }
 
@@ -93,12 +91,13 @@ public class RoutingTests
     }
 
     [Fact]
-    public async Task AddInfrastructure_registers_the_valhalla_adapter()
+    public async Task The_api_talks_to_the_routing_service_of_the_compose_network()
     {
-        var services = new ServiceCollection().AddLogging();
-        services.AddInfrastructure("Host=localhost;Database=unused", AuthSettings.Create(name => name == "JWT_SIGNING_KEY" ? new string('k', 32) : null));
+        await using var factory = new ApiFactory();
+        using var scope = factory.Services.CreateScope();
 
-        await using var provider = services.BuildServiceProvider();
-        Assert.IsType<ValhallaRoutingEngine>(provider.GetRequiredService<IRoutingEngine>());
+        Assert.IsType<ValhallaRoutingEngine>(scope.ServiceProvider.GetRequiredService<IRoutingEngine>());
+        var http = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient(typeof(IRoutingEngine).Name);
+        Assert.Equal((new Uri("http://routing:8002/"), TimeSpan.FromSeconds(15)), (http.BaseAddress, http.Timeout));
     }
 }
