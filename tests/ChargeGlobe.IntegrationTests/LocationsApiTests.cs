@@ -40,6 +40,8 @@ public class LocationsApiTests(IntegrationFactory factory) : IClassFixture<Integ
 
             return true;
         });
+        var errors = await factory.WithDbAsync(db => db.IngestQueue.Where(message => message.Error != null).Select(message => message.Error).ToListAsync());
+        Assert.True(errors.Count == 0, string.Join(" | ", errors));
 
         // A location without operator and EVSEs, outside Vienna.
         await factory.WithDbAsync(db =>
