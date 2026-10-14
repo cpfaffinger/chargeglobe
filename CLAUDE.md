@@ -146,4 +146,4 @@ Vor einem neuen lokalen Coverage-Lauf alte Ergebnisse löschen (`tests/*/TestRes
 
 ## Nächste Schritte (Stand jetzt)
 
-Siehe `docs/09-roadmap.md`: Filter in der Karte (Stecker, Leistung, Betreiber, nur frei) und Ad-hoc-Preise aus E-Control (`PRICE_POLL`, `price_observation`, `GET /evses/{id}/prices`); außerdem Lizenz festlegen und die E-Control-Nutzungsbedingungen archivieren. API-Keys von Quellen werden nur im Admin-UI eingetragen (`provider.api_key`, Scope `provider:<key>`), nie in Dateien.
+Siehe `docs/09-roadmap.md`: zuerst das Design auf Angular-Basis (Angular Material 3 + CDK, Theming über `mat.theme`-Tokens, Light und Dark Mode; Entwurf zur Freigabe, dann Umsetzung mit ADR), danach Filter in der Karte (Stecker, Leistung, Betreiber, nur frei) und Ad-hoc-Preise aus E-Control (`PRICE_POLL`, `price_observation`, `GET /evses/{id}/prices`); außerdem Lizenz festlegen und die E-Control-Nutzungsbedingungen archivieren. API-Keys von Quellen werden nur im Admin-UI eingetragen (`provider.api_key`, Scope `provider:<key>`), nie in Dateien.
