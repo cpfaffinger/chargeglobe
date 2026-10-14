@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { computed, signal } from '@angular/core';
+import { Viewport } from './design/theme.service';
 import { AuthService, Me } from './auth/auth.service';
 import { BrowserCapabilities } from './map/browser-capabilities';
 import { MapConfig } from './map/map-config.service';
@@ -40,6 +41,7 @@ export function fakeAuth(me: Me | null = null) {
 /** Response of GET /api/v1/map/config with the defaults of the settings catalog. */
 export const MAP_CONFIG: MapConfig = {
   styleUrl: 'https://tiles.openfreemap.org/styles/liberty',
+  styleUrlDark: 'https://tiles.openfreemap.org/styles/dark',
   attribution: '© OpenStreetMap contributors, OpenMapTiles',
   center: { latitude: 48.2, longitude: 15.6 },
   zoom: 7,
@@ -47,7 +49,7 @@ export const MAP_CONFIG: MapConfig = {
 
 /** MapEngine double: WebGL is not reliably available in the headless test browser. */
 export function fakeMapEngine() {
-  const handle = jasmine.createSpyObj<MapHandle>('MapHandle', ['locate', 'destroy', 'showLocations']);
+  const handle = jasmine.createSpyObj<MapHandle>('MapHandle', ['locate', 'destroy', 'showLocations', 'setTheme']);
   handle.locate.and.returnValue(true);
   const engine = jasmine.createSpyObj<MapEngine>('MapEngine', ['create']);
   engine.create.and.resolveTo(handle);
@@ -106,3 +108,8 @@ export function submit(root: Element): void {
 
 export const text = (root: Element, selector: string): string | undefined =>
   root.querySelector(selector)?.textContent?.replace(/\s+/g, ' ').trim();
+
+/** Viewport double: desktop by default; set mobile to switch the layout. */
+export function fakeViewport(mobile = false) {
+  return { mobile: signal(mobile) } as unknown as Viewport & { mobile: ReturnType<typeof signal<boolean>> };
+}

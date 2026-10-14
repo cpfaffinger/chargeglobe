@@ -51,7 +51,7 @@ Referenzen: [HA-Integration (MIT)](https://github.com/prusuino/ha_austrian_charg
 
 - **AFIR (EU) 2023/1804 Art. 20**: seit 14.04.2025 müssen Betreiber statische und dynamische Daten kostenlos und diskriminierungsfrei über den NAP bereitstellen. **Durchführungs-VO (EU) 2025/655**: ab 14.04.2026 im Format DATEX II (CEN/TS 16157-10); statisch ≤ 24 h, dynamisch (Status, Verfügbarkeit, **Ad-hoc-Preis inkl. aller Komponenten**) ≤ 1 min. [EUR-Lex 2025/655](https://eur-lex.europa.eu/eli/reg_impl/2025/655/oj/eng) · [Zusammenfassung NDW](https://docs.ndw.nu/en/data-uitwisseling/interface-beschrijvingen/dafne-api/VerplichtingConformUitvoeringsverordeningEU2025/) [V-sek]
 - **NAP Österreich: [mobilitaetsdaten.gv.at](https://www.mobilitaetsdaten.gv.at/)** (AustriaTech). Datensatz [„Ladestellenverzeichnis der E-Control (nationales Ladepunkteregister)“](https://www.mobilitaetsdaten.gv.at/daten/ladestellenverzeichnis-der-e-control-nationales-ladepunkteregister): DATEX II v3.2, XML, HTTP-Pull, „bei Änderung“, Zugang über dieselbe E-Control-API-Registrierung. **Der NAP hostet keine eigene Kopie; E-Control ist die AFIR-Quelle und erzeugt DATEX II selbst.** [V]
-- Für chargeglobe heißt das: der DATEX-II-Adapter (Phase 3) kann auch die österreichischen Daten lesen; im MVP reicht die JSON-API.
+- Für chargeglobe heißt das: die E-Control-API selbst bietet laut ihrer Spezifikation DATEX II v3.5 (Table- und Status-Publication) an; dieser Abruf ersetzt das Suchraster und ist der Kern des späteren generischen DATEX-II-Adapters ([Endpunkt-Notiz](endpunkte/econtrol.md)).
 
 ## 3. Weitere Quellen Österreich
 

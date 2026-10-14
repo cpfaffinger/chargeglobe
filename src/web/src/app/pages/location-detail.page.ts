@@ -1,7 +1,13 @@
 import { DatePipe, DecimalPipe, PercentPipe, formatDate, formatPercent } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatCardModule } from '@angular/material/card';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { AppIcon } from '../design/icon';
 import {
   EvseDetail,
   EvsesService,
@@ -10,6 +16,7 @@ import {
   OccupancyDay,
 } from '../evses/evses.service';
 import { Segment, combine, heatColor, statusOf, timeline } from '../evses/status';
+import { AVAILABILITY, tokenColor } from '../map/availability';
 
 /** Days of the status timeline and weeks of the occupancy matrix. */
 const TIMELINE_DAYS = 7;
@@ -21,13 +28,25 @@ type LoadState = 'loading' | 'error' | 'ready';
 /**
  * Detail of a charging location for signed-in users (guard with evse:read in app.routes.ts): the EVSEs with
  * status and connectors, the status timeline of the last 7 days per EVSE and a weekday × hour heatmap of the
- * share of readings with status CHARGING over the last 4 weeks.
+ * share of readings with status CHARGING over the last 4 weeks. Colours come from the theme tokens, so both
+ * light and dark mode work; statuses also carry a symbol and a label.
  */
 @Component({
-  imports: [DatePipe, DecimalPipe, PercentPipe, RouterLink],
+  imports: [
+    AppIcon,
+    DatePipe,
+    DecimalPipe,
+    MatButtonModule,
+    MatButtonToggleModule,
+    MatCardModule,
+    MatChipsModule,
+    MatProgressBarModule,
+    PercentPipe,
+    RouterLink,
+  ],
   selector: 'app-location-detail',
   template: `
-    <p><a routerLink="/" id="back">← Zur Karte</a></p>
+    <a matButton routerLink="/" id="back"><app-icon name="arrow_back" />Zur Karte</a>
     @if (notice() === 'missing') {
       <p id="detail-notice" class="error">Diesen Ladestandort gibt es nicht oder nicht mehr.</p>
     } @else if (notice() === 'failed') {
@@ -37,134 +56,156 @@ type LoadState = 'loading' | 'error' | 'ready';
     }
     @if (detail(); as detail) {
       @let location = detail.data.location;
-      <h2 id="location-name">{{ location.name ?? 'Ladestandort' }}</h2>
-      <p class="address">{{ location.address }}, {{ location.postalCode }} {{ location.city }}</p>
-      @if (location.operator) {
-        <p class="operator">Betreiber: {{ location.operator }}</p>
-      }
-      <p class="availability">
-        {{ location.evsesAvailable }} von {{ location.evsesTotal }} Ladepunkten frei
-      </p>
-
-      <h3>Ladepunkte</h3>
-      @for (evse of detail.data.evses; track evse.id) {
-        <article class="evse" [attr.data-evse]="evse.id">
-          <h4>
-            {{ evse.evseId }}
-            @if (!evse.hasEvseId) {
-              <small>(ID von chargeglobe vergeben)</small>
-            }
-          </h4>
-          <p class="status">
-            <span class="dot" [style.background]="statusOf(evse.status).color"></span
-            >{{ statusOf(evse.status).label }}
-            @if (evse.statusSince) {
-              seit {{ evse.statusSince | date: 'dd.MM.yyyy HH:mm' }}
-            }
-            @if (evse.maxPowerKw !== null) {
-              · bis {{ evse.maxPowerKw | number: '1.0-1' : 'en-US' }} kW
-            }
-          </p>
-          <p class="connectors">{{ connectors(evse) }}</p>
-          @switch (timelineState(evse.id)) {
-            @case ('loading') {
-              <p class="timeline-state">Verlauf wird geladen …</p>
-            }
-            @case ('error') {
-              <p class="timeline-state error">Der Statusverlauf konnte nicht geladen werden.</p>
-            }
-            @default {
-              <div
-                class="timeline"
-                role="img"
-                [attr.aria-label]="'Statusverlauf der letzten ' + timelineDays + ' Tage'"
-              >
-                @for (segment of segments(evse.id); track segment.from.getTime()) {
-                  <span
-                    class="segment"
-                    [style.left.%]="segment.left"
-                    [style.width.%]="segment.width"
-                    [style.background]="statusOf(segment.status).color"
-                    [title]="segmentTitle(segment)"
-                  ></span>
-                }
-              </div>
-              <p class="timeline-axis">
-                <span>{{ range().from | date: 'dd.MM. HH:mm' }}</span
-                ><span>jetzt</span>
-              </p>
-              @if (segments(evse.id).length === 0) {
-                <p class="timeline-state">
-                  Keine Statusmeldungen in den letzten {{ timelineDays }} Tagen.
-                </p>
-              }
-            }
+      <div>
+        <h1 id="location-name">{{ location.name ?? 'Ladestandort' }}</h1>
+        <p class="lead address">{{ location.address }}, {{ location.postalCode }} {{ location.city }}</p>
+        @if (location.operator) {
+          <p class="lead operator">Betreiber: {{ location.operator }}</p>
+        }
+        <mat-chip-set class="chips" aria-label="Verfügbarkeit">
+          <mat-chip class="availability" [disableRipple]="true">
+            <span matChipAvatar class="status-dot" [style.background]="availabilityColor(location.availability)"
+              ><app-icon [name]="availabilityIcon(location.availability)"
+            /></span>
+            {{ location.evsesAvailable }} von {{ location.evsesTotal }} Ladepunkten frei
+          </mat-chip>
+          @if (location.maxPowerKw !== null) {
+            <mat-chip [disableRipple]="true">bis {{ location.maxPowerKw | number: '1.0-1' : 'en-US' }} kW</mat-chip>
           }
-        </article>
-      } @empty {
-        <p id="no-evses">Für diesen Standort sind keine Ladepunkte bekannt.</p>
-      }
+        </mat-chip-set>
+      </div>
+
+      <section aria-labelledby="evses-title">
+        <h2 id="evses-title">Ladepunkte</h2>
+        @for (evse of detail.data.evses; track evse.id) {
+          <mat-card appearance="outlined" class="evse" [attr.data-evse]="evse.id">
+            <mat-card-content>
+              <div class="evse-head">
+                <h3>
+                  {{ evse.evseId }}
+                  @if (!evse.hasEvseId) {
+                    <small>(ID von chargeglobe vergeben)</small>
+                  }
+                </h3>
+                <mat-chip-set aria-label="Status">
+                  <mat-chip class="status" [disableRipple]="true">
+                    <span matChipAvatar class="status-dot" [style.background]="statusOf(evse.status).color"
+                      ><app-icon [name]="statusOf(evse.status).icon"
+                    /></span>
+                    {{ statusOf(evse.status).label }}
+                  </mat-chip>
+                </mat-chip-set>
+              </div>
+              <p class="meta">
+                @if (evse.statusSince) {
+                  seit {{ evse.statusSince | date: 'dd.MM.yyyy HH:mm' }}
+                }
+                @if (evse.maxPowerKw !== null) {
+                  · bis {{ evse.maxPowerKw | number: '1.0-1' : 'en-US' }} kW
+                }
+              </p>
+              <p class="connectors">{{ connectors(evse) }}</p>
+              @switch (timelineState(evse.id)) {
+                @case ('loading') {
+                  <p class="timeline-state">Verlauf wird geladen …</p>
+                  <mat-progress-bar mode="indeterminate" aria-label="Verlauf wird geladen" />
+                }
+                @case ('error') {
+                  <p class="timeline-state error">Der Statusverlauf konnte nicht geladen werden.</p>
+                }
+                @default {
+                  <div class="timeline" role="img" [attr.aria-label]="'Statusverlauf der letzten ' + timelineDays + ' Tage'">
+                    @for (segment of segments(evse.id); track segment.from.getTime()) {
+                      <span
+                        class="segment"
+                        [style.left.%]="segment.left"
+                        [style.width.%]="segment.width"
+                        [style.background]="statusOf(segment.status).color"
+                        [title]="segmentTitle(segment)"
+                      ></span>
+                    }
+                  </div>
+                  <p class="timeline-axis">
+                    <span>{{ range().from | date: 'dd.MM. HH:mm' }}</span><span>jetzt</span>
+                  </p>
+                  @if (segments(evse.id).length === 0) {
+                    <p class="timeline-state">Keine Statusmeldungen in den letzten {{ timelineDays }} Tagen.</p>
+                  }
+                }
+              }
+            </mat-card-content>
+          </mat-card>
+        } @empty {
+          <p id="no-evses">Für diesen Standort sind keine Ladepunkte bekannt.</p>
+        }
+      </section>
 
       @if (detail.data.evses.length > 0) {
-        <h3>Auslastung nach Wochentag und Stunde</h3>
-        @if (detail.data.evses.length > 1) {
-          <label id="heatmap-select">
-            Ladepunkt
-            <select (change)="heatmapOf.set($any($event.target).value)">
-              <option value="all">Alle Ladepunkte</option>
-              @for (evse of detail.data.evses; track evse.id) {
-                <option [value]="evse.id">{{ evse.evseId }}</option>
-              }
-            </select>
-          </label>
-        }
-        @switch (heatmapState()) {
-          @case ('loading') {
-            <p class="heatmap-state">Auslastung wird geladen …</p>
-          }
-          @case ('error') {
-            <p class="heatmap-state error">Die Auslastung konnte nicht geladen werden.</p>
-          }
-          @default {
-            @let heatmap = heatmapData();
-            <p id="utilization">
-              @if (heatmap.utilization !== null) {
-                In den letzten {{ occupancyWeeks }} Wochen lud hier ein Fahrzeug bei
-                {{ heatmap.utilization | percent: '1.0-0' : 'en-US' }} der
-                {{ heatmap.observations }} Statusmeldungen.
-              } @else {
-                Keine Statusmeldungen in den letzten {{ occupancyWeeks }} Wochen.
-              }
-            </p>
-            <table id="heatmap">
-              <thead>
-                <tr>
-                  <th></th>
-                  @for (hour of hours; track hour) {
-                    <th scope="col">{{ hour % 3 === 0 ? hour : '' }}</th>
+        <mat-card appearance="outlined">
+          <mat-card-content>
+            <section aria-labelledby="heatmap-title">
+              <h2 id="heatmap-title">Auslastung nach Wochentag und Stunde</h2>
+              @if (detail.data.evses.length > 1) {
+                <mat-button-toggle-group
+                  id="heatmap-select"
+                  aria-label="Ladepunkt"
+                  hideSingleSelectionIndicator
+                  [value]="heatmapOf()"
+                  (change)="heatmapOf.set($event.value)"
+                >
+                  <mat-button-toggle value="all">Alle Ladepunkte</mat-button-toggle>
+                  @for (evse of detail.data.evses; track evse.id; let index = $index) {
+                    <mat-button-toggle [value]="evse.id" [title]="evse.evseId">Ladepunkt {{ index + 1 }}</mat-button-toggle>
                   }
-                </tr>
-              </thead>
-              <tbody>
-                @for (day of heatmap.days; track day.weekday) {
-                  <tr>
-                    <th scope="row">{{ dayLabels[day.weekday - 1] }}</th>
-                    @for (share of day.chargingShare; track $index) {
-                      <td
-                        [style.background]="heatColor(share)"
-                        [title]="cellTitle(day, $index)"
-                      ></td>
-                    }
-                  </tr>
+                </mat-button-toggle-group>
+              }
+              @switch (heatmapState()) {
+                @case ('loading') {
+                  <p class="heatmap-state">Auslastung wird geladen …</p>
                 }
-              </tbody>
-            </table>
-            <p class="heatmap-legend">
-              Anteil der Statusmeldungen „lädt“ je Stunde (Ortszeit Wien): hell = selten, dunkel =
-              häufig, grau = keine Daten.
-            </p>
-          }
-        }
+                @case ('error') {
+                  <p class="heatmap-state error">Die Auslastung konnte nicht geladen werden.</p>
+                }
+                @default {
+                  @let heatmap = heatmapData();
+                  <p id="utilization">
+                    @if (heatmap.utilization !== null) {
+                      In den letzten {{ occupancyWeeks }} Wochen lud hier ein Fahrzeug bei
+                      {{ heatmap.utilization | percent: '1.0-0' : 'en-US' }} der {{ heatmap.observations }}
+                      Statusmeldungen.
+                    } @else {
+                      Keine Statusmeldungen in den letzten {{ occupancyWeeks }} Wochen.
+                    }
+                  </p>
+                  <table id="heatmap">
+                    <thead>
+                      <tr>
+                        <th></th>
+                        @for (hour of hours; track hour) {
+                          <th scope="col">{{ hour % 3 === 0 ? hour : '' }}</th>
+                        }
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (day of heatmap.days; track day.weekday) {
+                        <tr>
+                          <th scope="row">{{ dayLabels[day.weekday - 1] }}</th>
+                          @for (share of day.chargingShare; track $index) {
+                            <td [style.background]="heatColor(share)" [title]="cellTitle(day, $index)"></td>
+                          }
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                  <p class="heatmap-legend">
+                    Anteil der Statusmeldungen „lädt“ je Stunde (Ortszeit Wien): hell = selten, kräftig = häufig,
+                    grau = keine Daten.
+                  </p>
+                }
+              }
+            </section>
+          </mat-card-content>
+        </mat-card>
       }
 
       @if (attribution().length > 0) {
@@ -183,6 +224,8 @@ export class LocationDetailPage {
   protected readonly hours = Array.from({ length: 24 }, (_, hour) => hour);
   protected readonly statusOf = statusOf;
   protected readonly heatColor = heatColor;
+  protected readonly availabilityColor = (key: keyof typeof AVAILABILITY) => tokenColor(AVAILABILITY[key].token);
+  protected readonly availabilityIcon = (key: keyof typeof AVAILABILITY) => AVAILABILITY[key].icon;
 
   protected readonly notice = signal<'missing' | 'failed' | null>(null);
   protected readonly detail = signal<LocationDetailResponse | null>(null);

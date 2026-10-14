@@ -41,11 +41,12 @@ public sealed record SettingResponse(
 /// <param name="Scope">Scope to store the value for; defaults to <c>global</c>.</param>
 public sealed record UpdateSettingRequest(JsonElement? Value, string? Scope);
 
-/// <param name="StyleUrl">URL of the MapLibre style of the base map.</param>
+/// <param name="StyleUrl">URL of the MapLibre style of the base map in light mode.</param>
+/// <param name="StyleUrlDark">URL of the MapLibre style in dark mode; the light style if none is set.</param>
 /// <param name="Attribution">Attribution that must stay visible on the map.</param>
 /// <param name="Center">Initial map center (WGS 84).</param>
 /// <param name="Zoom">Initial zoom level.</param>
-public sealed record MapConfigResponse(string StyleUrl, string Attribution, MapCenter Center, double Zoom);
+public sealed record MapConfigResponse(string StyleUrl, string StyleUrlDark, string Attribution, MapCenter Center, double Zoom);
 
 public sealed record MapCenter(double Latitude, double Longitude);
 
@@ -122,12 +123,14 @@ public static class SettingsEndpoints
             .WithTags("Map")
             .WithSummary("Get the configuration of the map")
             .WithDescription(
-                "Returns what a client needs to render the base map: the URL of the MapLibre style, the " +
+                "Returns what a client needs to render the base map: the URLs of the MapLibre style for light " +
+                "(`styleUrl`) and dark mode (`styleUrlDark`, the light style if `map.style_url_dark` is empty), the " +
                 "attribution text that must stay visible, and the initial center (WGS 84) and zoom. " +
                 "The values come from the `map.*` settings. Public.")
             .Produces<MapConfigResponse>()
             .WithResponseExample(StatusCodes.Status200OK, new MapConfigResponse(
                 "https://tiles.openfreemap.org/styles/liberty",
+                "https://tiles.openfreemap.org/styles/dark",
                 "© OpenStreetMap contributors, OpenMapTiles",
                 new MapCenter(48.2, 15.6),
                 7));
@@ -135,14 +138,19 @@ public static class SettingsEndpoints
         return endpoints;
     }
 
-    private static MapConfigResponse GetMapConfig(IAppConfig config) =>
-        new(
-            config.Get<string>(SettingsCatalog.MapStyleUrl),
+    private static MapConfigResponse GetMapConfig(IAppConfig config)
+    {
+        var light = config.Get<string>(SettingsCatalog.MapStyleUrl);
+        var dark = config.Get<string?>(SettingsCatalog.MapStyleUrlDark);
+        return new(
+            light,
+            string.IsNullOrWhiteSpace(dark) ? light : dark,
             config.Get<string>(SettingsCatalog.MapAttribution),
             new MapCenter(
                 config.Get<double>(SettingsCatalog.MapStartLatitude),
                 config.Get<double>(SettingsCatalog.MapStartLongitude)),
             config.Get<double>(SettingsCatalog.MapStartZoom));
+    }
 
     private static async Task<IEnumerable<SettingResponse>> ListSettingsAsync(
         AppDbContext db, CancellationToken cancellationToken)

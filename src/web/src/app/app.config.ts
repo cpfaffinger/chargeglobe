@@ -4,6 +4,7 @@ import {
   provideAppInitializer,
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
+import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
 import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { authInterceptor } from './auth/auth.interceptor';
@@ -17,5 +18,6 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(restoreSession),
     provideAppInitializer(loadSetupState),
     provideRouter(routes),
+    { provide: MAT_FORM_FIELD_DEFAULT_OPTIONS, useValue: { appearance: 'outline', subscriptSizing: 'dynamic' } },
   ],
 };

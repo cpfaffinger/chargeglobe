@@ -1,69 +1,81 @@
 import { Component, computed, inject, input, output, signal } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSlideToggleChange, MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { attempt } from '../auth/problem';
 import { Setting, SettingsService } from './settings.service';
 
-/** One setting in one scope, rendered from its catalog entry: the input control follows the type. */
+/**
+ * One setting in one scope, rendered from its catalog entry: the Material control follows the type (slide toggle,
+ * native select, input). A successful save is confirmed by a snackbar; errors stay next to the setting.
+ */
 @Component({
+  imports: [MatButtonModule, MatFormFieldModule, MatInputModule, MatSlideToggleModule],
   selector: 'app-setting-row',
   template: `
-    <h3>
-      {{ setting().key }}
-      @if (scope() !== 'global') {
-        <span class="scope">{{ scope() }}</span>
-      }
-    </h3>
-    <p class="description">{{ setting().description }}</p>
+    <div>
+      <h3>
+        {{ setting().key }}
+        @if (scope() !== 'global') {
+          <span class="scope">{{ scope() }}</span>
+        }
+      </h3>
+      <p class="description">{{ setting().description }}</p>
+      <p class="state">
+        @if (!storedValue()) {
+          Standardwert aktiv
+        } @else {
+          Eigener Wert gespeichert
+        }
+      </p>
+    </div>
     <div class="control">
       @switch (setting().type) {
         @case ('bool') {
-          <input
-            type="checkbox"
+          <mat-slide-toggle
             [checked]="current() === true"
             [disabled]="!canManage()"
-            [attr.aria-label]="setting().key"
-            (change)="edit($event)"
+            [aria-label]="setting().key"
+            (change)="toggle($event)"
           />
         }
         @case ('enum') {
-          <select [disabled]="!canManage()" [attr.aria-label]="setting().key" (change)="edit($event)">
-            @for (option of setting().allowedValues; track option) {
-              <option [value]="option" [selected]="option === current()">{{ option }}</option>
-            }
-          </select>
+          <mat-form-field subscriptSizing="dynamic">
+            <select matNativeControl [disabled]="!canManage()" [attr.aria-label]="setting().key" (change)="edit($event)">
+              @for (option of setting().allowedValues; track option) {
+                <option [value]="option" [selected]="option === current()">{{ option }}</option>
+              }
+            </select>
+          </mat-form-field>
         }
         @default {
-          <input
-            [type]="inputType()"
-            [value]="current() ?? ''"
-            [min]="setting().min"
-            [max]="setting().max"
-            [placeholder]="placeholder()"
-            [disabled]="!canManage()"
-            [attr.aria-label]="setting().key"
-            autocomplete="off"
-            (input)="edit($event)"
-          />
+          <mat-form-field subscriptSizing="dynamic">
+            <input
+              matInput
+              [type]="inputType()"
+              [value]="current() ?? ''"
+              [min]="setting().min"
+              [max]="setting().max"
+              [placeholder]="placeholder()"
+              [disabled]="!canManage()"
+              [attr.aria-label]="setting().key"
+              autocomplete="off"
+              (input)="edit($event)"
+            />
+          </mat-form-field>
         }
       }
       @if (canManage()) {
-        <button type="button" class="save" [disabled]="busy() || draft() === undefined" (click)="save()">
+        <button matButton="tonal" type="button" class="save" [disabled]="busy() || draft() === undefined" (click)="save()">
           Speichern
         </button>
-        <button type="button" class="reset" [disabled]="busy() || !storedValue()" (click)="reset()">
+        <button matButton type="button" class="reset" [disabled]="busy() || !storedValue()" (click)="reset()">
           Zurücksetzen
         </button>
       }
     </div>
-    <p class="state">
-      @if (!storedValue()) {
-        Standardwert aktiv
-      } @else {
-        Eigener Wert gespeichert
-      }
-      @if (saved()) {
-        <span class="saved" role="status">· gespeichert</span>
-      }
-    </p>
     @for (error of errors(); track error) {
       <p class="error" role="alert">{{ error }}</p>
     }
@@ -71,6 +83,7 @@ import { Setting, SettingsService } from './settings.service';
 })
 export class SettingRow {
   private readonly settings = inject(SettingsService);
+  private readonly snackBar = inject(MatSnackBar);
 
   readonly setting = input.required<Setting>();
   /** "global", or e.g. "provider:econtrol" for the settings of a source adapter. */
@@ -84,7 +97,6 @@ export class SettingRow {
   protected readonly draft = signal<unknown>(undefined);
   protected readonly busy = signal(false);
   protected readonly errors = signal<string[]>([]);
-  protected readonly saved = signal(false);
 
   protected readonly isSecret = computed(() => this.setting().type === 'secret');
   protected readonly isNumeric = computed(() => ['int', 'number'].includes(this.setting().type));
@@ -108,12 +120,13 @@ export class SettingRow {
     this.isSecret() ? (this.storedValue() ? 'gesetzt' : 'nicht gesetzt') : '',
   );
 
+  protected toggle(event: MatSlideToggleChange): void {
+    this.draft.set(event.checked);
+  }
+
   protected edit(event: Event): void {
     const control = event.target as HTMLInputElement;
-    this.saved.set(false);
-    if (this.setting().type === 'bool') {
-      this.draft.set(control.checked);
-    } else if (this.isNumeric()) {
+    if (this.isNumeric()) {
       this.draft.set(control.value === '' ? null : Number(control.value));
     } else {
       this.draft.set(control.value);
@@ -121,18 +134,19 @@ export class SettingRow {
   }
 
   protected save(): Promise<void> {
-    return this.store(this.draft());
+    return this.store(this.draft(), 'gespeichert');
   }
 
   protected reset(): Promise<void> {
-    return this.store(null);
+    return this.store(null, 'auf den Standardwert zurückgesetzt');
   }
 
-  private store(value: unknown): Promise<void> {
+  private store(value: unknown, done: string): Promise<void> {
     return attempt(this.busy, this.errors, async () => {
       this.changed.emit(await this.settings.update(this.setting().key, value, this.scope()));
       this.draft.set(undefined);
-      this.saved.set(true);
+      const scope = this.scope() === 'global' ? '' : ` (${this.scope()})`;
+      this.snackBar.open(`${this.setting().key}${scope} ${done}`, 'OK', { duration: 4000 });
     });
   }
 }

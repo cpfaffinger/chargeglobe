@@ -1,19 +1,25 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import {
   Component,
   DestroyRef,
   ElementRef,
   afterNextRender,
+  effect,
   inject,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../auth/auth.service';
-import { AVAILABILITIES, AVAILABILITY } from '../map/availability';
+import { AppIcon } from '../design/icon';
+import { ThemeService, Viewport } from '../design/theme.service';
+import { AVAILABILITIES, AVAILABILITY, resolveColors, tokenColor } from '../map/availability';
 import { BrowserCapabilities } from '../map/browser-capabilities';
-import { MapConfigService } from '../map/map-config.service';
-import { GeolocateEvent, MapEngine, MapHandle } from '../map/map-engine';
+import { MapConfig, MapConfigService } from '../map/map-config.service';
+import { GeolocateEvent, MapEngine, MapHandle, MapTheme } from '../map/map-engine';
 import { Bbox, LocationSummary, LocationsService } from '../map/locations.service';
 
 /** Reasons the map or the own position cannot be shown. */
@@ -46,55 +52,75 @@ const NOTICES: Record<MapNotice, string> = {
  * browser only and never sent to the API.
  */
 @Component({
-  imports: [DatePipe, DecimalPipe, RouterLink],
+  imports: [AppIcon, DatePipe, DecimalPipe, MatButtonModule, MatCardModule, NgTemplateOutlet, RouterLink],
   selector: 'app-home',
+  host: { '[class.has-card]': 'selected() !== null' },
   template: `
+    <ng-template #card>
+      @if (selected(); as location) {
+        <mat-card id="location-card" appearance="outlined" role="region" aria-label="Ladestandort">
+          <mat-card-content>
+            <div class="card-head">
+              <div>
+                <h2>{{ location.name ?? 'Ladestandort' }}</h2>
+                <p class="address">{{ location.address }}, {{ location.postalCode }} {{ location.city }}</p>
+              </div>
+              <button matIconButton type="button" id="close-card" aria-label="Schließen" (click)="selected.set(null)">
+                <app-icon name="close" />
+              </button>
+            </div>
+            @if (location.operator) {
+              <p class="operator">{{ location.operator }}</p>
+            }
+            <p class="availability">
+              <span class="status-dot" [style.background]="color(location.availability)"><app-icon [name]="availability[location.availability].icon" /></span>
+              {{ location.evsesAvailable }} von {{ location.evsesTotal }} Ladepunkten frei
+              @if (location.maxPowerKw !== null) {
+                · bis {{ location.maxPowerKw | number: '1.0-1' : 'en-US' }} kW
+              }
+            </p>
+            <p class="status-age">
+              @if (location.statusObservedAt) {
+                Status von {{ location.statusObservedAt | date: 'dd.MM.yyyy HH:mm' }}
+              } @else {
+                Kein aktueller Status
+              }
+            </p>
+            @if (!auth.isAuthenticated()) {
+              <p class="details">
+                <a matButton="filled" id="details" [routerLink]="['/locations', location.id]">Details</a>
+                <span class="hint">Verlauf und Auslastung nach Anmeldung</span>
+              </p>
+            } @else if (auth.hasPermission('evse:read')) {
+              <p class="details"><a matButton="filled" id="details" [routerLink]="['/locations', location.id]">Details</a></p>
+            }
+          </mat-card-content>
+        </mat-card>
+      }
+    </ng-template>
     <div #map id="map" role="region" aria-label="Karte"></div>
     <div id="map-overlay">
-      <button type="button" id="locate" [disabled]="!handle()" (click)="locate()">
-        {{ locating() ? 'Standort wird gesucht …' : 'Mein Standort' }}
-      </button>
       @if (notice(); as key) {
-        <p id="map-notice" role="status">{{ notices[key] }}</p>
+        <p id="map-notice" class="map-message" role="status">{{ notices[key] }}</p>
       }
       @if (truncated()) {
-        <p id="truncated" role="status">Es werden nur die nächsten {{ limit }} Standorte gezeigt – zoome hinein, um alle zu sehen.</p>
+        <p id="truncated" class="map-message" role="status">Es werden nur die nächsten {{ limit }} Standorte gezeigt – zoome hinein, um alle zu sehen.</p>
       }
-      @if (selected(); as location) {
-        <section id="location-card" aria-label="Ladestandort">
-          <button type="button" id="close-card" aria-label="Schließen" (click)="selected.set(null)">×</button>
-          <h2>{{ location.name ?? 'Ladestandort' }}</h2>
-          <p class="address">{{ location.address }}, {{ location.postalCode }} {{ location.city }}</p>
-          @if (location.operator) {
-            <p class="operator">{{ location.operator }}</p>
-          }
-          <p class="availability">
-            <span class="dot" [style.background]="availability[location.availability].color"></span>
-            {{ location.evsesAvailable }} von {{ location.evsesTotal }} Ladepunkten frei
-            @if (location.maxPowerKw !== null) {
-              · bis {{ location.maxPowerKw | number: '1.0-1' : 'en-US' }} kW
-            }
-          </p>
-          <p class="status-age">
-            @if (location.statusObservedAt) {
-              Status von {{ location.statusObservedAt | date: 'dd.MM.yyyy HH:mm' }}
-            } @else {
-              Kein aktueller Status
-            }
-          </p>
-          @if (!auth.isAuthenticated()) {
-            <p class="details">
-              <a id="details" [routerLink]="['/locations', location.id]">Details</a>&ngsp;<span class="hint">– Verlauf und Auslastung nach Anmeldung</span>
-            </p>
-          } @else if (auth.hasPermission('evse:read')) {
-            <p class="details"><a id="details" [routerLink]="['/locations', location.id]">Details</a></p>
-          }
-        </section>
+      @if (!viewport.mobile()) {
+        <ng-container [ngTemplateOutlet]="card" />
       }
     </div>
+    @if (viewport.mobile()) {
+      <ng-container [ngTemplateOutlet]="card" />
+    }
+    <button matFab extended type="button" id="locate" [disabled]="!handle()" (click)="locate()">
+      <app-icon name="my_location" />{{ locating() ? 'Standort wird gesucht …' : 'Mein Standort' }}
+    </button>
     <ul id="legend" aria-label="Legende">
       @for (key of availabilities; track key) {
-        <li><span class="dot" [style.background]="availability[key].color"></span>{{ availability[key].label }}</li>
+        <li>
+          <span class="status-dot" [style.background]="color(key)"><app-icon [name]="availability[key].icon" /></span>{{ availability[key].label }}
+        </li>
       }
     </ul>
     @if (attribution().length > 0) {
@@ -107,7 +133,10 @@ export class HomePage {
   private readonly engine = inject(MapEngine);
   private readonly browser = inject(BrowserCapabilities);
   private readonly locationsService = inject(LocationsService);
+  private readonly theme = inject(ThemeService);
   protected readonly auth = inject(AuthService);
+  protected readonly viewport = inject(Viewport);
+  private config: MapConfig | null = null;
   /** Number of the newest location request; older answers are dropped. */
   private request = 0;
   private readonly container = viewChild.required<ElementRef<HTMLElement>>('map');
@@ -124,9 +153,15 @@ export class HomePage {
   protected readonly availability = AVAILABILITY;
   protected readonly availabilities = AVAILABILITIES;
   protected readonly limit = LocationsService.limit;
+  protected readonly color = (key: keyof typeof AVAILABILITY) => tokenColor(AVAILABILITY[key].token);
 
   constructor() {
     afterNextRender(() => void this.show());
+    // Light/dark switch: the map takes the matching style and marker colours. A map created later reads them itself.
+    effect(() => {
+      const dark = this.theme.dark();
+      untracked(() => this.handle()?.setTheme(this.mapTheme(dark)));
+    });
     inject(DestroyRef).onDestroy(() => {
       this.destroyed = true;
       this.handle()?.destroy();
@@ -158,7 +193,7 @@ export class HomePage {
   private async show(): Promise<void> {
     let config;
     try {
-      config = await this.configService.load();
+      config = this.config = await this.configService.load();
     } catch {
       this.notice.set('config');
       return;
@@ -173,7 +208,7 @@ export class HomePage {
     try {
       const handle = await this.engine.create({
         container: this.container().nativeElement,
-        styleUrl: config.styleUrl,
+        theme: this.mapTheme(this.theme.dark()),
         attribution: config.attribution,
         center: config.center,
         zoom: config.zoom,
@@ -219,6 +254,20 @@ export class HomePage {
         this.notice.set('locations');
       }
     }
+  }
+
+  /** Style and marker colours for the map renderer, resolved from the theme tokens of the current mode. */
+  private mapTheme(dark: boolean): MapTheme {
+    const tokens = AVAILABILITIES.map((key) => AVAILABILITY[key].token);
+    const colors = resolveColors([...tokens, '--cg-on-status', '--mat-sys-surface', '--mat-sys-primary', '--mat-sys-on-primary']);
+    return {
+      styleUrl: dark ? this.config!.styleUrlDark : this.config!.styleUrl,
+      status: Object.fromEntries(AVAILABILITIES.map((key) => [key, colors[AVAILABILITY[key].token]])) as MapTheme['status'],
+      onStatus: colors['--cg-on-status'],
+      ring: colors['--mat-sys-surface'],
+      cluster: colors['--mat-sys-primary'],
+      onCluster: colors['--mat-sys-on-primary'],
+    };
   }
 
   private geolocated(event: GeolocateEvent): void {

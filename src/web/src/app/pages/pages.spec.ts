@@ -72,6 +72,20 @@ describe('account pages', () => {
       expect(TestBed.inject(Router).url).toBe('/account');
     });
 
+    it('checks the form before anything is sent', async () => {
+      await open('/login');
+
+      type(page(), 'input[type=email]', 'no address');
+      submit(page());
+      await settle();
+
+      expect(auth.login).not.toHaveBeenCalled();
+      expect(Array.from(page().querySelectorAll('mat-error')).map((error) => error.textContent!.trim())).toEqual([
+        'Bitte eine E-Mail-Adresse eingeben.',
+        'Bitte das Passwort eingeben.',
+      ]);
+    });
+
     it('goes to the start page without a return URL', async () => {
       auth.login.and.resolveTo();
       await open('/login');
