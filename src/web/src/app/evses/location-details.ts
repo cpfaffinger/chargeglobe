@@ -100,7 +100,7 @@ type LoadState = 'loading' | 'error' | 'ready';
                     {{ evse.evseId }}
                   }
                   @if (!evse.hasEvseId) {
-                    <small>(ID von chargeglobe vergeben)</small>
+                    <small>&nbsp;(ID von chargeglobe vergeben)</small>
                   }
                 </h3>
                 <mat-chip-set aria-label="Status">

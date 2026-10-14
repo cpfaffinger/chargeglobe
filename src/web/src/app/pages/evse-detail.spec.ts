@@ -88,6 +88,12 @@ describe('EvseDetailPage', () => {
   let harness: RouterTestingHarness;
 
   const page = () => harness.routeNativeElement!;
+  /** The value of a term in a definition list. */
+  const value = (list: string, term: string) =>
+    Array.from(page().querySelectorAll(`#${list} dt`))
+      .find((dt) => dt.textContent!.trim() === term)!
+      .nextElementSibling!.textContent!.replace(/\s+/g, ' ')
+      .trim();
   const historyRequest = (): TestRequest => http.expectOne((request) => request.url === '/api/v1/evses/e-1/status/history');
 
   function history(request: TestRequest, count: number): void {
@@ -152,25 +158,23 @@ describe('EvseDetailPage', () => {
     expect(page().querySelector('#evse-location a')!.getAttribute('href')).toBe('/locations/loc-1');
     expect(page().querySelector('#show-on-map')!.getAttribute('href')).toBe('/#map=17.00/48.20850/16.37310');
 
-    const technology = text(page(), '#technology')!;
-    expect(technology).toContain('Maximale Leistung 22 kW');
-    expect(technology).toContain('Wechselstrom, 3-phasig');
-    expect(technology).toContain('Typ 2 · Buchse · 22 kW');
-    expect(technology).toContain('Schuko');
-    expect(technology).toContain('Wien Energie GmbH (VIE)');
-    expect(technology).toContain('Bezeichnung vor Ort Säule 1');
-    expect(technology).toContain('Region AT-9');
+    expect(value('technology', 'Maximale Leistung')).toBe('22 kW');
+    expect(value('technology', 'Stromart')).toBe('Wechselstrom, 3-phasig');
+    expect(value('technology', 'Stecker')).toBe('Typ 2 · Buchse · 22 kW Schuko');
+    
+    expect(value('technology', 'Betreiber')).toBe('Wien Energie GmbH (VIE)');
+    expect(value('technology', 'Bezeichnung vor Ort')).toBe('Säule 1');
+    expect(value('technology', 'Region')).toBe('AT-9');
 
-    const access = text(page(), '#access')!;
-    expect(access).toContain('Ladekarte (RFID), Kreditkarte');
+    expect(value('access', 'Zahlungsarten')).toBe('Ladekarte (RFID), Kreditkarte');
     expect(text(page(), '#ad-hoc')).toBe('ja');
-    expect(access).toContain('Roaming (Ladekarten anderer Anbieter) ja');
-    expect(access).toContain('Zugang öffentlich');
+    expect(value('access', 'Roaming (Ladekarten anderer Anbieter)')).toBe('ja');
+    expect(value('access', 'Zugang')).toBe('öffentlich');
     expect(text(page(), '#opening-times')).toBe('rund um die Uhr');
-    expect(access).toContain('Ökostrom ja');
-    expect(access).toContain('Kostenloses Parken nein');
-    expect(access).toContain('Überdacht unbekannt');
-    expect(access).toContain('Barrierefreie Plätze 2');
+    expect(value('access', 'Ökostrom')).toBe('ja');
+    expect(value('access', 'Kostenloses Parken')).toBe('nein');
+    expect(value('access', 'Überdacht')).toBe('unbekannt');
+    expect(value('access', 'Barrierefreie Plätze')).toBe('2');
     expect(page().querySelector('#price-url')!.getAttribute('href')).toBe('https://example.org/preise');
 
     expect(Array.from(page().querySelectorAll('#sources tbody tr')).map((row) => text(row, 'td:nth-child(2)'))).toEqual(['Standort', 'Ladepunkt']);
@@ -283,14 +287,13 @@ describe('EvseDetailPage', () => {
     expect(text(page(), '#lifecycle')).toBe('Dieser Ladepunkt ist nicht mehr aktiv (REMOVED).');
     expect(text(page(), '#status-meta')).toBe('noch keine Statusmeldung (nicht aktuell)');
     expect(text(page(), '#evse-location')).toContain('Ladestandort,');
-    const technology = text(page(), '#technology')!;
-    expect(technology).toContain('Maximale Leistung –');
-    expect(technology).toContain('keine Angabe');
-    expect(technology).toContain('Kleinbetreiber Region');
-    expect(technology).not.toContain('Bezeichnung vor Ort');
-    expect(text(page(), '#access')).toContain('Zahlungsarten keine Angabe');
+    expect(value('technology', 'Maximale Leistung')).toBe('–');
+    expect(value('technology', 'Stecker')).toBe('keine Angabe');
+    expect(value('technology', 'Betreiber')).toBe('Kleinbetreiber');
+    expect(page().querySelector('#technology')!.textContent).not.toContain('Bezeichnung vor Ort');
+    expect(value('access', 'Zahlungsarten')).toBe('keine Angabe');
     expect(text(page(), '#ad-hoc')).toBe('unbekannt');
-    expect(text(page(), '#access')).toContain('Zugang eingeschränkt');
+    expect(value('access', 'Zugang')).toBe('eingeschränkt');
     expect(text(page(), '#opening-times')).toBe('MONDAY 06:00–FRIDAY 22:00');
     expect(page().querySelector('#price-url')).toBeNull();
     expect(text(page(), '#sources tbody')).toBe('Keine Quelle verknüpft.');
@@ -303,7 +306,7 @@ describe('EvseDetailPage', () => {
     http.expectOne('/api/v1/evses/e-1/occupancy?weeks=4').flush(occupancyOf(4, null));
     await settle();
 
-    expect(text(page(), '#technology')).toContain('Betreiber –');
+    expect(value('technology', 'Betreiber')).toBe('–');
     expect(text(page(), '#opening-times')).toBe('keine Angabe');
     expect(text(page(), '#ad-hoc')).toBe('nein');
   });

@@ -135,7 +135,7 @@ public class EvsesApiTests(IntegrationFactory factory) : IClassFixture<Integrati
         Assert.Equal(JsonValueKind.Null, location.GetProperty("openingTimes").GetProperty("description").ValueKind);
         Assert.True(location.GetProperty("facilities").GetProperty("greenEnergy").GetBoolean());
         Assert.Equal(
-            ["LOCATION econtrol AT*TST*ETEST0001", $"EVSE econtrol {Available}"],
+            [$"EVSE econtrol {Available}", "LOCATION econtrol AT*TST*ETEST0001"],
             data.GetProperty("sources").EnumerateArray().Select(source =>
                 $"{source.GetProperty("entity").GetString()} {source.GetProperty("source").GetString()} {source.GetProperty("externalId").GetString()}"));
         var provenance = data.GetProperty("provenance").EnumerateArray()
@@ -143,7 +143,7 @@ public class EvsesApiTests(IntegrationFactory factory) : IClassFixture<Integrati
             .ToList();
         Assert.Contains("EVSE.max_power_kw=econtrol", provenance);
         Assert.Contains("LOCATION.address=econtrol", provenance);
-        Assert.Equal("LOCATION", data.GetProperty("provenance")[0].GetProperty("entity").GetString());
+        Assert.Equal("EVSE", data.GetProperty("provenance")[0].GetProperty("entity").GetString());
         Assert.All(data.GetProperty("provenance").EnumerateArray(), origin => Assert.True(origin.GetProperty("observedAt").GetDateTimeOffset() > DateTimeOffset.MinValue));
     }
 
