@@ -6,7 +6,7 @@ services:
     # One-shot: creates the data directories and hands ./data/postgres to the postgres user of the db image.
     image: timescale/timescaledb-ha:pg17
     user: root
-    entrypoint: ["sh", "-c", "mkdir -p /data/postgres /data/tls && chown 1000:1000 /data/postgres && chmod 700 /data/postgres"]
+    entrypoint: ["sh", "-c", "mkdir -p /data/postgres /data/tls /data/routing && chown 1000:1000 /data/postgres && chmod 700 /data/postgres"]
     restart: "no"
     volumes:
       - ./data:/data
@@ -79,6 +79,31 @@ services:
       Logging__LogLevel__Default: ${LOG_LEVEL:-Information}
     deploy:
       replicas: ${WORKER_REPLICAS:-1}
+
+  routing:
+    # Valhalla on OpenStreetMap (docs/adr/0007), only reachable inside the compose network (api -> routing:8002).
+    # Optional: starts with COMPOSE_PROFILES=routing in .env. Serves ./data/routing/valhalla_tiles.tar if present;
+    # without tiles it downloads the extract and builds them, which needs several GB of memory for a while.
+    # On small hosts build the tiles elsewhere with scripts/routing/build-tiles.sh and copy them (docs/02, Routing).
+    image: ghcr.io/valhalla/valhalla-scripted:3.9.1
+    profiles: ["routing"]
+    restart: unless-stopped
+    depends_on:
+      data-init:
+        condition: service_completed_successfully
+    environment:
+      tile_urls: https://download.geofabrik.de/europe/austria-latest.osm.pbf
+      use_tiles_ignore_pbf: "True"
+      build_tar: "True"
+      serve_tiles: "True"
+      build_elevation: "False"
+      build_admins: "True"
+      build_time_zones: "True"
+      force_rebuild: "False"
+      server_threads: "2"
+    volumes:
+      - ./data/routing:/custom_files
+    mem_limit: ${ROUTING_MEMORY_LIMIT:-1g}
 
   web:
     image: chargeglobe-web

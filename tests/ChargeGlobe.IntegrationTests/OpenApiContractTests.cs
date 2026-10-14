@@ -74,7 +74,7 @@ public class OpenApiContractTests(IntegrationFactory factory)
         Assert.Equal(
             new[]
             {
-                "addFavorite", "changePassword", "confirmEmail", "createApiKey", "createInitialAdmin", "deleteEmp", "deleteRole", "deleteTariff", "getCrawlerStatus", "getEvse",
+                "addFavorite", "calculateRoute", "changePassword", "confirmEmail", "createApiKey", "createInitialAdmin", "deleteEmp", "deleteRole", "deleteTariff", "getCrawlerStatus", "getEvse",
                 "getEvseOccupancy", "getEvsePrices", "getEvseStatusHistory", "getHealth", "getLocation", "getMapConfig", "getMe", "getPreferences", "getSetting", "getSetupStatus", "getUser",
                 "listApiKeys", "listCrawlerRuns", "listEmps", "listFavorites", "listLocations", "listMailOutbox", "listOperators", "listPermissions", "listRoles", "listSettings",
                 "listTariffs", "listUsers", "login", "logout", "putEmp", "putPreferences", "putRole", "putTariff", "refreshToken", "register", "removeFavorite", "requestPasswordReset", "resendConfirmation",
@@ -108,6 +108,7 @@ public class OpenApiContractTests(IntegrationFactory factory)
     [InlineData("/api/v1/locations", "get", "none")]
     [InlineData("/api/v1/locations/{id}", "get", "none")]
     [InlineData("/api/v1/evses/{evseId}/prices", "get", "price:read")]
+    [InlineData("/api/v1/routes", "post", "route:read")]
     [InlineData("/api/v1/emps", "get", "price:read")]
     [InlineData("/api/v1/emps/{key}", "put", "tariff:write")]
     [InlineData("/api/v1/emps/{key}", "delete", "tariff:write")]

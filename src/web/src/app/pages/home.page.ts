@@ -12,7 +12,9 @@ import {
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { HttpErrorResponse } from '@angular/common/http';
 import { MatMenuModule } from '@angular/material/menu';
+import { AuthService } from '../auth/auth.service';
 import { AppIcon } from '../design/icon';
 import { ThemeService, Viewport } from '../design/theme.service';
 import { LocationDetails } from '../evses/location-details';
@@ -27,6 +29,7 @@ import { MapOptionsStore } from '../map/map-options';
 import { MapFilterStore, filterParams } from '../map/map-filters';
 import { MapLink, ShareResult } from '../map/map-link';
 import { MapView, MapViewStore } from '../map/map-view.store';
+import { RoutesService, routeSummary } from '../map/routes.service';
 import { Bbox, LocationSummary, LocationsService } from '../map/locations.service';
 import { MapFocus } from '../search/search.service';
 
@@ -49,7 +52,10 @@ export type MapNotice =
   | 'unsupported'
   | 'denied'
   | 'unavailable'
-  | 'not-ready';
+  | 'not-ready'
+  | 'route-unavailable'
+  | 'route-none'
+  | 'route-failed';
 
 const NOTICES: Record<MapNotice, string> = {
   config: 'Die Kartenkonfiguration konnte nicht geladen werden. Bitte lade die Seite später neu.',
@@ -61,6 +67,9 @@ const NOTICES: Record<MapNotice, string> = {
   denied: 'Die Standortfreigabe wurde abgelehnt. Du kannst sie in den Website-Einstellungen deines Browsers erlauben.',
   unavailable: 'Dein Standort konnte nicht ermittelt werden. Bitte versuche es erneut.',
   'not-ready': 'Die Standortfunktion ist noch nicht bereit. Bitte versuche es gleich noch einmal.',
+  'route-unavailable': 'Die Routenberechnung ist gerade nicht verfügbar. Bitte versuche es später.',
+  'route-none': 'Zu diesem Ladestandort wurde keine Straßenverbindung gefunden.',
+  'route-failed': 'Die Route konnte nicht berechnet werden. Bitte versuche es erneut.',
 };
 
 const SHARE_MESSAGES: Record<ShareResult, string | null> = {
@@ -117,6 +126,11 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
                 Kein aktueller Status
               }
             </p>
+            @if (canRoute()) {
+              <button matButton="tonal" type="button" id="route-here" [disabled]="routing() || !handle()" (click)="routeTo(location)">
+                <app-icon name="directions" />{{ routing() ? 'Route wird berechnet …' : 'Route hierher' }}
+              </button>
+            }
             <!-- The details are a chunk of their own and load after the card is visible. -->
             @defer (on immediate) {
               <app-location-details [locationId]="location.id" />
@@ -134,6 +148,12 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
     <div id="map-overlay">
       @if (notice(); as key) {
         <p id="map-notice" class="map-message" role="status">{{ notices[key] }}</p>
+      }
+      @if (route(); as summary) {
+        <p id="route-summary" class="map-message" role="status">
+          Route: {{ summary }}
+          <button matButton type="button" id="route-clear" (click)="clearRoute()">Route entfernen</button>
+        </p>
       }
       @if (homeSaved()) {
         <p id="home-saved" class="map-message" role="status">Dieser Ausschnitt ist jetzt deine Startposition.</p>
@@ -215,6 +235,13 @@ export class HomePage {
   protected readonly views = inject(MapViewStore);
   protected readonly filterStore = inject(MapFilterStore);
   private readonly link = inject(MapLink);
+  private readonly routes = inject(RoutesService);
+  private readonly auth = inject(AuthService);
+  /** Routing needs route:read (an account). */
+  protected readonly canRoute = () => this.auth.hasPermission('route:read');
+  protected readonly routing = signal(false);
+  /** Length and time of the shown route. */
+  protected readonly route = signal<string | null>(null);
   /** The newest visible area, loaded again when the filters change. */
   private box: Bbox | null = null;
   /** Query parameters of the filters of the shown locations. */
@@ -297,26 +324,67 @@ export class HomePage {
     });
   }
 
-  protected async locate(): Promise<void> {
+  /** Whether the browser may ask for the position; otherwise the notice says why not. */
+  private async positionAllowed(): Promise<boolean> {
     if (!this.browser.secureContext()) {
       this.notice.set('insecure');
-      return;
+      return false;
     }
     if (!this.browser.geolocation()) {
       this.notice.set('unsupported');
-      return;
+      return false;
     }
     // After an earlier refusal the browser does not ask again, and MapLibre disables its control.
     if ((await this.browser.geolocationPermission()) === 'denied') {
       this.notice.set('denied');
-      return;
+      return false;
     }
     this.notice.set(null);
+    return true;
+  }
+
+  protected async locate(): Promise<void> {
+    if (!(await this.positionAllowed())) {
+      return;
+    }
     if (this.handle()!.locate()) {
       this.locating.set(true);
     } else {
       this.notice.set('not-ready');
     }
+  }
+
+  /**
+   * Route by car from the own position to the location, drawn on the map. The position goes to the own API only
+   * (ADR-0007), which neither stores nor logs it.
+   */
+  protected async routeTo(location: LocationSummary): Promise<void> {
+    if (!(await this.positionAllowed())) {
+      return;
+    }
+    this.routing.set(true);
+    try {
+      let start: { latitude: number; longitude: number };
+      try {
+        start = await this.browser.currentPosition();
+      } catch (error) {
+        this.notice.set((error as GeolocationPositionError).code === 1 ? 'denied' : 'unavailable');
+        return;
+      }
+      const response = await this.routes.route([start, { latitude: location.latitude, longitude: location.longitude }]);
+      this.route.set(routeSummary(response.data.distanceMeters, response.data.durationSeconds));
+      this.handle()!.showRoute(response.data.geometry.coordinates);
+    } catch (error) {
+      const status = error instanceof HttpErrorResponse ? error.status : 0;
+      this.notice.set(status === 503 ? 'route-unavailable' : status === 422 ? 'route-none' : 'route-failed');
+    } finally {
+      this.routing.set(false);
+    }
+  }
+
+  protected clearRoute(): void {
+    this.route.set(null);
+    this.handle()?.showRoute(null);
   }
 
   /** Back to the start position of the user, else to the default view of the configuration. */
@@ -478,7 +546,7 @@ export class HomePage {
   /** Style and marker colours for the map renderer, resolved from the theme tokens of the current mode. */
   private mapTheme(dark: boolean): MapTheme {
     const tokens = MARKER_KEYS.map((key) => MARKERS[key].token);
-    const colors = resolveColors([...tokens, '--cg-on-status', '--mat-sys-surface', '--mat-sys-primary', '--mat-sys-on-primary']);
+    const colors = resolveColors([...tokens, '--cg-on-status', '--mat-sys-surface', '--mat-sys-primary', '--mat-sys-on-primary', '--mat-sys-tertiary']);
     return {
       styleUrl: dark ? this.config!.styleUrlDark : this.config!.styleUrl,
       status: Object.fromEntries(MARKER_KEYS.map((key) => [key, colors[MARKERS[key].token]])) as MapTheme['status'],
@@ -486,6 +554,7 @@ export class HomePage {
       ring: colors['--mat-sys-surface'],
       cluster: colors['--mat-sys-primary'],
       onCluster: colors['--mat-sys-on-primary'],
+      route: colors['--mat-sys-tertiary'],
     };
   }
 

@@ -19,6 +19,8 @@ export interface MapTheme {
   ring: string;
   cluster: string;
   onCluster: string;
+  /** Line of a calculated route. */
+  route: string;
 }
 
 /** What the engine needs to show the base map (docs/adr/0007-karte-standort-routing.md). */
@@ -57,6 +59,8 @@ export interface MapHandle {
   setCluster(options: MapOptions): void;
   /** Moves the view to a point (e.g. a search hit); the view change loads the locations there. */
   flyTo(latitude: number, longitude: number, zoom: number): void;
+  /** Draws a route ([longitude, latitude] positions) below the markers and fits the view to it; null removes it. */
+  showRoute(coordinates: [number, number][] | null): void;
   destroy(): void;
 }
 
@@ -124,6 +128,12 @@ export class MapLibreEngine extends MapEngine {
       })),
     });
     let pending: LocationSummary[] = [];
+    let route: [number, number][] = [];
+    const routeSource = 'route';
+    const routeData = (): FeatureCollection => ({
+      type: 'FeatureCollection',
+      features: route.length > 1 ? [{ type: 'Feature', geometry: { type: 'LineString', coordinates: route }, properties: {} }] : [],
+    });
     let loaded = false;
     const emitView = () => {
       const bounds = map.getBounds();
@@ -136,6 +146,14 @@ export class MapLibreEngine extends MapEngine {
     // Every style load (the first one and each theme change) starts without the app's source, images and layers.
     map.on('style.load', () => {
       addMarkerImages(map, theme);
+      map.addSource(routeSource, { type: 'geojson', data: routeData() });
+      map.addLayer({
+        id: 'route-line',
+        type: 'line',
+        source: routeSource,
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: { 'line-color': theme.route, 'line-width': 5, 'line-opacity': 0.85 },
+      });
       map.addSource(source, { type: 'geojson', data: toGeoJson(pending), ...clusterOptions(cluster) });
       map.addLayer({
         id: 'location-clusters',
@@ -205,6 +223,17 @@ export class MapLibreEngine extends MapEngine {
         map.setStyle(next.styleUrl);
       },
       flyTo: (latitude, longitude, zoom) => map.flyTo({ center: [longitude, latitude], zoom }),
+      showRoute: (coordinates) => {
+        route = coordinates ?? [];
+        if (loaded) {
+          (map.getSource(routeSource) as GeoJSONSource).setData(routeData());
+        }
+        if (route.length > 1) {
+          const bounds = new maplibre.LngLatBounds(route[0], route[0]);
+          route.forEach((position) => bounds.extend(position));
+          map.fitBounds(bounds, { padding: 60, maxZoom: 15 });
+        }
+      },
       destroy: () => map.remove(),
     };
   }
