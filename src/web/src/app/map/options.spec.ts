@@ -34,7 +34,6 @@ describe('MapOptionsStore', () => {
 
   it('works without storage', () => {
     spyOn(Storage.prototype, 'setItem').and.throwError('blocked');
-    spyOn(Storage.prototype, 'removeItem').and.throwError('blocked');
     const store = TestBed.inject(MapOptionsStore);
 
     store.set({ clusterMaxZoom: 16 });
