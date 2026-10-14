@@ -280,7 +280,8 @@ public class IngestPipelineTests(IntegrationFactory factory) : IClassFixture<Int
         var kept = await factory.WithDbAsync(db => db.Locations.SingleAsync(l => l.Id == location.Id));
         Assert.Equal(((bool?)true, "https://example.org/preise"), (kept.FreeParking, kept.PriceUrl));
         var keptDc = (await EvsesAsync(code)).Single(evse => evse.Id == dc.Id);
-        Assert.Equal(([AuthMethod.RFID_READER], (bool?)true), (keptDc.AuthMethods, keptDc.Roaming));
+        Assert.Equal([AuthMethod.RFID_READER], keptDc.AuthMethods);
+        Assert.True(keptDc.Roaming);
         Assert.True(await factory.WithDbAsync(db => db.Operators.AnyAsync(op => op.OperatorId == code && op.Country == "AT")));
     }
 
