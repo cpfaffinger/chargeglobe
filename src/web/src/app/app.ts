@@ -22,7 +22,7 @@ const THEMES: { mode: ThemeMode; label: string; icon: IconName }[] = [
  * Shell: Material toolbar with the navigation and the search, on small screens (Viewport.mobile) a menu button that
  * opens navigation and search as side sheet. The theme switch (light, dark, system) sits in the toolbar or in the side
  * sheet. The admin pages are reached through "Administration": a drop-down with the overview and the permitted pages
- * in the toolbar, the overview in the side sheet.
+ * in the toolbar, the overview with the permitted pages indented below it in the side sheet.
  */
 @Component({
   imports: [
@@ -47,7 +47,13 @@ const THEMES: { mode: ThemeMode; label: string; icon: IconName }[] = [
         @if (adminPages(); as pages) {
           @if (pages.length > 0) {
             @if (viewport.mobile()) {
-              <a matButton routerLink="/admin" routerLinkActive="active" id="nav-admin" (click)="close()">Administration</a>
+              <!-- In the side sheet the subpages are listed below the overview, there is no drop-down. -->
+              <a matButton routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" id="nav-admin" (click)="close()">Administration</a>
+              <div class="nav-sub" role="group" aria-label="Administration">
+                @for (page of pages; track page.path) {
+                  <a matButton [routerLink]="'/admin/' + page.path" routerLinkActive="active" [id]="'nav-admin-' + page.path" (click)="close()">{{ page.label }}</a>
+                }
+              </div>
             } @else {
               <button
                 matButton

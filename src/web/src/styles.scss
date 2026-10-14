@@ -1212,3 +1212,11 @@ app-favorites .favorite-actions {
   gap: 4px;
   margin: 8px 0 0;
 }
+
+// Subpages of "Administration" in the side sheet, indented below it.
+.nav-sheet .nav-sub {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding-left: 16px;
+}

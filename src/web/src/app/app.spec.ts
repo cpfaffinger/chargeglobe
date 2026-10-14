@@ -133,7 +133,17 @@ describe('App with its routes', () => {
       await fixture.whenStable();
       const sheet = root().querySelector('mat-sidenav')!;
       expect(sheet.classList).toContain('mat-drawer-opened');
-      expect(Array.from(sheet.querySelectorAll('nav a')).map((link) => link.id)).toEqual(['nav-map', 'nav-favorites', 'nav-admin', 'nav-account']);
+      expect(Array.from(sheet.querySelectorAll('nav a')).map((link) => link.id)).toEqual([
+        'nav-map',
+        'nav-favorites',
+        'nav-admin',
+        'nav-admin-users',
+        'nav-admin-roles',
+        'nav-admin-crawler',
+        'nav-admin-mail',
+        'nav-admin-settings',
+        'nav-account',
+      ]);
       expect(sheet.querySelector('#location-search')).not.toBeNull();
 
       sheet.querySelectorAll<HTMLButtonElement>('#theme-toggle button')[0].click();
@@ -146,6 +156,16 @@ describe('App with its routes', () => {
       expect(router.url).toBe('/admin');
       expect(sheet.classList).not.toContain('mat-drawer-opened');
       expect(text(root(), 'h1')).toBe('Administration');
+
+      // The subpages are reachable directly from the side sheet.
+      root().querySelector<HTMLButtonElement>('#menu')!.click();
+      await fixture.whenStable();
+      sheet.querySelector<HTMLAnchorElement>('#nav-admin-settings')!.click();
+      await flush();
+      await fixture.whenStable();
+      expect(router.url).toBe('/admin/settings');
+      expect(sheet.classList).not.toContain('mat-drawer-opened');
+      http.expectOne('/api/v1/settings').flush([]);
     });
   });
 
