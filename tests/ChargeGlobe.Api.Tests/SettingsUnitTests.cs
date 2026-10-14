@@ -203,7 +203,9 @@ public class EnvExampleTests
             .Select(match => match.Groups[1].Value);
         var readByCompose = Regex.Matches(File.ReadAllText(Path.Combine(RepoRoot, "docker-compose.yml")), @"\$\{([A-Z][A-Z0-9_]*)")
             .Select(match => match.Groups[1].Value);
-        var used = readByCode.Concat(readByCompose).ToHashSet();
+        // Read by Docker Compose itself, not by the compose file.
+        string[] composeOwn = ["COMPOSE_PROFILES"];
+        var used = readByCode.Concat(readByCompose).Concat(composeOwn).ToHashSet();
 
         Assert.Contains("JWT_SIGNING_KEY", used);
         Assert.Contains("ADMIN_EMAIL", used);
