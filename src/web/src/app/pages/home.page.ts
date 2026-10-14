@@ -21,6 +21,8 @@ import { BrowserCapabilities } from '../map/browser-capabilities';
 import { MapConfig, MapConfigService } from '../map/map-config.service';
 import { GeolocateEvent, MapEngine, MapHandle, MapTheme } from '../map/map-engine';
 import { MapFilterPanel } from '../map/map-filter-panel';
+import { MapOptionsPanel } from '../map/map-options-panel';
+import { MapOptionsStore } from '../map/map-options';
 import { MapFilterStore, filterParams } from '../map/map-filters';
 import { MapLink, ShareResult } from '../map/map-link';
 import { MapView, MapViewStore } from '../map/map-view.store';
@@ -79,9 +81,9 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
  * configuration. The position is processed in the browser only and never sent to the API.
  */
 @Component({
-  imports: [AppIcon, DatePipe, DecimalPipe, LocationDetails, MapFilterPanel, MatButtonModule, MatCardModule, MatMenuModule, NgTemplateOutlet],
+  imports: [AppIcon, DatePipe, DecimalPipe, LocationDetails, MapFilterPanel, MapOptionsPanel, MatButtonModule, MatCardModule, MatMenuModule, NgTemplateOutlet],
   selector: 'app-home',
-  host: { '[class.has-card]': 'selected() !== null', '[class.has-filters]': 'filtersOpen()' },
+  host: { '[class.has-card]': 'selected() !== null', '[class.has-filters]': 'filtersOpen() || optionsOpen()' },
   template: `
     <ng-template #card>
       @if (selected(); as location) {
@@ -153,10 +155,18 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
         <app-map-filter-panel (closed)="filtersOpen.set(false)" />
       }
     }
+    @if (optionsOpen()) {
+      @defer (on immediate) {
+        <app-map-options-panel (closed)="optionsOpen.set(false)" />
+      }
+    }
     <div id="map-actions">
       <div class="home-actions">
         <button matMiniFab type="button" id="home" [disabled]="!handle()" title="Zur Startposition" aria-label="Zur Startposition" (click)="goHome()">
           <app-icon name="home" />
+        </button>
+        <button matMiniFab type="button" id="options-toggle" title="Kartenoptionen" aria-label="Kartenoptionen" [attr.aria-expanded]="optionsOpen()" (click)="toggleOptions()">
+          <app-icon name="layers" />
         </button>
         <button matMiniFab type="button" id="share" [disabled]="!view()" title="Ansicht teilen" aria-label="Ansicht teilen" (click)="share()">
           <app-icon name="share" />
@@ -229,6 +239,8 @@ export class HomePage {
   protected readonly homeSaved = signal(false);
   protected readonly shareMessage = signal<string | null>(null);
   protected readonly filtersOpen = signal(false);
+  protected readonly optionsOpen = signal(false);
+  private readonly mapOptions = inject(MapOptionsStore);
   protected readonly locations = signal<LocationSummary[]>([]);
   protected readonly attribution = signal<string[]>([]);
   protected readonly truncated = signal(false);
@@ -260,6 +272,11 @@ export class HomePage {
           this.openPending();
         });
       }
+    });
+    // Other cluster options: the map combines the locations anew.
+    effect(() => {
+      const options = this.mapOptions.options();
+      untracked(() => this.handle()?.setCluster(options));
     });
     // Other filters: the shown locations no longer fit; the visible area loads again.
     effect(() => {
@@ -308,6 +325,13 @@ export class HomePage {
 
   protected toggleFilters(): void {
     this.filtersOpen.update((open) => !open);
+    this.optionsOpen.set(false);
+    this.selected.set(null);
+  }
+
+  protected toggleOptions(): void {
+    this.optionsOpen.update((open) => !open);
+    this.filtersOpen.set(false);
     this.selected.set(null);
   }
 
@@ -349,6 +373,7 @@ export class HomePage {
         attribution: config.attribution,
         center: { latitude: start.latitude, longitude: start.longitude },
         zoom: start.zoom,
+        cluster: this.mapOptions.options(),
         onGeolocate: (event) => this.geolocated(event),
         onViewChange: (bbox, view) => this.viewChanged(bbox, view),
         onSelect: (id) => this.select(id),
@@ -369,6 +394,7 @@ export class HomePage {
     this.selected.set(this.locations().find((location) => location.id === id) ?? null);
     if (this.selected()) {
       this.filtersOpen.set(false);
+      this.optionsOpen.set(false);
     }
   }
 

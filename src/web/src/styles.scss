@@ -420,8 +420,9 @@ app-location-details .details-state {
   font: var(--mat-sys-label-small);
 }
 
-// Filters: a floating card above the legend; a bottom sheet on small screens.
-#filter-panel {
+// Filters and map options: a floating card above the legend; a bottom sheet on small screens.
+#filter-panel,
+#map-options {
   position: absolute;
   left: 12px;
   bottom: 96px;
@@ -433,17 +434,35 @@ app-location-details .details-state {
   box-shadow: var(--cg-overlay-shadow);
 }
 
+#map-options {
+  left: auto;
+  right: 16px;
+}
+
+#map-options .hint {
+  margin: 0 0 8px;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-small);
+}
+
+#map-options mat-slider {
+  width: 100%;
+}
+
+#map-options .card-head,
 #filter-panel .card-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
+#map-options h2,
 #filter-panel h2 {
   margin: 0;
   font: var(--mat-sys-title-medium);
 }
 
+#map-options h3,
 #filter-panel h3 {
   margin: 12px 0 4px;
   color: var(--mat-sys-on-surface-variant);
@@ -455,6 +474,7 @@ app-location-details .details-state {
   margin-top: 16px;
 }
 
+#map-options .filter-actions,
 #filter-panel .filter-actions {
   display: flex;
   justify-content: flex-end;
@@ -536,7 +556,8 @@ app-location-details .details-state {
     z-index: 1;
   }
 
-  #filter-panel {
+  #filter-panel,
+  #map-options {
     left: 0;
     right: 0;
     bottom: 0;
