@@ -1,3 +1,4 @@
+import { DatePipe, DecimalPipe } from '@angular/common';
 import {
   Component,
   DestroyRef,
@@ -7,17 +8,29 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { AVAILABILITIES, AVAILABILITY } from '../map/availability';
 import { BrowserCapabilities } from '../map/browser-capabilities';
 import { MapConfigService } from '../map/map-config.service';
 import { GeolocateEvent, MapEngine, MapHandle } from '../map/map-engine';
+import { Bbox, LocationSummary, LocationsService } from '../map/locations.service';
 
 /** Reasons the map or the own position cannot be shown. */
-export type MapNotice = 'config' | 'webgl' | 'map' | 'insecure' | 'unsupported' | 'denied' | 'unavailable' | 'not-ready';
+export type MapNotice =
+  | 'config'
+  | 'webgl'
+  | 'map'
+  | 'locations'
+  | 'insecure'
+  | 'unsupported'
+  | 'denied'
+  | 'unavailable'
+  | 'not-ready';
 
 const NOTICES: Record<MapNotice, string> = {
   config: 'Die Kartenkonfiguration konnte nicht geladen werden. Bitte lade die Seite später neu.',
   webgl: 'Dein Browser unterstützt kein WebGL, das die Karte zum Zeichnen braucht. Aktiviere die Hardwarebeschleunigung oder nutze einen aktuellen Browser.',
   map: 'Die Karte konnte nicht angezeigt werden. Bitte lade die Seite neu.',
+  locations: 'Die Ladepunkte konnten nicht geladen werden. Verschiebe die Karte, um es erneut zu versuchen.',
   insecure: 'Der Standort ist nur über eine sichere Verbindung (HTTPS) verfügbar.',
   unsupported: 'Dein Browser bietet keine Standortbestimmung an.',
   denied: 'Die Standortfreigabe wurde abgelehnt. Du kannst sie in den Website-Einstellungen deines Browsers erlauben.',
@@ -27,9 +40,11 @@ const NOTICES: Record<MapNotice, string> = {
 
 /**
  * Start page, usable without an account: the base map (docs/adr/0007-karte-standort-routing.md) with
- * the own position. The position is processed in the browser only and never sent to the API.
+ * the charging locations of the visible area and the own position. The position is processed in the
+ * browser only and never sent to the API.
  */
 @Component({
+  imports: [DatePipe, DecimalPipe],
   selector: 'app-home',
   template: `
     <div #map id="map" role="region" aria-label="Karte"></div>
@@ -40,13 +55,51 @@ const NOTICES: Record<MapNotice, string> = {
       @if (notice(); as key) {
         <p id="map-notice" role="status">{{ notices[key] }}</p>
       }
+      @if (truncated()) {
+        <p id="truncated" role="status">Es werden nur die nächsten {{ limit }} Standorte gezeigt – zoome hinein, um alle zu sehen.</p>
+      }
+      @if (selected(); as location) {
+        <section id="location-card" aria-label="Ladestandort">
+          <button type="button" id="close-card" aria-label="Schließen" (click)="selected.set(null)">×</button>
+          <h2>{{ location.name ?? 'Ladestandort' }}</h2>
+          <p class="address">{{ location.address }}, {{ location.postalCode }} {{ location.city }}</p>
+          @if (location.operator) {
+            <p class="operator">{{ location.operator }}</p>
+          }
+          <p class="availability">
+            <span class="dot" [style.background]="availability[location.availability].color"></span>
+            {{ location.evsesAvailable }} von {{ location.evsesTotal }} Ladepunkten frei
+            @if (location.maxPowerKw !== null) {
+              · bis {{ location.maxPowerKw | number: '1.0-1' : 'en-US' }} kW
+            }
+          </p>
+          <p class="status-age">
+            @if (location.statusObservedAt) {
+              Status von {{ location.statusObservedAt | date: 'dd.MM.yyyy HH:mm' }}
+            } @else {
+              Kein aktueller Status
+            }
+          </p>
+        </section>
+      }
     </div>
+    <ul id="legend" aria-label="Legende">
+      @for (key of availabilities; track key) {
+        <li><span class="dot" [style.background]="availability[key].color"></span>{{ availability[key].label }}</li>
+      }
+    </ul>
+    @if (attribution().length > 0) {
+      <p id="data-attribution">{{ attribution().join(' · ') }}</p>
+    }
   `,
 })
 export class HomePage {
   private readonly configService = inject(MapConfigService);
   private readonly engine = inject(MapEngine);
   private readonly browser = inject(BrowserCapabilities);
+  private readonly locationsService = inject(LocationsService);
+  /** Number of the newest location request; older answers are dropped. */
+  private request = 0;
   private readonly container = viewChild.required<ElementRef<HTMLElement>>('map');
   private destroyed = false;
 
@@ -54,6 +107,13 @@ export class HomePage {
   protected readonly notice = signal<MapNotice | null>(null);
   protected readonly locating = signal(false);
   protected readonly handle = signal<MapHandle | null>(null);
+  protected readonly locations = signal<LocationSummary[]>([]);
+  protected readonly attribution = signal<string[]>([]);
+  protected readonly truncated = signal(false);
+  protected readonly selected = signal<LocationSummary | null>(null);
+  protected readonly availability = AVAILABILITY;
+  protected readonly availabilities = AVAILABILITIES;
+  protected readonly limit = LocationsService.limit;
 
   constructor() {
     afterNextRender(() => void this.show());
@@ -108,14 +168,46 @@ export class HomePage {
         center: config.center,
         zoom: config.zoom,
         onGeolocate: (event) => this.geolocated(event),
+        onViewChange: (bbox) => void this.loadLocations(bbox),
+        onSelect: (id) => this.selected.set(this.locations().find((location) => location.id === id) ?? null),
       });
       if (this.destroyed) {
         handle.destroy();
         return;
       }
       this.handle.set(handle);
+      // Locations may have arrived before the engine handed out its handle.
+      handle.showLocations(this.locations());
     } catch {
       this.notice.set('map');
+    }
+  }
+
+  /** Loads the locations of the visible area; the box is clamped to valid coordinates (world wrap). */
+  private async loadLocations(bbox: Bbox): Promise<void> {
+    const request = ++this.request;
+    const box: Bbox = {
+      west: Math.max(-180, bbox.west),
+      south: Math.max(-90, bbox.south),
+      east: Math.min(180, bbox.east),
+      north: Math.min(90, bbox.north),
+    };
+    try {
+      const response = await this.locationsService.inBox(box);
+      if (request !== this.request || this.destroyed) {
+        return;
+      }
+      this.locations.set(response.data);
+      this.attribution.set([...new Set(response.meta.attribution.map((source) => source.text))]);
+      this.truncated.set(response.meta.truncated);
+      this.handle()?.showLocations(response.data);
+      if (this.notice() === 'locations') {
+        this.notice.set(null);
+      }
+    } catch {
+      if (request === this.request) {
+        this.notice.set('locations');
+      }
     }
   }
 

@@ -33,6 +33,8 @@ Vorhandene Endpunkte (in Klammern die `operationId`):
 | `PUT /settings/{key}` (`updateSetting`) | Body `value` und optional `scope` (Default `global`). Speichert den Wert; `value: null` (oder weggelassen) entfernt ihn, sodass der Default wieder gilt. Idempotent, wirkt ohne Neustart in allen Containern. `422` mit Feldfehlern (`value`, `scope`) bei falschem Typ, Wert außerhalb der Grenzen oder nicht unterstütztem Scope; `404` bei unbekanntem Key | `settings:manage` |
 | `POST /mail/test` (`sendTestMail`) | Body `to`. Sendet eine Testmail synchron mit den aktuellen `mail.*`-Einstellungen, auch bei `mail.enabled = false`. `200` mit Erfolgsmeldung; `422` mit Feldfehlern bei ungültiger Adresse (`to`) oder fehlenden Einstellungen (`mail.smtp.host`, `mail.from.address`); `502` als Problem Details mit der SMTP-Meldung im `detail` | `settings:manage` |
 | `GET /mail/outbox` (`listMailOutbox`) | Postausgang, neueste zuerst: `data[]` mit `id`, `to`, `subject`, `templateKey`, `status`, `attempts`, `lastError`, `createdAt`, `sentAt`, `nextAttemptAt` und `meta` mit `total`, `page`, `pageSize`. Filter `status` (`QUEUED`, `SENT`, `FAILED`), Pagination `page` (ab 1) und `pageSize` (1–200, Default 50). Mail-Körper werden nie ausgegeben. `422` bei unbekanntem Status oder ungültiger Seite | `settings:manage` |
+| `GET /locations` (`listLocations`) | aktive Standorte in `bbox=minLon,minLat,maxLon,maxLat` (WGS 84), nächstgelegene zur Box-Mitte zuerst, höchstens `limit` (1–2000, Default 500). Je Standort `id`, `name`, Adresse, `latitude`/`longitude`, `operator`, `evsesTotal`, `evsesAvailable` (Status `AVAILABLE`, nicht älter als `map.status_max_age_minutes`, Default 60), `maxPowerKw`, `statusObservedAt` (neuester Statuswert) und `availability` (`AVAILABLE`, `OCCUPIED`, `OUT_OF_ORDER`, `UNKNOWN`); `meta` mit `returned`, `limit`, `truncated` und `attribution` (je beteiligter Quelle `source`, `text`, `license` aus der Tabelle `source`). `422` mit Feldfehlern `bbox` bzw. `limit` | `none` |
+| `GET /locations/{id}` (`getLocation`) | ein aktiver Standort (`data.location` wie oben) mit allen aktiven EVSEs (`data.evses`: `evseId`, `hasEvseId` – `false` bei einer Surrogat-ID von chargeglobe –, `status` mit `statusSince` und `statusObservedAt`, `UNKNOWN` wenn zu alt, `maxPowerKw`, `powerType`, `connectors` mit `standard`, `format`, `powerType`, `maxPowerKw`) und `meta.attribution`; `404` bei unbekannter Id | `none` |
 | `GET /map/config` (`getMapConfig`) | `styleUrl`, `attribution`, `center` (`latitude`, `longitude`) und `zoom` der Basiskarte aus den Einstellungen `map.*`; die Kartenseite der Web-App lädt sie bei jedem Aufruf, Änderungen wirken also nach einem Neuladen der Seite. Kacheln, Glyphen und Sprites holt der Browser direkt von den Hosts der Style-URL (Default: `tiles.openfreemap.org`), nicht über die API | `none` |
 
 Schreibende Aktionen (Registrierung, Bestätigung, Login, Passwort-Reset anfordern/ausführen, Key anlegen/widerrufen, Einstellung ändern, Testmail senden) landen mit Akteur (Nutzer bzw. API-Key) im `audit_log`; bei Einstellungen ohne den Wert.
@@ -83,8 +85,7 @@ Ohne Anmeldung sind nur die Endpunkte unter „Standorte“ (`GET /locations`, `
 
 | Methode & Pfad | Zweck |
 |---|---|
-| `GET /locations` | wie `/evses`, aber aggregiert je Standort (`evsesTotal`, `evsesAvailable`, `maxPowerKw`, Betreiber) – für Karten-Marker |
-| `GET /locations/{id}` | Standort mit allen Ladepunkten und Steckern |
+| `GET /locations`, `GET /locations/{id}` | vorhanden, siehe Tabelle der vorhandenen Endpunkte oben; vorgesehen sind zusätzlich die Filter von `/evses` (Stecker, Leistung, Betreiber, nur frei) |
 | `GET /locations/{id}/status/history` | aggregierte Verfügbarkeit (frei/gesamt) über Zeit |
 
 ### Stammdaten & Meta (`evse:read`)

@@ -74,8 +74,8 @@ public class OpenApiContractTests(IntegrationFactory factory)
         Assert.Equal(
             new[]
             {
-                "confirmEmail", "createApiKey", "getHealth", "getMapConfig", "getMe", "getSetting", "listApiKeys",
-                "listMailOutbox", "listPermissions", "listSettings", "login", "logout", "refreshToken", "register",
+                "confirmEmail", "createApiKey", "getHealth", "getLocation", "getMapConfig", "getMe", "getSetting", "listApiKeys",
+                "listLocations", "listMailOutbox", "listPermissions", "listSettings", "login", "logout", "refreshToken", "register",
                 "requestPasswordReset", "resetPassword", "revokeApiKey", "sendTestMail", "updateSetting",
             },
             operationIds.Order(StringComparer.Ordinal));
@@ -101,6 +101,8 @@ public class OpenApiContractTests(IntegrationFactory factory)
     [InlineData("/api/v1/auth/register", "post", "none")]
     [InlineData("/api/v1/auth/login", "post", "none")]
     [InlineData("/api/v1/map/config", "get", "none")]
+    [InlineData("/api/v1/locations", "get", "none")]
+    [InlineData("/api/v1/locations/{id}", "get", "none")]
     [InlineData("/api/v1/settings", "get", "settings:read")]
     [InlineData("/api/v1/settings/{key}", "get", "settings:read")]
     [InlineData("/api/v1/settings/{key}", "put", "settings:manage")]

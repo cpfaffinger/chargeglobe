@@ -27,7 +27,8 @@
 - [ ] Region-Polygone, adaptive Statusabfrage, Metriken
 - [ ] API v1 (EVSE-Suche, Detail, Statushistorie, Belegung, Ad-hoc-Preis, Provenienz)
 - [x] Angular: Karte mit MapLibre und OSM-Vektorkacheln (OpenFreeMap, `GET /map/config`) als anonyme Startseite, eigener Standort per Geolocation ([ADR-0007](adr/0007-karte-standort-routing.md))
-- [ ] Angular: Ladepunkt-Marker aus `GET /locations` mit Clustering, Status-Farben und Filtern
+- [x] `GET /locations` (bbox, aggregiert, Attribution) und `GET /locations/{id}`; Ladepunkt-Marker mit Clustering, Status-Farben, Legende, Infokarte und Quellenangabe
+- [ ] Filter in der Karte (Stecker, Leistung, Betreiber, nur frei)
 - [ ] Angular: Detailseite mit Historie (angemeldet), Admin (Nutzer, Rollen, API-Keys, Einstellungen)
 - [ ] Nutzer- und Rollenverwaltung in der API (`/users`, `/roles`, `GET /audit-log`)
 - [ ] Customizings: `GET/PUT /me/preferences`, Favoriten, Einstellungsseite

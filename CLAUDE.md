@@ -100,6 +100,7 @@ docker compose up -d --build
 curl -k https://localhost:5005/api/v1/health   # {"status":"ok","db":"ok"}; -k wegen self-signed Zertifikat
 curl -k https://localhost:5005/api/v1/permissions   # Permission-Katalog (anonym)
 curl -k https://localhost:5005/api/v1/map/config    # Kartenkonfiguration aus dem Config-Service (anonym)
+curl -k "https://localhost:5005/api/v1/locations?bbox=16.2,48.1,16.6,48.3&limit=50"   # Standorte in Wien mit meta.attribution (anonym)
 curl -kI https://localhost:5005/maplibre/maplibre-gl-worker.mjs   # 200, Content-Type text/javascript (Worker der Karte)
 docker compose logs crawler worker          # Heartbeats beider Rollen (alle 30 s, mit aktuellem Wert von mail.enabled); worker: "Mail outbox: …"; crawler: "Provider econtrol healthy: …" (alle 15 min, nur mit provider.enabled)
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select template_key, status, attempts, last_error from email_outbox"
@@ -130,4 +131,4 @@ Vor einem neuen lokalen Coverage-Lauf alte Ergebnisse löschen (`tests/*/TestRes
 
 ## Nächste Schritte (Stand jetzt)
 
-Siehe `docs/09-roadmap.md`: Ingest-Pipeline (Lease-Scheduler, `ingest_queue`, Merge in das Ladepunkt-Modell) mit dem E-Control-Adapter als erster Quelle, danach `GET /locations` und Ladepunkt-Marker auf der Karte; außerdem Lizenz festlegen und die E-Control-Nutzungsbedingungen archivieren. API-Keys von Quellen werden nur im Admin-UI eingetragen (`provider.api_key`, Scope `provider:<key>`), nie in Dateien.
+Siehe `docs/09-roadmap.md`: Ladepunkt-Detailseite mit Statushistorie für angemeldete Nutzer und Continuous Aggregate `evse_occupancy_hourly`, danach Region-Seed aus OSM-Grenzen; außerdem Lizenz festlegen und die E-Control-Nutzungsbedingungen archivieren. API-Keys von Quellen werden nur im Admin-UI eingetragen (`provider.api_key`, Scope `provider:<key>`), nie in Dateien.

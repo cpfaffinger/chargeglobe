@@ -4,6 +4,7 @@ import { AuthService, Me } from './auth/auth.service';
 import { BrowserCapabilities } from './map/browser-capabilities';
 import { MapConfig } from './map/map-config.service';
 import { MapEngine, MapHandle } from './map/map-engine';
+import { LocationSummary } from './map/locations.service';
 
 /** Shared helpers for the specs. */
 
@@ -45,11 +46,32 @@ export const MAP_CONFIG: MapConfig = {
 
 /** MapEngine double: WebGL is not reliably available in the headless test browser. */
 export function fakeMapEngine() {
-  const handle = jasmine.createSpyObj<MapHandle>('MapHandle', ['locate', 'destroy']);
+  const handle = jasmine.createSpyObj<MapHandle>('MapHandle', ['locate', 'destroy', 'showLocations']);
   handle.locate.and.returnValue(true);
   const engine = jasmine.createSpyObj<MapEngine>('MapEngine', ['create']);
   engine.create.and.resolveTo(handle);
   return { engine, handle };
+}
+
+/** A location of GET /api/v1/locations. */
+export function locationSummary(overrides: Partial<LocationSummary> = {}): LocationSummary {
+  return {
+    id: 'loc-1',
+    name: 'Parkgarage Stephansplatz',
+    address: 'Stephansplatz 1',
+    postalCode: '1010',
+    city: 'Wien',
+    country: 'AT',
+    latitude: 48.2085,
+    longitude: 16.3731,
+    operator: 'Wien Energie GmbH',
+    evsesTotal: 4,
+    evsesAvailable: 2,
+    maxPowerKw: 22,
+    statusObservedAt: '2026-10-14T08:15:00Z',
+    availability: 'AVAILABLE',
+    ...overrides,
+  };
 }
 
 /** BrowserCapabilities double; by default the browser offers everything the map needs. */
