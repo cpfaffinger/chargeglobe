@@ -12,8 +12,9 @@ namespace ChargeGlobe.Providers.EControl;
 /// E-Control charging point register (ladestellen.at), official API with API key (docs/08, section 1;
 /// endpoint note docs/endpunkte/econtrol.md). Inventory and ad-hoc prices come from the paged register
 /// <c>GET /search/stations</c> (all of Austria in about 17 requests); the live status only from
-/// <c>GET /search</c>, which returns the stations closest to a point and is walked over a grid. The
-/// DATEX II status publication of the source is a snapshot hours behind and not used.
+/// <c>GET /search</c>, which returns the <see cref="SearchPageSize"/> stations closest to a point: the
+/// crawler asks it once per query point (<see cref="StatusQuery.Near"/>). The DATEX II status publication
+/// of the source is a snapshot hours behind and not used.
 /// </summary>
 public sealed class EControlProvider(
     EControlClient client,
@@ -26,14 +27,14 @@ public sealed class EControlProvider(
     /// <summary>Country of all locations of the register.</summary>
     public const string Country = "AT";
 
-    /// <summary>Requests one fetch may use; covering Austria takes a few hundred searches or about 17 register pages.</summary>
-    public const int MaxRequestsPerRun = 1000;
+    /// <summary>Register pages one fetch may read; Austria takes about 17.</summary>
+    public const int MaxRequestsPerRun = 50;
+
+    /// <summary>Stations one <c>GET /search</c> returns.</summary>
+    public const int SearchPageSize = 100;
 
     /// <summary>Station status of the register for stations that are out of service; they are skipped.</summary>
     public const string InactiveStation = "INACTIVE";
-
-    /// <summary>Area of a query without bounding box.</summary>
-    public static readonly BoundingBox Austria = new(9.53, 46.37, 17.17, 49.02);
 
     /// <summary>Point of the health probe (Vienna, Stephansplatz).</summary>
     public static readonly GeoPoint ProbePoint = new(48.2085, 16.3731);
@@ -43,15 +44,16 @@ public sealed class EControlProvider(
         "E-Control Ladestellenverzeichnis",
         SourceTier.OFFICIAL,
         ProviderCapabilities.StaticInventory | ProviderCapabilities.EvseIds | ProviderCapabilities.LiveStatusPerEvse
-        | ProviderCapabilities.AdHocPrice | ProviderCapabilities.BulkByBoundingBox | ProviderCapabilities.BulkAll,
+        | ProviderCapabilities.AdHocPrice | ProviderCapabilities.BulkAll | ProviderCapabilities.NearestToPoint,
         "E-Control API terms of use (free, registration required); redistribution only with written consent",
         "Datenquelle: Ladestellenverzeichnis der E-Control (ladestellen.at)",
         ["AT"],
-        // Status every 15 min: one pass over the four start regions takes a few hundred searches
-        // (nearest 100 per request), 4 passes per hour stay below 2,400 requests.
+        // The status interval applies per query point and is refined by its activity (docs/05).
         new PollDefaults(TimeSpan.FromDays(1), TimeSpan.FromMinutes(15), TimeSpan.FromDays(1)),
-        // Terms of use: 2,500 requests per hour and at most 30 in parallel; 40/min stays below.
-        new RateLimitPolicy(PerMinute: 40, Burst: 10));
+        // Terms of use: 2,500 requests per hour and at most 30 in parallel; 40/min stays below. The crawler
+        // paces further down to provider.request_budget_per_hour.
+        new RateLimitPolicy(PerMinute: 40, Burst: 10),
+        SearchPageSize);
 
     public ProviderDescriptor Descriptor => DescriptorValue;
 
@@ -79,10 +81,13 @@ public sealed class EControlProvider(
         }
     }
 
+    /// <summary>The live status of the stations nearest to <see cref="StatusQuery.Near"/>: exactly one request.</summary>
     public async IAsyncEnumerable<ProviderEvseStatus> FetchStatusAsync(
         StatusQuery query, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        await foreach (var (station, _) in CoverAsync(query.Bbox, cancellationToken))
+        var point = query.Near ?? throw new NotSupportedException("E-Control reads the status around a query point (StatusQuery.Near).");
+        var result = await client.SearchAsync(point, cancellationToken);
+        foreach (var (station, _) in result.Stations)
         {
             foreach (var status in mapper.ToStatuses(station, timeProvider.GetUtcNow()))
             {
@@ -135,7 +140,7 @@ public sealed class EControlProvider(
     private async IAsyncEnumerable<(StationDto Station, JsonElement Raw)> RegisterAsync(
         BoundingBox? box, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var (fromIndex, requests, inactive) = (0, 0, 0);
+        var (fromIndex, requests, inactive, total) = (0, 0, 0, 0);
         while (true)
         {
             if (requests == MaxRequestsPerRun)
@@ -146,6 +151,11 @@ public sealed class EControlProvider(
 
             var page = await client.SearchStationsAsync(fromIndex, EControlClient.MaxPageSize, cancellationToken);
             requests++;
+            total = page.TotalResults;
+            logger.LogInformation(
+                "E-Control register page {Page}/{Pages}: stations {From}–{To} of {Total}",
+                requests, (total + EControlClient.MaxPageSize - 1) / EControlClient.MaxPageSize,
+                fromIndex + 1, fromIndex + page.Stations.Count, total);
             foreach (var (station, raw) in page.Stations)
             {
                 if (station.StationStatus == InactiveStation)
@@ -167,21 +177,7 @@ public sealed class EControlProvider(
         }
 
         logger.LogInformation(
-            "E-Control register read with {Requests} requests, {Inactive} inactive station(s) skipped", requests, inactive);
-    }
-
-    private async IAsyncEnumerable<(StationDto Station, JsonElement Raw)> CoverAsync(
-        BoundingBox? box, [EnumeratorCancellation] CancellationToken cancellationToken)
-    {
-        var grid = new SearchGrid(client.SearchAsync, MaxRequestsPerRun);
-        await foreach (var station in grid.CoverAsync(box ?? Austria, cancellationToken))
-        {
-            yield return station;
-        }
-
-        if (grid.Exhausted)
-        {
-            logger.LogWarning("E-Control fetch stopped after {Requests} requests before the area was covered", grid.Requests);
-        }
+            "E-Control register read with {Requests} requests: {Total} stations, {Inactive} inactive station(s) skipped",
+            requests, total, inactive);
     }
 }

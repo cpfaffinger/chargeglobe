@@ -41,6 +41,9 @@ const THEMES: { mode: ThemeMode; label: string; icon: IconName }[] = [
         @if (auth.hasPermission('settings:read')) {
           <a matButton routerLink="/admin/settings" routerLinkActive="active" id="nav-settings" (click)="close()">Einstellungen</a>
         }
+        @if (auth.hasPermission('jobs:read')) {
+          <a matButton routerLink="/admin/crawler" routerLinkActive="active" id="nav-crawler" (click)="close()">Crawler</a>
+        }
         @if (auth.hasPermission('settings:manage')) {
           <a matButton routerLink="/admin/mail" routerLinkActive="active" id="nav-mail" (click)="close()">E-Mail</a>
           <a matButton routerLink="/setup" routerLinkActive="active" id="nav-setup" (click)="close()">Einrichtung</a>

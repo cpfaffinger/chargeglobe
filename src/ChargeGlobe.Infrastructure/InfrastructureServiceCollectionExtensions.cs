@@ -50,6 +50,11 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IPollPlanStore, PollPlanStore>();
         services.AddScoped<IRawSnapshotStore, RawSnapshotStore>();
         services.AddScoped<IJobLeases, JobLeases>();
+        services.AddScoped<IPollTileStore, PollTileStore>();
+        services.AddScoped<IStatusDemand, StatusDemand>();
+        services.AddScoped<IProviderBackoff, ProviderBackoffStore>();
+        services.AddScoped<ICrawlerRunLog, CrawlerRunLog>();
+        services.AddScoped<ICrawlerMonitor, CrawlerMonitor>();
         services.AddSingleton<IProviderRateBudget, ProviderRateBudget>();
         services.AddSingleton<SettingsCache>();
         services.AddSingleton<IAppConfig, AppConfig>();

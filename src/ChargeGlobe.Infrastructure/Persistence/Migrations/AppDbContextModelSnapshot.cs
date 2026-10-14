@@ -916,6 +916,66 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                     b.ToTable("audit_log", (string)null);
                 });
 
+            modelBuilder.Entity("ChargeGlobe.Infrastructure.Persistence.CrawlerRun", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("CooldownUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cooldown_until");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("text")
+                        .HasColumnName("error");
+
+                    b.Property<DateTimeOffset?>("FinishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("finished_at");
+
+                    b.Property<string>("JobType")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("job_type");
+
+                    b.Property<string>("ProviderKey")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("provider_key");
+
+                    b.Property<int>("Records")
+                        .HasColumnType("integer")
+                        .HasColumnName("records");
+
+                    b.Property<int>("Requests")
+                        .HasColumnType("integer")
+                        .HasColumnName("requests");
+
+                    b.Property<string>("Result")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("result");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<string>("Target")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("target");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StartedAt");
+
+                    b.HasIndex("ProviderKey", "StartedAt");
+
+                    b.ToTable("crawler_run", (string)null);
+                });
+
             modelBuilder.Entity("ChargeGlobe.Infrastructure.Persistence.EmailOutboxEntry", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1124,6 +1184,111 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("poll_plan", (string)null);
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Infrastructure.Persistence.PollTile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("ChangesPerDay")
+                        .HasColumnType("integer")
+                        .HasColumnName("changes_per_day");
+
+                    b.Property<DateTimeOffset?>("DemandAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("demand_at");
+
+                    b.Property<int>("IntervalMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("interval_minutes");
+
+                    b.Property<DateTimeOffset?>("LastPolledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_polled_at");
+
+                    b.Property<string>("LastResult")
+                        .HasColumnType("text")
+                        .HasColumnName("last_result");
+
+                    b.Property<double>("Latitude")
+                        .HasColumnType("double precision")
+                        .HasColumnName("latitude");
+
+                    b.Property<DateTimeOffset?>("LeaseUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("lease_until");
+
+                    b.Property<string>("LeasedBy")
+                        .HasColumnType("text")
+                        .HasColumnName("leased_by");
+
+                    b.PrimitiveCollection<Guid[]>("LocationIds")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("location_ids");
+
+                    b.Property<double>("Longitude")
+                        .HasColumnType("double precision")
+                        .HasColumnName("longitude");
+
+                    b.Property<int>("Number")
+                        .HasColumnType("integer")
+                        .HasColumnName("number");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("priority");
+
+                    b.Property<string>("ProviderKey")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("provider_key");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LocationIds");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("LocationIds"), "gin");
+
+                    b.HasIndex("ProviderKey", "Latitude", "Longitude")
+                        .IsUnique();
+
+                    b.ToTable("poll_tile", (string)null);
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Infrastructure.Persistence.ProviderBackoffState", b =>
+                {
+                    b.Property<string>("ProviderKey")
+                        .HasColumnType("text")
+                        .HasColumnName("provider_key");
+
+                    b.Property<bool>("Blocked")
+                        .HasColumnType("boolean")
+                        .HasColumnName("blocked");
+
+                    b.Property<int>("Failures")
+                        .HasColumnType("integer")
+                        .HasColumnName("failures");
+
+                    b.Property<DateTimeOffset?>("PausedUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("paused_until");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("text")
+                        .HasColumnName("reason");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("ProviderKey");
+
+                    b.ToTable("provider_backoff", (string)null);
                 });
 
             modelBuilder.Entity("ChargeGlobe.Infrastructure.Persistence.ProviderRateBudgetState", b =>

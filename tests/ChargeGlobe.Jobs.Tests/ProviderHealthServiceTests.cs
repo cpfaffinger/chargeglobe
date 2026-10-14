@@ -29,9 +29,15 @@ public class ProviderHealthServiceTests
     }
 
     private static (ProviderHealthService Service, FakeTimeProvider Time, CollectingLogger Logger) Create(
-        StubRegistry registry, IProviderSettings settings, params StubProbe[] probes)
+        StubRegistry registry, IProviderSettings settings, params StubProbe[] probes) => Create(registry, settings, new StubBackoff(), probes);
+
+    private static (ProviderHealthService Service, FakeTimeProvider Time, CollectingLogger Logger) Create(
+        StubRegistry registry, IProviderSettings settings, StubBackoff backoff, params StubProbe[] probes)
     {
-        var services = new ServiceCollection().AddScoped<ISourceRegistry>(_ => registry).BuildServiceProvider();
+        var services = new ServiceCollection()
+            .AddScoped<ISourceRegistry>(_ => registry)
+            .AddScoped<IProviderBackoff>(_ => backoff)
+            .BuildServiceProvider();
         var time = new FakeTimeProvider();
         var logger = new CollectingLogger();
         var service = new ProviderHealthService(
@@ -54,7 +60,7 @@ public class ProviderHealthServiceTests
         var synced = Assert.Single(registry.Calls);
         Assert.Equal(["alpha", "beta", "gamma"], synced.Select(source => source.Key));
         Assert.Equal(SourceTier.OFFICIAL, synced[0].Tier);
-        Assert.Equal(["StaticInventory", "EvseIds", "LiveStatusPerEvse", "AdHocPrice", "BulkByBoundingBox", "BulkAll"], synced[0].Capabilities);
+        Assert.Equal(["StaticInventory", "EvseIds", "LiveStatusPerEvse", "AdHocPrice", "BulkAll", "NearestToPoint"], synced[0].Capabilities);
         Assert.Equal((1, 0), (healthy.Probes, disabled.Probes));
         Assert.Contains("Provider alpha healthy: HTTP 200 in 42 ms", logger.Messages);
         Assert.Contains("Provider beta unhealthy: HTTP 401, E-Control search returned 401.", logger.Messages);
@@ -64,6 +70,26 @@ public class ProviderHealthServiceTests
         Assert.Equal(2, registry.Calls.Count);
 
         await service.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task A_provider_in_cooldown_or_blocked_is_not_probed()
+    {
+        var backoff = new StubBackoff();
+        backoff.Paused["alpha"] = new ProviderPause(3, new DateTimeOffset(2026, 10, 14, 8, 15, 0, TimeSpan.Zero), false, "503");
+        backoff.Paused["beta"] = new ProviderPause(1, null, true, "401");
+        var paused = new StubProbe(Descriptor("alpha"), new ProviderProbeResult(true, 200, TimeSpan.Zero));
+        var blocked = new StubProbe(Descriptor("beta"), new ProviderProbeResult(true, 200, TimeSpan.Zero));
+        var healthy = new StubProbe(Descriptor("gamma"), new ProviderProbeResult(true, 200, TimeSpan.Zero));
+        var (service, _, logger) = Create(new StubRegistry(), new EnabledSettings("alpha", "beta", "gamma"), backoff, paused, blocked, healthy);
+
+        await service.StartAsync(CancellationToken.None);
+        await WaitUntilAsync(() => healthy.Probes == 1, "probe of the active provider");
+        await service.StopAsync(CancellationToken.None);
+
+        Assert.Equal((0, 0), (paused.Probes, blocked.Probes));
+        Assert.Contains("Provider alpha not probed: paused until 08:15:00 UTC (503)", logger.Messages);
+        Assert.Contains("Provider beta not probed: paused until a setting changes (401)", logger.Messages);
     }
 
     [Fact]

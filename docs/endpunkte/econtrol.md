@@ -9,10 +9,10 @@
 | Zugang | eigener, kostenloser API-Key (Registrierung unter admin.ladestellen.at), an eine Domain gebunden: Header `apiKey: <key>` und `Referer: https://<registrierte Domain>/`. Die Spezifikation deklariert kein Security-Schema; welche Endpunkte ein Key nutzen darf, zeigt erst der Aufruf (`401`) |
 | ToS geprüft | Nutzungsbedingungen wurden vom Betreiber bei der Registrierung akzeptiert (Click-Wrap); ihr Wortlaut ist noch nicht im Projekt archiviert. Bekannte Punkte laut Wiedergabe Dritter ([docs/08](../08-datenquellen-und-recht.md)): 2.500 Requests/h, max. 30 parallel, Quellenangabe mit Logo, Quartalsstatistik, Go-Live-Meldung, Weiterverbreitung nur nach schriftlicher Freigabe |
 | Lizenz / Attribution | „Datenquelle: Ladestellenverzeichnis der E-Control (ladestellen.at)“ (Descriptor `AttributionText`, Tabelle `source`) |
-| Rate-Limit beobachtet | keines; erzwungen werden 40 Requests/min (2.400/h) mit Burst 10 je Prozess und clusterweit |
-| Capabilities | StaticInventory · EvseIds · LiveStatusPerEvse · AdHocPrice · BulkAll (Register seitenweise) · BulkByBoundingBox (Live-Status per Suchraster) |
+| Rate-Limit beobachtet | keines; erzwungen werden höchstens 40 Requests/min je Prozess (Descriptor) und clusterweit das Stundenbudget `provider.request_budget_per_hour` (Default 600) |
+| Capabilities | StaticInventory · EvseIds · LiveStatusPerEvse · AdHocPrice · BulkAll (Register seitenweise) · NearestToPoint (Live-Status um Abfragepunkte, 100 Stationen je Request) |
 
-Konfiguration (Config-Service, Scope `provider:econtrol`, Admin-UI `/admin/settings`): `provider.enabled`, `provider.api_key` (Secret, verschlüsselt), `provider.referer` (registrierte Domain; ein bloßer Hostname wird zu `https://<host>/` ergänzt), `provider.regions` (Default `AT-9,AT-3,AT-4,AT-1`), `provider.interval.inventory_minutes` (Default 1 Tag) und `provider.interval.status_minutes` (Default 15 min: ein Durchgang über die vier Startregionen braucht einige hundert Suchen, vier Durchgänge pro Stunde bleiben unter 2.400 Requests). Der Key steht nie in Repo, `.env` oder Logs.
+Konfiguration (Config-Service, Scope `provider:econtrol`, Admin-UI `/admin/settings`): `provider.enabled`, `provider.api_key` (Secret, verschlüsselt), `provider.referer` (registrierte Domain; ein bloßer Hostname wird zu `https://<host>/` ergänzt), `provider.regions` (Default `AT-9,AT-3,AT-4,AT-1`), `provider.interval.inventory_minutes` (Default 1 Tag), `provider.request_budget_per_hour` (600), `provider.tile_interval_hot_minutes` / `…_normal_minutes` / `…_quiet_minutes` (5 / 15 / 60) und `provider.cooldown_step_minutes` / `…_max_minutes` (5 / 120). Der Key steht nie in Repo, `.env` oder Logs.
 
 ## Welcher Endpunkt wofür
 
@@ -20,8 +20,8 @@ Konfiguration (Config-Service, Scope `provider:econtrol`, Admin-UI `/admin/setti
 |---|---|---|
 | Inventar (Standorte, Ladepunkte, Stecker, Zahlungsarten, Roaming, Ökostrom, Parken, Preis-URL) | `GET /search/stations` seitenweise | ganz Österreich in 17 Requests (≈ 37 MB), reichste Felder |
 | Ad-hoc-Preise | `GET /search/stations` seitenweise | dieselben Seiten, Preise je Ladepunkt |
-| Live-Status | `GET /search` über das Suchraster | einziger Endpunkt mit aktuellem Status je Ladepunkt; `/search/stations` hat keinen Status, die DATEX-Status-Publikation ist Stunden alt (siehe unten) |
-| Health-Probe | `GET /search` (Wien, Stephansplatz) | billig und prüft den Status-Pfad |
+| Live-Status | `GET /search` je Abfragepunkt (`poll_tile`, [05](../05-crawling-konzept.md)) | einziger Endpunkt mit aktuellem Status je Ladepunkt; `/search/stations` hat keinen Status, die DATEX-Status-Publikation ist Stunden alt (siehe unten) |
+| Health-Probe | `GET /search` (Wien, Stephansplatz), stündlich, nicht während einer Pause | billig und prüft den Status-Pfad |
 
 ## Endpunkte
 
@@ -54,7 +54,7 @@ Konfiguration (Config-Service, Scope `provider:econtrol`, Admin-UI `/admin/setti
                 "connectorType": [{ "key": "STYPE2", "legacy": true, "consumerName": "TYPE_2_AC" }],
                 "electricityType": ["AC_3_PHASE"], "status": "AVAILABLE" }] }]
 ```
-- Ohne gültigen Key: `401` mit deutschem Erklärtext.
+- Ohne gültigen Key: `401` mit deutschem Erklärtext. Fehlerstatus gibt der Client als `ProviderHttpException` mit dem `Retry-After` der Antwort weiter; der Adapter wiederholt nichts, der Crawler pausiert die Quelle ([05](../05-crawling-konzept.md), Abschnitt 4).
 
 ### Personenbezogene Daten
 `contactName`, `phoneCountryCode`, `regionCode` (= Telefonvorwahl), `phoneNumber`, `extensionNumber`, `email` und `owner` entfernt der Client sofort bei beiden Endpunkten; sie landen weder im Ingest-Modell noch in `raw_snapshot` (DSGVO, [docs/08](../08-datenquellen-und-recht.md)). `operatorName` bleibt, obwohl einzelne Betreiber Privatpersonen sind (Pflichtangabe des Registers).
@@ -72,7 +72,8 @@ Konfiguration (Config-Service, Scope `provider:econtrol`, Admin-UI `/admin/setti
 
 ### Abdeckung einer Fläche
 - **Register:** ein Lauf liest alle Seiten (`fromIndex` += Seitengröße, bis `totalResults` erreicht oder eine Seite leer ist; höchstens 1.000 Requests) und behält die Stationen in der Bounding Box des Plans. Der Inventar-Plan gilt für alle Regionen aus `provider.regions` gemeinsam (Region `AT-9,AT-3,AT-4,AT-1`, Box = umschließendes Rechteck), weil jeder Lauf ohnehin das ganze Register liest.
-- **Suchraster:** `SearchGrid` sucht vom Mittelpunkt einer Zelle aus; ist die Antwort eine volle Seite (100) und liegt die entfernteste Station näher als die Zellecken, wird die Zelle geviertelt. Dichte Gebiete (Wiener Innenstadt: 100 Stationen in 1,2 km) bekommen so feine, ländliche grobe Zellen. Unter 50 m halber Diagonale wird nicht mehr geteilt; ein Lauf endet nach 1.000 Requests (Warnung im Log). Je Region ein Status-Plan.
+- **Register:** höchstens 50 Seiten je Lauf; jede Seite steht im Log („E-Control register page 3/17: stations 2001–3000 of 16070“).
+- **Live-Status:** genau eine `GET /search` je Abfragepunkt. Die Punkte berechnet der Crawler stündlich aus den bekannten Standorten so, dass jeder Standort unter den 90 nächsten eines Punkts liegt (10 % Reserve zu den 100 der Quelle); Priorität und Intervall aus der Aktivität der letzten 24 h ([05](../05-crawling-konzept.md), Abschnitt 2).
 
 ### DATEX II v3.5 (geprüft, nicht genutzt)
 | Endpunkt | Ergebnis am 2026-10-14 |
@@ -143,6 +144,6 @@ Je Ladepunkt der Ad-hoc-Preis des Betreibers: kWh-Preis und/oder Minutenpreis, S
 ## Offene Punkte / Risiken
 - Wortlaut der Nutzungsbedingungen archivieren; Weiterverbreitung (API-Ausgabe von chargeglobe) schriftlich mit support@ladestellen.at klären; Go-Live-Meldung, Logo-Attribution und Quartalsstatistik umsetzen.
 - Die registrierte Domain ist derzeit ein Platzhalter (`ogb.net`); bei Wechsel nur `provider.referer` ändern.
-- Requests laufen durch zwei Budgets: 40/min je Prozess im Adapter und clusterweit in `provider_rate_budget` (ebenfalls 40/min, Burst 10). Die tatsächliche Anzahl Suchen je Status-Durchgang ist mit Live-Daten in `poll_plan.last_result` und im Crawler-Log zu messen.
+- Requests laufen durch zwei Budgets: 40/min je Prozess im Adapter und clusterweit `provider.request_budget_per_hour` in `provider_rate_budget`. Wie viele Abfragepunkte die vier Startregionen brauchen und wie frisch der Status damit ist, zeigen `/admin/crawler` und `crawler_run`.
 - Erneuerungsrate der DATEX-Status-Publikation: Abrufe um 16:49 und 17:00 UTC lieferten beide den Stand von 14:42 UTC.
 - Inaktive Stationen werden übersprungen; ein früher aktiver Standort bleibt dadurch aktiv, bis es eine Lebenszyklus-Logik für Standorte gibt, die eine Quelle nicht mehr meldet.

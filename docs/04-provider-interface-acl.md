@@ -30,7 +30,8 @@ public sealed record ProviderDescriptor(
     string AttributionText,
     IReadOnlyList<string> Countries,  // ISO 3166-1 alpha-2
     PollDefaults PollDefaults,        // (TimeSpan? Inventory, TimeSpan? Status, TimeSpan? Prices)
-    RateLimitPolicy RateLimit);       // (int PerMinute, int Burst, int? PerDay)
+    RateLimitPolicy RateLimit,        // (int PerMinute, int Burst, int? PerDay) – Obergrenze; das Budget je Stunde setzt der Config-Service
+    int NearestPageSize = 0);         // Stationen je Punktsuche (NearestToPoint), z. B. 100
 
 [Flags]
 public enum ProviderCapabilities
@@ -38,6 +39,7 @@ public enum ProviderCapabilities
     None = 0, StaticInventory = 1 << 0, EvseIds = 1 << 1, LiveStatusPerEvse = 1 << 2,
     LiveStatusPerLocation = 1 << 3, AdHocPrice = 1 << 4, EmpTariff = 1 << 5,
     BulkByBoundingBox = 1 << 6, BulkAll = 1 << 7, ByEvseId = 1 << 8, DeltaSince = 1 << 9, Ocpi = 1 << 10,
+    NearestToPoint = 1 << 11,         // ein Request liefert den Live-Status der n nächsten Stationen um einen Punkt
 }
 
 public interface IInventorySource : IProvider
@@ -55,7 +57,8 @@ public interface IProviderHealth : IProvider
 { Task<ProviderProbeResult> ProbeAsync(CancellationToken ct); }
 
 public sealed record InventoryQuery(BoundingBox? Bbox, string? Country, DateTimeOffset? Since);
-public sealed record StatusQuery(BoundingBox? Bbox, IReadOnlyCollection<ProviderEvseRef>? Evses);
+// Near: Abfragepunkt einer Quelle mit NearestToPoint – genau ein Request um den Punkt (docs/05).
+public sealed record StatusQuery(BoundingBox? Bbox, IReadOnlyCollection<ProviderEvseRef>? Evses, GeoPoint? Near = null);
 public sealed record PriceQuery(BoundingBox? Bbox, IReadOnlyCollection<ProviderEvseRef>? Evses);
 public sealed record ProviderEvseRef(string ExternalId, string? EvseId, Guid CanonicalEvseId);
 public sealed record BoundingBox(double MinLongitude, double MinLatitude, double MaxLongitude, double MaxLatitude); // validiert, Contains(GeoPoint)
@@ -124,7 +127,7 @@ public sealed record ProviderMappingIssue(string ProviderKey, string? ExternalId
 3. **Status-Mapping ist eine Tabelle, kein `switch` im Code** (JSON im Adapter: `"frei" → AVAILABLE`, `"besetzt" → CHARGING`, `"reserviert" → RESERVED`, `"Störung" → OUTOFORDER`, …), damit Nicht-Entwickler Pull Requests machen können.
 4. **EVSE-IDs werden roh weitergegeben**; Normalisierung passiert zentral im `EvseId` Value Object.
 5. **Keine Persistenz, keine Domain-Objekte im Adapter.**
-6. **Rate-Limit und Backoff sind Pflicht** und kommen aus dem Descriptor; der Worker setzt sie durch (`System.Threading.RateLimiting` + Polly `429`/`503`-Handling mit `Retry-After`).
+6. **Rate-Limit und Pausen sind Pflicht.** Der Adapter hält die Rate des Descriptors ein (`RateLimitingHandler`, Token-Bucket je Prozess) und meldet Fehler als `ProviderHttpException` mit dem `Retry-After` der Quelle – er wiederholt nichts. Der Crawler teilt das Stundenbudget clusterweit zu und pausiert die Quelle nach Fehlern ([05](05-crawling-konzept.md), Abschnitte 3 und 4).
 7. **Fixtures**: Jeder Adapter bringt mindestens eine aufgezeichnete, sanitisierte Antwort je Endpunkt mit (`fixtures/<key>/…json`; personenbezogene Daten entfernt, bei Quellen ohne Weiterverbreitungsrecht mit erfundenen Werten in der echten Struktur) und einen Replay-Test in `tests/ChargeGlobe.Providers.Tests`, der daraus das Ingest-Modell erzeugt und mit `fixtures/<key>/…expected.json` vergleicht. Nach einer gewollten Mapping-Änderung schreibt `UPDATE_FIXTURES=1 dotnet test tests/ChargeGlobe.Providers.Tests` die Erwartung neu; der Diff wird im Review geprüft. Kein automatisierter Test spricht mit der echten Quelle.
 8. **Health-Check**: `IProviderHealth.ProbeAsync()` (ein billiger Request), damit Ausfälle und Format-Änderungen sofort auffallen.
 

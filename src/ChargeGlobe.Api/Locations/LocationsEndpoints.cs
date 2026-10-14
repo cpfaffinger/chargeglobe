@@ -1,6 +1,7 @@
 using System.Globalization;
 using ChargeGlobe.Api.Auth;
 using ChargeGlobe.Api.OpenApi;
+using ChargeGlobe.Application.Ingest;
 using ChargeGlobe.Application.Locations;
 using ChargeGlobe.Providers.Abstractions;
 
@@ -78,7 +79,8 @@ public static class LocationsEndpoints
                 "`authMethods` (how a session is started and paid: RFID_READER, APP, QR_CODE, WEBSITE, CHARGING_CONTRACT, " +
                 "CREDIT_CARD_PAYABLE, DEBIT_CARD_PAYABLE, CONTACTLESS_CARD_SUPPORT, CHIP_CARD_SUPPORT, PED_TERMINAL, CASH; " +
                 "empty if unknown) and `roaming` (charging cards of other providers accepted; null if unknown). " +
-                "The location carries `facilities` as in `listLocations`. " +
+                "The location carries `facilities` as in `listLocations`. Opening a location asks the crawler for a fresh " +
+                "status of it (served with the next free request, at most every two minutes). " +
                 "`meta.attribution` names the sources. 404 for an unknown or inactive location. Public.")
             .Produces<LocationDetailResponse>()
             .ProducesProblem(StatusCodes.Status404NotFound)
@@ -124,13 +126,21 @@ public static class LocationsEndpoints
         return Results.Ok(new LocationsResponse(page.Locations, new LocationsMeta(page.Locations.Count, take, page.Truncated, page.Attribution)));
     }
 
-    private static async Task<IResult> GetLocationAsync(Guid id, ILocationQueries queries, CancellationToken cancellationToken) =>
-        await queries.FindAsync(id, cancellationToken) is { } detail
-            ? Results.Ok(new LocationDetailResponse(new LocationDetailData(detail.Location, detail.Evses), new AttributionMeta(detail.Attribution)))
-            : Results.Problem(
+    private static async Task<IResult> GetLocationAsync(
+        Guid id, ILocationQueries queries, IStatusDemand demand, CancellationToken cancellationToken)
+    {
+        if (await queries.FindAsync(id, cancellationToken) is not { } detail)
+        {
+            return Results.Problem(
                 statusCode: StatusCodes.Status404NotFound,
                 title: "Not found",
                 detail: $"There is no active location with the id '{id}'. Use listLocations to find locations.");
+        }
+
+        // Someone looks at the location: its query point is read with priority (at most every two minutes).
+        await demand.RequestAsync(id, cancellationToken);
+        return Results.Ok(new LocationDetailResponse(new LocationDetailData(detail.Location, detail.Evses), new AttributionMeta(detail.Attribution)));
+    }
 
     /// <summary>The box of the query parameter; null if it is missing or invalid.</summary>
     public static BoundingBox? ParseBoundingBox(string? value)

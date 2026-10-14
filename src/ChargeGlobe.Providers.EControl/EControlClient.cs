@@ -15,10 +15,10 @@ public sealed record StationsPage(int TotalResults, IReadOnlyList<(StationDto St
 
 /// <summary>
 /// HTTP client of the E-Control API (<c>https://api.e-control.at/charge/1.0/</c>). Key and referer are
-/// read from the config service on every request; rate limit and Retry-After live in
-/// <see cref="RateLimitingHandler"/>.
+/// read from the config service on every request; the rate limit lives in <see cref="RateLimitingHandler"/>.
+/// An error status becomes a <see cref="ProviderHttpException"/> with the <c>Retry-After</c> of the source.
 /// </summary>
-public sealed class EControlClient(HttpClient http, IProviderSettings settings)
+public sealed class EControlClient(HttpClient http, IProviderSettings settings, TimeProvider? timeProvider = null)
 {
     /// <summary>The largest page <c>GET /search/stations</c> returns.</summary>
     public const int MaxPageSize = 1000;
@@ -36,7 +36,8 @@ public sealed class EControlClient(HttpClient http, IProviderSettings settings)
     {
         var uri = string.Create(
             CultureInfo.InvariantCulture, $"search?latitude={point.Latitude:0.######}&longitude={point.Longitude:0.######}");
-        var stations = (await GetAsync(uri, "search", cancellationToken)).AsArray();
+        var stations = await GetAsync(uri, "search", cancellationToken) as JsonArray
+            ?? throw new JsonException("E-Control search returned no array.");
         return new SearchResult(stations.OfType<JsonObject>().Select(Read<StationDto>).ToList());
     }
 
@@ -47,7 +48,8 @@ public sealed class EControlClient(HttpClient http, IProviderSettings settings)
     public async Task<StationsPage> SearchStationsAsync(int fromIndex, int maxResults, CancellationToken cancellationToken)
     {
         var uri = string.Create(CultureInfo.InvariantCulture, $"search/stations?fromIndex={fromIndex}&maxResults={maxResults}");
-        var page = (await GetAsync(uri, "search/stations", cancellationToken)).AsObject();
+        var page = await GetAsync(uri, "search/stations", cancellationToken) as JsonObject
+            ?? throw new JsonException("E-Control search/stations returned no object.");
         var stations = (page["stations"] as JsonArray ?? []).OfType<JsonObject>()
             .Select(Read<CatalogStationDto>)
             .Select(item => (item.Station.ToStation(), item.Raw))
@@ -69,13 +71,22 @@ public sealed class EControlClient(HttpClient http, IProviderSettings settings)
         if (!response.IsSuccessStatusCode)
         {
             // The body of a 401 is a German explanation of the registration; the status says enough.
-            throw new HttpRequestException(
-                $"E-Control {name} returned {(int)response.StatusCode}.", null, response.StatusCode);
+            throw new ProviderHttpException(
+                $"E-Control {name} returned {(int)response.StatusCode}.", response.StatusCode, RetryAfter(response));
         }
 
         return JsonNode.Parse(await response.Content.ReadAsStringAsync(cancellationToken))
             ?? throw new JsonException($"E-Control {name} returned null.");
     }
+
+    /// <summary>The announced wait of a <c>Retry-After</c> header (seconds or date), never negative.</summary>
+    private TimeSpan? RetryAfter(HttpResponseMessage response) =>
+        response.Headers.RetryAfter switch
+        {
+            { Delta: { } delta } => delta,
+            { Date: { } date } => date - (timeProvider ?? TimeProvider.System).GetUtcNow() is var wait && wait > TimeSpan.Zero ? wait : TimeSpan.Zero,
+            _ => null,
+        };
 
     /// <summary>A bare host name (<c>example.org</c>) becomes <c>https://example.org/</c>.</summary>
     public static Uri? RefererUri(string? referer) =>

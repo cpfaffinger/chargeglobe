@@ -41,6 +41,12 @@ const pages: Routes = [
     loadComponent: () => import('./pages/admin-mail.page').then((page) => page.AdminMailPage),
     canActivate: [requirePermission('settings:manage')],
   },
+  // Mirrors x-required-permission of the /api/v1/admin/crawler endpoints.
+  {
+    path: 'admin/crawler',
+    loadComponent: () => import('./pages/admin-crawler.page').then((page) => page.AdminCrawlerPage),
+    canActivate: [requirePermission('jobs:read')],
+  },
   { path: '**', redirectTo: '' },
 ];
 

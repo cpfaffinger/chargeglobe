@@ -26,7 +26,7 @@ public static class EControlServiceCollectionExtensions
                 http.Timeout = TimeSpan.FromSeconds(60);
                 http.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
             })
-            .AddHttpMessageHandler(provider => new RateLimitingHandler(limiter, provider.GetRequiredService<TimeProvider>()))
+            .AddHttpMessageHandler(provider => new RateLimitingHandler(limiter))
             // The cluster-wide budget, if the host has one (the crawler does); otherwise a pass-through.
             .AddHttpMessageHandler(provider => provider.GetService<IProviderRequestBudget>() is { } budget
                 ? new RequestBudgetHandler(budget, EControlProvider.DescriptorValue)

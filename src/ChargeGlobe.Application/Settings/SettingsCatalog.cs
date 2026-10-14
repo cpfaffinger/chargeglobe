@@ -34,6 +34,14 @@ public static class SettingsCatalog
     public const string ProviderRegions = "provider.regions";
     public const string ProviderInventoryIntervalMinutes = "provider.interval.inventory_minutes";
     public const string ProviderStatusIntervalMinutes = "provider.interval.status_minutes";
+    public const string ProviderRequestBudgetPerHour = "provider.request_budget_per_hour";
+    public const string ProviderCooldownStepMinutes = "provider.cooldown_step_minutes";
+    public const string ProviderCooldownMaxMinutes = "provider.cooldown_max_minutes";
+    public const string ProviderTileHotMinutes = "provider.tile_interval_hot_minutes";
+    public const string ProviderTileNormalMinutes = "provider.tile_interval_normal_minutes";
+    public const string ProviderTileQuietMinutes = "provider.tile_interval_quiet_minutes";
+
+    public const string CrawlerRunRetentionDays = "crawler.run_retention_days";
 
     public const string IngestMaxAttempts = "ingest.max_attempts";
     public const string IngestQueueRetentionDays = "ingest.queue_retention_days";
@@ -133,12 +141,60 @@ public static class SettingsCatalog
             Max = 10_080,
         },
         new(ProviderStatusIntervalMinutes, SettingType.Int, null,
-            "Minutes between status polls per region. Empty means the default of the adapter. The request " +
-            "budget of the source wins: runs that do not fit are delayed, not dropped.")
+            "Minutes between status polls per region, for sources without point search. Empty means the default of " +
+            "the adapter. The request budget of the source wins: runs that do not fit are delayed, not dropped.")
         {
             ScopeKinds = [ProviderScopeKind],
             Min = 1,
             Max = 1_440,
+        },
+        new(ProviderRequestBudgetPerHour, SettingType.Int, 600,
+            "Requests per hour the crawlers may send to the source, spread evenly over the hour and shared by all " +
+            "crawler instances. Must stay below the limit of the source's terms (E-Control: 2,500 per hour).")
+        {
+            ScopeKinds = [ProviderScopeKind],
+            Min = 60,
+            Max = 2_400,
+        },
+        new(ProviderCooldownStepMinutes, SettingType.Int, 5,
+            "Cooldown after errors of the source (rate limit, server error, timeout, unexpected format): the n-th " +
+            "failure in a row pauses the source for n times this many minutes; a Retry-After of the source wins if longer.")
+        {
+            ScopeKinds = [ProviderScopeKind],
+            Min = 1,
+            Max = 60,
+        },
+        new(ProviderCooldownMaxMinutes, SettingType.Int, 120, "Upper limit of the cooldown in minutes.")
+        {
+            ScopeKinds = [ProviderScopeKind],
+            Min = 5,
+            Max = 1_440,
+        },
+        new(ProviderTileHotMinutes, SettingType.Int, 5,
+            "Minutes between status polls of a busy query point (many status changes, or fast chargers with changes). " +
+            "Three times longer from 22:00 to 06:00. Applies from the next hourly recomputation of the points.")
+        {
+            ScopeKinds = [ProviderScopeKind],
+            Min = 1,
+            Max = 60,
+        },
+        new(ProviderTileNormalMinutes, SettingType.Int, 15, "Minutes between status polls of a normal query point.")
+        {
+            ScopeKinds = [ProviderScopeKind],
+            Min = 5,
+            Max = 240,
+        },
+        new(ProviderTileQuietMinutes, SettingType.Int, 60,
+            "Minutes between status polls of a quiet query point (no status change in 24 hours, no fast charger).")
+        {
+            ScopeKinds = [ProviderScopeKind],
+            Min = 15,
+            Max = 1_440,
+        },
+        new(CrawlerRunRetentionDays, SettingType.Int, 7, "Days after which the protocol of the crawler runs (crawler_run) is deleted.")
+        {
+            Min = 1,
+            Max = 90,
         },
 
         new(IngestMaxAttempts, SettingType.Int, 5,
