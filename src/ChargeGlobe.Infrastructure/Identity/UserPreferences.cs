@@ -31,7 +31,9 @@ public sealed class UserPreferences(AppDbContext db, AuditLog audit, TimeProvide
         }
 
         stored.Document = document;
-        stored.UpdatedAt = timeProvider.GetUtcNow();
+        // Postgres keeps microseconds: the answer of this call equals what a later read returns.
+        var now = timeProvider.GetUtcNow();
+        stored.UpdatedAt = now.AddTicks(-(now.Ticks % 10));
         audit.Record("preferences.update", $"user:{userId}", actor);
         await db.SaveChangesAsync(cancellationToken);
         return new StoredPreferences(stored.Document, stored.UpdatedAt);
