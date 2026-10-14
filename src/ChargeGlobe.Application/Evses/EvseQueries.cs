@@ -83,7 +83,7 @@ public sealed record OccupancyCell(int Weekday, int Hour, long Charging, long To
 /// <summary>The session of the example cost that makes prices comparable: 30 kWh charged in 40 minutes.</summary>
 public static class PriceExample
 {
-    public const decimal Kwh = 30;
+    public const int Kwh = 30;
     public const int Minutes = 40;
 }
 
