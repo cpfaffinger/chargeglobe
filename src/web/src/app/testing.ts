@@ -52,7 +52,7 @@ export const MAP_CONFIG: MapConfig = {
 export function fakeMapEngine() {
   const handle = jasmine.createSpyObj<MapHandle>('MapHandle', ['locate', 'destroy', 'showLocations', 'setTheme', 'flyTo']);
   handle.locate.and.returnValue(true);
-  const engine = jasmine.createSpyObj<MapEngine>('MapEngine', ['create']);
+  const engine = jasmine.createSpyObj<MapEngine>('MapEngine', ['create', 'prepare']);
   engine.create.and.resolveTo(handle);
   return { engine, handle };
 }

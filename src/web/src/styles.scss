@@ -253,12 +253,57 @@ app-home {
 #map-overlay {
   position: absolute;
   top: 12px;
+  bottom: 96px;
   left: 12px;
   z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  width: min(360px, calc(100% - 80px));
+  width: min(420px, calc(100% - 80px));
+  // Only the messages and the card take clicks; the rest of the column belongs to the map.
+  pointer-events: none;
+}
+
+#map-overlay > * {
+  pointer-events: auto;
+}
+
+// Thin bar at the top edge while locations load; the map stays usable.
+#map-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  height: 3px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--mat-sys-primary) 20%, transparent);
+}
+
+#map-loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: var(--mat-sys-primary);
+  animation: map-loading 1.2s ease-in-out infinite;
+}
+
+@keyframes map-loading {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #map-loading::after {
+    width: 100%;
+    animation: none;
+    opacity: 0.6;
+  }
 }
 
 .map-message {
@@ -275,8 +320,22 @@ app-home {
   color: var(--mat-sys-on-tertiary-container);
 }
 
+// The card holds the details of the location and scrolls itself; the map behind keeps its position.
 #location-card {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   box-shadow: var(--cg-overlay-shadow);
+}
+
+#location-card .details-state,
+app-location-details .details-state {
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-medium);
+}
+
+#location-card app-location-details {
+  margin-top: 16px;
 }
 
 #location-card .card-head {
@@ -310,11 +369,21 @@ app-home {
   margin-top: 12px;
 }
 
-#locate {
+// Start position and own position, bottom right.
+#map-actions {
   position: absolute;
   right: 16px;
   bottom: 40px;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+#map-actions .home-actions {
+  display: flex;
+  gap: 8px;
 }
 
 #legend {
@@ -364,20 +433,22 @@ app-home {
   #map-overlay {
     width: auto;
     right: 12px;
+    bottom: auto;
   }
 
-  // The info card becomes a bottom sheet; button and legend make room for it.
+  // The info card becomes a bottom sheet with the details; the map stays visible above it.
   #location-card {
     position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
     z-index: 2;
+    max-height: 60%;
     border-radius: 28px 28px 0 0;
   }
 
-  app-home.has-card #locate {
-    bottom: 300px;
+  app-home.has-card #map-actions {
+    display: none;
   }
 
   // Legend as a row of chips at the top (left of the zoom buttons), notices below it.
@@ -433,47 +504,74 @@ app-home {
 
 // ---- Location detail -----------------------------------------------------------------------------------------------
 
-app-location-detail {
+app-location-detail,
+app-location-details {
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
 
-app-location-detail .lead {
+app-location-detail {
+  gap: 16px;
+}
+
+// In the info card: less space, smaller heatmap cells.
+app-location-details.compact {
+  gap: 16px;
+}
+
+app-location-details.compact h2 {
+  font: var(--mat-sys-title-medium);
+}
+
+app-location-details.compact h3 {
+  font-size: var(--mat-sys-body-medium-size);
+}
+
+app-location-details.compact .mat-mdc-card-content {
+  padding: 12px;
+}
+
+app-location-details.compact #heatmap td {
+  min-width: 11px;
+  height: 16px;
+}
+
+app-location-details .lead {
   margin: 0;
   color: var(--mat-sys-on-surface-variant);
 }
 
-app-location-detail section {
+app-location-details section {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-app-location-detail .evse-head {
+app-location-details .evse-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 12px;
 }
 
-app-location-detail .evse-head h3 {
+app-location-details .evse-head h3 {
   flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
   font-family: ui-monospace, 'Roboto Mono', monospace;
 }
 
-app-location-detail .evse-head small {
+app-location-details .evse-head small {
   font: var(--mat-sys-body-small);
   color: var(--mat-sys-on-surface-variant);
 }
 
-app-location-detail .evse p {
+app-location-details .evse p {
   margin: 8px 0;
 }
 
-app-location-detail .connectors,
+app-location-details .connectors,
 .timeline-axis,
 .heatmap-legend,
 #detail-attribution {

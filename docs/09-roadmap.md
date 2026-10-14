@@ -42,7 +42,8 @@
 - [x] Ersteinrichtung: Setup-Assistent `/setup` bei leerer Instanz (erster Admin mit Setup-Token aus dem API-Log, danach Datenquelle E-Control und SMTP), `GET /setup`, `POST /setup/admin`; Registrierung bis dahin geschlossen
 - [x] Administration `/admin` mit Unterseiten nach Kategorie (Nutzer, Rollen, Crawler, E-Mail, Einstellungen) und Dropdown in der Toolbar; Nutzer- und Rollenverwaltung in der API (`/users`, `/roles`, Permission `user:read`), Admin-Freischaltung neuer Konten (`auth.require_admin_approval`) und E-Mail-Bestätigung als Einstellung (`auth.require_confirmed_email`), Login-Codes mit deutschen Texten und „Bestätigungsmail erneut senden“; Setup-Assistent nur bei leerer Instanz
 - [x] Suche nach EVSE-ID, Name, Straße, PLZ und Ort (`GET /search`, `pg_trgm`) mit Suchfeld in der Toolbar, das zum Standort fliegt und die Infokarte öffnet
-- [ ] Standortdetails direkt in der Infokarte der Karte (angemeldet mit mehr Inhalt), gemerkter Kartenausschnitt, eigene Startposition mit Knopf „Startposition“, Laden der Karte ohne Blockaden
+- [x] Standortdetails direkt in der Infokarte der Karte (für alle Ladepunkte mit Status und Steckern, mit `evse:read` Verlauf und Auslastung), gemerkter Kartenausschnitt und eigene Startposition im Browser mit Knopf „Startposition“, ein Standort-Request zugleich ohne Abfrage beim Hineinzoomen, MapLibre lädt parallel zur Konfiguration
+- [ ] Startposition und Kartenausschnitt angemeldeter Nutzer serverseitig in `/me/preferences` (geräteübergreifend)
 - [ ] Angular: API-Keys fremder Konten, Audit-Log (`GET /audit-log`)
 - [ ] Customizings: `GET/PUT /me/preferences`, Favoriten, Einstellungsseite
 - [ ] Routing: Compose-Service `routing` (Valhalla, OSM-Extrakt Österreich), `IRoutingEngine`, `POST /routes`, Routen-Layer in der Karte
