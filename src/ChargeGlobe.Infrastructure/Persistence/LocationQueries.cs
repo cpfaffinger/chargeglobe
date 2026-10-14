@@ -1,0 +1,163 @@
+using ChargeGlobe.Application.Locations;
+using ChargeGlobe.Application.Settings;
+using ChargeGlobe.Domain.Charging;
+using ChargeGlobe.Domain.Provenance;
+using ChargeGlobe.Providers.Abstractions;
+using Microsoft.EntityFrameworkCore;
+
+namespace ChargeGlobe.Infrastructure.Persistence;
+
+/// <summary>
+/// Map read model on PostGIS: bounding box via the GiST index on <c>location.geom</c>, nearest to the
+/// centre of the box first, aggregated with the current status of the active EVSEs.
+/// </summary>
+public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProvider timeProvider) : ILocationQueries
+{
+    private static readonly string[] OccupiedStatuses = [nameof(EvseStatus.CHARGING), nameof(EvseStatus.BLOCKED), nameof(EvseStatus.RESERVED)];
+
+    private static readonly string[] FaultedStatuses = [nameof(EvseStatus.OUTOFORDER), nameof(EvseStatus.INOPERATIVE)];
+
+    public async Task<LocationPage> InBoundingBoxAsync(BoundingBox box, int limit, CancellationToken cancellationToken)
+    {
+        var fresh = FreshSince();
+        var centerLongitude = (box.MinLongitude + box.MaxLongitude) / 2;
+        var centerLatitude = (box.MinLatitude + box.MaxLatitude) / 2;
+        var rows = await db.Database
+            .SqlQuery<SummaryRow>($"""
+                SELECT l.id AS "Id", l.name AS "Name", l.address AS "Address", l.postal_code AS "PostalCode", l.city AS "City",
+                       l.country AS "Country", ST_Y(l.geom::geometry) AS "Latitude", ST_X(l.geom::geometry) AS "Longitude",
+                       o.name AS "Operator",
+                       count(e.id)::int AS "EvsesTotal",
+                       (count(e.id) FILTER (WHERE c.status = 'AVAILABLE' AND c.observed_at >= {fresh}))::int AS "EvsesAvailable",
+                       (count(e.id) FILTER (WHERE c.status = ANY({OccupiedStatuses}) AND c.observed_at >= {fresh}))::int AS "EvsesOccupied",
+                       (count(e.id) FILTER (WHERE c.status = ANY({FaultedStatuses}) AND c.observed_at >= {fresh}))::int AS "EvsesFaulted",
+                       max(e.max_power_kw) AS "MaxPowerKw",
+                       max(c.observed_at) AS "StatusObservedAt"
+                FROM location l
+                LEFT JOIN operator o ON o.id = l.operator_id
+                LEFT JOIN evse e ON e.location_id = l.id AND e.lifecycle = 'ACTIVE'
+                LEFT JOIN evse_status_current c ON c.evse_id = e.id
+                WHERE l.lifecycle = 'ACTIVE'
+                  AND l.geom && ST_MakeEnvelope({box.MinLongitude}, {box.MinLatitude}, {box.MaxLongitude}, {box.MaxLatitude}, 4326)::geography
+                GROUP BY l.id, o.name
+                ORDER BY l.geom <-> ST_SetSRID(ST_MakePoint({centerLongitude}, {centerLatitude}), 4326)::geography, l.id
+                LIMIT {limit + 1}
+                """)
+            .ToListAsync(cancellationToken);
+        var locations = rows.Take(limit).Select(row => row.ToSummary()).ToList();
+        return new LocationPage(locations, rows.Count > limit, await AttributionAsync([.. locations.Select(location => location.Id)], cancellationToken));
+    }
+
+    public async Task<LocationDetail?> FindAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var location = await db.Locations.AsNoTracking().FirstOrDefaultAsync(item => item.Id == id && item.Lifecycle == Lifecycle.ACTIVE, cancellationToken);
+        if (location is null)
+        {
+            return null;
+        }
+
+        var operatorName = location.OperatorId is { } operatorId
+            ? await db.Operators.Where(item => item.Id == operatorId).Select(item => item.Name).FirstOrDefaultAsync(cancellationToken)
+            : null;
+        var evses = await db.Evses.AsNoTracking()
+            .Include(evse => evse.Connectors)
+            .Where(evse => evse.LocationId == id && evse.Lifecycle == Lifecycle.ACTIVE)
+            .OrderBy(evse => evse.EvseIdNorm)
+            .ToListAsync(cancellationToken);
+        var evseIds = evses.Select(evse => evse.Id).ToList();
+        var statuses = await db.EvseStatusCurrent.AsNoTracking()
+            .Where(current => evseIds.Contains(current.EvseId))
+            .ToDictionaryAsync(current => current.EvseId, cancellationToken);
+        var fresh = FreshSince();
+        string StatusOf(Guid evseId) =>
+            statuses.TryGetValue(evseId, out var current) && current.ObservedAt >= fresh ? current.Status.ToString() : nameof(EvseStatus.UNKNOWN);
+
+        var details = evses.Select(evse => new EvseDetail(
+                evse.Id,
+                evse.EvseIdDisplay,
+                evse.IdentityKind == IdentityKind.EVSE_ID,
+                StatusOf(evse.Id),
+                statuses.GetValueOrDefault(evse.Id)?.Since,
+                statuses.GetValueOrDefault(evse.Id)?.ObservedAt,
+                evse.MaxPowerKw,
+                evse.PowerType?.ToString(),
+                [.. evse.Connectors.OrderBy(connector => connector.Ordinal).Select(connector => new ConnectorDetail(
+                    connector.Standard.ToString(), connector.Format?.ToString(), connector.PowerType?.ToString(), connector.MaxPowerKw))]))
+            .ToList();
+        var summary = new LocationSummary(
+            location.Id,
+            location.Name,
+            location.Address,
+            location.PostalCode,
+            location.City,
+            location.Country,
+            location.Coordinates.Latitude,
+            location.Coordinates.Longitude,
+            operatorName,
+            details.Count,
+            details.Count(evse => evse.Status == nameof(EvseStatus.AVAILABLE)),
+            evses.Max(evse => evse.MaxPowerKw),
+            statuses.Values.Select(current => (DateTimeOffset?)current.ObservedAt).Max(),
+            Availability.Of(
+                details.Count(evse => evse.Status == nameof(EvseStatus.AVAILABLE)),
+                details.Count(evse => OccupiedStatuses.Contains(evse.Status)),
+                details.Count(evse => FaultedStatuses.Contains(evse.Status))));
+        return new LocationDetail(summary, details, await AttributionAsync([id], cancellationToken));
+    }
+
+    private DateTimeOffset FreshSince() =>
+        timeProvider.GetUtcNow().AddMinutes(-config.Get<int>(SettingsCatalog.MapStatusMaxAgeMinutes));
+
+    /// <summary>The sources with a record for one of the locations, from the table <c>source</c>.</summary>
+    private async Task<IReadOnlyList<SourceAttribution>> AttributionAsync(Guid[] locationIds, CancellationToken cancellationToken)
+    {
+        var keys = await db.SourceRecords
+            .Where(record => record.EntityType == EntityType.LOCATION && locationIds.Contains(record.EntityId))
+            .Select(record => record.SourceKey)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+        return await db.Sources
+            .Where(source => keys.Contains(source.Key))
+            .OrderBy(source => source.Key)
+            .Select(source => new SourceAttribution(source.Key, source.AttributionText, source.License))
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>One row of the bounding box query; property names are the column aliases.</summary>
+    private sealed class SummaryRow
+    {
+        public Guid Id { get; set; }
+
+        public string? Name { get; set; }
+
+        public string? Address { get; set; }
+
+        public string? PostalCode { get; set; }
+
+        public string? City { get; set; }
+
+        public string Country { get; set; } = null!;
+
+        public double Latitude { get; set; }
+
+        public double Longitude { get; set; }
+
+        public string? Operator { get; set; }
+
+        public int EvsesTotal { get; set; }
+
+        public int EvsesAvailable { get; set; }
+
+        public int EvsesOccupied { get; set; }
+
+        public int EvsesFaulted { get; set; }
+
+        public decimal? MaxPowerKw { get; set; }
+
+        public DateTimeOffset? StatusObservedAt { get; set; }
+
+        public LocationSummary ToSummary() =>
+            new(Id, Name, Address, PostalCode, City, Country, Latitude, Longitude, Operator, EvsesTotal, EvsesAvailable, MaxPowerKw,
+                StatusObservedAt, Availability.Of(EvsesAvailable, EvsesOccupied, EvsesFaulted));
+    }
+}

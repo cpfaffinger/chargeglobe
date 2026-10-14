@@ -1,4 +1,9 @@
 import { Injectable } from '@angular/core';
+// Type-only imports are erased by the compiler; the library itself is still loaded on demand.
+import type { FeatureCollection, Point } from 'geojson';
+import type { ExpressionSpecification, GeoJSONSource } from 'maplibre-gl';
+import { AVAILABILITIES, AVAILABILITY } from './availability';
+import { Bbox, LocationSummary } from './locations.service';
 
 /** What the engine needs to show the base map (docs/adr/0007-karte-standort-routing.md). */
 export interface MapViewOptions {
@@ -10,6 +15,10 @@ export interface MapViewOptions {
   zoom: number;
   /** Results of the browser geolocation; the position itself never leaves the engine. */
   onGeolocate: (event: GeolocateEvent) => void;
+  /** The visible area after loading and after every move or zoom. */
+  onViewChange: (bbox: Bbox) => void;
+  /** A location marker was clicked. */
+  onSelect: (locationId: string) => void;
 }
 
 export type GeolocateEvent =
@@ -22,6 +31,8 @@ export type GeolocateEvent =
 export interface MapHandle {
   /** Starts (or toggles) tracking the user's position; false if the control is not ready yet. */
   locate(): boolean;
+  /** Replaces the location markers (clustered, coloured by availability). */
+  showLocations(locations: LocationSummary[]): void;
   destroy(): void;
 }
 
@@ -63,8 +74,83 @@ export class MapLibreEngine extends MapEngine {
     geolocate.on('error', (event) => options.onGeolocate({ type: 'error', code: event.code }));
     geolocate.on('trackuserlocationend', () => options.onGeolocate({ type: 'ended' }));
 
+    const source = 'locations';
+    const toGeoJson = (locations: LocationSummary[]): FeatureCollection => ({
+      type: 'FeatureCollection',
+      features: locations.map((location) => ({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [location.longitude, location.latitude] },
+        properties: { id: location.id, availability: location.availability },
+      })),
+    });
+    let pending: LocationSummary[] = [];
+    let loaded = false;
+    const emitView = () => {
+      const bounds = map.getBounds();
+      options.onViewChange({ west: bounds.getWest(), south: bounds.getSouth(), east: bounds.getEast(), north: bounds.getNorth() });
+    };
+    map.on('load', () => {
+      map.addSource(source, { type: 'geojson', data: toGeoJson(pending), cluster: true, clusterRadius: 50, clusterMaxZoom: 13 });
+      map.addLayer({
+        id: 'location-clusters',
+        type: 'circle',
+        source,
+        filter: ['has', 'point_count'],
+        paint: {
+          'circle-color': '#1565c0',
+          'circle-radius': ['step', ['get', 'point_count'], 14, 50, 18, 200, 24],
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#ffffff',
+        },
+      });
+      map.addLayer({
+        id: 'location-cluster-count',
+        type: 'symbol',
+        source,
+        filter: ['has', 'point_count'],
+        layout: { 'text-field': ['get', 'point_count_abbreviated'], 'text-font': ['Noto Sans Bold'], 'text-size': 12 },
+        paint: { 'text-color': '#ffffff' },
+      });
+      map.addLayer({
+        id: 'location-points',
+        type: 'circle',
+        source,
+        filter: ['!', ['has', 'point_count']],
+        paint: {
+          'circle-color': [
+            'match',
+            ['get', 'availability'],
+            ...AVAILABILITIES.flatMap((key) => [key, AVAILABILITY[key].color]),
+            AVAILABILITY.UNKNOWN.color,
+          ] as unknown as ExpressionSpecification,
+          'circle-radius': 7,
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#ffffff',
+        },
+      });
+      loaded = true;
+      emitView();
+    });
+    map.on('moveend', () => loaded && emitView());
+    map.on('click', 'location-clusters', async (event) => {
+      const feature = event.features![0];
+      const zoom = await (map.getSource(source) as GeoJSONSource).getClusterExpansionZoom(feature.properties['cluster_id']);
+      map.easeTo({ center: (feature.geometry as Point).coordinates as [number, number], zoom });
+    });
+    map.on('click', 'location-points', (event) => options.onSelect(event.features![0].properties['id']));
+    for (const layer of ['location-clusters', 'location-points']) {
+      map.on('mouseenter', layer, () => (map.getCanvas().style.cursor = 'pointer'));
+      map.on('mouseleave', layer, () => (map.getCanvas().style.cursor = ''));
+    }
+
     return {
       locate: () => geolocate.trigger(),
+      showLocations: (locations) => {
+        pending = locations;
+        if (loaded) {
+          (map.getSource(source) as GeoJSONSource).setData(toGeoJson(locations));
+        }
+      },
       destroy: () => map.remove(),
     };
   }

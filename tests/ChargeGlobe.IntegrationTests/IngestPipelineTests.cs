@@ -83,6 +83,8 @@ public class IngestPipelineTests(IntegrationFactory factory) : IClassFixture<Int
         Assert.Equal(2, locationIds.Count);
         var stephansplatz = await factory.WithDbAsync(db => db.Locations.SingleAsync(l => locationIds.Contains(l.Id) && l.Name == "Teststation Stephansplatz"));
         Assert.Equal(("Teststraße 1", "1010", "Wien", "AT"), (stephansplatz.Address, stephansplatz.PostalCode, stephansplatz.City, stephansplatz.Country));
+        // The position survived the JSON of the queue.
+        Assert.Equal(new ChargeGlobe.Domain.GeoPoint(48.2085, 16.3731), stephansplatz.Coordinates);
         Assert.Equal(JsonValueKind.True, JsonDocument.Parse(stephansplatz.OpeningTimes!).RootElement.GetProperty("twentyfourseven").ValueKind);
         var @operator = await factory.WithDbAsync(db => db.Operators.SingleAsync(op => op.OperatorId == code));
         Assert.Equal("Test Operator GmbH", @operator.Name);

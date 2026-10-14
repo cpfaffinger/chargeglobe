@@ -2,10 +2,11 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HomePage } from '../pages/home.page';
-import { MAP_CONFIG, fakeBrowser, fakeMapEngine, flush, text } from '../testing';
+import { MAP_CONFIG, fakeBrowser, fakeMapEngine, flush, locationSummary, text } from '../testing';
 import { BrowserCapabilities } from './browser-capabilities';
 import { MapConfigService } from './map-config.service';
 import { GeolocateEvent, MapEngine, MapViewOptions } from './map-engine';
+import { Bbox, LocationsResponse, LocationsService } from './locations.service';
 
 describe('MapConfigService', () => {
   it('loads the map configuration', async () => {
@@ -16,6 +17,20 @@ describe('MapConfigService', () => {
     http.expectOne('/api/v1/map/config').flush(MAP_CONFIG);
 
     expect(await config).toEqual(MAP_CONFIG);
+    http.verify();
+  });
+});
+
+describe('LocationsService', () => {
+  it('asks for the locations of the box with the maximum limit', async () => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    const http = TestBed.inject(HttpTestingController);
+    const response: LocationsResponse = { data: [], meta: { returned: 0, limit: 2000, truncated: false, attribution: [] } };
+
+    const result = TestBed.inject(LocationsService).inBox({ west: 16.2, south: 48.1, east: 16.6, north: 48.3 });
+    http.expectOne('/api/v1/locations?bbox=16.20000,48.10000,16.60000,48.30000&limit=2000').flush(response);
+
+    expect(await result).toEqual(response);
     http.verify();
   });
 });
@@ -239,6 +254,165 @@ describe('HomePage (map)', () => {
 
     expect(text(root(), '#map-notice')).toContain('noch nicht bereit');
     expect(text(root(), '#locate')).toBe('Mein Standort');
+  });
+
+  describe('locations', () => {
+    const vienna: Bbox = { west: 16.2, south: 48.1, east: 16.6, north: 48.3 };
+    const url = '/api/v1/locations?bbox=16.20000,48.10000,16.60000,48.30000&limit=2000';
+    const zoomedOut = '/api/v1/locations?bbox=15.00000,47.00000,17.00000,49.00000&limit=2000';
+    const ring = locationSummary({
+      id: 'loc-2',
+      name: null,
+      operator: null,
+      evsesAvailable: 0,
+      maxPowerKw: null,
+      statusObservedAt: null,
+      availability: 'OUT_OF_ORDER',
+    });
+    const attributionText = 'Datenquelle: Ladestellenverzeichnis der E-Control (ladestellen.at)';
+
+    function response(overrides: Partial<LocationsResponse['meta']> = {}): LocationsResponse {
+      return {
+        data: [locationSummary(), ring],
+        meta: {
+          returned: 2,
+          limit: 2000,
+          truncated: false,
+          attribution: [
+            { source: 'econtrol', text: attributionText, license: 'Terms' },
+            { source: 'other', text: attributionText, license: 'Terms' },
+          ],
+          ...overrides,
+        },
+      };
+    }
+
+    async function moveTo(box: Bbox, answer: LocationsResponse | 'fail', expected = url): Promise<void> {
+      options().onViewChange(box);
+      const request = http.expectOne(expected);
+      if (answer === 'fail') {
+        request.flush('Bad Gateway', { status: 502, statusText: 'Bad Gateway' });
+      } else {
+        request.flush(answer);
+      }
+      await settle();
+    }
+
+    it('loads the locations of the visible area and shows markers, legend and attribution', async () => {
+      await render();
+      expect(root().querySelector('#data-attribution')).toBeNull();
+      expect(Array.from(root().querySelectorAll('#legend li')).map((item) => item.textContent?.trim())).toEqual([
+        'frei',
+        'belegt',
+        'außer Betrieb',
+        'Status unbekannt',
+      ]);
+
+      await moveTo(vienna, response());
+
+      expect(map.handle.showLocations).toHaveBeenCalledWith([locationSummary(), ring]);
+      expect(text(root(), '#data-attribution')).toBe(attributionText);
+      expect(root().querySelector('#truncated')).toBeNull();
+    });
+
+    it('clamps the box at the edges of the world and hints at truncated results', async () => {
+      await render();
+
+      await moveTo(
+        { west: -200, south: -95, east: 200, north: 95 },
+        response({ truncated: true }),
+        '/api/v1/locations?bbox=-180.00000,-90.00000,180.00000,90.00000&limit=2000',
+      );
+
+      expect(text(root(), '#truncated')).toContain('nur die nächsten 2000 Standorte');
+    });
+
+    it('shows a notice when loading fails and clears it with the next successful load', async () => {
+      await render();
+
+      await moveTo(vienna, 'fail');
+      expect(text(root(), '#map-notice')).toContain('Ladepunkte konnten nicht geladen werden');
+
+      await moveTo(vienna, response());
+      expect(root().querySelector('#map-notice')).toBeNull();
+    });
+
+    it('drops answers and failures of older requests', async () => {
+      await render();
+
+      options().onViewChange({ west: 15, south: 47, east: 17, north: 49 });
+      options().onViewChange(vienna);
+      const older = http.expectOne(zoomedOut);
+      http.expectOne(url).flush(response());
+      await settle();
+      older.flush({ ...response(), data: [] });
+      await settle();
+
+      expect(map.handle.showLocations).toHaveBeenCalledTimes(2);
+      expect(map.handle.showLocations.calls.mostRecent().args[0].length).toBe(2);
+
+      options().onViewChange({ west: 15, south: 47, east: 17, north: 49 });
+      options().onViewChange(vienna);
+      http.expectOne(zoomedOut).flush('Bad Gateway', { status: 502, statusText: 'Bad Gateway' });
+      http.expectOne(url).flush(response());
+      await settle();
+      expect(root().querySelector('#map-notice')).toBeNull();
+    });
+
+    it('shows the selected location and closes the card', async () => {
+      await render();
+      await moveTo(vienna, response());
+
+      options().onSelect('loc-1');
+      await settle();
+
+      expect(text(root(), '#location-card h2')).toBe('Parkgarage Stephansplatz');
+      expect(text(root(), '#location-card .address')).toBe('Stephansplatz 1, 1010 Wien');
+      expect(text(root(), '#location-card .operator')).toBe('Wien Energie GmbH');
+      expect(text(root(), '#location-card .availability')).toBe('2 von 4 Ladepunkten frei · bis 22 kW');
+      expect(text(root(), '#location-card .status-age')).toMatch(/^Status von 14\.10\.2026 \d\d:15$/);
+
+      options().onSelect('loc-2');
+      await settle();
+      expect(text(root(), '#location-card h2')).toBe('Ladestandort');
+      expect(root().querySelector('#location-card .operator')).toBeNull();
+      expect(text(root(), '#location-card .availability')).toBe('0 von 4 Ladepunkten frei');
+      expect(text(root(), '#location-card .status-age')).toBe('Kein aktueller Status');
+
+      root().querySelector<HTMLButtonElement>('#close-card')!.click();
+      await settle();
+      expect(root().querySelector('#location-card')).toBeNull();
+
+      options().onSelect('unknown');
+      await settle();
+      expect(root().querySelector('#location-card')).toBeNull();
+    });
+
+    it('hands locations that arrived before the map to the engine once it exists', async () => {
+      let resolve!: (handle: typeof map.handle) => void;
+      map.engine.create.and.returnValue(new Promise((r) => (resolve = r)));
+      await render();
+
+      await moveTo(vienna, response());
+      expect(map.handle.showLocations).not.toHaveBeenCalled();
+
+      resolve(map.handle);
+      await settle();
+      expect(map.handle.showLocations).toHaveBeenCalledOnceWith([locationSummary(), ring]);
+    });
+
+    it('ignores answers that arrive after the page was destroyed', async () => {
+      await render();
+      options().onViewChange(vienna);
+      const request = http.expectOne(url);
+
+      fixture.destroy();
+      request.flush(response());
+      await flush();
+
+      // Only the empty list handed over right after the map was created.
+      expect(map.handle.showLocations).toHaveBeenCalledOnceWith([]);
+    });
   });
 
   it('removes the map when the page is destroyed', async () => {

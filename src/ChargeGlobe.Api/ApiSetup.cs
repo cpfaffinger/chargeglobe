@@ -1,6 +1,7 @@
 using System.Threading.RateLimiting;
 using ChargeGlobe.Api.Auth;
 using ChargeGlobe.Api.Health;
+using ChargeGlobe.Api.Locations;
 using ChargeGlobe.Api.Mail;
 using ChargeGlobe.Api.OpenApi;
 using ChargeGlobe.Api.Settings;
@@ -123,6 +124,7 @@ public static class ApiSetup
         app.MapAccountEndpoints();
         app.MapSettingsEndpoints();
         app.MapMailEndpoints();
+        app.MapLocationsEndpoints();
         return app;
     }
 }

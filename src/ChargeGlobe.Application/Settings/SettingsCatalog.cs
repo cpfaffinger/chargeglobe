@@ -25,6 +25,7 @@ public static class SettingsCatalog
     public const string MapStartLatitude = "map.start.latitude";
     public const string MapStartLongitude = "map.start.longitude";
     public const string MapStartZoom = "map.start.zoom";
+    public const string MapStatusMaxAgeMinutes = "map.status_max_age_minutes";
 
     public const string ProviderEnabled = "provider.enabled";
     public const string ProviderApiKey = "provider.api_key";
@@ -98,6 +99,12 @@ public static class SettingsCatalog
             Max = 180,
         },
         new(MapStartZoom, SettingType.Number, 7.0, "Initial zoom level of the map.") { Min = 0, Max = 22 },
+        new(MapStatusMaxAgeMinutes, SettingType.Int, 60,
+            "Status readings older than this count as unknown in the location endpoints and on the map.")
+        {
+            Min = 5,
+            Max = 1440,
+        },
 
         new(ProviderEnabled, SettingType.Bool, false,
             "Whether the source adapter may call its source (health probe, and later crawling).")
