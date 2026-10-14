@@ -381,16 +381,24 @@ app-home {
   }
 
   // Legend as a row of chips at the top (left of the zoom buttons), notices below it.
+  // Two compact columns so all four states fit next to the map controls without scrolling.
   #legend {
     top: 12px;
     bottom: auto;
     right: 60px;
-    flex-wrap: nowrap;
-    overflow-x: auto;
+    display: grid;
+    grid-template-columns: repeat(2, max-content);
+    gap: 4px 12px;
+    padding: 8px 12px;
+    font: var(--mat-sys-body-small);
+  }
+
+  #legend li {
+    white-space: nowrap;
   }
 
   #map-overlay {
-    top: 64px;
+    top: 84px;
   }
 
   app-home.has-card #legend,
