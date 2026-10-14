@@ -94,6 +94,17 @@ Raw-Antwort ─▶ raw_snapshot (hash, jsonb)
 
 Schwellwerte (Default): Koordinaten > 150 m, Leistungsabweichung > 20 %, Steckeranzahl ≠, Betreiber ≠.
 
+### 8. Durchsatz des Ingest
+
+Ein Register-Lauf der E-Control (17 Requests) erzeugt rund 230 Nachrichten zu je 50 Standorten samt EVSEs, Attributen und Ad-hoc-Preisen; parallel laufen die Status-Nachrichten der Abfragepunkte weiter. Gemessen auf dem Live-Host (ein Worker, Register-Lauf per `update poll_plan set next_run_at = now() where job_type = 'INVENTORY_FULL'` vorgezogen, offene Nachrichten alle 20 s gezählt):
+
+| | Rückstand nach dem Lauf | Abbau | Queue leer nach |
+|---|---|---|---|
+| vorher (Einzelzugriffe, `SaveChanges` je Standort und Statusmeldung) | rund 200 Nachrichten nach 2 min | rund 14 Nachrichten/min | 15:45 min |
+| nachher (Vorladen je Nachricht, ein `SaveChanges`, Beobachtungen per `unnest`) | 104 Nachrichten nach 1:30 min (während der Lauf noch Seiten lieferte) | rund 78 Nachrichten/min | 2:53 min |
+
+Ursache des alten Werts waren Einzelzugriffe je Standort, EVSE und Attribut (rund 2.000 Datenbank-Roundtrips je Nachricht) und ein `SaveChanges` je Standort und je Statusmeldung. Der Merge lädt deshalb je Nachricht vorab und schreibt einmal ([02](02-architektur.md), Rolle `worker`). Reicht ein Worker später nicht (weitere Quellen), wird `WORKER_REPLICAS` erhöht; die Nachrichten verteilen sich über `FOR UPDATE SKIP LOCKED`.
+
 ## Preise crawlen
 
 Preise sind fachlich der schwierigste Teil, weil Apps sie unterschiedlich zeigen:

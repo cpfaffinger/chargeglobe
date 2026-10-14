@@ -51,6 +51,7 @@
 - [x] „Passwort ändern“ auf `/account` (`POST /auth/password/change`, beendet die anderen Sitzungen)
 - [x] Einstellungen im Konto: `GET/PUT /me/preferences` mit Startposition, Filtern und Kartenoptionen, im Web nach dem Login geladen und 1 s nach jeder Änderung gespeichert; letzter Ausschnitt bleibt je Gerät
 - [ ] Eigene Ladekarten des Nutzers für den Preisvergleich (Teil der Einstellungen)
+- [x] Ingest-Durchsatz: Vorladen je Nachricht, ein Schreibvorgang je Nachricht; ein Register-Lauf ist in unter 3 min statt 16 min verarbeitet (docs/05)
 - [ ] Routing: Compose-Service `routing` (Valhalla, OSM-Extrakt Österreich), `IRoutingEngine`, `POST /routes`, Routen-Layer in der Karte
 - [ ] Erste EMP-Tarife: 2–3 Ladekarten-Anbieter mit Tarif-Editor (manuell gepflegt), Szenario-Preisvergleich; welche Ladekarte an welchem Ladepunkt geht, liefert die E-Control nicht (nur `roaming` ja/nein) – Quelle dafür sind die Roaming-Listen der EMPs ([07](07-bestandsanalyse-apps-at.md))
 

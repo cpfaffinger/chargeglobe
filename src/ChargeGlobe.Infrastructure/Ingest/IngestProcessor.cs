@@ -36,12 +36,15 @@ public sealed class IngestProcessor(AppDbContext db)
     public async Task<IngestResult> ProcessAsync(string sourceKey, IngestBatch batch, CancellationToken cancellationToken)
     {
         _locations = _evses = _statuses = _unknownEvses = _conflicts = _skipped = 0;
+        await PrefetchAsync(sourceKey, batch, cancellationToken);
         var readings = new List<StatusReading>();
         foreach (var item in batch.Locations)
         {
             await MergeLocationAsync(sourceKey, item, readings, cancellationToken);
-            await db.SaveChangesAsync(cancellationToken);
         }
+
+        // One write for all locations of the message (the change tracker keeps the order of dependent rows).
+        await db.SaveChangesAsync(cancellationToken);
 
         foreach (var status in batch.Statuses)
         {
@@ -55,12 +58,80 @@ public sealed class IngestProcessor(AppDbContext db)
             }
         }
 
+        await InsertObservationsAsync(sourceKey, readings, cancellationToken);
+        List<Guid> readingEvses = [.. readings.Select(reading => reading.EvseId).Distinct()];
+        await db.EvseStatusCurrent.Where(current => readingEvses.Contains(current.EvseId)).LoadAsync(cancellationToken);
         foreach (var reading in readings)
         {
             await ApplyStatusAsync(sourceKey, reading, cancellationToken);
         }
 
+        await db.SaveChangesAsync(cancellationToken);
         return new IngestResult(_locations, _evses, _statuses, _unknownEvses, _conflicts, _skipped);
+    }
+
+    /// <summary>
+    /// Loads what the message refers to with a few queries: source records, locations, EVSEs with connectors, attribute
+    /// origins, current prices and statuses, operators. Afterwards the lookups of the merge find them in the change
+    /// tracker instead of asking the database row by row.
+    /// </summary>
+    private async Task PrefetchAsync(string sourceKey, IngestBatch batch, CancellationToken cancellationToken)
+    {
+        var evseSnapshots = batch.Locations.SelectMany(item => item.Location.Evses).ToList();
+        List<string> locationKeys = [.. batch.Locations.Select(item => item.Location.ExternalId).Distinct()];
+        List<string> evseKeys = [.. evseSnapshots.Select(evse => evse.ExternalId).Concat(batch.Statuses.Select(status => status.ExternalId)).Distinct()];
+        List<string> evseIds = [.. evseSnapshots.Select(evse => evse.EvseId)
+            .Concat(batch.Statuses.Select(status => status.EvseId))
+            .Select(id => EvseId.TryParse(id, out var parsed) ? parsed.Normalized : null)
+            .OfType<string>()
+            .Distinct()];
+        var records = await db.SourceRecords
+            .Where(record => record.SourceKey == sourceKey
+                && ((record.EntityType == EntityType.LOCATION && locationKeys.Contains(record.ExternalId))
+                    || (record.EntityType == EntityType.EVSE && evseKeys.Contains(record.ExternalId))))
+            .ToListAsync(cancellationToken);
+        List<Guid> locationIds = [.. records.Where(record => record.EntityType == EntityType.LOCATION).Select(record => record.EntityId)];
+        List<Guid> recordEvses = [.. records.Where(record => record.EntityType == EntityType.EVSE).Select(record => record.EntityId)];
+        await db.Locations.Where(location => locationIds.Contains(location.Id)).LoadAsync(cancellationToken);
+        var evses = await db.Evses
+            .Include(evse => evse.Connectors)
+            .Where(evse => recordEvses.Contains(evse.Id) || evseIds.Contains(evse.EvseIdNorm))
+            .ToListAsync(cancellationToken);
+        List<Guid> knownEvses = [.. evses.Select(evse => evse.Id)];
+        List<Guid> entities = [.. locationIds.Concat(knownEvses)];
+        await db.AttributeOrigins.Where(origin => entities.Contains(origin.EntityId)).LoadAsync(cancellationToken);
+        await db.EvsePriceCurrent.Where(price => price.SourceKey == sourceKey && knownEvses.Contains(price.EvseId)).LoadAsync(cancellationToken);
+        List<string> operatorCodes = [.. batch.Locations
+            .Select(item => item.Location.OperatorId?.ToUpperInvariant())
+            .OfType<string>()
+            .Distinct()];
+        await db.Operators.Where(item => item.OperatorId != null && operatorCodes.Contains(item.OperatorId)).LoadAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Every reading becomes an observation, written with one statement (empty arrays insert nothing). A message that is
+    /// processed again must not fail on readings it already stored.
+    /// </summary>
+    private async Task InsertObservationsAsync(string sourceKey, List<StatusReading> readings, CancellationToken cancellationToken)
+    {
+        var observations = readings
+            .Select(reading => EvseStatusObservation.Create(reading.EvseId, sourceKey, reading.Status, reading.Raw, reading.ObservedAt, reading.SourceReportedAt))
+            .ToList();
+        Guid[] evses = [.. observations.Select(item => item.EvseId)];
+        DateTimeOffset[] times = [.. observations.Select(item => item.Time)];
+        string[] statuses = [.. observations.Select(item => item.Status.ToString())];
+        string?[] raws = [.. observations.Select(item => item.SourceStatusRaw)];
+        DateTimeOffset?[] reported = [.. observations.Select(item => item.SourceReportedAt)];
+        int?[] latencies = [.. observations.Select(item => item.LatencyMs)];
+        await db.Database.ExecuteSqlAsync(
+            $"""
+            INSERT INTO evse_status_observation (evse_id, time, source_key, status, source_status_raw, source_reported_at, latency_ms)
+            SELECT evse_id, time, {sourceKey}, status, raw, reported, latency
+            FROM unnest({evses}, {times}, {statuses}, {raws}, {reported}, {latencies}) AS t(evse_id, time, status, raw, reported, latency)
+            ON CONFLICT DO NOTHING
+            """,
+            cancellationToken);
+        _statuses += observations.Count;
     }
 
     private async Task MergeLocationAsync(
@@ -84,10 +155,11 @@ public sealed class IngestProcessor(AppDbContext db)
                 .Select(evse => EvseId.TryParse(evse.EvseId, out var id) ? id.Normalized : null)
                 .OfType<string>()
                 .ToList();
-            var knownLocation = await db.Evses
-                .Where(evse => known.Contains(evse.EvseIdNorm))
-                .Select(evse => (Guid?)evse.LocationId)
-                .FirstOrDefaultAsync(cancellationToken);
+            var knownLocation = db.Evses.Local.Where(evse => known.Contains(evse.EvseIdNorm)).Select(evse => (Guid?)evse.LocationId).FirstOrDefault()
+                ?? await db.Evses
+                    .Where(evse => known.Contains(evse.EvseIdNorm))
+                    .Select(evse => (Guid?)evse.LocationId)
+                    .FirstOrDefaultAsync(cancellationToken);
             location = knownLocation is { } id ? await db.Locations.FindAsync([id], cancellationToken) : null;
             if (location is null)
             {
@@ -327,22 +399,9 @@ public sealed class IngestProcessor(AppDbContext db)
             : null;
     }
 
-    /// <summary>Every reading becomes an observation; intervals and the current status change only on a status change.</summary>
+    /// <summary>Intervals and the current status change only on a status change; written with the message.</summary>
     private async Task ApplyStatusAsync(string sourceKey, StatusReading reading, CancellationToken cancellationToken)
     {
-        var observation = EvseStatusObservation.Create(
-            reading.EvseId, sourceKey, reading.Status, reading.Raw, reading.ObservedAt, reading.SourceReportedAt);
-        // A message that is processed again must not fail on readings it already stored.
-        await db.Database.ExecuteSqlAsync(
-            $"""
-            INSERT INTO evse_status_observation (evse_id, time, source_key, status, source_status_raw, source_reported_at, latency_ms)
-            VALUES ({observation.EvseId}, {observation.Time}, {observation.SourceKey}, {observation.Status.ToString()},
-                    {observation.SourceStatusRaw}, {observation.SourceReportedAt}, {observation.LatencyMs})
-            ON CONFLICT DO NOTHING
-            """,
-            cancellationToken);
-        _statuses++;
-
         var current = await db.EvseStatusCurrent.FindAsync([reading.EvseId], cancellationToken);
         if (current is null)
         {
@@ -363,8 +422,6 @@ public sealed class IngestProcessor(AppDbContext db)
         {
             current.Observe(reading.Status, sourceKey, reading.ObservedAt);
         }
-
-        await db.SaveChangesAsync(cancellationToken);
     }
 
     private void Conflict(Guid evseId, string stored, string delivered, string sourceKey, DateTimeOffset at)
@@ -416,9 +473,8 @@ public sealed class IngestProcessor(AppDbContext db)
 
         public async Task SetAsync(string attribute, string? value, Action<string?> apply, CancellationToken cancellationToken)
         {
-            var origin = db.AttributeOrigins.Local.FirstOrDefault(item =>
-                    item.EntityType == entityType && item.EntityId == entityId && item.Attribute == attribute)
-                ?? await db.AttributeOrigins.FindAsync([entityType, entityId, attribute], cancellationToken);
+            // Finds tracked (also newly added) origins by key without a query; the message prefetched the stored ones.
+            var origin = await db.AttributeOrigins.FindAsync([entityType, entityId, attribute], cancellationToken);
             if (origin is null)
             {
                 db.AttributeOrigins.Add(AttributeOrigin.Create(entityType, entityId, attribute, sourceKey, value, at));
