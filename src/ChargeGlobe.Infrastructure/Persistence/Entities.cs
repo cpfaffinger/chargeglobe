@@ -31,6 +31,16 @@ public sealed class UserPermission
     public required string Permission { get; set; }
 }
 
+/// <summary>A location a user marked as favorite.</summary>
+public sealed class FavoriteLocation
+{
+    public Guid UserId { get; set; }
+
+    public Guid LocationId { get; set; }
+
+    public DateTimeOffset CreatedAt { get; set; }
+}
+
 /// <summary>API key of a user. Only the SHA-256 hash of the full key is stored.</summary>
 public sealed class ApiKey
 {

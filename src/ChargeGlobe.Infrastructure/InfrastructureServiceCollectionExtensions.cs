@@ -1,5 +1,6 @@
 using System.Data.Common;
 using ChargeGlobe.Application.Evses;
+using ChargeGlobe.Application.Favorites;
 using ChargeGlobe.Application.Health;
 using ChargeGlobe.Application.Identity;
 using ChargeGlobe.Application.Ingest;
@@ -47,6 +48,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IEvseQueries, EvseQueries>();
         services.AddScoped<ISearchQueries, SearchQueries>();
         services.AddScoped<IOperatorQueries, OperatorQueries>();
+        services.AddScoped<IFavorites, Favorites>();
         services.AddScoped<IngestProcessor>();
         services.AddScoped<IIngestQueue, IngestQueue>();
         services.AddScoped<IPollPlanStore, PollPlanStore>();

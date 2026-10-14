@@ -28,12 +28,12 @@ public static class LocationsEndpoints
     public const int MaxPowerKw = 1000;
     public const int MaxOperatorLength = 100;
 
-    private static readonly SourceAttribution ExampleAttribution = new(
+    public static readonly SourceAttribution ExampleAttribution = new(
         "econtrol",
         "Datenquelle: Ladestellenverzeichnis der E-Control (ladestellen.at)",
         "E-Control API terms of use (free, registration required); redistribution only with written consent");
 
-    private static readonly LocationSummary ExampleLocation = new(
+    public static readonly LocationSummary ExampleLocation = new(
         Guid.Parse("01990a3e-5b1d-7d42-8c3a-6e9f1a2b3c4e"),
         "Parkgarage Stephansplatz",
         "Stephansplatz 1",

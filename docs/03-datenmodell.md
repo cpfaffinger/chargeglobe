@@ -67,6 +67,7 @@ Operator (CPO) ─┬─ 1..n ─ Location ─ 1..n ─ ChargingStation? ─ 1..
 | Tabelle | Spalten | Anmerkung |
 |---|---|---|
 | `AspNetUsers`, `AspNetRoles`, `AspNetUserRoles` | Standard ASP.NET Core Identity; dazu in `AspNetUsers` `CreatedAt`, `ApprovedAt?` (leer = wartet auf Freischaltung durch einen Admin), `DisabledAt?` (gesetzt = gesperrt) | E-Mail als Login, Passwort-Hash, Lockout |
+| `favorite_location` | PK `user_id` + `location_id` (beide mit `ON DELETE CASCADE`), `created_at` | Favoriten eines Kontos, höchstens 200 |
 | `role_permission` | `role_id`, `permission` | Rollen sind Berechtigungsbündel; Permissions kommen aus dem Katalog in Domain |
 | `user_permission` | `user_id`, `permission`, `granted_by`, `granted_at` | direkte Zusatzrechte ohne Rolle |
 | `api_key` | `id`, `name`, `key_hash`, `key_prefix` (erste 8 Zeichen zur Anzeige), `owner_user_id`, `permissions text[]` (Teilmenge der Rechte des Eigentümers), `expires_at`, `last_used_at`, `revoked_at`, `rate_limit_tier` | Klartext wird nur bei Erstellung einmal zurückgegeben |

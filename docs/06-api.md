@@ -27,6 +27,9 @@ Vorhandene Endpunkte (in Klammern die `operationId`):
 | `POST /auth/password/forgot` (`requestPasswordReset`) | stellt die Reset-Mail in die Outbox, falls die Adresse zu einem Konto gehört; Antwort immer `202` | `none` |
 | `POST /auth/password/reset` (`resetPassword`) | setzt mit `userId`, `token`, `newPassword` ein neues Passwort und beendet alle Browser-Sitzungen des Nutzers; `204` bzw. `422` | `none` |
 | `GET /me` (`getMe`) | `id`, `email`, `roles`, effektive `permissions`, `authenticatedVia` (`bearer`/`apiKey`); bei einem API-Key beschreiben `id`/`email`/`roles` den Eigentümer und `permissions` den Key | `authenticated` |
+| `GET /me/favorites` (`listFavorites`) | aktive Favoriten-Standorte des Aufrufers, neueste zuerst: `data[]` mit `location` (wie in `listLocations`) und `addedAt`; `meta` mit `returned`, `max` (200) und `attribution`. Für eine Liste gedacht, die sich jede Minute aktualisiert | `authenticated` |
+| `PUT /me/favorites/{locationId}` (`addFavorite`) | merkt einen Standort; idempotent `204`. `404` bei unbekanntem oder nicht aktivem Standort, `409` bei 200 Favoriten | `authenticated` |
+| `DELETE /me/favorites/{locationId}` (`removeFavorite`) | entfernt den Favoriten; idempotent `204` | `authenticated` |
 | `GET /permissions` (`listPermissions`) | Katalog aller Permissions mit Beschreibung | `none` |
 | `GET /api-keys` (`listApiKeys`) | eigene Keys inklusive widerrufener, ohne Secret | `apikey:manage` |
 | `POST /api-keys` (`createApiKey`) | Body `name`, `permissions[]` (nicht leer, ⊆ Rechte des Aufrufers), optional `expiresAt`. `201` mit dem Klartext-Key in `key` – nur in dieser Antwort. Mit Header `Idempotency-Key` legt eine Wiederholung nichts an und antwortet `200` mit dem bestehenden Key und `key: null`, weil das Secret nicht wiederherstellbar ist | `apikey:manage` |
@@ -56,14 +59,13 @@ Vorhandene Endpunkte (in Klammern die `operationId`):
 | `GET /admin/crawler/status` (`getCrawlerStatus`) | Live-Zustand der Crawler je Quelle: `enabled`, `budgetPerHour` (`provider.request_budget_per_hour`), `requestsLastHour`, `pause` (`failures`, `until`, `blocked`, `reason`; `null` solange die Quelle laufen darf), `tiles` (Abfragepunkte: `total`, `due`, `hot`, `normal`, `quiet`, `onDemand`, `oldestPoll`) und `plans` (`jobType`, `target`, `nextRunAt`, `leasedBy`, `lastRunAt`, `lastResult`); `queue` mit offenen und fehlerhaften Ingest-Nachrichten. Für Abfragen alle paar Sekunden gedacht | `jobs:read` |
 | `GET /admin/crawler/runs` (`listCrawlerRuns`) | letzte Crawler-Läufe, neueste zuerst, höchstens `limit` (1–500, Default 50), optional einer Quelle (`provider`): `jobType`, `target` (Region(en) oder „point n/m (lat,lon, k locations)“), `startedAt`, `finishedAt`, `requests`, `records`, `result` (`RUNNING`/`OK`/`FAILED`), `error`, `cooldownUntil`. `422` bei `limit` außerhalb des Bereichs | `jobs:read` |
 
-Schreibende Aktionen (Ersteinrichtung, Registrierung, Bestätigung, Login, Passwort-Reset anfordern/ausführen, Key anlegen/widerrufen, Einstellung ändern, Testmail senden, Rollen zuweisen, Konto freischalten/sperren, Rolle anlegen/ändern/löschen) landen mit Akteur (Nutzer bzw. API-Key) im `audit_log`; bei Einstellungen ohne den Wert.
+Schreibende Aktionen (Ersteinrichtung, Registrierung, Bestätigung, Login, Passwort-Reset anfordern/ausführen, Key anlegen/widerrufen, Einstellung ändern, Testmail senden, Rollen zuweisen, Konto freischalten/sperren, Rolle anlegen/ändern/löschen, Favorit merken/entfernen) landen mit Akteur (Nutzer bzw. API-Key) im `audit_log`; bei Einstellungen ohne den Wert.
 
 Vorgesehene Endpunkte:
 
 | Methode & Pfad | Zweck | Permission |
 |---|---|---|
 | `GET /me/preferences`, `PUT /me/preferences` | Customizings des Nutzers (Standard-Kartenausschnitt, gespeicherte Filter, eigene Ladekarten) | `authenticated` |
-| `GET /me/favorites`, `PUT /me/favorites/{locationId}`, `DELETE /me/favorites/{locationId}` | Favoriten | `authenticated` |
 | `PUT /users/{id}/permissions`, `DELETE /users/{id}` | direkte Zusatzrechte, Konto löschen; fremde API-Keys verwalten | `user:manage` |
 | `GET /audit-log` | schreibende Aktionen, filterbar nach Akteur/Entität/Zeit | `audit:read` |
 | `PUT /tariffs/{id}`, `POST /tariffs` | Tarif-Pflege | `tariff:write` |

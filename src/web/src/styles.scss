@@ -1143,3 +1143,72 @@ app-evse-detail mat-button-toggle-group {
   color: var(--mat-sys-on-surface-variant);
   font-weight: normal;
 }
+
+// ---- Favorites ------------------------------------------------------------------------------------------------------
+
+.favorite-toggle.saved {
+  color: var(--mat-sys-tertiary);
+}
+
+.page-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+app-favorites {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+app-favorites .favorites-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+app-favorites .lead,
+app-favorites .address,
+app-favorites .status-age {
+  margin: 4px 0;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+app-favorites .favorites-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+}
+
+app-favorites .card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+app-favorites .card-head > div {
+  flex: 1;
+  min-width: 0;
+}
+
+app-favorites h2 {
+  margin: 0;
+  font: var(--mat-sys-title-medium);
+}
+
+app-favorites .availability {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 0;
+}
+
+app-favorites .favorite-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 8px 0 0;
+}
