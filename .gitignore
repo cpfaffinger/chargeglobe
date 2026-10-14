@@ -28,9 +28,8 @@ dist/
 npm-debug.log*
 yarn-error.log*
 
-# Docker / data
+# Bind-mounted data of the Compose stack (docs/adr/0011)
 data/
-pgdata/
 
 # OS
 .DS_Store

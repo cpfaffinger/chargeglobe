@@ -1,15 +1,28 @@
 name: chargeglobe
 
+# Persistent data lives in bind mounts below ./data next to this file, never in Docker volumes (docs/adr/0011).
 services:
+  data-init:
+    # One-shot: creates the data directories and hands ./data/postgres to the postgres user of the db image.
+    image: timescale/timescaledb-ha:pg17
+    user: root
+    entrypoint: ["sh", "-c", "mkdir -p /data/postgres /data/tls && chown 1000:1000 /data/postgres && chmod 700 /data/postgres"]
+    restart: "no"
+    volumes:
+      - ./data:/data
+
   db:
     image: timescale/timescaledb-ha:pg17
     restart: unless-stopped
+    depends_on:
+      data-init:
+        condition: service_completed_successfully
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-chargeglobe}
       POSTGRES_USER: ${POSTGRES_USER:-chargeglobe}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
     volumes:
-      - pgdata:/home/postgres/pgdata
+      - ./data/postgres:/home/postgres/pgdata
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
@@ -79,11 +92,7 @@ services:
       # Host name for the SAN of the self-signed certificate.
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://localhost:5005}
     volumes:
-      - tls:/etc/nginx/tls
+      - ./data/tls:/etc/nginx/tls
     ports:
       # HTTPS only (self-signed certificate, docs/adr/0009).
       - "${CHARGEGLOBE_PORT:-5005}:443"
-
-volumes:
-  pgdata:
-  tls:

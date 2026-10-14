@@ -1,5 +1,5 @@
 # Test path of the Compose setup (docs/adr/0010): runs the test suites instead of the app.
-# Own project name, no published ports, no named volumes, no Docker socket. Start with scripts/test.sh.
+# Own project name, no published ports, no Docker volumes (docs/adr/0011), no Docker socket. Start with scripts/test.sh.
 name: chargeglobe-test
 
 services:

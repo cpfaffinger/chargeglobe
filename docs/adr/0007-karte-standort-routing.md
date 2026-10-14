@@ -24,6 +24,6 @@ Die Web-App zeigt im Endausbau alle Ladepunkte auf einer Karte, soll die Positio
 
 ## Konsequenzen
 - Die Geolocation-API funktioniert nur in einem sicheren Kontext (HTTPS oder `localhost`). Das ist durch den HTTPS-only-Betrieb erfüllt ([ADR-0009](0009-https-only-self-signed.md)); beim Direktzugriff mit dem self-signed Zertifikat muss der Browser die Zertifikatsausnahme akzeptiert haben.
-- Der `routing`-Service braucht beim ersten Start Zeit und Speicher für den Graphaufbau und ein eigenes Volume; OSM-Extrakte werden periodisch aktualisiert (Single-Runner-Job des Workers).
+- Der `routing`-Service braucht beim ersten Start Zeit und Speicher für den Graphaufbau und ein eigenes Datenverzeichnis (`./data/routing`, [ADR-0011](0011-bind-mounts-statt-volumes.md)); OSM-Extrakte werden periodisch aktualisiert (Single-Runner-Job des Workers).
 - Routen-Antworten tragen die ODbL-Attribution in `meta.attribution`.
 - Spätere Ausbaustufen bauen darauf auf: Ladepunkte entlang einer Route (PostGIS-Korridorabfrage), Erreichbarkeits-Isochronen.

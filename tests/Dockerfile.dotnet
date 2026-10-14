@@ -23,8 +23,8 @@ COPY src/ src/
 COPY tests/ tests/
 # Recorded, sanitized source responses for the replay tests (docs/04, rule 7).
 COPY fixtures/ fixtures/
-# Read by the test that keeps .env.example complete (ADR-0006).
-COPY .env.example docker-compose.yml ./
+# Read by the tests that keep .env.example complete (ADR-0006) and the mounts relative (ADR-0011).
+COPY .env.example docker-compose.yml docker-compose.test.yml ./
 RUN dotnet build --no-restore
 
 ENTRYPOINT ["sh", "tests/run-dotnet-tests.sh"]
