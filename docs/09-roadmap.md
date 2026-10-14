@@ -21,15 +21,18 @@
 - [x] Domain + Datenmodell + Migration `ChargingDomain` (PostGIS-Geometrie mit GiST, Hypertables mit Kompression/Retention, Region-Trigger)
 - [x] `Providers.Abstractions` (Descriptor, Capabilities, Quell-Interfaces, Ingest-Modell, Status-Mapping)
 - [x] Ingest-Pipeline: Lease-Scheduler (`poll_plan`), clusterweites Request-Budget (`provider_rate_budget`), `raw_snapshot`, `ingest_queue`, Merge mit Matching-Schritten 1/2/5, Status-Intervalle, Retention unter `job_lease`
-- [ ] Matching-Heuristiken (Geo + Operator), Quellen-Präzedenz je Attribut, Region-Seed, Continuous Aggregate `evse_occupancy_hourly`, adaptive Intervalle
+- [x] Continuous Aggregate `evse_occupancy_hourly` (stündlich je EVSE, Real-Time-Aggregation, Refresh-Policy)
+- [ ] Matching-Heuristiken (Geo + Operator), Quellen-Präzedenz je Attribut, Region-Seed, adaptive Intervalle
 - [x] Adapter **E-Control** (Inventar + Status + Ad-hoc-Preis über `GET /search` mit adaptivem Raster, Health-Probe im Crawler, Provider-Einstellungen je Quelle im Config-Service) – Tier 0
 - [ ] Adapter **OpenStreetMap** (Overpass) und **OpenChargeMap** als Ergänzung/Plausibilisierung
 - [ ] Region-Polygone, adaptive Statusabfrage, Metriken
-- [ ] API v1 (EVSE-Suche, Detail, Statushistorie, Belegung, Ad-hoc-Preis, Provenienz)
+- [x] API v1: `GET /evses/{evseId}` (EVSE-ID in jeder Schreibweise oder UUID), Statushistorie, Belegung (`evse:read`)
+- [ ] API v1: EVSE-Suche (`GET /evses`), Ad-hoc-Preis, Provenienz
 - [x] Angular: Karte mit MapLibre und OSM-Vektorkacheln (OpenFreeMap, `GET /map/config`) als anonyme Startseite, eigener Standort per Geolocation ([ADR-0007](adr/0007-karte-standort-routing.md))
 - [x] `GET /locations` (bbox, aggregiert, Attribution) und `GET /locations/{id}`; Ladepunkt-Marker mit Clustering, Status-Farben, Legende, Infokarte und Quellenangabe
 - [ ] Filter in der Karte (Stecker, Leistung, Betreiber, nur frei)
-- [ ] Angular: Detailseite mit Historie (angemeldet), Admin (Nutzer, Rollen, API-Keys, Einstellungen)
+- [x] Angular: Standort-Detailseite `/locations/:id` (angemeldet, `evse:read`) mit Status-Timeline je EVSE und Heatmap Wochentag × Stunde, Link „Details“ in der Infokarte
+- [ ] Angular: Admin (Nutzer, Rollen, API-Keys)
 - [ ] Nutzer- und Rollenverwaltung in der API (`/users`, `/roles`, `GET /audit-log`)
 - [ ] Customizings: `GET/PUT /me/preferences`, Favoriten, Einstellungsseite
 - [ ] Routing: Compose-Service `routing` (Valhalla, OSM-Extrakt Österreich), `IRoutingEngine`, `POST /routes`, Routen-Layer in der Karte

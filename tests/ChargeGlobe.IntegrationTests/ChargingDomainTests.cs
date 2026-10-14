@@ -26,11 +26,13 @@ public class ChargingDomainTests(IntegrationFactory factory)
         Assert.Contains("postgis", extensions);
         Assert.Contains("timescaledb", extensions);
 
-        var hypertables = await QueryAsync("SELECT hypertable_name FROM timescaledb_information.hypertables ORDER BY 1");
+        // The materialization hypertable of the continuous aggregate lives in an internal schema.
+        var hypertables = await QueryAsync("SELECT hypertable_name FROM timescaledb_information.hypertables WHERE hypertable_schema = 'public' ORDER BY 1");
         Assert.Equal(["evse_status_observation", "location_status_observation"], hypertables);
 
         var policies = await QueryAsync(
-            "SELECT hypertable_name || ':' || proc_name FROM timescaledb_information.jobs WHERE hypertable_name IS NOT NULL ORDER BY 1");
+            "SELECT hypertable_name || ':' || proc_name FROM timescaledb_information.jobs " +
+            "WHERE hypertable_schema = 'public' AND proc_name <> 'policy_refresh_continuous_aggregate' ORDER BY 1");
         Assert.Equal(
             [
                 "evse_status_observation:policy_compression",
@@ -39,6 +41,12 @@ public class ChargingDomainTests(IntegrationFactory factory)
                 "location_status_observation:policy_retention",
             ],
             policies);
+
+        var aggregates = await QueryAsync(
+            "SELECT a.view_name || ':' || a.materialized_only || ':' || (j.config ->> 'start_offset') || ':' || (j.config ->> 'end_offset') || ':' || j.schedule_interval " +
+            "FROM timescaledb_information.continuous_aggregates a JOIN timescaledb_information.jobs j " +
+            "ON j.hypertable_schema = a.view_schema AND j.hypertable_name = a.view_name AND j.proc_name = 'policy_refresh_continuous_aggregate'");
+        Assert.Equal(["evse_occupancy_hourly:false:7 days:01:00:00:00:30:00"], aggregates);
 
         var geoIndexes = await QueryAsync(
             "SELECT tablename || '.' || indexname FROM pg_indexes WHERE indexdef LIKE '%USING gist (geom)%' ORDER BY 1");

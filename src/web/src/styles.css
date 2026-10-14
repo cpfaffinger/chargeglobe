@@ -245,3 +245,89 @@ app-setting-row .control select {
 #test-mail form {
   max-width: 24rem;
 }
+
+#location-card .details .hint {
+  color: #555;
+}
+
+/* Location detail: wider than the forms, for the 24 columns of the heatmap. */
+main:has(> app-location-detail) {
+  max-width: 60rem;
+}
+
+app-location-detail .evse {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #ddd;
+}
+
+app-location-detail .evse h4 {
+  margin: 0;
+  font-family: ui-monospace, monospace;
+  font-size: 1rem;
+}
+
+app-location-detail .evse h4 small {
+  font-family: system-ui, sans-serif;
+  font-weight: normal;
+  color: #555;
+}
+
+app-location-detail .evse p {
+  margin: 0.15rem 0;
+}
+
+app-location-detail .connectors,
+.timeline-axis,
+.heatmap-legend,
+#detail-attribution {
+  color: #555;
+  font-size: 0.85rem;
+}
+
+/* Status timeline: the bar is the shown range, the segments are positioned in percent of it. */
+.timeline {
+  position: relative;
+  height: 1.25rem;
+  margin-top: 0.4rem;
+  overflow: hidden;
+  background: #eceff1;
+  border-radius: 3px;
+}
+
+.timeline .segment {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.timeline-axis {
+  display: flex;
+  justify-content: space-between;
+}
+
+#heatmap-select select {
+  margin-left: 0.5rem;
+  padding: 0.25rem;
+}
+
+/* Heatmap weekday × hour; scrolls sideways on narrow screens instead of the page. */
+#heatmap {
+  display: block;
+  max-width: 100%;
+  margin-top: 0.5rem;
+  overflow-x: auto;
+  border-collapse: separate;
+  border-spacing: 2px;
+  font-size: 0.75rem;
+}
+
+#heatmap th {
+  font-weight: normal;
+  color: #555;
+}
+
+#heatmap td {
+  min-width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 2px;
+}

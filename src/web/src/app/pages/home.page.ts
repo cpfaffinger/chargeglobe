@@ -8,6 +8,8 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { AuthService } from '../auth/auth.service';
 import { AVAILABILITIES, AVAILABILITY } from '../map/availability';
 import { BrowserCapabilities } from '../map/browser-capabilities';
 import { MapConfigService } from '../map/map-config.service';
@@ -44,7 +46,7 @@ const NOTICES: Record<MapNotice, string> = {
  * browser only and never sent to the API.
  */
 @Component({
-  imports: [DatePipe, DecimalPipe],
+  imports: [DatePipe, DecimalPipe, RouterLink],
   selector: 'app-home',
   template: `
     <div #map id="map" role="region" aria-label="Karte"></div>
@@ -80,6 +82,13 @@ const NOTICES: Record<MapNotice, string> = {
               Kein aktueller Status
             }
           </p>
+          @if (!auth.isAuthenticated()) {
+            <p class="details">
+              <a id="details" [routerLink]="['/locations', location.id]">Details</a>&ngsp;<span class="hint">– Verlauf und Auslastung nach Anmeldung</span>
+            </p>
+          } @else if (auth.hasPermission('evse:read')) {
+            <p class="details"><a id="details" [routerLink]="['/locations', location.id]">Details</a></p>
+          }
         </section>
       }
     </div>
@@ -98,6 +107,7 @@ export class HomePage {
   private readonly engine = inject(MapEngine);
   private readonly browser = inject(BrowserCapabilities);
   private readonly locationsService = inject(LocationsService);
+  protected readonly auth = inject(AuthService);
   /** Number of the newest location request; older answers are dropped. */
   private request = 0;
   private readonly container = viewChild.required<ElementRef<HTMLElement>>('map');

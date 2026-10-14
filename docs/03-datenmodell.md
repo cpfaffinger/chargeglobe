@@ -53,7 +53,7 @@ Operator (CPO) ─┬─ 1..n ─ Location ─ 1..n ─ ChargingStation? ─ 1..
 | `evse_status_observation` (Hypertable, Tages-Chunks) | PK `evse_id` + `time` + `source_key`, `status` (OCPI-Enum), `source_status_raw` (Originalstring), `source_reported_at` (falls Quelle einen Zeitstempel liefert), `latency_ms` (`time` − `source_reported_at`) | jede Beobachtung jeder Quelle; Kompression nach 7 Tagen (segmentiert nach `evse_id`, `source_key`), Retention 180 Tage |
 | `evse_status_interval` | PK `evse_id` + `valid_from`, `status`, `valid_to` (NULL = aktuell), `source_key`, `confidence` (0–1) | nur bei Statuswechsel; höchstens ein offenes Intervall je EVSE (Unique-Index auf `evse_id` mit `valid_to IS NULL`); Basis für Belegungshistorie und Auslastungsstatistik |
 | `evse_status_current` | `evse_id` (PK), `status`, `since`, `observed_at`, `source_key` | denormalisiert für Karten-Queries; ob der Wert veraltet ist, wird beim Lesen aus `observed_at` berechnet (`IsStale`) |
-| `evse_occupancy_hourly` (Continuous Aggregate, vorgesehen) | `bucket` (1 h), `evse_id`, `obs_charging`, `obs_available`, `obs_total` | für Heatmaps/Auslastung ohne Scan der Rohdaten |
+| `evse_occupancy_hourly` (Continuous Aggregate über `evse_status_observation`) | `bucket` (1 h, UTC), `evse_id`, `obs_charging` (Beobachtungen mit `CHARGING`), `obs_available` (`AVAILABLE`), `obs_total` (alle) | für Heatmaps/Auslastung ohne Scan der Rohdaten (`GET /evses/{evseId}/occupancy`); Real-Time-Aggregation (`materialized_only = false`): Stunden oberhalb der Materialisierungsgrenze kommen direkt aus den Rohdaten; Refresh-Policy alle 30 min für die letzten 7 Tage bis 1 h vor jetzt; keine Retention (bleibt nach dem Löschen der Rohdaten erhalten) |
 | `location_status_observation` (Hypertable, Tages-Chunks) | PK `location_id` + `time` + `source_key`, `evses_total`, `evses_available` | für Quellen, die nur Standort-Summen liefern (z. B. „3 von 8 frei“); Kompression und Retention wie oben |
 
 **Umgesetzt (eine Quelle):** Jeder Statuswert wird Beobachtung (`ON CONFLICT DO NOTHING`, damit eine erneut verarbeitete Nachricht nichts doppelt schreibt). Ist er neuer als `evse_status_current.observed_at` und ändert er den Status, wird das offene Intervall geschlossen und ein neues geöffnet; sonst wird nur `observed_at` fortgeschrieben. Ältere Werte ändern nichts.
@@ -133,7 +133,7 @@ Umgesetzt ist die Vorstufe: Ein Attribut (`name`, `address`, `postal_code`, `cit
 | Ad-hoc-Preis | amtliches Verzeichnis/NAP > CPO-App > EMP-App |
 | EMP-Tarif | jeweilige EMP-App > Tarifaggregatoren > manuelle Pflege |
 
-## Schema (Auszug aus der Migration `ChargingDomain`)
+## Schema (Auszug aus den Migrationen `ChargingDomain` und `OccupancyHourly`)
 
 Die Tabellen entstehen aus dem EF-Core-Modell (`src/ChargeGlobe.Infrastructure/Persistence/ChargingModel.cs`); was EF Core nicht modellieren kann, ergänzt die Migration per SQL:
 
@@ -168,8 +168,21 @@ SELECT add_retention_policy('evse_status_observation', INTERVAL '180 days');
 
 CREATE TRIGGER location_assign_region BEFORE INSERT OR UPDATE OF geom ON location
   FOR EACH ROW EXECUTE FUNCTION location_assign_region();   -- region_code per ST_Covers(region.geom, location.geom)
+
+-- Migration OccupancyHourly
+CREATE MATERIALIZED VIEW evse_occupancy_hourly
+WITH (timescaledb.continuous, timescaledb.materialized_only = false) AS
+SELECT time_bucket(INTERVAL '1 hour', time) AS bucket, evse_id,
+       count(*) FILTER (WHERE status = 'CHARGING')  AS obs_charging,
+       count(*) FILTER (WHERE status = 'AVAILABLE') AS obs_available,
+       count(*)                                     AS obs_total
+FROM evse_status_observation
+GROUP BY bucket, evse_id
+WITH NO DATA;
+SELECT add_continuous_aggregate_policy('evse_occupancy_hourly',
+  start_offset => INTERVAL '7 days', end_offset => INTERVAL '1 hour', schedule_interval => INTERVAL '30 minutes');
 ```
 
-Vorgesehen ist das Continuous Aggregate `evse_occupancy_hourly` (`time_bucket('1 hour', time)` je `evse_id` mit Zählern für `CHARGING`, `AVAILABLE` und gesamt); es braucht eine eigene Migration außerhalb einer Transaktion.
+`evse_occupancy_hourly` entsteht `WITH NO DATA`: Nur so darf `CREATE MATERIALIZED VIEW … WITH (timescaledb.continuous)` in einer Transaktion laufen – in der Migrations-Transaktion von EF Core und in den DO-Blöcken des idempotenten Skripts (`dotnet ef migrations script --idempotent`); `WITH DATA` bräche dort mit „cannot run inside a transaction block“ ab. Gefüllt wird das Aggregat von der Refresh-Policy (TimescaleDB-Job, kein eigener Worker-Job); bis dahin liefert die Real-Time-Aggregation dieselben Zahlen aus den Rohdaten. Die Policy materialisiert nur die letzten 7 Tage; ältere Chunks sind komprimiert und ändern sich nicht mehr.
 
 Geo-Queries laufen über `location.geom` mit GiST-Index; die Karten-API liefert EVSE-Cluster per Server-Side-Tiles erst ab Phase 2, im MVP reicht bbox + Limit.

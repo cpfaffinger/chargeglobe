@@ -6,6 +6,7 @@ import { AdminSettingsPage } from './pages/admin-settings.page';
 import { ConfirmEmailPage } from './pages/confirm-email.page';
 import { ForgotPasswordPage } from './pages/forgot-password.page';
 import { HomePage } from './pages/home.page';
+import { LocationDetailPage } from './pages/location-detail.page';
 import { LoginPage } from './pages/login.page';
 import { RegisterPage } from './pages/register.page';
 import { ResetPasswordPage } from './pages/reset-password.page';
@@ -17,6 +18,8 @@ export const routes: Routes = [
   { path: 'login', component: LoginPage },
   { path: 'forgot-password', component: ForgotPasswordPage },
   { path: 'reset-password', component: ResetPasswordPage },
+  // Mirrors x-required-permission of the /api/v1/evses endpoints the page reads.
+  { path: 'locations/:id', component: LocationDetailPage, canActivate: [requirePermission('evse:read')] },
   // Signed-in users only; anonymous visitors are redirected to /login.
   { path: 'account', component: AccountPage, canActivate: [requirePermission()] },
   // Mirrors x-required-permission of GET /api/v1/settings.
