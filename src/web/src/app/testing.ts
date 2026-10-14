@@ -51,7 +51,7 @@ export const MAP_CONFIG: MapConfig = {
 
 /** MapEngine double: WebGL is not reliably available in the headless test browser. */
 export function fakeMapEngine() {
-  const handle = jasmine.createSpyObj<MapHandle>('MapHandle', ['locate', 'destroy', 'showLocations', 'setTheme', 'setCluster', 'flyTo']);
+  const handle = jasmine.createSpyObj<MapHandle>('MapHandle', ['locate', 'destroy', 'showLocations', 'setTheme', 'setCluster', 'flyTo', 'showRoute']);
   handle.locate.and.returnValue(true);
   const engine = jasmine.createSpyObj<MapEngine>('MapEngine', ['create', 'prepare']);
   engine.create.and.resolveTo(handle);
@@ -87,11 +87,13 @@ export function fakeBrowser() {
     'secureContext',
     'geolocation',
     'geolocationPermission',
+    'currentPosition',
   ]);
   browser.webGl.and.returnValue(true);
   browser.secureContext.and.returnValue(true);
   browser.geolocation.and.returnValue(true);
   browser.geolocationPermission.and.resolveTo('prompt');
+  browser.currentPosition.and.resolveTo({ latitude: 48.21, longitude: 16.37 });
   return browser;
 }
 

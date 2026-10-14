@@ -8,6 +8,7 @@ using ChargeGlobe.Api.Health;
 using ChargeGlobe.Api.Locations;
 using ChargeGlobe.Api.Mail;
 using ChargeGlobe.Api.OpenApi;
+using ChargeGlobe.Api.Routing;
 using ChargeGlobe.Api.Search;
 using ChargeGlobe.Api.Settings;
 using ChargeGlobe.Api.Setup;
@@ -141,6 +142,7 @@ public static class ApiSetup
         app.MapFavoritesEndpoints();
         app.MapPreferencesEndpoints();
         app.MapTariffsEndpoints();
+        app.MapRoutesEndpoints();
         return app;
     }
 }

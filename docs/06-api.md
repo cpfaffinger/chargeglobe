@@ -128,7 +128,7 @@ Vorhanden sind `GET /evses/{evseId}` (Detail inklusive aktuellem Status), `GET /
 - `GET /tiles/{z}/{x}/{y}.mvt` (ab Phase 2) – Vector-Tiles mit Standort-Markern inkl. Status-Zusammenfassung; alternativ via pg_tileserv/Martin direkt aus Postgres.
 
 ### Routing (`route:read`)
-`POST /routes` – berechnet eine Route auf OSM-Straßendaten. Body: `origin` und `destination` (`lat`, `lon`), optional `waypoints[]`, `profile` (`car`, Standard), `avoid` (`tolls`, `motorways`). Antwort: `geometry` (GeoJSON LineString), `distanceMeters`, `durationSeconds`, `legs[].maneuvers[]`, `meta.attribution`. Der Aufruf verändert nichts und ist beliebig wiederholbar; POST statt GET, damit Koordinaten nicht in URLs und Logs stehen. Start und Ziel werden nicht gespeichert.
+`POST /routes` (`calculateRoute`, vorhanden) – schnellste Route mit dem Auto auf OSM-Straßendaten durch `waypoints` in ihrer Reihenfolge (2–10 Positionen mit `latitude` −90…90 und `longitude` −180…180: Start, optionale Zwischenziele, Ziel). Antwort: `data` mit `distanceMeters`, `durationSeconds` (ohne Verkehr, gerundet) und `geometry` (GeoJSON LineString, Positionen als [Länge, Breite]); `meta.attribution` mit OpenStreetMap (ODbL). `422` mit `errors.waypoints` bei ungültigen Wegpunkten und wenn keine Straßenverbindung existiert; `503`, solange die Routing-Engine nicht läuft (optionaler Dienst der Installation). Gebiet: der installierte Extrakt (Österreich). Der Aufruf verändert nichts und ist beliebig wiederholbar; POST statt GET, damit Koordinaten nicht in URLs und Logs stehen. Positionen werden weder gespeichert noch geloggt. Vorgesehen: Profile (`car`, `bike`), Meiden von Maut/Autobahn, Abbiegehinweise.
 
 ## Beispiel: `GET /evses/AT-VIE-E1234-1`
 

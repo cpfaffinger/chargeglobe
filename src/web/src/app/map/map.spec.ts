@@ -17,6 +17,7 @@ import { HOME_VIEW_KEY, LAST_VIEW_KEY, MapView, MapViewStore } from './map-view.
 import { FILTERS_STORAGE_KEY, MapFilterStore, NO_FILTERS } from './map-filters';
 import { MapLink } from './map-link';
 import { DEFAULT_MAP_OPTIONS, MapOptionsStore, OPTIONS_STORAGE_KEY } from './map-options';
+import { RoutesService, routeSummary } from './routes.service';
 
 describe('MapConfigService', () => {
   it('loads the map configuration', async () => {
@@ -96,6 +97,18 @@ describe('BrowserCapabilities', () => {
 
     expect(await browser.geolocationPermission()).toBe('denied');
     expect(navigator.permissions.query).toHaveBeenCalledOnceWith({ name: 'geolocation' });
+  });
+
+  it('asks for the current position once', async () => {
+    const ask = spyOn(navigator.geolocation, 'getCurrentPosition').and.callFake((found) =>
+      found({ coords: { latitude: 48.2, longitude: 16.4 } } as GeolocationPosition),
+    );
+
+    expect(await browser.currentPosition()).toEqual({ latitude: 48.2, longitude: 16.4 });
+    expect(ask.calls.mostRecent().args[2]).toEqual({ enableHighAccuracy: true, timeout: 15_000, maximumAge: 60_000 });
+
+    ask.and.callFake((_, failed) => failed!({ code: 1 } as GeolocationPositionError));
+    await expectAsync(browser.currentPosition()).toBeRejectedWith({ code: 1 });
   });
 
   it('reports an unknown permission state when the Permissions API fails', async () => {
@@ -634,6 +647,101 @@ describe('HomePage (map)', () => {
       await moveTo({ west: 16.35, south: 48.17, east: 16.45, north: 48.2 }, response(), '/api/v1/locations?bbox=16.35000,48.17000,16.45000,48.20000&limit=2000');
     });
 
+    describe('routes', () => {
+      const routeButton = () => root().querySelector<HTMLButtonElement>('#route-here');
+      const geometry: [number, number][] = [
+        [16.37, 48.21],
+        [16.3731, 48.2085],
+      ];
+
+      async function openCard(): Promise<void> {
+        auth.hasPermission.and.callFake((permission) => permission === 'route:read');
+        await render();
+        await moveTo(vienna, response());
+        options().onSelect('loc-1');
+        await settle();
+      }
+
+      async function clickRoute(): Promise<void> {
+        routeButton()!.click();
+        await settle();
+      }
+
+      it('needs route:read', async () => {
+        await render();
+        await moveTo(vienna, response());
+        options().onSelect('loc-1');
+        await settle();
+
+        expect(root().querySelector('#location-card')).not.toBeNull();
+        expect(routeButton()).toBeNull();
+      });
+
+      it('calculates the route from the own position, draws it and removes it again', async () => {
+        await openCard();
+        await clickRoute();
+
+        const request = http.expectOne('/api/v1/routes');
+        expect(request.request.method).toBe('POST');
+        expect(request.request.body).toEqual({
+          waypoints: [
+            { latitude: 48.21, longitude: 16.37 },
+            { latitude: 48.2085, longitude: 16.3731 },
+          ],
+        });
+        expect(text(root(), '#route-here')).toBe('Route wird berechnet …');
+        expect(routeButton()!.disabled).toBeTrue();
+        request.flush({ data: { distanceMeters: 12480, durationSeconds: 960, geometry: { type: 'LineString', coordinates: geometry } }, meta: { attribution: [] } });
+        await settle();
+
+        expect(map.handle.showRoute).toHaveBeenCalledWith(geometry);
+        expect(text(root(), '#route-summary')).toBe('Route: 12 km · 16 min Route entfernen');
+        expect(text(root(), '#route-here')).toBe('Route hierher');
+
+        root().querySelector<HTMLButtonElement>('#route-clear')!.click();
+        await settle();
+        expect(map.handle.showRoute).toHaveBeenCalledWith(null);
+        expect(root().querySelector('#route-summary')).toBeNull();
+      });
+
+      for (const [status, notice] of [
+        [503, 'Die Routenberechnung ist gerade nicht verfügbar. Bitte versuche es später.'],
+        [422, 'Zu diesem Ladestandort wurde keine Straßenverbindung gefunden.'],
+        [500, 'Die Route konnte nicht berechnet werden. Bitte versuche es erneut.'],
+      ] as const) {
+        it(`explains an answer ${status} of the API`, async () => {
+          await openCard();
+          await clickRoute();
+
+          http.expectOne('/api/v1/routes').flush({ title: 'Error' }, { status, statusText: 'Error' });
+          await settle();
+
+          expect(text(root(), '#map-notice')).toBe(notice);
+          expect(map.handle.showRoute).not.toHaveBeenCalled();
+          expect(routeButton()!.disabled).toBeFalse();
+        });
+      }
+
+      it('explains a refused or failed position and sends nothing', async () => {
+        await openCard();
+
+        browser.currentPosition.and.rejectWith({ code: 1 });
+        await clickRoute();
+        expect(text(root(), '#map-notice')).toBe('Die Standortfreigabe wurde abgelehnt. Du kannst sie in den Website-Einstellungen deines Browsers erlauben.');
+
+        browser.currentPosition.and.rejectWith({ code: 3 });
+        await clickRoute();
+        expect(text(root(), '#map-notice')).toBe('Dein Standort konnte nicht ermittelt werden. Bitte versuche es erneut.');
+
+        browser.secureContext.and.returnValue(false);
+        browser.currentPosition.calls.reset();
+        await clickRoute();
+        expect(text(root(), '#map-notice')).toBe('Der Standort ist nur über eine sichere Verbindung (HTTPS) verfügbar.');
+        expect(browser.currentPosition).not.toHaveBeenCalled();
+        http.expectNone('/api/v1/routes');
+      });
+    });
+
     it('shows the selected location and closes the card', async () => {
       await render();
       await moveTo(vienna, response());
@@ -854,6 +962,27 @@ describe('HomePage (map) in light and dark mode', () => {
     expect(switched.status.OUT_OF_ORDER).toBe('rgb(255, 180, 171)');
     expect(switched.onStatus).toBe('rgb(15, 20, 22)');
     fixture.destroy();
+  });
+});
+
+describe('RoutesService', () => {
+  it('posts the waypoints', async () => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    const http = TestBed.inject(HttpTestingController);
+
+    const route = TestBed.inject(RoutesService).route([{ latitude: 1, longitude: 2 }]);
+    const request = http.expectOne('/api/v1/routes');
+    expect([request.request.method, request.request.body]).toEqual(['POST', { waypoints: [{ latitude: 1, longitude: 2 }] }]);
+    request.flush({ data: { distanceMeters: 1, durationSeconds: 1, geometry: { type: 'LineString', coordinates: [] } }, meta: { attribution: [] } });
+    expect((await route).data.distanceMeters).toBe(1);
+    http.verify();
+  });
+
+  it('summarizes length and driving time in German', () => {
+    expect(routeSummary(12_480, 960)).toBe('12 km · 16 min');
+    expect(routeSummary(8_450, 10)).toBe('8,5 km · 1 min');
+    expect(routeSummary(152_000, 5_460)).toBe('152 km · 1 h 31 min');
+    expect(routeSummary(98_000, 3_720)).toBe('98 km · 1 h 02 min');
   });
 });
 

@@ -2,9 +2,11 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using ChargeGlobe.Application.Routing;
 using ChargeGlobe.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -143,7 +145,11 @@ public class IntegrationFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("ADMIN_EMAIL", AdminEmailSetting);
         builder.UseSetting("ADMIN_INITIAL_PASSWORD", AdminPasswordSetting);
         builder.ConfigureLogging(logging => logging.AddProvider(new WarningCollector(Warnings)));
+        // No routing engine runs in the test path; the Valhalla adapter has unit tests of its own.
+        builder.ConfigureTestServices(services => services.AddSingleton<IRoutingEngine>(Routing));
     }
+
+    public FakeRoutingEngine Routing { get; } = new();
 
     private static async Task ExecuteOnServerAsync(string sql)
     {
@@ -214,5 +220,19 @@ public static class HttpResponseExtensions
         Assert.Equal((int)status, problem.GetProperty("status").GetInt32());
         Assert.False(string.IsNullOrWhiteSpace(problem.GetProperty("title").GetString()));
         return problem;
+    }
+}
+
+/// <summary>Routing engine double: answers with <see cref="Next"/> and keeps the last waypoints.</summary>
+public sealed class FakeRoutingEngine : IRoutingEngine
+{
+    public RouteResult Next { get; set; } = new(RouteOutcome.Unavailable, null);
+
+    public IReadOnlyList<ChargeGlobe.Domain.GeoPoint>? Waypoints { get; private set; }
+
+    public Task<RouteResult> RouteAsync(IReadOnlyList<ChargeGlobe.Domain.GeoPoint> waypoints, CancellationToken cancellationToken)
+    {
+        Waypoints = waypoints;
+        return Task.FromResult(Next);
     }
 }

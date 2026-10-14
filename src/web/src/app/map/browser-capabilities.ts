@@ -20,6 +20,17 @@ export class BrowserCapabilities {
     return this.document.defaultView?.navigator.geolocation !== undefined;
   }
 
+  /** The current position, asked once (not tracked); rejects with the GeolocationPositionError of the browser. */
+  currentPosition(): Promise<{ latitude: number; longitude: number }> {
+    return new Promise((resolve, reject) =>
+      this.document.defaultView!.navigator.geolocation.getCurrentPosition(
+        (position) => resolve({ latitude: position.coords.latitude, longitude: position.coords.longitude }),
+        reject,
+        { enableHighAccuracy: true, timeout: 15_000, maximumAge: 60_000 },
+      ),
+    );
+  }
+
   /** State of the geolocation permission; null if the browser cannot tell (no Permissions API). */
   async geolocationPermission(): Promise<PermissionState | null> {
     try {

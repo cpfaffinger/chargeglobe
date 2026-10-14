@@ -52,7 +52,8 @@
 - [x] Einstellungen im Konto: `GET/PUT /me/preferences` mit Startposition, Filtern und Kartenoptionen, im Web nach dem Login geladen und 1 s nach jeder Änderung gespeichert; letzter Ausschnitt bleibt je Gerät
 - [ ] Eigene Ladekarten des Nutzers für den Preisvergleich (Teil der Einstellungen)
 - [x] Ingest-Durchsatz: Vorladen je Nachricht, ein Schreibvorgang je Nachricht; ein Register-Lauf ist in unter 3 min statt 16 min verarbeitet (docs/05)
-- [ ] Routing: Compose-Service `routing` (Valhalla, OSM-Extrakt Österreich), `IRoutingEngine`, `POST /routes`, Routen-Layer in der Karte
+- [x] Routing: Compose-Service `routing` (Valhalla 3.9.1, OSM-Extrakt Österreich, Profil `routing`), `IRoutingEngine`, `POST /routes`, „Route hierher“ in der Infokarte mit Routenlinie auf der Karte
+- [ ] Routing-Extrakt automatisch aktualisieren (monatlich; Bau außerhalb des Live-Hosts)
 - [x] EMP-Tarife: Tabellen `emp` und `tariff`, `GET/PUT/DELETE /emps` und `/tariffs` (`tariff:write`, im Audit-Log), Tarif-Editor `/admin/tariffs`, Vergleich je Ladepunkt in `GET /evses/{evseId}/prices` (`emps`, AC/DC nach Stromart, Geltung über Betreiber oder Roaming) mit Tabelle auf der Ladepunkt-Seite und „günstigste Karte“ in der Infokarte
 - [ ] Erste reale Tarife pflegen (2–3 Anbieter, z. B. ÖAMTC ePower, SMATRICS, Electroverse) und laufend aktuell halten; welche Ladekarte an welchem Ladepunkt geht, liefert die E-Control nicht (nur `roaming` ja/nein) – genauer sind die Roaming-Listen der EMPs ([07](07-bestandsanalyse-apps-at.md))
 
@@ -85,7 +86,6 @@
 | **UI-Design** | entschieden: Angular Material (Material 3) + Angular CDK mit Light und Dark Mode, Palette „Volt“, Roboto Flex | umgesetzt, siehe [ADR-0012](adr/0012-design-system-und-theming.md); Wahl des Modus später als Customizing im Benutzerprofil |
 | **Karten-Kacheln selbst hosten** | öffentliche OpenFreeMap-Instanz / eigener Kachel-Service im Compose-Stack | öffentliche Instanz, solange sie zuverlässig ist; Wechsel über `map.style_url` ohne Codeänderung ([ADR-0007](adr/0007-karte-standort-routing.md)). |
 | **Identity-Provider** | nur lokale Konten / zusätzlich OIDC (GitHub, Google, Entra) | lokal im MVP; OIDC-Login später additiv über ASP.NET Core Identity External Logins. |
-| **Routing-Graph auf dem Live-Host** | Valhalla-Graph auf dem Live-Host bauen / auf einem anderen Host bauen und die fertigen Kacheln kopieren / mehr RAM für den Live-Host / OSRM statt Valhalla | Stand des Live-Hosts (Prüfung 15.10.2026): 7,9 GB RAM, davon rund 3,9 GB verfügbar, Swap zu 95 % belegt (3,8 von 4 GB), 4 Kerne, 55 GB frei. Der Graphaufbau für Österreich braucht geschätzt 2–4 GB Spitzenspeicher über 20–40 min und würde die übrigen Dienste in den Swap drängen; der Betrieb mit fertigen Kacheln (per Memory-Mapping, Größenordnung einige hundert MB) ist realistisch. **Empfehlung:** Kacheln auf dem Test-Host (11 GB RAM) mit einem Wegwerf-Container bauen, als Tar-Archiv nach `./data/routing` des Live-Hosts kopieren, `routing` nur mit fertigen Kacheln und `mem_limit` starten; Aktualisierung monatlich auf demselben Weg. Alternativ RAM des Live-Hosts auf 16 GB erhöhen. Umsetzung erst nach Freigabe durch den Betreiber. |
 | **Tesla-Quelle** | Tesla-Standortkarte (öffentlich) vs. Owner-API (Login) | nur öffentliche Standortdaten + Roaming-EVSE-IDs aus E-Control; keine Owner-API. |
 
 ## Risiken
@@ -96,7 +96,7 @@
 | Format-Änderungen bei Tier-1/2-Quellen | Replay-Fixtures, Health-Probes, Alarm bei Mapping-Quote < 95 % |
 | Rate-Limits (E-Control: 2.500 Requests/h, 30 parallel) | Abfrageraster auf Basis bekannter Standorte planen (Deckung mit ≤ 200 Requests je 5-min-Zyklus für Ost-Österreich), adaptive Intervalle |
 | Öffentliche Kachel-Instanz (OpenFreeMap) fällt aus oder führt Limits ein | Style-URL ist Konfiguration; Self-Hosting der Kacheln als vorbereiteter Ausweg |
-| Routing-Graph braucht mit wachsendem Scope (DACH, Italien) deutlich mehr Speicher und Bauzeit | Extrakte je Region, Graphaufbau außerhalb der Spitzenzeiten, Ressourcen vor Phase 3 neu bewerten |
+| Routing-Graph braucht mit wachsendem Scope (DACH, Italien) deutlich mehr Speicher und Bauzeit; schon Österreich braucht beim Bau rund 3 GB, mehr als der Live-Host (8 GB RAM für viele Dienste, Swap fast voll) frei hat | Bau auf einem anderen Host mit `scripts/routing/build-tiles.sh` und Kopie des Kachel-Archivs; im Live-Betrieb nur Ausliefern (rund 110 MB, Limit `ROUTING_MEMORY_LIMIT`); Ressourcen vor Phase 3 neu bewerten |
 | Offene Registrierung zieht Missbrauch an (Fake-Konten, Scraping über Konten) | E-Mail-Bestätigung, Rate-Limits je Konto und IP, Sperren durch Admins |
 | Rechtliche Beschwerden einzelner Anbieter | Kill-Switch je Provider, Kontaktadresse, dokumentierter Takedown-Prozess |
 | Datenqualität des amtlichen Verzeichnisses (Verzögerungen bei Meldungen) | Zweitquellen und Konflikt-Queue; Frische je Quelle in der API sichtbar |
