@@ -17,24 +17,14 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
     /// <summary>Postgres error "invalid_parameter_value", raised for an unknown time zone.</summary>
     private const string InvalidParameterValue = "22023";
 
-    public async Task<Guid?> ResolveAsync(string evseId, CancellationToken cancellationToken)
+    public async Task<EvseView?> FindAsync(string evseId, CancellationToken cancellationToken)
     {
-        if (Guid.TryParse(evseId, out var id))
-        {
-            return await db.Evses.AnyAsync(evse => evse.Id == id, cancellationToken) ? id : null;
-        }
-
+        var evses = db.Evses.AsNoTracking().Include(item => item.Connectors);
         // Same normalization as EvseId (separators *, - and blanks), but also for surrogates (XX*CG*E…).
         var normalized = string.Concat(evseId.ToUpperInvariant().Where(character => character is not ('*' or '-') && !char.IsWhiteSpace(character)));
-        return await db.Evses
-            .Where(evse => evse.EvseIdNorm == normalized)
-            .Select(evse => (Guid?)evse.Id)
-            .FirstOrDefaultAsync(cancellationToken);
-    }
-
-    public async Task<EvseView?> FindAsync(Guid id, CancellationToken cancellationToken)
-    {
-        var evse = await db.Evses.AsNoTracking().Include(item => item.Connectors).FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
+        var evse = Guid.TryParse(evseId, out var id)
+            ? await evses.FirstOrDefaultAsync(item => item.Id == id, cancellationToken)
+            : await evses.FirstOrDefaultAsync(item => item.EvseIdNorm == normalized, cancellationToken);
         if (evse is null)
         {
             return null;
@@ -48,7 +38,7 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
                 .Select(item => new EvseOperator(item.Id, item.Name, item.OperatorId))
                 .FirstOrDefaultAsync(cancellationToken)
             : null;
-        var current = await db.EvseStatusCurrent.AsNoTracking().FirstOrDefaultAsync(item => item.EvseId == id, cancellationToken);
+        var current = await db.EvseStatusCurrent.AsNoTracking().FirstOrDefaultAsync(item => item.EvseId == evse.Id, cancellationToken);
         var maxAge = TimeSpan.FromMinutes(config.Get<int>(SettingsCatalog.MapStatusMaxAgeMinutes));
         var status = current is null
             ? new EvseCurrentStatus(nameof(EvseStatus.UNKNOWN), null, null, null, true)

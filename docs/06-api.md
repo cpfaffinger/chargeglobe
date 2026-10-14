@@ -35,6 +35,9 @@ Vorhandene Endpunkte (in Klammern die `operationId`):
 | `GET /mail/outbox` (`listMailOutbox`) | Postausgang, neueste zuerst: `data[]` mit `id`, `to`, `subject`, `templateKey`, `status`, `attempts`, `lastError`, `createdAt`, `sentAt`, `nextAttemptAt` und `meta` mit `total`, `page`, `pageSize`. Filter `status` (`QUEUED`, `SENT`, `FAILED`), Pagination `page` (ab 1) und `pageSize` (1–200, Default 50). Mail-Körper werden nie ausgegeben. `422` bei unbekanntem Status oder ungültiger Seite | `settings:manage` |
 | `GET /locations` (`listLocations`) | aktive Standorte in `bbox=minLon,minLat,maxLon,maxLat` (WGS 84), nächstgelegene zur Box-Mitte zuerst, höchstens `limit` (1–2000, Default 500). Je Standort `id`, `name`, Adresse, `latitude`/`longitude`, `operator`, `evsesTotal`, `evsesAvailable` (Status `AVAILABLE`, nicht älter als `map.status_max_age_minutes`, Default 60), `maxPowerKw`, `statusObservedAt` (neuester Statuswert) und `availability` (`AVAILABLE`, `OCCUPIED`, `OUT_OF_ORDER`, `UNKNOWN`); `meta` mit `returned`, `limit`, `truncated` und `attribution` (je beteiligter Quelle `source`, `text`, `license` aus der Tabelle `source`). `422` mit Feldfehlern `bbox` bzw. `limit` | `none` |
 | `GET /locations/{id}` (`getLocation`) | ein aktiver Standort (`data.location` wie oben) mit allen aktiven EVSEs (`data.evses`: `evseId`, `hasEvseId` – `false` bei einer Surrogat-ID von chargeglobe –, `status` mit `statusSince` und `statusObservedAt`, `UNKNOWN` wenn zu alt, `maxPowerKw`, `powerType`, `connectors` mit `standard`, `format`, `powerType`, `maxPowerKw`) und `meta.attribution`; `404` bei unbekannter Id | `none` |
+| `GET /evses/{evseId}` (`getEvse`) | ein EVSE; `evseId` ist die EVSE-ID in beliebiger Schreibweise (`AT*VIE*E1234*1`, `AT-VIE-E1234-1`, `ATVIEE12341`, Groß-/Kleinschreibung egal, auch Surrogat-IDs `XX*CG*E…`) oder die interne UUID. `data`: `id`, `evseId`, `hasEvseId`, `lifecycle` (auch nicht mehr aktive EVSEs), `location` (`id`, Name, Adresse, `latitude`/`longitude`, `region` als ISO-3166-2-Code), `operator` (`id`, `name`, `operatorId`; ohne eigenen der des Standorts), `physicalReference`, `maxPowerKw`, `powerType`, `connectors`, `status` (`status`, `since`, `observedAt`, `source`, `stale` – älter als `map.status_max_age_minutes` oder fehlend; der Status wird hier nicht durch `UNKNOWN` ersetzt), `firstSeen`, `lastSeen`, `lastConfirmedAt`; `meta.attribution` aus den Quell-Datensätzen des EVSE. `404` bei unbekannter ID | `evse:read` |
+| `GET /evses/{evseId}/status/history` (`getEvseStatusHistory`) | Statusintervalle, die [`from`, `to`) überlappen (`from` inklusive, `to` exklusiv, ISO 8601, ohne Offset UTC; Default `to` = jetzt, `from` = `to` − 7 Tage), älteste zuerst, nicht beschnitten (`to: null` = andauernd): `data` mit `id`, `evseId`, `from`, `to`, `intervals[]` (`status`, `from`, `to`, `source`, `confidence`); optional `source` (Quellen-Key). `422` mit Feldfehler `from` bzw. `to` bei unlesbaren Zeiten, `from` nicht vor `to` oder mehr als 90 Tagen; `404` bei unbekannter ID | `evse:read` |
+| `GET /evses/{evseId}/occupancy` (`getEvseOccupancy`) | Belegungsprofil der letzten `weeks` Wochen (1–12, Default 4) bis jetzt aus `evse_occupancy_hourly`: `data.days[]` mit sieben Zeilen ab Montag (`weekday` 1–7, `day` z. B. `MONDAY`), je 24 Werte `chargingShare` (Anteil der Statusmeldungen mit `CHARGING`, 0–1, `null` ohne Meldung) und `observations`; dazu `utilization` (Anteil über den ganzen Zeitraum), `observations`, `from`, `to`, `weeks`, `timeZone` (IANA-Name für Wochentag und Stunde, Parameter `timeZone`, Default `Europe/Vienna`). Die Anteile sind Stichproben im Abfrageintervall der Quellen, keine gemessenen Dauern. `422` bei `weeks` außerhalb 1–12 oder unbekannter Zeitzone, `404` bei unbekannter ID | `evse:read` |
 | `GET /map/config` (`getMapConfig`) | `styleUrl`, `attribution`, `center` (`latitude`, `longitude`) und `zoom` der Basiskarte aus den Einstellungen `map.*`; die Kartenseite der Web-App lädt sie bei jedem Aufruf, Änderungen wirken also nach einem Neuladen der Seite. Kacheln, Glyphen und Sprites holt der Browser direkt von den Hosts der Style-URL (Default: `tiles.openfreemap.org`), nicht über die API | `none` |
 
 Schreibende Aktionen (Registrierung, Bestätigung, Login, Passwort-Reset anfordern/ausführen, Key anlegen/widerrufen, Einstellung ändern, Testmail senden) landen mit Akteur (Nutzer bzw. API-Key) im `audit_log`; bei Einstellungen ohne den Wert.
@@ -69,14 +72,12 @@ Ohne Anmeldung sind nur die Endpunkte unter „Standorte“ (`GET /locations`, `
 
 ### Ladepunkte (`evse:read`, Preis-Endpunkte `price:read`)
 
+Vorhanden sind `GET /evses/{evseId}` (Detail inklusive aktuellem Status), `GET /evses/{evseId}/status/history` und `GET /evses/{evseId}/occupancy` (siehe Tabelle der vorhandenen Endpunkte oben). Vorgesehen:
+
 | Methode & Pfad | Zweck | Wichtige Parameter |
 |---|---|---|
 | `GET /evses` | Suche/Liste | `bbox=minLon,minLat,maxLon,maxLat` **oder** `near=lat,lon&radius=m`, `status=AVAILABLE,…`, `minPowerKw`, `connector=IEC_62196_T2_COMBO,…`, `operator`, `region=AT-9`, `emp=oeamtc` (nur EVSEs mit bekanntem Preis für diesen EMP), `page`, `pageSize` (max 500) |
-| `GET /evses/{evseId}` | Detail | `evseId` = EVSE-ID in beliebiger Schreibweise oder interne UUID |
-| `GET /evses/{evseId}/status` | aktueller Status + Alter + Quelle | |
-| `GET /evses/{evseId}/status/history` | Statusintervalle | `from`, `to` (max 90 Tage/Request), `source` |
 | `GET /evses/{evseId}/status/observations` | Rohbeobachtungen (alle Quellen) | `from`, `to` (max 7 Tage) |
-| `GET /evses/{evseId}/occupancy` | Auslastungsprofil | `weeks=4` → Matrix Wochentag × Stunde mit Anteil `CHARGING`, plus Gesamt-Utilization |
 | `GET /evses/{evseId}/prices` | Preise je EMP + Ad-hoc, inkl. Szenario-Kosten | `scenario=DC_50KW_30KWH_40MIN`, `at=<timestamp>` (historischer Stand) |
 | `GET /evses/{evseId}/prices/history` | Preisbeobachtungen | `emp`, `from`, `to` |
 | `GET /evses/{evseId}/sources` | Provenienz: Quell-Datensätze, Match-Methode, Attribut-Herkunft | |
@@ -105,37 +106,31 @@ Ohne Anmeldung sind nur die Endpunkte unter „Standorte“ (`GET /locations`, `
 ### Routing (`route:read`)
 `POST /routes` – berechnet eine Route auf OSM-Straßendaten. Body: `origin` und `destination` (`lat`, `lon`), optional `waypoints[]`, `profile` (`car`, Standard), `avoid` (`tolls`, `motorways`). Antwort: `geometry` (GeoJSON LineString), `distanceMeters`, `durationSeconds`, `legs[].maneuvers[]`, `meta.attribution`. Der Aufruf verändert nichts und ist beliebig wiederholbar; POST statt GET, damit Koordinaten nicht in URLs und Logs stehen. Start und Ziel werden nicht gespeichert.
 
-## Beispiel: `GET /evses/AT*EVN*E1234*5`
+## Beispiel: `GET /evses/AT-VIE-E1234-1`
 
 ```json
 {
-  "id": "4c5f…",
-  "evseId": "AT*EVN*E1234*5",
-  "identityKind": "EVSE_ID",
-  "location": { "id": "…", "name": "P+R Korneuburg", "address": "…", "coordinates": { "lat": 48.34, "lon": 16.33 }, "region": "AT-3" },
-  "operator": { "id": "…", "name": "EVN", "operatorId": "EVN" },
-  "physicalReference": "2",
-  "maxPowerKw": 22,
-  "currentType": "AC_3_PHASE",
-  "connectors": [ { "standard": "IEC_62196_T2", "format": "SOCKET", "powerType": "AC_3_PHASE", "maxPowerKw": 22 } ],
-  "status": { "status": "CHARGING", "since": "2026-10-13T18:02:11Z", "observedAt": "2026-10-13T19:40:03Z", "source": "evn", "stale": false },
-  "prices": {
-    "scenario": "AC_11KW_20KWH_2H",
-    "adHoc":  { "pricePerKwh": "0.59", "currency": "EUR", "total": "11.80", "source": "econtrol", "observedAt": "2026-10-13T06:00:00Z" },
-    "emps": [
-      { "emp": "oeamtc", "product": "ePower Mitglied", "pricePerKwh": "0.49", "blockingFeePerMinute": "0.10", "blockingAfterMinutes": 240, "total": "9.80", "complete": true, "tariffId": "…" },
-      { "emp": "electroverse", "pricePerKwh": "0.55", "total": "11.00", "complete": false }
-    ]
+  "data": {
+    "id": "01990a3e-5b1d-7d42-8c3a-6e9f1a2b3c4f",
+    "evseId": "AT*VIE*E1234*1",
+    "hasEvseId": true,
+    "lifecycle": "ACTIVE",
+    "location": { "id": "01990a3e-…", "name": "Parkgarage Stephansplatz", "address": "Stephansplatz 1", "postalCode": "1010", "city": "Wien", "country": "AT", "latitude": 48.2085, "longitude": 16.3731, "region": "AT-9" },
+    "operator": { "id": "01990a3e-…", "name": "Wien Energie GmbH", "operatorId": "VIE" },
+    "physicalReference": "1",
+    "maxPowerKw": 22,
+    "powerType": "AC_3_PHASE",
+    "connectors": [ { "standard": "IEC_62196_T2", "format": "SOCKET", "powerType": "AC_3_PHASE", "maxPowerKw": 22 } ],
+    "status": { "status": "CHARGING", "since": "2026-10-14T07:40:00+00:00", "observedAt": "2026-10-14T08:15:00+00:00", "source": "econtrol", "stale": false },
+    "firstSeen": "2026-03-01T06:00:00+00:00",
+    "lastSeen": "2026-10-14T08:15:00+00:00",
+    "lastConfirmedAt": "2026-10-14T06:00:00+00:00"
   },
-  "sources": [
-    { "source": "econtrol", "externalId": "…", "matchMethod": "EVSE_ID_EXACT", "lastSeen": "…" },
-    { "source": "evn",      "externalId": "…", "matchMethod": "EVSE_ID_EXACT", "lastSeen": "…" },
-    { "source": "osm",      "externalId": "node/…", "matchMethod": "GEO_OPERATOR_HEURISTIC", "confidence": 0.8 }
-  ],
-  "lifecycle": "ACTIVE",
-  "firstSeen": "2025-03-01T…", "lastConfirmedAt": "2026-10-13T…"
+  "meta": { "attribution": [ { "source": "econtrol", "text": "Datenquelle: Ladestellenverzeichnis der E-Control (ladestellen.at)", "license": "…" } ] }
 }
 ```
+
+Vorgesehen sind zusätzlich `data.prices` (Szenario, Ad-hoc-Preis, Preise je EMP mit Szenario-Kosten) und `data.sources` (Quell-Datensätze mit Match-Methode und Confidence), sobald Preise und weitere Quellen angebunden sind.
 
 ## Querschnitt
 

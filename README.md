@@ -9,7 +9,7 @@ Anbieter und Tarifmodelle hinweg. Alles wird über eine öffentliche API und ein
 
 | | |
 |---|---|
-| **Status** | Lauffähiges Grundgerüst: Compose-Stack, Benutzerkonten (Selbstregistrierung, Login, Passwort-Reset, API-Keys, Permissions), zentraler Config-Service mit Admin-Seite, Mail-Versand über konfigurierbaren SMTP-Server, OpenAPI 3.1, Angular-Seiten für Konto und Anmeldung, Karte als anonyme Startseite (MapLibre, OpenFreeMap, eigener Standort, Ladepunkte mit Clustering und Verfügbarkeitsfarben), Ingest-Pipeline für das E-Control-Ladestellenverzeichnis (Scheduler, Request-Budget, Queue, Merge, Statushistorie), Jobs-Heartbeat; Detailseiten, Preise und weitere Quellen folgen laut [Roadmap](docs/09-roadmap.md) |
+| **Status** | Lauffähiges Grundgerüst: Compose-Stack, Benutzerkonten (Selbstregistrierung, Login, Passwort-Reset, API-Keys, Permissions), zentraler Config-Service mit Admin-Seite, Mail-Versand über konfigurierbaren SMTP-Server, OpenAPI 3.1, Angular-Seiten für Konto und Anmeldung, Karte als anonyme Startseite (MapLibre, OpenFreeMap, eigener Standort, Ladepunkte mit Clustering und Verfügbarkeitsfarben), Ingest-Pipeline für das E-Control-Ladestellenverzeichnis (Scheduler, Request-Budget, Queue, Merge, Statushistorie), Ladepunkt-API mit Statushistorie und Belegungsprofil (angemeldet), Standort-Detailseite mit Status-Timeline und Heatmap, Jobs-Heartbeat; Preise, Filter und weitere Quellen folgen laut [Roadmap](docs/09-roadmap.md) |
 | **Start-Scope** | Wien, Niederösterreich, Oberösterreich, Burgenland |
 | **Ziel-Scope** | Österreich → DACH → Italien |
 | **Stack** | ASP.NET Core / C# / .NET 10 · Angular 22 / TypeScript · PostgreSQL (PostGIS + TimescaleDB) |
@@ -58,17 +58,17 @@ chargeglobe/
 │  ├─ ChargeGlobe.Providers.Abstractions/  # Provider-Vertrag (ACL): Descriptor, Quell-Interfaces, Ingest-Modell, Status-Mapping
 │  ├─ ChargeGlobe.Providers.EControl/  # Adapter E-Control-Ladestellenverzeichnis (offizielle API mit Key)
 │  ├─ ChargeGlobe.Providers.*/   # (geplant) weitere Adapter (OpenChargeMap, Osm, Evn, …)
-│  ├─ ChargeGlobe.Api/           # ASP.NET Core Minimal API, OpenAPI 3.1, Auth (JWT + API-Keys), Permission-Prüfung, Rate Limiting
+│  ├─ ChargeGlobe.Api/           # ASP.NET Core Minimal API (Karte, EVSE-Detail/Historie/Belegung, Konto, Einstellungen, Mail), OpenAPI 3.1, Auth (JWT + API-Keys), Permission-Prüfung, Rate Limiting
 │  ├─ ChargeGlobe.Jobs/          # ein Host für beide Rollen (--role crawler|worker), Image chargeglobe-jobs, skalierbar
 │  │                             #   crawler: Source-Abgleich, Health-Probe, Lease-Scheduler + Abrufe → raw_snapshot, ingest_queue
 │  │                             #   worker: Mail-Zustellung, Ingest-Queue → Merge ins Ladepunkt-Modell, Retention; vorgesehen: Aggregate, Reconcile
-│  └─ web/                       # Angular-App: Karte (Startseite), Registrierung, Login, Passwort-Reset, Konto, Admin (Einstellungen, E-Mail); vorgesehen: Ladepunkte, Detail
+│  └─ web/                       # Angular-App: Karte (Startseite), Standort-Detail mit Timeline und Heatmap, Registrierung, Login, Passwort-Reset, Konto, Admin (Einstellungen, E-Mail)
 ├─ tests/
 │  ├─ ChargeGlobe.Api.Tests/         # Tests ohne Datenbank (WebApplicationFactory mit Stub, Einstellungen, Mail-Vorlagen)
 │  ├─ ChargeGlobe.Domain.Tests/
 │  ├─ ChargeGlobe.Jobs.Tests/
 │  ├─ ChargeGlobe.Providers.Tests/   # Tests des Provider-Vertrags; künftig Replay-Tests der Adapter mit sanitisierten Antworten
-│  ├─ ChargeGlobe.IntegrationTests/  # API in-process gegen Postgres (Compose-Service test-db): Migration, Seed, Identity, OpenAPI
+│  ├─ ChargeGlobe.IntegrationTests/  # API in-process gegen Postgres (Compose-Service test-db): Migration, Seed, Identity, Ingest, Karten- und EVSE-Endpunkte, OpenAPI
 │  ├─ Dockerfile.dotnet              # Test-Image für test-dotnet
 │  └─ run-dotnet-tests.sh            # Tests + Coverage-Gate im Container
 ├─ fixtures/                     # sanitisierte Beispiel-Responses je Provider + erwartetes Ingest-Modell (Replay-Tests)

@@ -57,10 +57,8 @@ public sealed record OccupancyCell(int Weekday, int Hour, long Charging, long To
 /// <summary>Read model of the EVSE detail endpoints (permission <c>evse:read</c>, docs/06 "Ladepunkte").</summary>
 public interface IEvseQueries
 {
-    /// <summary>The internal id of an EVSE given by its UUID or its EVSE-ID in any notation; null if unknown.</summary>
-    Task<Guid?> ResolveAsync(string evseId, CancellationToken cancellationToken);
-
-    Task<EvseView?> FindAsync(Guid id, CancellationToken cancellationToken);
+    /// <summary>An EVSE given by its UUID or its EVSE-ID in any notation; null if unknown.</summary>
+    Task<EvseView?> FindAsync(string evseId, CancellationToken cancellationToken);
 
     /// <summary>Status intervals overlapping [<paramref name="from"/>, <paramref name="to"/>), oldest first.</summary>
     Task<IReadOnlyList<StatusInterval>> StatusHistoryAsync(

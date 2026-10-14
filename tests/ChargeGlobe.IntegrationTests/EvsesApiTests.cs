@@ -124,7 +124,7 @@ public class EvsesApiTests(IntegrationFactory factory) : IClassFixture<Integrati
         Assert.Equal("IEC_62196_T2", data.GetProperty("connectors")[0].GetProperty("standard").GetString());
         var status = data.GetProperty("status");
         Assert.Equal(("AVAILABLE", "econtrol", false), (status.GetProperty("status").GetString(), status.GetProperty("source").GetString(), status.GetProperty("stale").GetBoolean()));
-        Assert.NotEqual(JsonValueKind.Null, data.GetProperty("lastConfirmedAt").ValueKind);
+        Assert.True(data.GetProperty("lastSeen").GetDateTimeOffset() >= data.GetProperty("firstSeen").GetDateTimeOffset());
     }
 
     [Fact]
@@ -220,8 +220,8 @@ public class EvsesApiTests(IntegrationFactory factory) : IClassFixture<Integrati
         Assert.Equal(["AVAILABLE"], Statuses(before));
         Assert.Equal(t.AddDays(-15), before.GetProperty("from").GetDateTimeOffset());
 
-        // Only 'from': up to now; exactly 90 days are allowed.
-        var all = await GetDataAsync($"/api/v1/evses/{Charging}/status/history?from={Iso(DateTimeOffset.UtcNow.AddDays(-90))}");
+        // Only 'from': up to now (the 90-day limit itself is covered by the validation cases).
+        var all = await GetDataAsync($"/api/v1/evses/{Charging}/status/history?from={Iso(DateTimeOffset.UtcNow.AddDays(-89))}");
         Assert.Equal(["OUTOFORDER", "AVAILABLE", "CHARGING", "AVAILABLE"], Statuses(all));
 
         var other = await GetDataAsync($"/api/v1/evses/{Charging}/status/history?from={Iso(t.AddDays(-40))}&to={Iso(t)}&source=other");
@@ -301,7 +301,12 @@ public class EvsesApiTests(IntegrationFactory factory) : IClassFixture<Integrati
     public async Task An_evse_without_observations_has_no_utilization()
     {
         var id = await IdOfAsync(Available);
-        await factory.WithDbAsync(db => db.Database.ExecuteSqlAsync($"DELETE FROM evse_status_observation WHERE evse_id = {id}"));
+        await factory.WithDbAsync(async db =>
+        {
+            await db.Database.ExecuteSqlAsync($"DELETE FROM evse_status_observation WHERE evse_id = {id}");
+            // Another test may have materialized the readings already.
+            return await db.Database.ExecuteSqlRawAsync("CALL refresh_continuous_aggregate('evse_occupancy_hourly', NULL, NULL)");
+        });
 
         var data = await GetDataAsync($"/api/v1/evses/{Available}/occupancy?weeks=12");
 

@@ -166,13 +166,9 @@ public static class EvsesEndpoints
 
     private static async Task<IResult> GetEvseAsync(string evseId, IEvseQueries queries, CancellationToken cancellationToken)
     {
-        if (await queries.ResolveAsync(evseId, cancellationToken) is not { } id)
-        {
-            return NotFound(evseId);
-        }
-
-        var evse = await queries.FindAsync(id, cancellationToken);
-        return Results.Ok(new EvseResponse(evse!, new AttributionMeta(await queries.AttributionAsync(id, cancellationToken))));
+        return await queries.FindAsync(evseId, cancellationToken) is { } evse
+            ? Results.Ok(new EvseResponse(evse, new AttributionMeta(await queries.AttributionAsync(evse.Id, cancellationToken))))
+            : NotFound(evseId);
     }
 
     private static async Task<IResult> GetStatusHistoryAsync(
@@ -193,16 +189,15 @@ public static class EvsesEndpoints
             return invalid;
         }
 
-        if (await queries.ResolveAsync(evseId, cancellationToken) is not { } id)
+        if (await queries.FindAsync(evseId, cancellationToken) is not { } evse)
         {
             return NotFound(evseId);
         }
 
-        var evse = await queries.FindAsync(id, cancellationToken);
-        var intervals = await queries.StatusHistoryAsync(id, start!.Value, end!.Value, source, cancellationToken);
+        var intervals = await queries.StatusHistoryAsync(evse.Id, start!.Value, end!.Value, source, cancellationToken);
         return Results.Ok(new StatusHistoryResponse(
-            new StatusHistoryData(id, evse!.EvseId, start.Value, end.Value, intervals),
-            new AttributionMeta(await queries.AttributionAsync(id, cancellationToken))));
+            new StatusHistoryData(evse.Id, evse.EvseId, start.Value, end.Value, intervals),
+            new AttributionMeta(await queries.AttributionAsync(evse.Id, cancellationToken))));
     }
 
     private static async Task<IResult> GetOccupancyAsync(
@@ -215,22 +210,21 @@ public static class EvsesEndpoints
             return invalid;
         }
 
-        if (await queries.ResolveAsync(evseId, cancellationToken) is not { } id)
+        if (await queries.FindAsync(evseId, cancellationToken) is not { } evse)
         {
             return NotFound(evseId);
         }
 
         var to = timeProvider.GetUtcNow();
         var from = to.AddDays(-7 * count);
-        if (await queries.OccupancyAsync(id, from, to, zone, cancellationToken) is not { } cells)
+        if (await queries.OccupancyAsync(evse.Id, from, to, zone, cancellationToken) is not { } cells)
         {
             return new Validation().Require(false, "timeZone", "Must be an IANA time zone name, e.g. Europe/Vienna or UTC.").ToResult()!;
         }
 
-        var evse = await queries.FindAsync(id, cancellationToken);
         return Results.Ok(new OccupancyResponse(
-            BuildOccupancy(id, evse!.EvseId, count, from, to, zone, cells),
-            new AttributionMeta(await queries.AttributionAsync(id, cancellationToken))));
+            BuildOccupancy(evse.Id, evse.EvseId, count, from, to, zone, cells),
+            new AttributionMeta(await queries.AttributionAsync(evse.Id, cancellationToken))));
     }
 
     /// <summary>Spreads the cells over the 7 × 24 matrix, Monday first.</summary>
