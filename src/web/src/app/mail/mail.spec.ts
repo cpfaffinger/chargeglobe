@@ -66,7 +66,10 @@ describe('AdminMailPage', () => {
 
   const root = () => fixture.nativeElement as HTMLElement;
   const button = (id: string) => root().querySelector<HTMLButtonElement>(`#${id}`)!;
-  const rows = () => Array.from(root().querySelectorAll('tbody tr'));
+  /** The next/previous buttons of the paginator. */
+  const pager = (direction: 'next' | 'previous') =>
+    root().querySelector<HTMLButtonElement>(`.mat-mdc-paginator-navigation-${direction}`)!;
+  const rows = () => Array.from(root().querySelectorAll('tbody tr.mat-mdc-row:not(.no-data)'));
 
   async function settle(): Promise<void> {
     await flush();
@@ -110,9 +113,9 @@ describe('AdminMailPage', () => {
     expect(text(rows()[1], '.note')).toMatch(/^Connection refused · nächster Versuch \d{2}\.10\.2026 \d{2}:19$/);
     expect(text(rows()[2], '.note')).toBe('Mailbox unavailable');
     expect(text(rows()[3], '.note')).toBe('');
-    expect(text(root(), '#paging')).toContain('Seite 1 von 1 (4 Einträge)');
-    expect(button('previous').disabled).toBeTrue();
-    expect(button('next').disabled).toBeTrue();
+    expect(text(root(), '.mat-mdc-paginator-range-label')).toContain('Seite 1 von 1 (4 Einträge)');
+    expect(pager('previous').getAttribute('aria-disabled')).toBe('true');
+    expect(pager('next').getAttribute('aria-disabled')).toBe('true');
   });
 
   it('shows an empty outbox and reloads on demand', async () => {
@@ -129,7 +132,7 @@ describe('AdminMailPage', () => {
   it('filters by status and starts again at the first page', async () => {
     service.outbox.and.resolveTo(pageOf([item({})], 60));
     await render();
-    button('next').click();
+    pager('next').click();
     await settle();
     expect(service.outbox).toHaveBeenCalledWith('', 2);
 
@@ -145,17 +148,17 @@ describe('AdminMailPage', () => {
     service.outbox.and.resolveTo(pageOf([item({})], 60));
     await render();
 
-    expect(text(root(), '#paging')).toContain('Seite 1 von 3 (60 Einträge)');
-    expect(button('previous').disabled).toBeTrue();
+    expect(text(root(), '.mat-mdc-paginator-range-label')).toContain('Seite 1 von 3 (60 Einträge)');
+    expect(pager('previous').getAttribute('aria-disabled')).toBe('true');
 
-    button('next').click();
+    pager('next').click();
     await settle();
-    button('next').click();
+    pager('next').click();
     await settle();
     expect(service.outbox.calls.mostRecent().args).toEqual(['', 3]);
-    expect(button('next').disabled).toBeTrue();
+    expect(pager('next').getAttribute('aria-disabled')).toBe('true');
 
-    button('previous').click();
+    pager('previous').click();
     await settle();
     expect(service.outbox.calls.mostRecent().args).toEqual(['', 2]);
   });

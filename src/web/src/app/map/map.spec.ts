@@ -4,7 +4,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { AuthService } from '../auth/auth.service';
 import { HomePage } from '../pages/home.page';
-import { ME, MAP_CONFIG, fakeAuth, fakeBrowser, fakeMapEngine, flush, locationSummary, text } from '../testing';
+import { ThemeService, Viewport } from '../design/theme.service';
+import { ME, MAP_CONFIG, fakeAuth, fakeBrowser, fakeMapEngine, fakeViewport, flush, locationSummary, text } from '../testing';
 import { BrowserCapabilities } from './browser-capabilities';
 import { MapConfigService } from './map-config.service';
 import { GeolocateEvent, MapEngine, MapViewOptions } from './map-engine';
@@ -92,6 +93,7 @@ describe('HomePage (map)', () => {
   let map: ReturnType<typeof fakeMapEngine>;
   let browser: ReturnType<typeof fakeBrowser>;
   let auth: ReturnType<typeof fakeAuth>;
+  let viewport: ReturnType<typeof fakeViewport>;
 
   const root = () => fixture.nativeElement as HTMLElement;
   const locateButton = () => root().querySelector<HTMLButtonElement>('#locate')!;
@@ -129,20 +131,27 @@ describe('HomePage (map)', () => {
     map = fakeMapEngine();
     browser = fakeBrowser();
     auth = fakeAuth();
+    viewport = fakeViewport();
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: AuthService, useValue: auth },
+        { provide: Viewport, useValue: viewport },
         { provide: MapEngine, useValue: map.engine },
         { provide: BrowserCapabilities, useValue: browser },
       ],
     });
+    // Deterministic colours: the system of the test browser may prefer dark mode.
+    TestBed.inject(ThemeService).set('light');
     http = TestBed.inject(HttpTestingController);
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    http.verify();
+    TestBed.inject(ThemeService).set('system');
+  });
 
   it('creates the map in its container with style, attribution, center and zoom of the configuration', async () => {
     await render();
@@ -151,7 +160,7 @@ describe('HomePage (map)', () => {
     expect(options()).toEqual(
       jasmine.objectContaining({
         container: root().querySelector<HTMLElement>('#map')!,
-        styleUrl: 'https://tiles.openfreemap.org/styles/liberty',
+        theme: jasmine.objectContaining({ styleUrl: 'https://tiles.openfreemap.org/styles/liberty' }),
         attribution: '© OpenStreetMap contributors, OpenMapTiles',
         center: { latitude: 48.2, longitude: 15.6 },
         zoom: 7,
@@ -401,7 +410,8 @@ describe('HomePage (map)', () => {
       await settle();
 
       expect(root().querySelector('#details')!.getAttribute('href')).toBe('/locations/loc-1');
-      expect(text(root(), '#location-card .details')).toBe('Details – Verlauf und Auslastung nach Anmeldung');
+      expect(text(root(), '#location-card #details')).toBe('Details');
+      expect(text(root(), '#location-card .hint')).toBe('Verlauf und Auslastung nach Anmeldung');
 
       // Like AuthService, the double reads the signal, so the card follows a change of the user.
       auth.hasPermission.and.callFake((permission) => auth.me()?.permissions.includes(permission) ?? false);
@@ -412,6 +422,34 @@ describe('HomePage (map)', () => {
       auth.me.set({ ...ME, permissions: [] });
       await settle();
       expect(root().querySelector('#details')).toBeNull();
+    });
+
+    it('shows the card as bottom sheet on small screens', async () => {
+      viewport.mobile.set(true);
+      await render();
+      await moveTo(vienna, response());
+      options().onSelect('loc-1');
+      await settle();
+
+      expect(root().querySelector('#map-overlay #location-card')).toBeNull();
+      expect(root().querySelector(':scope > #location-card')).not.toBeNull();
+      expect(root().classList).toContain('has-card');
+    });
+
+    it('marks every status of the legend and the card with a symbol', async () => {
+      await render();
+      await moveTo(vienna, response());
+      options().onSelect('loc-1');
+      await settle();
+
+      expect(Array.from(root().querySelectorAll('#legend li')).map((item) => item.textContent!.trim())).toEqual([
+        'frei',
+        'belegt',
+        'außer Betrieb',
+        'Status unbekannt',
+      ]);
+      expect(root().querySelectorAll('#legend app-icon').length).toBe(4);
+      expect(root().querySelector<HTMLElement>('#location-card .status-dot')!.style.background).toBe('var(--cg-status-available)');
     });
 
     it('hands locations that arrived before the map to the engine once it exists', async () => {
@@ -471,5 +509,51 @@ describe('HomePage (map)', () => {
     await flush();
 
     expect(map.handle.destroy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('HomePage (map) in light and dark mode', () => {
+  let map: ReturnType<typeof fakeMapEngine>;
+  let theme: ThemeService;
+
+  beforeEach(() => {
+    map = fakeMapEngine();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        { provide: AuthService, useValue: fakeAuth() },
+        { provide: Viewport, useValue: fakeViewport() },
+        { provide: MapEngine, useValue: map.engine },
+        { provide: BrowserCapabilities, useValue: fakeBrowser() },
+      ],
+    });
+    theme = TestBed.inject(ThemeService);
+    theme.set('light');
+  });
+
+  afterEach(() => theme.set('system'));
+
+  it('creates the map in the current mode and switches style and marker colours with the theme', async () => {
+    const fixture = TestBed.createComponent(HomePage);
+    await fixture.whenStable();
+    TestBed.inject(HttpTestingController).expectOne('/api/v1/map/config').flush(MAP_CONFIG);
+    await flush();
+    await fixture.whenStable();
+    const created = map.engine.create.calls.mostRecent().args[0].theme;
+    expect(created.styleUrl).toBe('https://tiles.openfreemap.org/styles/liberty');
+    expect(created.status.AVAILABLE).toBe('rgb(27, 127, 58)');
+    expect(created.onStatus).toBe('rgb(255, 255, 255)');
+
+    theme.set('dark');
+    await fixture.whenStable();
+
+    const switched = map.handle.setTheme.calls.mostRecent().args[0];
+    expect(switched.styleUrl).toBe('https://tiles.openfreemap.org/styles/dark');
+    expect(switched.status.AVAILABLE).toBe('rgb(109, 213, 140)');
+    expect(switched.status.OUT_OF_ORDER).toBe('rgb(255, 180, 171)');
+    expect(switched.onStatus).toBe('rgb(15, 20, 22)');
+    fixture.destroy();
   });
 });

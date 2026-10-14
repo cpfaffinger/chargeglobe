@@ -21,6 +21,7 @@ public static class SettingsCatalog
     public const string MailRetentionDays = "mail.retention_days";
 
     public const string MapStyleUrl = "map.style_url";
+    public const string MapStyleUrlDark = "map.style_url_dark";
     public const string MapAttribution = "map.attribution";
     public const string MapStartLatitude = "map.start.latitude";
     public const string MapStartLongitude = "map.start.longitude";
@@ -85,7 +86,9 @@ public static class SettingsCatalog
         },
 
         new(MapStyleUrl, SettingType.String, "https://tiles.openfreemap.org/styles/liberty",
-            "URL of the MapLibre style (vector tiles) of the base map."),
+            "URL of the MapLibre style (vector tiles) of the base map in light mode."),
+        new(MapStyleUrlDark, SettingType.String, "https://tiles.openfreemap.org/styles/dark",
+            "URL of the MapLibre style of the base map in dark mode; empty uses map.style_url."),
         new(MapAttribution, SettingType.String, "© OpenStreetMap contributors, OpenMapTiles",
             "Attribution text that is always shown on the map."),
         new(MapStartLatitude, SettingType.Number, 48.2, "Latitude of the initial map center (WGS 84).")

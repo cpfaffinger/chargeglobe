@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { provideRouter } from '@angular/router';
 import { AuthService } from '../auth/auth.service';
 import { AdminSettingsPage } from '../pages/admin-settings.page';
@@ -65,9 +66,11 @@ describe('SettingRow', () => {
   let fixture: ComponentFixture<SettingRow>;
   let service: jasmine.SpyObj<SettingsService>;
   let emitted: Setting[];
+  let snackBar: jasmine.Spy;
 
   const root = () => fixture.nativeElement as HTMLElement;
   const control = <T extends HTMLElement = HTMLInputElement>(selector = 'input') => root().querySelector<T>(selector)!;
+  const toggle = () => root().querySelector<HTMLButtonElement>('button[role=switch]')!;
   const button = (name: 'save' | 'reset') => root().querySelector<HTMLButtonElement>(`button.${name}`)!;
 
   async function render(value: Setting, canManage = true, scope = 'global'): Promise<void> {
@@ -95,6 +98,7 @@ describe('SettingRow', () => {
   beforeEach(() => {
     service = jasmine.createSpyObj<SettingsService>('SettingsService', ['list', 'update']);
     TestBed.configureTestingModule({ providers: [{ provide: SettingsService, useValue: service }] });
+    snackBar = spyOn(TestBed.inject(MatSnackBar), 'open');
   });
 
   it('renders a text input for a string and saves the edited value', async () => {
@@ -117,7 +121,7 @@ describe('SettingRow', () => {
 
     expect(service.update).toHaveBeenCalledOnceWith('mail.smtp.host', 'smtp.example.org', 'global');
     expect(emitted).toEqual([updated]);
-    expect(text(root(), '.saved')).toBe('· gespeichert');
+    expect(snackBar).toHaveBeenCalledOnceWith('mail.smtp.host gespeichert', 'OK', { duration: 4000 });
     expect(button('save').disabled).toBeTrue();
   });
 
@@ -141,15 +145,14 @@ describe('SettingRow', () => {
     expect(service.update).toHaveBeenCalledWith('mail.smtp.port', null, 'global');
   });
 
-  it('renders a checkbox for a bool', async () => {
+  it('renders a slide toggle for a bool', async () => {
     service.update.and.resolveTo(setting({}));
     await render(setting({ key: 'mail.enabled', type: 'bool', default: false, value: false }));
 
-    expect(control().type).toBe('checkbox');
-    expect(control().checked).toBeFalse();
+    expect(toggle().getAttribute('aria-checked')).toBe('false');
+    expect(toggle().getAttribute('aria-label')).toBe('mail.enabled');
 
-    control().checked = true;
-    control().dispatchEvent(new Event('change'));
+    toggle().click();
     await fixture.whenStable();
     button('save').click();
     await settle();
@@ -205,6 +208,7 @@ describe('SettingRow', () => {
 
     expect(service.update).toHaveBeenCalledOnceWith('mail.smtp.port', null, 'global');
     expect(emitted).toEqual([reset]);
+    expect(snackBar).toHaveBeenCalledOnceWith('mail.smtp.port auf den Standardwert zurückgesetzt', 'OK', { duration: 4000 });
   });
 
   it('shows the field errors of a rejected value and keeps the draft', async () => {
@@ -217,7 +221,7 @@ describe('SettingRow', () => {
 
     expect(text(root(), '.error')).toBe('Must be an integer between 1 and 65535.');
     expect(control().value).toBe('70000');
-    expect(root().querySelector('.saved')).toBeNull();
+    expect(snackBar).not.toHaveBeenCalled();
     expect(emitted).toEqual([]);
   });
 
@@ -227,19 +231,19 @@ describe('SettingRow', () => {
     await render(providerSetting({ key: 'provider.enabled', type: 'bool', default: false, value: false }), true, 'provider:econtrol');
 
     expect(text(root(), 'h3')).toBe('provider.enabled provider:econtrol');
-    expect(control().checked).toBeFalse();
+    expect(toggle().getAttribute('aria-checked')).toBe('false');
     expect(text(root(), '.state')).toBe('Standardwert aktiv');
 
-    control().checked = true;
-    control().dispatchEvent(new Event('change'));
+    toggle().click();
     await fixture.whenStable();
     button('save').click();
     await settle();
 
     expect(service.update).toHaveBeenCalledOnceWith('provider.enabled', true, 'provider:econtrol');
+    expect(snackBar).toHaveBeenCalledOnceWith('provider.enabled (provider:econtrol) gespeichert', 'OK', { duration: 4000 });
 
     await render(enabled, true, 'provider:econtrol');
-    expect(control().checked).toBeTrue();
+    expect(toggle().getAttribute('aria-checked')).toBe('true');
     expect(text(root(), '.state')).toBe('Eigener Wert gespeichert');
     expect(button('reset').disabled).toBeFalse();
   });
@@ -312,7 +316,7 @@ describe('AdminSettingsPage', () => {
     await fixture.whenStable();
 
     expect(service.update).toHaveBeenCalledOnceWith('mail.smtp.port', null, 'global');
-    expect(root().querySelectorAll<HTMLInputElement>('input')[1].value).toBe('587');
+    expect(root().querySelectorAll<HTMLInputElement>('app-setting-row input')[1].value).toBe('587');
     expect(Array.from(root().querySelectorAll('.state')).map((state) => state.textContent?.trim().split(/\s+/)[0])).toEqual([
       'Standardwert',
       'Standardwert',
@@ -338,6 +342,40 @@ describe('AdminSettingsPage', () => {
     expect(root().querySelectorAll('app-setting-row').length).toBe(1);
     expect(root().querySelector('button')).toBeNull();
     expect(root().querySelector('#mail-link')).toBeNull();
+  });
+
+  it('groups the settings by key and filters them by key, scope or description', async () => {
+    auth.hasPermission.and.returnValue(false);
+    service.list.and.resolveTo([
+      setting({}),
+      setting({ key: 'map.style_url', description: 'URL of the base map in light mode.' }),
+      providerSetting({ key: 'provider.referer', description: 'Referer sent with every request.' }),
+      setting({ key: 'legacy.flag', description: 'Something without a group.' }),
+    ]);
+    await render();
+    const titles = () => Array.from(root().querySelectorAll('mat-panel-title')).map((title) => title.textContent!.trim());
+    const keys = () => Array.from(root().querySelectorAll('app-setting-row h3')).map((heading) => heading.firstChild!.textContent!.trim());
+    const search = root().querySelector<HTMLInputElement>('#settings-search input')!;
+    const find = async (term: string) => {
+      search.value = term;
+      search.dispatchEvent(new Event('input'));
+      await fixture.whenStable();
+    };
+
+    expect(titles()).toEqual(['Datenquellen', 'E-Mail (SMTP)', 'Karte', 'Weitere']);
+    expect(root().querySelectorAll('mat-expansion-panel.mat-expanded').length).toBe(1);
+
+    await find('LIGHT MODE');
+    expect(titles()).toEqual(['Karte']);
+    expect(keys()).toEqual(['map.style_url']);
+    expect(root().querySelectorAll('mat-expansion-panel.mat-expanded').length).toBe(1);
+
+    await find('provider:econtrol');
+    expect(keys()).toEqual(['provider.referer']);
+
+    await find('gibt es nicht');
+    expect(titles()).toEqual([]);
+    expect(text(root(), '#no-match')).toBe('Keine Einstellung passt zu „gibt es nicht“.');
   });
 
   it('shows the error when the settings cannot be loaded', async () => {

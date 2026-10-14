@@ -8,7 +8,8 @@ import { routes } from './app.routes';
 import { AuthService } from './auth/auth.service';
 import { BrowserCapabilities } from './map/browser-capabilities';
 import { MapEngine } from './map/map-engine';
-import { MAP_CONFIG, ME, fakeAuth, fakeBrowser, fakeMapEngine, flush, text } from './testing';
+import { ThemeService, Viewport } from './design/theme.service';
+import { MAP_CONFIG, ME, fakeAuth, fakeBrowser, fakeMapEngine, fakeViewport, flush, text } from './testing';
 
 describe('App with its routes', () => {
   let auth: ReturnType<typeof fakeAuth>;
@@ -16,6 +17,7 @@ describe('App with its routes', () => {
   let fixture: ComponentFixture<App>;
   let http: HttpTestingController;
   let router: Router;
+  let viewport: ReturnType<typeof fakeViewport>;
 
   const root = () => fixture.nativeElement as HTMLElement;
 
@@ -28,6 +30,7 @@ describe('App with its routes', () => {
   beforeEach(async () => {
     auth = fakeAuth();
     map = fakeMapEngine();
+    viewport = fakeViewport();
     await TestBed.configureTestingModule({
       imports: [App],
       providers: [
@@ -37,6 +40,7 @@ describe('App with its routes', () => {
         { provide: AuthService, useValue: auth },
         { provide: MapEngine, useValue: map.engine },
         { provide: BrowserCapabilities, useValue: fakeBrowser() },
+        { provide: Viewport, useValue: viewport },
       ],
     }).compileComponents();
 
@@ -93,12 +97,68 @@ describe('App with its routes', () => {
     });
   });
 
+  describe('theme and navigation', () => {
+    afterEach(() => TestBed.inject(ThemeService).set('system'));
+
+    it('switches between light, dark and the system setting in the toolbar menu', async () => {
+      const theme = TestBed.inject(ThemeService);
+      theme.set('system');
+      await navigate('/login');
+      const trigger = root().querySelector<HTMLButtonElement>('#theme-menu')!;
+      expect(trigger.getAttribute('aria-label')).toBe('Erscheinungsbild: System');
+
+      trigger.click();
+      await fixture.whenStable();
+      const items = Array.from(document.querySelectorAll<HTMLButtonElement>('.mat-mdc-menu-panel button[role=menuitemradio]'));
+      expect(items.map((item) => item.textContent!.trim())).toEqual(['Hell', 'Dunkel', 'System']);
+      expect(items[2].getAttribute('aria-checked')).toBe('true');
+      items[1].click();
+      await fixture.whenStable();
+
+      expect(theme.mode()).toBe('dark');
+      expect(document.documentElement.style.colorScheme).toBe('dark');
+      expect(trigger.getAttribute('aria-label')).toBe('Erscheinungsbild: Dunkel');
+    });
+
+    it('opens the navigation as side sheet on small screens and closes it on navigation', async () => {
+      viewport.mobile.set(true);
+      auth.me.set(ME);
+      auth.hasPermission.and.returnValue(true);
+      await navigate('/account');
+      http.expectOne('/api/v1/health');
+
+      expect(root().querySelector('.toolbar-nav')).toBeNull();
+      root().querySelector<HTMLButtonElement>('#menu')!.click();
+      await fixture.whenStable();
+      const sheet = root().querySelector('mat-sidenav')!;
+      expect(sheet.classList).toContain('mat-drawer-opened');
+      expect(Array.from(sheet.querySelectorAll('nav a')).map((link) => link.id)).toEqual([
+        'nav-map',
+        'nav-settings',
+        'nav-mail',
+        'nav-setup',
+        'nav-account',
+      ]);
+
+      sheet.querySelectorAll<HTMLButtonElement>('#theme-toggle button')[0].click();
+      await fixture.whenStable();
+      expect(TestBed.inject(ThemeService).mode()).toBe('light');
+
+      sheet.querySelector<HTMLAnchorElement>('#nav-settings')!.click();
+      await flush();
+      await fixture.whenStable();
+      expect(router.url).toBe('/admin/settings');
+      expect(sheet.classList).not.toContain('mat-drawer-opened');
+      http.expectOne('/api/v1/settings').flush([]);
+    });
+  });
+
   describe('routing', () => {
     it('redirects anonymous visitors from /account to the login', async () => {
       await navigate('/account');
 
       expect(router.url).toBe('/login?returnUrl=%2Faccount');
-      expect(text(root(), 'h2')).toBe('Anmelden');
+      expect(text(root(), 'h1')).toBe('Anmelden');
     });
 
     it('opens /admin/settings only with settings:read and shows the link only then', async () => {
@@ -115,7 +175,7 @@ describe('App with its routes', () => {
       await navigate('/admin/settings');
 
       expect(router.url).toBe('/admin/settings');
-      expect(text(root(), 'h2')).toBe('Einstellungen');
+      expect(text(root(), 'h1')).toBe('Einstellungen');
       expect(root().querySelector('#nav-settings')).not.toBeNull();
       http.expectOne('/api/v1/settings').flush([]);
     });
@@ -134,7 +194,7 @@ describe('App with its routes', () => {
       await navigate('/admin/mail');
 
       expect(router.url).toBe('/admin/mail');
-      expect(text(root(), 'h2')).toBe('E-Mail-Versand');
+      expect(text(root(), 'h1')).toBe('E-Mail-Versand');
       expect(root().querySelector('#nav-mail')).not.toBeNull();
       http.expectOne('/api/v1/mail/outbox?page=1&pageSize=25').flush({ data: [], meta: { total: 0, page: 1, pageSize: 25 } });
     });
@@ -171,8 +231,24 @@ describe('App with its routes', () => {
         await navigate(url);
 
         expect(router.url).toBe(url);
-        expect(text(root(), 'h2')).toBe(heading);
+        expect(text(root(), 'h1')).toBe(heading);
       }
+    });
+
+    it('loads the remaining pages on demand', async () => {
+      auth.me.set(ME);
+      auth.hasPermission.and.returnValue(true);
+
+      await navigate('/confirm-email');
+      expect(text(root(), 'h1')).toBe('E-Mail-Adresse bestätigen');
+
+      await navigate('/locations/loc-1');
+      expect(router.url).toBe('/locations/loc-1');
+      http.expectOne('/api/v1/locations/loc-1').flush({ title: 'Not found' }, { status: 404, statusText: 'Not Found' });
+
+      await navigate('/setup');
+      expect(text(root(), 'h1')).toBe('Einrichtung');
+      http.expectOne('/api/v1/settings').flush([]);
     });
 
     it('sends unknown paths to the start page', async () => {
@@ -186,6 +262,6 @@ describe('App with its routes', () => {
 
 describe('appConfig', () => {
   it('provides HTTP client with interceptor, session restore, setup state and the router', () => {
-    expect(appConfig.providers.length).toBe(5);
+    expect(appConfig.providers.length).toBe(6);
   });
 });

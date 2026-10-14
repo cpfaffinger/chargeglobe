@@ -239,6 +239,7 @@ public class SettingsTests(IntegrationFactory factory)
 
         var defaults = await (await factory.Client().GetAsync("/api/v1/map/config")).ReadJsonAsync();
         Assert.Equal("https://tiles.openfreemap.org/styles/liberty", defaults.GetProperty("styleUrl").GetString());
+        Assert.Equal("https://tiles.openfreemap.org/styles/dark", defaults.GetProperty("styleUrlDark").GetString());
         Assert.Contains("OpenStreetMap", defaults.GetProperty("attribution").GetString());
         Assert.Equal(48.2, defaults.GetProperty("center").GetProperty("latitude").GetDouble());
         Assert.Equal(15.6, defaults.GetProperty("center").GetProperty("longitude").GetDouble());
@@ -252,9 +253,15 @@ public class SettingsTests(IntegrationFactory factory)
             var changed = await (await factory.Client().GetAsync("/api/v1/map/config")).ReadJsonAsync();
             Assert.Equal("https://tiles.example.org/style.json", changed.GetProperty("styleUrl").GetString());
             Assert.Equal(9.5, changed.GetProperty("zoom").GetDouble());
+
+            // Without a dark style the light one is used in dark mode, too.
+            await PutAsync(admin, SettingsCatalog.MapStyleUrlDark, "");
+            var noDark = await (await factory.Client().GetAsync("/api/v1/map/config")).ReadJsonAsync();
+            Assert.Equal("https://tiles.example.org/style.json", noDark.GetProperty("styleUrlDark").GetString());
         }
         finally
         {
+            await PutAsync(admin, SettingsCatalog.MapStyleUrlDark, null);
             await PutAsync(admin, SettingsCatalog.MapStyleUrl, null);
             await PutAsync(admin, SettingsCatalog.MapStartZoom, null);
         }

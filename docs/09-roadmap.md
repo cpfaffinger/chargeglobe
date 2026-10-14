@@ -32,21 +32,17 @@
 - [ ] API v1: EVSE-Suche (`GET /evses`), Ad-hoc-Preis, Provenienz
 - [x] Angular: Karte mit MapLibre und OSM-Vektorkacheln (OpenFreeMap, `GET /map/config`) als anonyme Startseite, eigener Standort per Geolocation ([ADR-0007](adr/0007-karte-standort-routing.md))
 - [x] `GET /locations` (bbox, aggregiert, Attribution) und `GET /locations/{id}`; Ladepunkt-Marker mit Clustering, Status-Farben, Legende, Infokarte und Quellenangabe
-- [ ] **Design auf Angular-Basis** (nächster Schritt, vor Filtern und Preisen): Angular Material (Material 3) mit Angular CDK statt eigener Komponenten, damit das Design die Möglichkeiten des Frameworks nutzt und mit ihm weiterentwickelt wird:
-  - Theming über die Sass-API `mat.theme` (Farbpaletten, Typografie, Dichte) und die daraus erzeugten Design-Tokens (`--mat-sys-*`); eigene Stile verwenden nur diese Tokens, keine fest verdrahteten Farben
-  - **Light und Dark Mode**: Standard nach Systemeinstellung (`color-scheme: light dark`, `prefers-color-scheme`), Umschalter Hell/Dunkel/System in der Kopfzeile, Wahl bleibt im Browser; später als Customizing im Benutzerprofil (`/me/preferences`)
-  - Material-Komponenten: Toolbar und Sidenav (mobil) für Kopfzeile und Navigation, Form-Fields, Buttons, Cards, Tables mit Paginator (Postausgang, Einstellungen), Stepper für den Setup-Assistenten, Snackbar für Rückmeldungen, Dialoge, Tooltips; CDK für Barrierefreiheit (Fokus, Live-Regions), Layout-Breakpoints und Overlays
-  - Karte im selben Theme: Statusfarben von Markern, Legende, Timeline und Heatmap aus den Tokens, je Modus ein passender MapLibre-Style (`map.style_url` für hell, eine zweite Einstellung für dunkel)
-  - Mobile-first, Kontrast nach WCAG AA, Status nie nur über die Farbe erkennbar, selbst gehostete Schriften und Icons (keine externen Requests außer den Kartenkacheln)
-  - Ablauf: klickbarer Entwurf (Desktop/Mobil, hell/dunkel) zur Freigabe durch den Betreiber, danach Umsetzung mit ADR „Design-System und Theming“; Coverage bleibt bei 100 %
-- [ ] Filter in der Karte (Stecker, Leistung, Betreiber, nur frei)
+- [x] Design auf Angular-Basis ([ADR-0012](adr/0012-design-system-und-theming.md)): Angular Material 3 + CDK, Palette „Volt“ und Roboto Flex (selbst gehostet), Light/Dark/System über `ThemeService` mit Umschalter in Toolbar bzw. Seitenmenü, Karte mit dunklem Stil (`map.style_url_dark`) und Markern in Statusfarbe mit Symbol, Stepper im Setup, Akkordeon mit Suche in den Einstellungen, Tabelle mit Paginator im Postausgang, Seiten außer der Karte als Lazy-Chunks
+- [ ] **E-Control-Abruf über die Bulk-Endpunkte** (Spezifikation siehe [Endpunkt-Notiz](endpunkte/econtrol.md)): zuerst mit dem Key prüfen, ob `GET /datex2/v3.5/energy-infrastructure-table-publication` (Inventar) und `…-status-publication` (Status aller Ladepunkte mit `lastUpdated`) erreichbar sind; dann Inventar und Status je ein Request statt Suchraster (Status-Intervall von 15 auf 1–5 min, `lastUpdated` als Quellzeitpunkt für Latenz), DATEX-Status-Mapping (`FAULTED`, `OUT_OF_ORDER`, `UNAVAILABLE`, …). Fallback: `GET /search/stations` mit Paging (`fromIndex`, `maxResults`). Der DATEX-Teil wird der Kern des generischen DATEX-II-Adapters (Phase 3)
+- [ ] Zusatzattribute aus E-Control ins Ingest-Modell: akzeptierte Ladekarten (`providers`), Zahlungs- und Authentifizierungsarten, Roaming, Preis-URL, Ökostrom, Parken (kostenlos, überdacht, barrierefrei), Fahrzeugtypen/-maße; Wertelisten über `/enumerations/*` gegen die Mapping-Tabellen prüfen
+- [ ] Filter in der Karte (Stecker, Leistung, Betreiber, nur frei; mit den Zusatzattributen auch Ladekarte, Ad-hoc-Zahlung, Roaming, Ökostrom, barrierefrei)
 - [x] Angular: Standort-Detailseite `/locations/:id` (angemeldet, `evse:read`) mit Status-Timeline je EVSE und Heatmap Wochentag × Stunde, Link „Details“ in der Infokarte
 - [x] Ersteinrichtung: Setup-Assistent `/setup` bei leerer Instanz (erster Admin mit Setup-Token aus dem API-Log, danach Datenquelle E-Control und SMTP), `GET /setup`, `POST /setup/admin`; Registrierung bis dahin geschlossen
 - [ ] Angular: Admin (Nutzer, Rollen, API-Keys)
 - [ ] Nutzer- und Rollenverwaltung in der API (`/users`, `/roles`, `GET /audit-log`)
 - [ ] Customizings: `GET/PUT /me/preferences`, Favoriten, Einstellungsseite
 - [ ] Routing: Compose-Service `routing` (Valhalla, OSM-Extrakt Österreich), `IRoutingEngine`, `POST /routes`, Routen-Layer in der Karte
-- [ ] Erste EMP-Tarife: 2–3 Ladekarten-Anbieter mit Tarif-Editor (manuell gepflegt), Szenario-Preisvergleich
+- [ ] Erste EMP-Tarife: 2–3 Ladekarten-Anbieter mit Tarif-Editor (manuell gepflegt), Szenario-Preisvergleich; EMP-Katalog aus `/enumerations/providers` der E-Control vorbefüllen, Zuordnung Ladepunkt ↔ akzeptierte Ladekarten aus `providers`
 
 ### Phase 2 – Preise & Tier-1/2-Quellen
 - [ ] Analyse und Adapter je Anbieter nach Priorität aus [07](07-bestandsanalyse-apps-at.md) (Web-Karten zuerst)
@@ -59,7 +55,7 @@
 
 ### Phase 3 – DACH
 - [ ] Generischer **OCPI-Adapter** (zuerst für die Schweizer BFE-API, die ab November 2026 öffentlich OCPI liefert)
-- [ ] Generischer **DATEX-II-Adapter** (Mobilithek-AFIR-Angebote, Bundesnetzagentur-Register als Inventar-Fallback)
+- [ ] Generischer **DATEX-II-Adapter** (Mobilithek-AFIR-Angebote, Bundesnetzagentur-Register als Inventar-Fallback), aufbauend auf dem DATEX-v3.5-Abruf der E-Control (Phase 1)
 - [ ] Mehrsprachigkeit (de/en/it/fr) in API-Texten und Frontend
 
 ### Phase 4 – Italien
@@ -74,7 +70,7 @@
 | **Hosting** | entschieden: Docker Compose auf dem Dev-Server (`/opt/chargeglobe`, HTTPS-Port 5005 mit self-signed Zertifikat, gültiges Zertifikat im externen Loadbalancer) | Produktiv-Hosting später separat entscheiden; Ressourcen reichen für Phase 1–2 (DB < 50 GB). |
 | **Realtime-API** | SSE / WebSocket / Polling | SSE ab Phase 2, Polling im MVP. |
 | **Benachrichtigungen** (Alerts) | keine / später | keine im MVP; Favoriten und persönliche Einstellungen sind entschieden ([ADR-0005](adr/0005-identity-rbac-openapi.md)), Alerts bauen später auf dem Mail-Service auf. |
-| **UI-Design** | entschieden: Angular Material (Material 3) + Angular CDK mit Light und Dark Mode | nutzt Theming, Komponenten und Barrierefreiheit des Frameworks statt eigener Bausteine; Bundle-Größe im Blick behalten (nur benötigte Module importieren, Karte bleibt Lazy-Chunk). Details im ADR, das mit der Umsetzung entsteht. |
+| **UI-Design** | entschieden: Angular Material (Material 3) + Angular CDK mit Light und Dark Mode, Palette „Volt“, Roboto Flex | umgesetzt, siehe [ADR-0012](adr/0012-design-system-und-theming.md); Wahl des Modus später als Customizing im Benutzerprofil |
 | **Karten-Kacheln selbst hosten** | öffentliche OpenFreeMap-Instanz / eigener Kachel-Service im Compose-Stack | öffentliche Instanz, solange sie zuverlässig ist; Wechsel über `map.style_url` ohne Codeänderung ([ADR-0007](adr/0007-karte-standort-routing.md)). |
 | **Identity-Provider** | nur lokale Konten / zusätzlich OIDC (GitHub, Google, Entra) | lokal im MVP; OIDC-Login später additiv über ASP.NET Core Identity External Logins. |
 | **Tesla-Quelle** | Tesla-Standortkarte (öffentlich) vs. Owner-API (Login) | nur öffentliche Standortdaten + Roaming-EVSE-IDs aus E-Control; keine Owner-API. |

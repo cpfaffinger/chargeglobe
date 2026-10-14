@@ -5,6 +5,8 @@ import { firstValueFrom } from 'rxjs';
 /** Response of GET /api/v1/map/config (settings map.*). */
 export interface MapConfig {
   styleUrl: string;
+  /** Style in dark mode; the API falls back to styleUrl. */
+  styleUrlDark: string;
   attribution: string;
   center: { latitude: number; longitude: number };
   zoom: number;

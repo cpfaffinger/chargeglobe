@@ -13,7 +13,8 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { AuthService } from '../auth/auth.service';
 import { SetupPage } from '../pages/setup.page';
 import { Setting } from '../settings/settings.service';
-import { ME, fakeAuth, flush, submit, text, type, validationError } from '../testing';
+import { Viewport } from '../design/theme.service';
+import { ME, fakeAuth, fakeViewport, flush, submit, text, type, validationError } from '../testing';
 import { SetupService, loadSetupState, requireSetupDone, setupAccess } from './setup.service';
 
 @Component({ template: 'target' })
@@ -168,10 +169,12 @@ describe('SetupPage', () => {
   let auth: ReturnType<typeof fakeAuth>;
   let http: HttpTestingController;
   let harness: RouterTestingHarness;
+  let viewport: ReturnType<typeof fakeViewport>;
 
   const page = () => harness.routeNativeElement!;
-  const rowKeys = () =>
-    Array.from(page().querySelectorAll('app-setting-row h3')).map((heading) =>
+  const current = () => text(page(), '.mat-step-header:has(.mat-step-icon-selected) .mat-step-text-label');
+  const rowKeys = (step: string) =>
+    Array.from(page().querySelectorAll(`#${step} app-setting-row h3`)).map((heading) =>
       heading.textContent!.replace(/\s+/g, ' ').trim(),
     );
 
@@ -197,17 +200,19 @@ describe('SetupPage', () => {
   }
 
   async function click(selector: string): Promise<void> {
-    page().querySelector<HTMLButtonElement>(selector)!.click();
+    page().querySelector<HTMLElement>(selector)!.click();
     await settle();
   }
 
   beforeEach(() => {
     auth = fakeAuth();
+    viewport = fakeViewport();
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: AuthService, useValue: auth },
+        { provide: Viewport, useValue: viewport },
         provideRouter([
           { path: 'setup', component: SetupPage },
           { path: '', component: TargetPage },
@@ -224,76 +229,67 @@ describe('SetupPage', () => {
   it('creates the administrator, then walks through data source and e-mail to the end', async () => {
     auth.createInitialAdmin.and.resolveTo();
     await open(true);
-    expect(text(page(), '#setup-steps .current')).toBe('Administrator');
+    expect(page().querySelector('.mat-stepper-horizontal')).not.toBeNull();
+    expect(current()).toBe('Administrator');
     expect(text(page(), '.hint')).toContain('docker compose logs api');
+
+    // The linear stepper does not open the next step before the administrator exists.
+    page().querySelectorAll<HTMLElement>('.mat-step-header')[1].click();
+    await settle();
+    expect(current()).toBe('Administrator');
 
     fillAdminForm();
     await settle();
 
-    expect(auth.createInitialAdmin).toHaveBeenCalledOnceWith(
-      'a1b2',
-      'owner@example.org',
-      'secret password',
-    );
+    expect(auth.createInitialAdmin).toHaveBeenCalledOnceWith('a1b2', 'owner@example.org', 'secret password');
     expect(TestBed.inject(SetupService).required()).toBeFalse();
-    expect(text(page(), '#setup-steps .current')).toBe('Datenquelle');
-    expect(page().textContent).toContain('Einstellungen werden geladen');
+    expect(current()).toBe('Datenquelle');
+    expect(page().querySelector('#source-step mat-progress-bar')).not.toBeNull();
     http.expectOne('/api/v1/settings').flush(SETTINGS);
     await settle();
-    expect(rowKeys()).toEqual([
+    expect(rowKeys('source-step')).toEqual([
       'provider.api_key provider:econtrol',
       'provider.referer provider:econtrol',
       'provider.enabled provider:econtrol',
     ]);
 
     // A saved row replaces its setting in the list of the page.
-    type(page(), 'app-setting-row:nth-of-type(2) input', 'example.org');
+    type(page(), '#source-step app-setting-row:nth-of-type(2) input', 'example.org');
     await settle();
-    await click('app-setting-row:nth-of-type(2) .save');
+    await click('#source-step app-setting-row:nth-of-type(2) .save');
     const put = http.expectOne('/api/v1/settings/provider.referer');
     expect(put.request.body).toEqual({ value: 'example.org', scope: 'provider:econtrol' });
     put.flush({
       ...provider('provider.referer'),
-      stored: [
-        {
-          scope: 'provider:econtrol',
-          value: 'example.org',
-          updatedAt: '2026-10-14T08:00:00Z',
-          updatedBy: ME.id,
-        },
-      ],
+      stored: [{ scope: 'provider:econtrol', value: 'example.org', updatedAt: '2026-10-14T08:00:00Z', updatedBy: ME.id }],
     });
     await settle();
-    expect(text(page(), 'app-setting-row:nth-of-type(2) .state')).toContain(
-      'Eigener Wert gespeichert',
-    );
+    expect(text(page(), '#source-step app-setting-row:nth-of-type(2) .state')).toContain('Eigener Wert gespeichert');
 
-    await click('#next');
-    expect(text(page(), '#setup-steps .current')).toBe('E-Mail');
-    expect(rowKeys()).toEqual([
-      'mail.smtp.host',
-      'mail.smtp.port',
-      'mail.from.address',
-      'mail.enabled',
-    ]);
-    expect(page().querySelector('app-setup a[href="/admin/mail"]')).not.toBeNull();
+    await click('#next-source');
+    expect(current()).toBe('E-Mail');
+    expect(rowKeys('mail-step')).toEqual(['mail.smtp.host', 'mail.smtp.port', 'mail.from.address', 'mail.enabled']);
+    expect(page().querySelector('#mail-step a[href="/admin/mail"]')).not.toBeNull();
 
-    await click('#back');
-    expect(text(page(), '#setup-steps .current')).toBe('Datenquelle');
-    await click('#next');
-    await click('#next');
+    await click('#back-mail');
+    expect(current()).toBe('Datenquelle');
+    await click('#next-source');
+    await click('#next-mail');
 
+    expect(current()).toBe('Fertig');
     expect(text(page(), '#setup-done')).toContain('Die Einrichtung ist abgeschlossen');
-    expect(page().querySelector('#next')).toBeNull();
     await click('#to-map');
     expect(TestBed.inject(Router).url).toBe('/');
   });
 
-  it('checks the repeated password and shows the errors of the API', async () => {
-    auth.createInitialAdmin.and.rejectWith(
-      validationError('Does not match the setup token in the API log.'),
-    );
+  it('checks the form and the repeated password and shows the errors of the API', async () => {
+    auth.createInitialAdmin.and.rejectWith(validationError('Does not match the setup token in the API log.'));
     await open(true);
+
+    submit(page());
+    await settle();
+    expect(auth.createInitialAdmin).not.toHaveBeenCalled();
+    expect(page().querySelectorAll('mat-error').length).toBe(4);
 
     fillAdminForm('another password');
     await settle();
@@ -303,22 +299,20 @@ describe('SetupPage', () => {
     fillAdminForm();
     await settle();
     expect(text(page(), '.error')).toBe('Does not match the setup token in the API log.');
-    expect(text(page(), '#setup-steps .current')).toBe('Administrator');
+    expect(current()).toBe('Administrator');
     expect(TestBed.inject(SetupService).required()).toBeTrue();
   });
 
-  it('starts at the data source on an instance that is set up already', async () => {
+  it('starts at the data source on an instance that is set up already, vertical on small screens', async () => {
+    viewport.mobile.set(true);
     await open(false);
 
-    expect(text(page(), '#setup-steps .current')).toBe('Datenquelle');
-    expect(page().querySelector('form')).toBeNull();
+    expect(page().querySelector('.mat-stepper-vertical')).not.toBeNull();
+    expect(current()).toBe('Datenquelle');
     http
       .expectOne('/api/v1/settings')
-      .flush(
-        { title: 'Forbidden', detail: 'Missing permission: settings:read.' },
-        { status: 403, statusText: 'Forbidden' },
-      );
+      .flush({ title: 'Forbidden', detail: 'Missing permission: settings:read.' }, { status: 403, statusText: 'Forbidden' });
     await settle();
-    expect(text(page(), '.error')).toBe('Missing permission: settings:read.');
+    expect(text(page(), '#source-step .error')).toBe('Missing permission: settings:read.');
   });
 });

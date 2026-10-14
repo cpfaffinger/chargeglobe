@@ -1,17 +1,24 @@
-import { AVAILABILITY } from '../map/availability';
+import { AVAILABILITY, tokenColor } from '../map/availability';
+import { IconName } from '../design/icon';
 import { OccupancyDay, StatusInterval } from './evses.service';
 
-/** Colour and German label per OCPI status; the colours follow the map legend. */
-export const EVSE_STATUS: Record<string, { color: string; label: string }> = {
-  AVAILABLE: { color: AVAILABILITY.AVAILABLE.color, label: 'frei' },
-  CHARGING: { color: AVAILABILITY.OCCUPIED.color, label: 'lädt' },
-  BLOCKED: { color: '#ad5700', label: 'blockiert' },
-  RESERVED: { color: '#f9a825', label: 'reserviert' },
-  OUTOFORDER: { color: AVAILABILITY.OUT_OF_ORDER.color, label: 'außer Betrieb' },
-  INOPERATIVE: { color: '#8e0000', label: 'nicht betriebsbereit' },
-  PLANNED: { color: '#b0bec5', label: 'geplant' },
-  REMOVED: { color: '#546e7a', label: 'entfernt' },
-  UNKNOWN: { color: AVAILABILITY.UNKNOWN.color, label: 'unbekannt' },
+const status = (availability: keyof typeof AVAILABILITY, label: string) => ({
+  color: tokenColor(AVAILABILITY[availability].token),
+  icon: AVAILABILITY[availability].icon,
+  label,
+});
+
+/** Colour (token of the map legend), symbol and German label per OCPI status. */
+export const EVSE_STATUS: Record<string, { color: string; icon: IconName; label: string }> = {
+  AVAILABLE: status('AVAILABLE', 'frei'),
+  CHARGING: status('OCCUPIED', 'lädt'),
+  BLOCKED: status('OCCUPIED', 'blockiert'),
+  RESERVED: status('OCCUPIED', 'reserviert'),
+  OUTOFORDER: status('OUT_OF_ORDER', 'außer Betrieb'),
+  INOPERATIVE: status('OUT_OF_ORDER', 'nicht betriebsbereit'),
+  PLANNED: status('UNKNOWN', 'geplant'),
+  REMOVED: status('UNKNOWN', 'entfernt'),
+  UNKNOWN: status('UNKNOWN', 'unbekannt'),
 };
 
 export const statusOf = (status: string) => EVSE_STATUS[status] ?? EVSE_STATUS['UNKNOWN'];
@@ -70,7 +77,12 @@ export function combine(matrices: OccupancyDay[][]): OccupancyDay[] {
   });
 }
 
-/** Cell colour of the heatmap: grey without readings, otherwise from light to dark orange. */
+/**
+ * Cell colour of the heatmap: the primary colour of the theme with 8 % (never) to 100 % (always) opacity, so it
+ * follows light and dark mode; without readings the highest surface container colour.
+ */
 export function heatColor(share: number | null): string {
-  return share === null ? '#eceff1' : `hsl(28 90% ${Math.round(95 - share * 55)}%)`;
+  return share === null
+    ? 'var(--mat-sys-surface-container-highest)'
+    : `color-mix(in srgb, var(--mat-sys-primary) ${Math.round(8 + share * 92)}%, transparent)`;
 }

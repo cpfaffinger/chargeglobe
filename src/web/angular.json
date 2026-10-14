@@ -38,8 +38,9 @@
               }
             ],
             "styles": [
+              "node_modules/@fontsource-variable/roboto-flex/index.css",
               "node_modules/maplibre-gl/dist/maplibre-gl.css",
-              "src/styles.css"
+              "src/styles.scss"
             ]
           },
           "configurations": {
@@ -47,8 +48,8 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "900kB",
+                  "maximumError": "1.2MB"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -87,6 +88,7 @@
             "tsConfig": "tsconfig.spec.json",
             "karmaConfig": "karma.conf.js",
             "browsers": "ChromeHeadless",
+            "styles": ["src/styles.scss"],
             "codeCoverageExclude": [
               "src/app/map/map-engine.ts"
             ]

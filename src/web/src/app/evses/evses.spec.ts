@@ -122,6 +122,8 @@ describe('status helpers', () => {
   it('names every OCPI status and falls back to unknown', () => {
     expect(statusOf('CHARGING').label).toBe('lädt');
     expect(statusOf('SOMETHING_NEW')).toBe(EVSE_STATUS['UNKNOWN']);
+    expect(statusOf('CHARGING')).toEqual({ color: 'var(--cg-status-occupied)', icon: 'bolt', label: 'lädt' });
+    expect(statusOf('INOPERATIVE').icon).toBe('close');
   });
 
   it('clips the intervals to the range and drops those outside', () => {
@@ -175,9 +177,9 @@ describe('status helpers', () => {
   });
 
   it('colours cells from light to dark orange and empty cells grey', () => {
-    expect(heatColor(null)).toBe('#eceff1');
-    expect(heatColor(0)).toBe('hsl(28 90% 95%)');
-    expect(heatColor(1)).toBe('hsl(28 90% 40%)');
+    expect(heatColor(null)).toBe('var(--mat-sys-surface-container-highest)');
+    expect(heatColor(0)).toBe('color-mix(in srgb, var(--mat-sys-primary) 8%, transparent)');
+    expect(heatColor(1)).toBe('color-mix(in srgb, var(--mat-sys-primary) 100%, transparent)');
   });
 });
 
@@ -249,9 +251,9 @@ describe('LocationDetailPage', () => {
   }
 
   async function select(value: string): Promise<void> {
-    const select = page().querySelector<HTMLSelectElement>('#heatmap-select select')!;
-    select.value = value;
-    select.dispatchEvent(new Event('change'));
+    const toggles = Array.from(page().querySelectorAll<HTMLElement>('#heatmap-select mat-button-toggle'));
+    const index = value === 'all' ? 0 : ['e-1', 'e-2'].indexOf(value) + 1;
+    toggles[index].querySelector('button')!.click();
     await settle();
   }
 
@@ -299,8 +301,10 @@ describe('LocationDetailPage', () => {
     await settle();
 
     const [first, second] = Array.from(page().querySelectorAll('.evse'));
-    expect(text(first, 'h4')).toBe('AT*VIE*E1*1');
-    expect(text(first, '.status')).toMatch(/^lädt seit 14\.10\.2026 \d\d:40 · bis 22 kW$/);
+    expect(text(first, 'h3')).toBe('AT*VIE*E1*1');
+    expect(text(first, '.status')).toBe('lädt');
+    expect(first.querySelector<HTMLElement>('.status .status-dot')!.style.background).toBe('var(--cg-status-occupied)');
+    expect(text(first, '.meta')).toMatch(/^seit 14\.10\.2026 \d\d:40 · bis 22 kW$/);
     expect(text(first, '.connectors')).toBe('IEC_62196_T2 · SOCKET · 22 kW');
     const segments = Array.from(first.querySelectorAll<HTMLElement>('.segment'));
     expect(segments.map((segment) => [segment.style.left, segment.style.width])).toEqual([
@@ -308,7 +312,7 @@ describe('LocationDetailPage', () => {
       ['50%', '50%'],
     ]);
     expect(segments[1].title).toMatch(/^lädt: \d\d\.\d\d\. \d\d:\d\d – \d\d\.\d\d\. \d\d:\d\d$/);
-    expect(text(second, 'h4')).toBe('XX*CG*E0123456789ABCDEF (ID von chargeglobe vergeben)');
+    expect(text(second, 'h3')).toBe('XX*CG*E0123456789ABCDEF (ID von chargeglobe vergeben)');
     expect(text(second, '.status')).toBe('unbekannt');
     expect(text(second, '.connectors')).toBe('DOMESTIC_F');
     expect(text(second, '.timeline-state')).toBe('Keine Statusmeldungen in den letzten 7 Tagen.');
@@ -321,7 +325,7 @@ describe('LocationDetailPage', () => {
     expect(heatmapCell(1, 8).title).toBe('Mo 8–9 Uhr: 50% lädt (6 Meldungen)');
     expect(heatmapCell(7, 23).title).toBe('So 23–24 Uhr: 0% lädt (2 Meldungen)');
     expect(heatmapCell(2, 0).title).toBe('Di 0–1 Uhr: keine Daten (0 Meldungen)');
-    expect(heatmapCell(2, 0).style.background).toBe('rgb(236, 239, 241)');
+    expect(heatmapCell(2, 0).style.background).toBe('var(--mat-sys-surface-container-highest)');
 
     await select('e-1');
     expect(heatmapCell(1, 8).title).toBe('Mo 8–9 Uhr: 75% lädt (4 Meldungen)');

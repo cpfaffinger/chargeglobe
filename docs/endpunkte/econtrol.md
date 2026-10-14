@@ -4,7 +4,7 @@
 |---|---|
 | Analysiert am | 2026-10-14 |
 | Analysiert von | Claude (Agent) mit dem API-Key des Betreibers, 8 lesende Requests |
-| Methode | Export-Doku nicht lesbar (Swagger antwortet auch mit Key 401); Antworten von `GET /search` ausgewertet, Felder gegen die HA-Integration ([docs/07](../07-bestandsanalyse-apps-at.md)) abgeglichen |
+| Methode | Antworten von `GET /search` ausgewertet, Felder gegen die HA-Integration ([docs/07](../07-bestandsanalyse-apps-at.md)) abgeglichen; zusätzlich die Spezifikation „Ladestellenverzeichnis“ v2.0 (Swagger 2.0, `host` `api.e-control.at`, `basePath` `/charge/1.0`), vom Betreiber am 2026-10-14 als Datei bereitgestellt (nicht im Repo; die Beispielwerte einzelner Felder sind kein gültiges JSON) |
 | Tier | 0 |
 | Zugang | eigener, kostenloser API-Key (Registrierung unter admin.ladestellen.at), an eine Domain gebunden: Header `apiKey: <key>` und `Referer: https://<registrierte Domain>/` |
 | ToS geprüft | Nutzungsbedingungen wurden vom Betreiber bei der Registrierung akzeptiert (Click-Wrap); ihr Wortlaut ist noch nicht im Projekt archiviert. Bekannte Punkte laut Wiedergabe Dritter ([docs/08](../08-datenquellen-und-recht.md)): 2.500 Requests/h, max. 30 parallel, Quellenangabe mit Logo, Quartalsstatistik, Go-Live-Meldung, Weiterverbreitung nur nach schriftlicher Freigabe |
@@ -39,8 +39,22 @@ Konfiguration (Config-Service, Scope `provider:econtrol`, Admin-UI `/admin/setti
   - `status` → `Status` (Tabelle unten), Rohwert in `StatusRaw`
   - Preise: Cent → Euro (`priceCentKwh`, `priceCentMin`, `startFeeCent` → `SessionFee`, `blockingFeeCentMin`, `blockingFeeFromMinute`); `freeOfCharge: true` → 0 €/kWh und 0 € Sessiongebühr; immer Ad-hoc (`EmpKey = null`), Währung EUR
 
-### Nicht erreichbar
-`/stations`, `/countries/AT/stations` und die Swagger-Ressourcen (`/v3/api-docs/…`, `/swagger-resources`) antworten auch mit Key `401`. Ein Bulk-Endpunkt ist nicht belegt; die in [docs/07](../07-bestandsanalyse-apps-at.md) genannten Einzelabfragen (`/search/stations?evseId=`, `/countries/{cc}/operators/{op}/stations/{id}`) wurden nicht geprüft.
+### Laut Spezifikation, noch nicht live geprüft
+Die Spezifikation deklariert kein Security-Schema; alle Operationen nennen `401`/`403` als mögliche Antwort, der Zugriff hängt also vom Key und seinen Rechten ab. Live geprüft ist bisher nur `GET /search`; `/stations` und `/countries/AT/stations` (ohne Betreiber) antworteten `401` und stehen nicht in der Spezifikation.
+
+| Endpunkt | Inhalt laut Spezifikation | Nutzen für chargeglobe |
+|---|---|---|
+| `GET /datex2/versions` | unterstützte DATEX-II-Versionen (derzeit ein eigener Endpunkt je Version) | Health-Probe für den Bulk-Zugang |
+| `GET /datex2/v3.5/energy-infrastructure-table-publication` | **alle** Sites, Stationen und Ladepunkte (`EnergyInfrastructureTablePublication`; JSON oder XML) mit Betreiber, Lage, Öffnungszeiten, Tarifinformation (`rates`), Zugangs- und Authentifizierungsarten | Inventar in **einem** Request statt Suchraster |
+| `GET /datex2/v3.5/energy-infrastructure-status-publication` | Status **aller** Ladepunkte (`RefillPointStatus.status`: `AVAILABLE`, `BLOCKED`, `CHARGING`, `FAULTED`, `INOPERATIVE`, `OCCUPIED`, `OUT_OF_ORDER`, `OUT_OF_STOCK`, `PLANNED`, `REMOVED`, `RESERVED`, `UNAVAILABLE`) mit `lastUpdated` je Ladepunkt, dazu `openingStatus`, `fault`, `newRates` | Status in **einem** Request, `lastUpdated` als `source_reported_at` (Latenz messbar); eigenes Status-Mapping nötig |
+| `GET /search/stations` | Filtersuche mit Paging (`fromIndex`, `maxResults`; Antwort mit `totalResults`, `fromIndex`, `endIndex`), Filter u. a. `stationStatuses`, `evseId` (Wildcard `%`), `connectorTypes`, `minEnergyInKw`, `providers`, `roaming`, `freeOfCharge`, Koordinaten + `maxDistanceInKm` | Fallback für einen vollständigen Abzug ohne Raster; gezielte Abfrage einzelner EVSEs |
+| `GET /search?latitude=&longitude=` | wie oben beschrieben; zusätzlich Filter `capacity` (Mindestleistung kW) und `types` (Steckertypen) | derzeit genutzt |
+| `GET /countries/{cc}/operators/basic` | Basisdaten aller Betreiber eines Landes | Betreiber-Stammdaten und Filter |
+| `GET /countries/{cc}/operators/{op}/stations`, `…/stations/{id}`, `…/points/{evseId}` | Stationen eines Betreibers bzw. ein Ladepunkt („based on user permissions“) | vermutlich nur für eigene Betreiberdaten; nicht für den Abzug |
+| `GET /enumerations/connectorTypes`, `electricityTypes`, `authenticationModes`, `electronicPaymentProviders`, `providers`, `vehicleTypes`, `smartServices` | Wertelisten der Quelle | Mapping-Tabellen gegen die vollständige Liste prüfen; `providers` als Startkatalog der EMPs |
+| `GET /nutscodes`, `GET /point-data-export/region-codes`, `GET /point-data-export/xlsx?regionCodes=` | NUTS-1-Codes; Export als Excel je Bezirk/Bundesland | nicht benötigt (Regionen aus OSM, Excel nicht maschinenfreundlich) |
+
+Zusätzliche Felder je Station bzw. Ladepunkt, die das Ingest-Modell noch nicht übernimmt: `providers`/`otherProviders` (akzeptierte Ladekarten bzw. Anbieter), `electronicPaymentProviders`, `authenticationModes`, `roaming`, `priceUrl`, `contractBasedPayment`, `greenEnergy`, `austrianEcoLabel`, `freeParking`, `roofedParking`, `illuminatedParking`, `parkingPlaces`, `barrierFreeParkingPlaces`, `vehicleTypes` und maximale Fahrzeugmaße, `smartService`, `nutsCode`, `timezone`, Koordinaten je Ladepunkt.
 
 ### Abdeckung einer Fläche
 `SearchGrid` sucht vom Mittelpunkt einer Zelle aus; ist die Antwort eine volle Seite (100) und liegt die entfernteste Station näher als die Zellecken, wird die Zelle geviertelt. Dichte Gebiete (Wiener Innenstadt: 100 Stationen in 1,2 km) bekommen so feine, ländliche grobe Zellen. Unter 50 m halber Diagonale wird nicht mehr geteilt; ein Lauf endet nach 1.000 Requests (Warnung im Log). Ohne Bounding Box gilt ganz Österreich.
@@ -78,4 +92,4 @@ Je Ladepunkt der Ad-hoc-Preis des Betreibers: kWh-Preis und/oder Minutenpreis, S
 - Wortlaut der Nutzungsbedingungen archivieren; Weiterverbreitung (API-Ausgabe von chargeglobe) schriftlich mit support@ladestellen.at klären; Go-Live-Meldung, Logo-Attribution und Quartalsstatistik umsetzen.
 - Die registrierte Domain ist derzeit ein Platzhalter (`ogb.net`); bei Wechsel nur `provider.referer` ändern.
 - Requests laufen durch zwei Budgets: 40/min je Prozess im Adapter und clusterweit in `provider_rate_budget` (ebenfalls 40/min, Burst 10). Die tatsächliche Anzahl Suchen je Durchgang ist erst mit Live-Daten messbar (`poll_plan.last_result`, Crawler-Log).
-- Aktualisierungsrate des Live-Status und ein Bulk-Endpunkt sind unbekannt (Swagger nicht lesbar).
+- Ob der Key die DATEX-II-Publikationen und `/search/stations` nutzen darf, ist offen (401/403 laut Spezifikation möglich); ebenso Antwortgröße, Aktualisierungsrate des Status und ob die Publikationen dieselben EVSE-IDs und Stationen wie `/search` liefern.

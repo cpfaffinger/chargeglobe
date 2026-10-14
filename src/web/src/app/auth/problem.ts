@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { WritableSignal } from '@angular/core';
+import { AbstractControl } from '@angular/forms';
 
 /** Messages of an RFC 9457 problem response: the field errors if present, else detail or title. */
 export function describeError(error: unknown): string[] {
@@ -27,4 +28,18 @@ export async function attempt(
   } finally {
     busy.set(false);
   }
+}
+
+/** Like {@link attempt}, but an invalid form only shows its field errors (mat-error) and sends nothing. */
+export function attemptValid(
+  form: AbstractControl,
+  busy: WritableSignal<boolean>,
+  errors: WritableSignal<string[]>,
+  action: () => Promise<void>,
+): Promise<void> {
+  if (form.invalid) {
+    form.markAllAsTouched();
+    return Promise.resolve();
+  }
+  return attempt(busy, errors, action);
 }

@@ -1,14 +1,27 @@
 import { Injectable } from '@angular/core';
 // Type-only imports are erased by the compiler; the library itself is still loaded on demand.
 import type { FeatureCollection, Point } from 'geojson';
-import type { ExpressionSpecification, GeoJSONSource } from 'maplibre-gl';
+import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
+import { ICONS } from '../design/icon';
 import { AVAILABILITIES, AVAILABILITY } from './availability';
-import { Bbox, LocationSummary } from './locations.service';
+import { Availability, Bbox, LocationSummary } from './locations.service';
+
+/** Base map style and marker colours of the current colour scheme, resolved from the theme tokens. */
+export interface MapTheme {
+  styleUrl: string;
+  status: Record<Availability, string>;
+  /** Symbol on a status marker. */
+  onStatus: string;
+  /** Ring around markers, the surface colour. */
+  ring: string;
+  cluster: string;
+  onCluster: string;
+}
 
 /** What the engine needs to show the base map (docs/adr/0007-karte-standort-routing.md). */
 export interface MapViewOptions {
   container: HTMLElement;
-  styleUrl: string;
+  theme: MapTheme;
   /** Always visible, in addition to the attribution the style's sources carry. */
   attribution: string;
   center: { latitude: number; longitude: number };
@@ -33,6 +46,8 @@ export interface MapHandle {
   locate(): boolean;
   /** Replaces the location markers (clustered, coloured by availability). */
   showLocations(locations: LocationSummary[]): void;
+  /** Switches base map style and marker colours, e.g. after a change between light and dark mode. */
+  setTheme(theme: MapTheme): void;
   destroy(): void;
 }
 
@@ -56,9 +71,10 @@ export class MapLibreEngine extends MapEngine {
     // The worker ships as an asset (angular.json), next to the app instead of next to the chunk.
     maplibre.setWorkerUrl(new URL(`maplibre/maplibre-gl-worker.mjs?v=${maplibre.getVersion()}`, document.baseURI).href);
 
+    let theme = options.theme;
     const map = new maplibre.Map({
       container: options.container,
-      style: options.styleUrl,
+      style: theme.styleUrl,
       center: [options.center.longitude, options.center.latitude],
       zoom: options.zoom,
       attributionControl: false,
@@ -89,7 +105,9 @@ export class MapLibreEngine extends MapEngine {
       const bounds = map.getBounds();
       options.onViewChange({ west: bounds.getWest(), south: bounds.getSouth(), east: bounds.getEast(), north: bounds.getNorth() });
     };
-    map.on('load', () => {
+    // Every style load (the first one and each theme change) starts without the app's source, images and layers.
+    map.on('style.load', () => {
+      addMarkerImages(map, theme);
       map.addSource(source, { type: 'geojson', data: toGeoJson(pending), cluster: true, clusterRadius: 50, clusterMaxZoom: 13 });
       map.addLayer({
         id: 'location-clusters',
@@ -97,10 +115,10 @@ export class MapLibreEngine extends MapEngine {
         source,
         filter: ['has', 'point_count'],
         paint: {
-          'circle-color': '#1565c0',
-          'circle-radius': ['step', ['get', 'point_count'], 14, 50, 18, 200, 24],
-          'circle-stroke-width': 2,
-          'circle-stroke-color': '#ffffff',
+          'circle-color': theme.cluster,
+          'circle-radius': ['step', ['get', 'point_count'], 16, 50, 20, 200, 26],
+          'circle-stroke-width': 3,
+          'circle-stroke-color': theme.ring,
         },
       });
       map.addLayer({
@@ -108,28 +126,24 @@ export class MapLibreEngine extends MapEngine {
         type: 'symbol',
         source,
         filter: ['has', 'point_count'],
-        layout: { 'text-field': ['get', 'point_count_abbreviated'], 'text-font': ['Noto Sans Bold'], 'text-size': 12 },
-        paint: { 'text-color': '#ffffff' },
+        layout: { 'text-field': ['get', 'point_count_abbreviated'], 'text-font': ['Noto Sans Bold'], 'text-size': 13 },
+        paint: { 'text-color': theme.onCluster },
       });
       map.addLayer({
         id: 'location-points',
-        type: 'circle',
+        type: 'symbol',
         source,
         filter: ['!', ['has', 'point_count']],
-        paint: {
-          'circle-color': [
-            'match',
-            ['get', 'availability'],
-            ...AVAILABILITIES.flatMap((key) => [key, AVAILABILITY[key].color]),
-            AVAILABILITY.UNKNOWN.color,
-          ] as unknown as ExpressionSpecification,
-          'circle-radius': 7,
-          'circle-stroke-width': 2,
-          'circle-stroke-color': '#ffffff',
+        layout: {
+          'icon-image': ['concat', 'status-', ['get', 'availability']],
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true,
         },
       });
-      loaded = true;
-      emitView();
+      if (!loaded) {
+        loaded = true;
+        emitView();
+      }
     });
     map.on('moveend', () => loaded && emitView());
     map.on('click', 'location-clusters', async (event) => {
@@ -151,7 +165,36 @@ export class MapLibreEngine extends MapEngine {
           (map.getSource(source) as GeoJSONSource).setData(toGeoJson(locations));
         }
       },
+      setTheme: (next) => {
+        theme = next;
+        // setStyle reloads the style; the style.load handler adds markers in the new colours.
+        map.setStyle(next.styleUrl);
+      },
       destroy: () => map.remove(),
     };
+  }
+}
+
+/** One marker image per availability: a disc in the status colour with a ring and the status symbol. */
+function addMarkerImages(map: MapLibreMap, theme: MapTheme): void {
+  const ratio = 2;
+  const size = 28 * ratio;
+  for (const key of AVAILABILITIES) {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = size;
+    const context = canvas.getContext('2d')!;
+    context.beginPath();
+    context.arc(size / 2, size / 2, size / 2 - 2 * ratio, 0, 2 * Math.PI);
+    context.fillStyle = theme.status[key];
+    context.fill();
+    context.lineWidth = 3 * ratio;
+    context.strokeStyle = theme.ring;
+    context.stroke();
+    const scale = (16 * ratio) / 24;
+    context.translate((size - 24 * scale) / 2, (size - 24 * scale) / 2);
+    context.scale(scale, scale);
+    context.fillStyle = theme.onStatus;
+    context.fill(new Path2D(ICONS[AVAILABILITY[key].icon]));
+    map.addImage(`status-${key}`, context.getImageData(0, 0, size, size), { pixelRatio: ratio });
   }
 }

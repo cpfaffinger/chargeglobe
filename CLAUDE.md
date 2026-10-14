@@ -2,7 +2,7 @@
 
 Offene Datenbank für öffentliche E-Ladepunkte: Inventar aus vielen Quellen unter gemeinsamer Identität (EVSE-ID), zyklisches Status-Tracking je Ladepunkt mit Historie, Preistracking über Ladekarten-/App-Anbieter (EMPs) und Tarifmodelle hinweg, öffentliche API + Web-Frontend. Start-Scope Wien/NÖ/OÖ/Burgenland, Ziel AT → DACH → Italien.
 
-Stack: **ASP.NET Core / C# / .NET 10 · Angular 22 / TypeScript · PostgreSQL 17 + PostGIS + TimescaleDB · Docker Compose**. Zugriff: anonym ist nur die Karte nutzbar (Ladepunkte mit Basisdaten und aktuellem Status, eigener Standort); alle erweiterten Funktionen und persönlichen Einstellungen setzen ein Benutzerkonto voraus (kostenlose Selbstregistrierung) ([ADR-0005](docs/adr/0005-identity-rbac-openapi.md)); Karte mit MapLibre/OSM, Standort und Routing ([ADR-0007](docs/adr/0007-karte-standort-routing.md)); zentraler Mail-Service mit SMTP ([ADR-0008](docs/adr/0008-zentraler-mail-service-smtp.md)); Nutzerverwaltung mit RBAC (Rollen = Berechtigungsbündel, feingranulare Permissions) für Pflege und Administration; API-Keys und eine OpenAPI-3.1-Beschreibung, die KI-Agenten ohne weitere Doku nutzen können ([ADR-0005](docs/adr/0005-identity-rbac-openapi.md)).
+Stack: **ASP.NET Core / C# / .NET 10 · Angular 22 / TypeScript mit Angular Material 3 ([ADR-0012](docs/adr/0012-design-system-und-theming.md)) · PostgreSQL 17 + PostGIS + TimescaleDB · Docker Compose**. Zugriff: anonym ist nur die Karte nutzbar (Ladepunkte mit Basisdaten und aktuellem Status, eigener Standort); alle erweiterten Funktionen und persönlichen Einstellungen setzen ein Benutzerkonto voraus (kostenlose Selbstregistrierung) ([ADR-0005](docs/adr/0005-identity-rbac-openapi.md)); Karte mit MapLibre/OSM, Standort und Routing ([ADR-0007](docs/adr/0007-karte-standort-routing.md)); zentraler Mail-Service mit SMTP ([ADR-0008](docs/adr/0008-zentraler-mail-service-smtp.md)); Nutzerverwaltung mit RBAC (Rollen = Berechtigungsbündel, feingranulare Permissions) für Pflege und Administration; API-Keys und eine OpenAPI-3.1-Beschreibung, die KI-Agenten ohne weitere Doku nutzen können ([ADR-0005](docs/adr/0005-identity-rbac-openapi.md)).
 
 ## Dokumentation (Einstieg)
 
@@ -80,6 +80,7 @@ npm ci
 npx ng test --code-coverage --watch=false   # erwartet: Statements 100% (karma.conf.js bricht darunter ab); braucht CHROME_BIN (Chrome oder Edge)
 npx ng build                                # maplibre-gl landet als eigener Lazy-Chunk ("Lazy chunk files … maplibre-gl")
 npx ng serve
+npx ng generate @angular/material:theme-color --primary-color="#006A60" --tertiary-color="#7C5800" --directory=src/ --is-scss   # Palette neu erzeugen (ADR-0012), nur bei Farbwechsel
 
 # Replay-Erwartung eines Adapters nach gewollter Mapping-Änderung neu schreiben (danach Diff von fixtures/<key>/*.expected.json prüfen)
 UPDATE_FIXTURES=1 dotnet test tests/ChargeGlobe.Providers.Tests
@@ -146,4 +147,4 @@ Vor einem neuen lokalen Coverage-Lauf alte Ergebnisse löschen (`tests/*/TestRes
 
 ## Nächste Schritte (Stand jetzt)
 
-Siehe `docs/09-roadmap.md`: zuerst das Design auf Angular-Basis (Angular Material 3 + CDK, Theming über `mat.theme`-Tokens, Light und Dark Mode; Entwurf zur Freigabe, dann Umsetzung mit ADR), danach Filter in der Karte (Stecker, Leistung, Betreiber, nur frei) und Ad-hoc-Preise aus E-Control (`PRICE_POLL`, `price_observation`, `GET /evses/{id}/prices`); außerdem Lizenz festlegen und die E-Control-Nutzungsbedingungen archivieren. API-Keys von Quellen werden nur im Admin-UI eingetragen (`provider.api_key`, Scope `provider:<key>`), nie in Dateien.
+Siehe `docs/09-roadmap.md`: Filter in der Karte (Stecker, Leistung, Betreiber, nur frei) und Ad-hoc-Preise aus E-Control (`PRICE_POLL`, `price_observation`, `GET /evses/{id}/prices`); außerdem Lizenz festlegen und die E-Control-Nutzungsbedingungen archivieren. API-Keys von Quellen werden nur im Admin-UI eingetragen (`provider.api_key`, Scope `provider:<key>`), nie in Dateien.
