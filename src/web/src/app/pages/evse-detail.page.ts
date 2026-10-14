@@ -6,6 +6,7 @@ import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { AuthService } from '../auth/auth.service';
 import { AppIcon } from '../design/icon';
 import { EvseResponse, EvsesService, Occupancy, StatusInterval } from '../evses/evses.service';
 import {
@@ -19,6 +20,7 @@ import {
 } from '../evses/labels';
 import { Segment, statusOf, timeline } from '../evses/status';
 import { OccupancyHeatmap, StatusTimeline } from '../evses/status-charts';
+import { EvsePricesResponse, money, priceParts } from '../evses/prices';
 
 /** Ranges of the status history in days; the API allows up to 90. */
 export const HISTORY_DAYS = [1, 7, 30];
@@ -168,6 +170,57 @@ const DAY_MS = 24 * 60 * 60 * 1000;
         </mat-card>
       </div>
 
+      @if (prices) {
+        <mat-card appearance="outlined">
+          <mat-card-content>
+            <section aria-labelledby="price-title">
+              <h2 id="price-title">Ad-hoc-Preis</h2>
+              @switch (priceState()) {
+                @case ('loading') {
+                  <p class="price-state">Preis wird geladen …</p>
+                }
+                @case ('error') {
+                  <p class="price-state error">Der Preis konnte nicht geladen werden.</p>
+                }
+                @default {
+                  @let pricing = priceData()!.data;
+                  @if (pricing.current; as current) {
+                    <p id="price-current">{{ parts(current.price).join(' · ') }}</p>
+                    <p id="price-example">
+                      {{ pricing.example.kwh }} kWh in {{ pricing.example.minutes }} min:
+                      <strong>{{ money(current.price.exampleCost, current.price.currency) }}</strong>
+                    </p>
+                    <p class="lead" id="price-since">
+                      gilt seit {{ current.since | date: 'dd.MM.yyyy HH:mm' }} · bestätigt {{ current.observedAt | date: 'dd.MM.yyyy HH:mm' }} ·
+                      Quelle {{ current.price.source }}
+                    </p>
+                  } @else {
+                    <p id="price-current">Für diesen Ladepunkt ist kein Ad-hoc-Preis bekannt.</p>
+                  }
+                  @if (pricing.history.length > 1) {
+                    <table id="price-history" class="data-table">
+                      <thead>
+                        <tr><th scope="col">von</th><th scope="col">bis</th><th scope="col">Preis</th><th scope="col">{{ pricing.example.kwh }} kWh / {{ pricing.example.minutes }} min</th></tr>
+                      </thead>
+                      <tbody>
+                        @for (period of pricing.history; track period.from + period.price.source) {
+                          <tr>
+                            <td>{{ period.from | date: 'dd.MM.yyyy' }}</td>
+                            <td>{{ period.to === null ? 'heute' : (period.to | date: 'dd.MM.yyyy') }}</td>
+                            <td>{{ parts(period.price).join(' · ') }}</td>
+                            <td>{{ money(period.price.exampleCost, period.price.currency) }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  }
+                }
+              }
+            </section>
+          </mat-card-content>
+        </mat-card>
+      }
+
       <mat-card appearance="outlined">
         <mat-card-content>
           <section aria-labelledby="history-title">
@@ -313,6 +366,12 @@ export class EvseDetailPage {
   protected readonly powerTypeLabel = powerTypeLabel;
   protected readonly attributeLabel = attributeLabel;
   protected readonly yesNo = yesNo;
+  protected readonly parts = priceParts;
+  protected readonly money = money;
+  /** The ad-hoc price needs price:read. */
+  protected readonly prices = inject(AuthService).hasPermission('price:read');
+  protected readonly priceData = signal<EvsePricesResponse | null>(null);
+  protected readonly priceState = signal<'loading' | 'error' | 'ready'>('loading');
 
   protected readonly notice = signal<'missing' | 'failed' | null>(null);
   protected readonly evse = signal<EvseResponse | null>(null);
@@ -353,7 +412,16 @@ export class EvseDetailPage {
       this.notice.set(error instanceof HttpErrorResponse && error.status === 404 ? 'missing' : 'failed');
       return;
     }
-    await Promise.all([this.loadHistory(), this.loadOccupancy()]);
+    await Promise.all([this.loadHistory(), this.loadOccupancy(), ...(this.prices ? [this.loadPrices()] : [])]);
+  }
+
+  private async loadPrices(): Promise<void> {
+    try {
+      this.priceData.set(await this.service.prices(this.evse()!.data.id));
+      this.priceState.set('ready');
+    } catch {
+      this.priceState.set('error');
+    }
   }
 
   private async loadHistory(): Promise<void> {

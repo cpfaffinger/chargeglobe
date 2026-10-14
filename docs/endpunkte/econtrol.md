@@ -139,7 +139,9 @@ Datei `src/ChargeGlobe.Providers.EControl/Mapping/auth-mapping.json` → kanonis
 | `DEBIT_CARD` | `DEBIT_CARD_PAYABLE` |
 
 ## Preisdarstellung
-Je Ladepunkt der Ad-hoc-Preis des Betreibers: kWh-Preis und/oder Minutenpreis, Startgebühr, Blockiergebühr ab Minute X, Kennzeichen „kostenlos“, dazu die Preis-URL der Station. EMP-Tarife liefert die Quelle nicht.
+Je Ladepunkt der Ad-hoc-Preis des Betreibers, in beiden Endpunkten mit denselben Feldern (Register `/search/stations`: `priceInCentPerKwh`, `priceInCentPerMin`; Suche `/search`: `priceCentKwh`, `priceCentMin`; beide `startFeeCent`, `blockingFeeCentMin`, `blockingFeeFromMinute`, `freeOfCharge`), dazu die Preis-URL der Station. Alle Beträge sind Cent ohne Währungsangabe (immer Euro); eine Gültigkeit (`valid_from`) und einen Freitext liefert die Quelle nicht, ebenso keine EMP-Tarife.
+
+Abbildung (`EControlMapper.AdHocPrice` → `ProviderEvseSnapshot.AdHocPrice` als `PriceComponents`): Cent → Euro (`/100`), `blockingFeeFromMinute` → `BlockingAfterMinutes` (Minute der Sitzung, ab der die Blockiergebühr gilt), `freeOfCharge: true` → `FreeOfCharge` ohne Beträge, ohne jede Preisangabe → kein Preis. Der Preis kommt mit den Register-Seiten des Inventar-Abrufs, kostet also keinen zusätzlichen Request; der Worker schreibt ihn nach `evse_price_current` und bei einer Änderung eine Zeile nach `price_observation`.
 
 ## Offene Punkte / Risiken
 - Wortlaut der Nutzungsbedingungen archivieren; Weiterverbreitung (API-Ausgabe von chargeglobe) schriftlich mit support@ladestellen.at klären; Go-Live-Meldung, Logo-Attribution und Quartalsstatistik umsetzen.

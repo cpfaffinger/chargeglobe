@@ -16,6 +16,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<FavoriteLocation> FavoriteLocations => Set<FavoriteLocation>();
 
+    public DbSet<PriceObservation> PriceObservations => Set<PriceObservation>();
+
+    public DbSet<EvsePriceCurrent> EvsePriceCurrent => Set<EvsePriceCurrent>();
+
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
 
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();

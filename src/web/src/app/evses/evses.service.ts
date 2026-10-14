@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { LocationSummary, SourceAttribution } from '../map/locations.service';
+import { EvsePricesResponse } from './prices';
 
 export interface ConnectorDetail {
   standard: string;
@@ -133,6 +134,11 @@ export class EvsesService {
 
   evse(evseId: string): Promise<EvseResponse> {
     return firstValueFrom(this.http.get<EvseResponse>(`/api/v1/evses/${encodeURIComponent(evseId)}`));
+  }
+
+  /** Ad-hoc price and its history (price:read). */
+  prices(evseId: string): Promise<EvsePricesResponse> {
+    return firstValueFrom(this.http.get<EvsePricesResponse>(`/api/v1/evses/${encodeURIComponent(evseId)}/prices`));
   }
 
   history(evseId: string, from: Date, to: Date): Promise<StatusHistoryResponse> {

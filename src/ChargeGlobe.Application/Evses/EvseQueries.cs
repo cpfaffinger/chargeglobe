@@ -80,6 +80,37 @@ public sealed record StatusInterval(string Status, DateTimeOffset From, DateTime
 /// <param name="Hour">Hour of the day in the requested time zone, 0–23.</param>
 public sealed record OccupancyCell(int Weekday, int Hour, long Charging, long Total);
 
+/// <summary>The session of the example cost that makes prices comparable: 30 kWh charged in 40 minutes.</summary>
+public static class PriceExample
+{
+    public const int Kwh = 30;
+    public const int Minutes = 40;
+}
+
+/// <summary>Price components of one source in euros (or <paramref name="Currency"/>); null if the source does not tell.</summary>
+/// <param name="BlockingAfterMinutes">Minute of the session from which the blocking fee applies.</param>
+/// <param name="ExampleCost">Cost of the example session (<see cref="PriceExample"/>), unknown parts counted as 0.</param>
+public sealed record PriceView(
+    string Source,
+    string Currency,
+    decimal? PricePerKwh,
+    decimal? PricePerMinute,
+    decimal? SessionFee,
+    decimal? BlockingFeePerMinute,
+    int? BlockingAfterMinutes,
+    bool FreeOfCharge,
+    decimal ExampleCost);
+
+/// <param name="Since">Since when the price is as it is.</param>
+/// <param name="ObservedAt">When the source last confirmed it.</param>
+public sealed record CurrentPrice(PriceView Price, DateTimeOffset Since, DateTimeOffset ObservedAt);
+
+/// <summary>A period with a constant price; <paramref name="To"/> is null while it lasts.</summary>
+public sealed record PricePeriod(PriceView Price, DateTimeOffset From, DateTimeOffset? To);
+
+/// <param name="Current">The newest ad-hoc price of the sources; null if none is known.</param>
+public sealed record EvsePrices(CurrentPrice? Current, IReadOnlyList<PricePeriod> History);
+
 /// <summary>Read model of the EVSE detail endpoints (permission <c>evse:read</c>, docs/06 "Ladepunkte").</summary>
 public interface IEvseQueries
 {
@@ -96,6 +127,9 @@ public interface IEvseQueries
     /// </summary>
     Task<IReadOnlyList<OccupancyCell>?> OccupancyAsync(
         Guid id, DateTimeOffset from, DateTimeOffset to, string timeZone, CancellationToken cancellationToken);
+
+    /// <summary>The current ad-hoc price and the periods of the price history overlapping [<paramref name="from"/>, <paramref name="to"/>).</summary>
+    Task<EvsePrices> PricesAsync(Guid id, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken);
 
     /// <summary>The sources with a record for the EVSE, from the table <c>source</c>.</summary>
     Task<IReadOnlyList<SourceAttribution>> AttributionAsync(Guid id, CancellationToken cancellationToken);

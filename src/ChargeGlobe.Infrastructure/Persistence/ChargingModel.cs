@@ -44,6 +44,7 @@ internal static class ChargingModel
         builder.Properties<IdentityKind>().HaveConversion<string>();
         builder.Properties<SourceTier>().HaveConversion<string>();
         builder.Properties<EntityType>().HaveConversion<string>();
+        builder.Properties<TariffKind>().HaveConversion<string>();
         builder.Properties<MatchMethod>().HaveConversion<string>();
     }
 
@@ -160,6 +161,16 @@ internal static class ChargingModel
         });
     }
 
+    /// <summary>Amounts with four decimals (a tenth of a cent per kWh), fees with two.</summary>
+    private static void ConfigurePrice<T>(Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder<T> entity)
+        where T : class
+    {
+        entity.Property<decimal?>("PricePerKwh").HasPrecision(10, 4);
+        entity.Property<decimal?>("PricePerMinute").HasPrecision(10, 4);
+        entity.Property<decimal?>("SessionFee").HasPrecision(10, 2);
+        entity.Property<decimal?>("BlockingFeePerMinute").HasPrecision(10, 4);
+    }
+
     private static void ConfigureStatus(ModelBuilder builder)
     {
         builder.Entity<EvseStatusObservation>(entity =>
@@ -184,6 +195,25 @@ internal static class ChargingModel
             entity.ToTable("evse_status_current");
             entity.HasKey(current => current.EvseId);
             entity.HasOne<Evse>().WithOne().HasForeignKey<EvseStatusCurrent>(current => current.EvseId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<PriceObservation>(entity =>
+        {
+            entity.ToTable("price_observation");
+            // Unique keys of a hypertable must contain the partitioning column "time".
+            entity.HasKey(observation => new { observation.EvseId, observation.Time, observation.SourceKey, observation.TariffKind });
+            entity.HasOne<Evse>().WithMany().HasForeignKey(observation => observation.EvseId).OnDelete(DeleteBehavior.Cascade);
+            entity.Ignore(observation => observation.Components);
+            ConfigurePrice(entity);
+        });
+
+        builder.Entity<EvsePriceCurrent>(entity =>
+        {
+            entity.ToTable("evse_price_current");
+            entity.HasKey(current => new { current.EvseId, current.SourceKey, current.TariffKind });
+            entity.HasOne<Evse>().WithMany().HasForeignKey(current => current.EvseId).OnDelete(DeleteBehavior.Cascade);
+            entity.Ignore(current => current.Components);
+            ConfigurePrice(entity);
         });
 
         builder.Entity<LocationStatusObservation>(entity =>

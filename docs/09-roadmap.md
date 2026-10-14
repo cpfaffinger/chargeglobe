@@ -30,7 +30,7 @@
 - [x] Passive Statusabfrage: Stundenbudget je Quelle clusterweit, Abfragepunkte aus den bekannten Standorten mit Priorität nach Aktivität (5/15/60 min, nachts ×3), Abruf bei Bedarf beim Öffnen eines Standorts, linear wachsende Pause nach Fehlern und Sperre bei abgelehntem Key, Lauf-Protokoll `crawler_run`, strukturierte Crawler-Logs, Live-Ansicht `/admin/crawler` ([05](05-crawling-konzept.md))
 - [ ] Metriken (OpenTelemetry → Prometheus/Grafana): Requests, Fehlerquote, Datenfrische je Quelle
 - [x] API v1: `GET /evses/{evseId}` (EVSE-ID in jeder Schreibweise oder UUID), Statushistorie, Belegung (`evse:read`)
-- [ ] API v1: EVSE-Suche (`GET /evses`), Ad-hoc-Preis, Provenienz
+- [ ] API v1: EVSE-Suche (`GET /evses`)
 - [x] Angular: Karte mit MapLibre und OSM-Vektorkacheln (OpenFreeMap, `GET /map/config`) als anonyme Startseite, eigener Standort per Geolocation ([ADR-0007](adr/0007-karte-standort-routing.md))
 - [x] `GET /locations` (bbox, aggregiert, Attribution) und `GET /locations/{id}`; Ladepunkt-Marker mit Clustering, Status-Farben, Legende, Infokarte und Quellenangabe
 - [x] Design auf Angular-Basis ([ADR-0012](adr/0012-design-system-und-theming.md)): Angular Material 3 + CDK, Palette „Volt“ und Roboto Flex (selbst gehostet), Light/Dark/System über `ThemeService` mit Umschalter in Toolbar bzw. Seitenmenü, Karte mit dunklem Stil (`map.style_url_dark`) und Markern in Statusfarbe mit Symbol, Stepper im Setup, Akkordeon mit Suche in den Einstellungen, Tabelle mit Paginator im Postausgang, Seiten außer der Karte als Lazy-Chunks
@@ -40,7 +40,7 @@
 - [x] Betreiber-Filter als Liste aus der Datenbank (`GET /operators`, nach Zahl der Standorte, mit Suche), Leistungsbereich mit Minimum und Maximum, Farben freier Stationen nach freier Leistung (bis 22, 23–149, ab 150 kW)
 - [x] Kartenoptionen je Browser: Umkreis und Zoomstufe des Zusammenfassens (Cluster) mit „Auf Standard zurücksetzen“, wirksam ohne Neuladen
 - [x] Favoriten (angemeldet): Stern in Infokarte, Standort-Seite und Liste, Seite `/favorites` mit aktuellem Status (jede Minute), `GET/PUT/DELETE /me/favorites`
-- [ ] Ad-hoc-Preise aus E-Control speichern (`PRICE_POLL` aus dem Register, `price_observation`, `GET /evses/{evseId}/prices`)
+- [x] Ad-hoc-Preise aus E-Control speichern: mit den Register-Seiten des Inventars (kein zusätzlicher Request), `evse_price_current` und `price_observation` nur bei Änderung, `GET /evses/{evseId}/prices` mit Verlauf und Beispielrechnung 30 kWh / 40 min, Anzeige in Infokarte und Ladepunkt-Seite
 - [ ] Lebenszyklus: Standorte und EVSEs, die eine Quelle nicht mehr meldet oder als inaktiv führt, auf `REMOVED` setzen
 - [x] Angular: Standort-Detailseite `/locations/:id` (angemeldet, `evse:read`) mit Status-Timeline je EVSE und Heatmap Wochentag × Stunde, Link „Details“ in der Infokarte
 - [x] Ersteinrichtung: Setup-Assistent `/setup` bei leerer Instanz (erster Admin mit Setup-Token aus dem API-Log, danach Datenquelle E-Control und SMTP), `GET /setup`, `POST /setup/admin`; Registrierung bis dahin geschlossen

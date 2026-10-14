@@ -5,7 +5,9 @@ import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { EvseResponse, EvseView, EvsesService, OccupancyResponse, StatusHistoryResponse } from '../evses/evses.service';
 import { attributeLabel, authMethodLabel, connectorLabel, formatLabel, powerTypeLabel, yesNo } from '../evses/labels';
-import { flush, text } from '../testing';
+import { AuthService } from '../auth/auth.service';
+import { EvsePricesResponse, PriceView } from '../evses/prices';
+import { ME, fakeAuth, flush, text } from '../testing';
 import { EvseDetailPage, LISTED_INTERVALS } from './evse-detail.page';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -345,5 +347,92 @@ describe('EvsesService.evse', () => {
 
     expect((await result).data.evseId).toBe('AT*VIE*E1234*1');
     http.verify();
+  });
+});
+
+describe('EvseDetailPage with prices', () => {
+  let http: HttpTestingController;
+  let harness: RouterTestingHarness;
+
+  const page = () => harness.routeNativeElement!;
+  const price = (overrides: Partial<PriceView> = {}): PriceView => ({
+    source: 'econtrol',
+    currency: 'EUR',
+    pricePerKwh: 0.59,
+    pricePerMinute: 0.02,
+    sessionFee: 0.5,
+    blockingFeePerMinute: null,
+    blockingAfterMinutes: null,
+    freeOfCharge: false,
+    exampleCost: 19,
+    ...overrides,
+  });
+  const prices = (current: EvsePricesResponse['data']['current'], history: EvsePricesResponse['data']['history']): EvsePricesResponse => ({
+    data: { id: 'e-1', evseId: 'AT*VIE*E1234*1', tariffKind: 'AD_HOC', from: '', to: '', example: { kwh: 30, minutes: 40 }, current, history },
+    meta: { attribution: [] },
+  });
+
+  async function settle(): Promise<void> {
+    await flush();
+    await harness.fixture.whenStable();
+  }
+
+  async function open(answer: EvsePricesResponse | number): Promise<void> {
+    harness = await RouterTestingHarness.create('/evses/AT*VIE*E1234*1');
+    http.expectOne('/api/v1/evses/AT*VIE*E1234*1').flush(response(view()));
+    await settle();
+    http.expectOne((request) => request.url === '/api/v1/evses/e-1/status/history').flush({ title: 'Error' }, { status: 500, statusText: 'Error' });
+    http.expectOne('/api/v1/evses/e-1/occupancy?weeks=4').flush({ title: 'Error' }, { status: 500, statusText: 'Error' });
+    const request = http.expectOne('/api/v1/evses/e-1/prices');
+    expect(text(page(), '.price-state')).toBe('Preis wird geladen …');
+    if (typeof answer === 'number') {
+      request.flush({ title: 'Error' }, { status: answer, statusText: 'Error' });
+    } else {
+      request.flush(answer);
+    }
+    await settle();
+  }
+
+  beforeEach(() => {
+    const auth = fakeAuth(ME);
+    auth.hasPermission.and.returnValue(true);
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: AuthService, useValue: auth },
+        provideRouter([{ path: 'evses/:evseId', component: EvseDetailPage }]),
+      ],
+    });
+    http = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => http.verify());
+
+  it('shows the current ad-hoc price, the example cost and the price changes', async () => {
+    await open(
+      prices({ price: price(), since: '2026-09-01T06:00:00Z', observedAt: '2026-10-14T06:00:00Z' }, [
+        { price: price({ pricePerKwh: 0.49, exampleCost: 16 }), from: '2026-05-01T06:00:00Z', to: '2026-09-01T06:00:00Z' },
+        { price: price(), from: '2026-09-01T06:00:00Z', to: null },
+      ]),
+    );
+
+    expect(text(page(), '#price-current')).toBe('0,59 €/kWh · 0,02 €/min · Startgebühr 0,50 €');
+    expect(text(page(), '#price-example')).toBe('30 kWh in 40 min: 19,00 €');
+    expect(text(page(), '#price-since')).toMatch(/^gilt seit 01\.09\.2026 \d\d:00 · bestätigt 14\.10\.2026 \d\d:00 · Quelle econtrol$/);
+    const rows = Array.from(page().querySelectorAll('#price-history tbody tr')).map((row) => text(row, 'td:nth-child(2)'));
+    expect(rows).toEqual(['01.09.2026', 'heute']);
+    expect(text(page(), '#price-history tbody tr:first-child td:nth-child(4)')).toBe('16,00 €');
+  });
+
+  it('says when no price is known or it could not be loaded', async () => {
+    await open(prices(null, []));
+    expect(text(page(), '#price-current')).toBe('Für diesen Ladepunkt ist kein Ad-hoc-Preis bekannt.');
+    expect(page().querySelector('#price-history')).toBeNull();
+  });
+
+  it('says when the price could not be loaded', async () => {
+    await open(500);
+    expect(text(page(), '.price-state')).toBe('Der Preis konnte nicht geladen werden.');
   });
 });

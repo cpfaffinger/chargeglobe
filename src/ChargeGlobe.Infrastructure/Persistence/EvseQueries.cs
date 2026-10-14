@@ -106,6 +106,37 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             root.TryGetProperty("description", out var description) && description.ValueKind == JsonValueKind.String ? description.GetString() : null);
     }
 
+    public async Task<EvsePrices> PricesAsync(Guid id, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken)
+    {
+        var current = await db.EvsePriceCurrent.AsNoTracking()
+            .Where(price => price.EvseId == id && price.TariffKind == TariffKind.AD_HOC)
+            .OrderByDescending(price => price.ObservedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+        // Prices change rarely: all observations of the EVSE, turned into periods per source.
+        var observations = await db.PriceObservations.AsNoTracking()
+            .Where(observation => observation.EvseId == id && observation.TariffKind == TariffKind.AD_HOC)
+            .OrderBy(observation => observation.Time)
+            .ToListAsync(cancellationToken);
+        var history = observations
+            .GroupBy(observation => observation.SourceKey)
+            .SelectMany(source =>
+            {
+                var list = source.ToList();
+                return list.Select((observation, index) => new PricePeriod(
+                    View(observation.SourceKey, observation.Components), observation.Time, index + 1 < list.Count ? list[index + 1].Time : null));
+            })
+            .Where(period => period.From < to && (period.To is null || period.To > from))
+            .OrderBy(period => period.From)
+            .ToList();
+        return new EvsePrices(
+            current is null ? null : new CurrentPrice(View(current.SourceKey, current.Components), current.Since, current.ObservedAt),
+            history);
+    }
+
+    private static PriceView View(string source, PriceComponents price) =>
+        new(source, price.Currency, price.PricePerKwh, price.PricePerMinute, price.SessionFee, price.BlockingFeePerMinute,
+            price.BlockingAfterMinutes, price.FreeOfCharge, price.CostOf(PriceExample.Kwh, PriceExample.Minutes));
+
     public async Task<IReadOnlyList<StatusInterval>> StatusHistoryAsync(
         Guid id, DateTimeOffset from, DateTimeOffset to, string? source, CancellationToken cancellationToken)
     {

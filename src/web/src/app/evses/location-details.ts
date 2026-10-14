@@ -16,6 +16,7 @@ import {
 } from './evses.service';
 import { Segment, combine, statusOf, timeline } from './status';
 import { OccupancyHeatmap, StatusTimeline } from './status-charts';
+import { EvsePricesResponse, money, priceParts } from './prices';
 import { AVAILABILITY, tokenColor } from '../map/availability';
 
 /** Days of the status timeline and weeks of the occupancy matrix. */
@@ -121,6 +122,27 @@ type LoadState = 'loading' | 'error' | 'ready';
                 }
               </p>
               <p class="connectors">{{ connectors(evse) }}</p>
+              @if (prices) {
+                @switch (priceState(evse.id)) {
+                  @case ('loading') {
+                    <p class="price price-state">Preis wird geladen …</p>
+                  }
+                  @case ('error') {
+                    <p class="price price-state error">Der Preis konnte nicht geladen werden.</p>
+                  }
+                  @default {
+                    @let current = priceOf(evse.id);
+                    @if (current) {
+                      <p class="price">
+                        Ad-hoc: {{ parts(current.price).join(' · ') }}
+                        <span class="price-example">· {{ example }}: {{ money(current.price.exampleCost, current.price.currency) }}</span>
+                      </p>
+                    } @else {
+                      <p class="price price-state">Kein Ad-hoc-Preis bekannt.</p>
+                    }
+                  }
+                }
+              }
               @if (history) {
               @switch (timelineState(evse.id)) {
                 @case ('loading') {
@@ -209,8 +231,14 @@ export class LocationDetails {
   /** Show name, address and availability (the page); the info card shows them itself. */
   readonly header = input(false);
 
+  private readonly auth = inject(AuthService);
   /** Timeline and heatmap need evse:read; everybody sees the EVSEs with their current status. */
-  protected readonly history = inject(AuthService).hasPermission('evse:read');
+  protected readonly history = this.auth.hasPermission('evse:read');
+  /** The ad-hoc price per EVSE needs price:read. */
+  protected readonly prices = this.auth.hasPermission('price:read');
+  protected readonly example = '30 kWh in 40 min';
+  protected readonly parts = priceParts;
+  protected readonly money = money;
 
   protected readonly timelineDays = TIMELINE_DAYS;
   protected readonly occupancyWeeks = OCCUPANCY_WEEKS;
@@ -223,6 +251,7 @@ export class LocationDetails {
   protected readonly range = signal({ from: new Date(), to: new Date() });
   private readonly timelines = signal<Record<string, Segment[] | 'error'>>({});
   private readonly occupancies = signal<Record<string, Occupancy | 'error'>>({});
+  private readonly priceResults = signal<Record<string, EvsePricesResponse['data']['current'] | 'error'>>({});
   /** "all" or the id of the EVSE whose heatmap is shown. */
   protected readonly heatmapOf = signal('all');
 
@@ -302,6 +331,7 @@ export class LocationDetails {
     this.notice.set(null);
     this.timelines.set({});
     this.occupancies.set({});
+    this.priceResults.set({});
     this.heatmapOf.set('all');
     let detail: LocationDetailResponse;
     try {
@@ -319,10 +349,32 @@ export class LocationDetails {
     const from = new Date(to.getTime() - TIMELINE_DAYS * 24 * 60 * 60 * 1000);
     this.range.set({ from, to });
     this.detail.set(detail);
-    if (this.history) {
-      await Promise.all(
-        detail.data.evses.flatMap((evse) => [this.loadTimeline(request, evse.id, from, to), this.loadOccupancy(request, evse.id)]),
-      );
+    await Promise.all(
+      detail.data.evses.flatMap((evse) => [
+        ...(this.history ? [this.loadTimeline(request, evse.id, from, to), this.loadOccupancy(request, evse.id)] : []),
+        ...(this.prices ? [this.loadPrice(request, evse.id)] : []),
+      ]),
+    );
+  }
+
+  protected priceState(evseId: string): LoadState {
+    const result = this.priceResults()[evseId];
+    return result === undefined ? 'loading' : result === 'error' ? 'error' : 'ready';
+  }
+
+  protected priceOf(evseId: string): EvsePricesResponse['data']['current'] {
+    return this.priceResults()[evseId] as EvsePricesResponse['data']['current'];
+  }
+
+  private async loadPrice(request: number, evseId: string): Promise<void> {
+    let result: EvsePricesResponse['data']['current'] | 'error';
+    try {
+      result = (await this.service.prices(evseId)).data.current;
+    } catch {
+      result = 'error';
+    }
+    if (request === this.request) {
+      this.priceResults.update((all) => ({ ...all, [evseId]: result }));
     }
   }
 

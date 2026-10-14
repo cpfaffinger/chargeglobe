@@ -1,0 +1,52 @@
+using ChargeGlobe.Domain.Charging;
+
+namespace ChargeGlobe.Domain.Tests;
+
+public class PriceTests
+{
+    private static readonly DateTimeOffset At = new(2026, 10, 14, 8, 0, 0, TimeSpan.Zero);
+
+    private static readonly PriceComponents Price = new("EUR", 0.59m, 0.02m, 0.50m, 0.10m, 30, false);
+
+    [Fact]
+    public void A_session_costs_fee_energy_time_and_the_blocked_minutes()
+    {
+        // 0.50 + 30 × 0.59 + 40 × 0.02 + (40 − 30) × 0.10
+        Assert.Equal(20.00m, Price.CostOf(30, 40));
+        Assert.Equal(19.00m, (Price with { BlockingAfterMinutes = 45 }).CostOf(30, 40));
+        Assert.Equal(19.00m, (Price with { BlockingAfterMinutes = null }).CostOf(30, 40));
+        Assert.Equal(0m, (Price with { FreeOfCharge = true }).CostOf(30, 40));
+        Assert.Equal(0m, new PriceComponents("EUR", null, null, null, null, null, false).CostOf(30, 40));
+    }
+
+    [Fact]
+    public void The_current_price_reports_changes_only_for_newer_readings()
+    {
+        var current = EvsePriceCurrent.Create(Guid.NewGuid(), "econtrol", TariffKind.AD_HOC, Price, At);
+        Assert.Equal((Price, At, At), (current.Components, current.Since, current.ObservedAt));
+
+        // The same price later: only confirmed.
+        Assert.False(current.Observe(Price, At.AddHours(1)));
+        Assert.Equal((At, At.AddHours(1)), (current.Since, current.ObservedAt));
+
+        // An older or simultaneous reading changes nothing.
+        Assert.False(current.Observe(Price with { PricePerKwh = 0.69m }, At));
+        Assert.False(current.Observe(Price with { PricePerKwh = 0.69m }, At.AddHours(1)));
+        Assert.Equal(0.59m, current.PricePerKwh);
+
+        Assert.True(current.Observe(Price with { PricePerKwh = 0.69m }, At.AddHours(2)));
+        Assert.Equal((0.69m, At.AddHours(2), At.AddHours(2)), (current.PricePerKwh, current.Since, current.ObservedAt));
+        Assert.Equal(TariffKind.AD_HOC, current.TariffKind);
+    }
+
+    [Fact]
+    public void An_observation_keeps_the_price_and_needs_a_source()
+    {
+        var evseId = Guid.NewGuid();
+        var observation = PriceObservation.Create(evseId, "econtrol", TariffKind.AD_HOC, Price, At);
+
+        Assert.Equal((evseId, "econtrol", At, Price), (observation.EvseId, observation.SourceKey, observation.Time, observation.Components));
+        Assert.Throws<ArgumentException>(() => PriceObservation.Create(evseId, " ", TariffKind.AD_HOC, Price, At));
+        Assert.Throws<ArgumentException>(() => EvsePriceCurrent.Create(evseId, "econtrol", TariffKind.AD_HOC, Price with { Currency = "" }, At));
+    }
+}

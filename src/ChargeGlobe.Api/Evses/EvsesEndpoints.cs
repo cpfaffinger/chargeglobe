@@ -4,6 +4,7 @@ using ChargeGlobe.Api.Locations;
 using ChargeGlobe.Api.OpenApi;
 using ChargeGlobe.Application.Evses;
 using ChargeGlobe.Application.Locations;
+using ChargeGlobe.Domain.Charging;
 using ChargeGlobe.Domain.Identity;
 
 namespace ChargeGlobe.Api.Evses;
@@ -41,10 +42,28 @@ public sealed record OccupancyData(
 
 public sealed record OccupancyResponse(OccupancyData Data, AttributionMeta Meta);
 
+/// <summary>The session of <c>exampleCost</c>.</summary>
+public sealed record PriceExampleSession(decimal Kwh, int Minutes);
+
+/// <param name="TariffKind">AD_HOC: the price without contract or app account.</param>
+public sealed record EvsePricesData(
+    Guid Id,
+    string EvseId,
+    string TariffKind,
+    DateTimeOffset From,
+    DateTimeOffset To,
+    PriceExampleSession Example,
+    CurrentPrice? Current,
+    IReadOnlyList<PricePeriod> History);
+
+public sealed record EvsePricesResponse(EvsePricesData Data, AttributionMeta Meta);
+
 public static class EvsesEndpoints
 {
     public const int DefaultHistoryDays = 7;
     public const int MaxHistoryDays = 90;
+    public const int DefaultPriceDays = 90;
+    public const int MaxPriceDays = 366;
     public const int DefaultWeeks = 4;
     public const int MaxWeeks = 12;
     public const string DefaultTimeZone = "Europe/Vienna";
@@ -59,6 +78,8 @@ public static class EvsesEndpoints
         "E-Control API terms of use (free, registration required); redistribution only with written consent")]);
 
     private static DateTimeOffset At(string value) => DateTimeOffset.Parse(value, CultureInfo.InvariantCulture);
+
+    private static readonly PriceView ExamplePrice = new("econtrol", "EUR", 0.59m, null, 0m, 0.10m, 240, false, 17.70m);
 
     public static IEndpointRouteBuilder MapEvsesEndpoints(this IEndpointRouteBuilder endpoints)
     {
@@ -121,6 +142,42 @@ public static class EvsesEndpoints
                         [
                             new AttributeProvenance("LOCATION", "address", "econtrol", At("2026-10-14T06:00:00Z")),
                             new AttributeProvenance("EVSE", "max_power_kw", "econtrol", At("2026-10-14T06:00:00Z")),
+                        ]),
+                    ExampleMeta));
+
+        // Prices need price:read, not evse:read; therefore outside the group.
+        endpoints.MapGet("/api/v1/evses/{evseId}/prices", GetPricesAsync)
+            .WithTags("EVSEs")
+            .RequirePermission(Permissions.PriceRead)
+            .WithName("getEvsePrices")
+            .WithSummary("Get the ad-hoc price of an EVSE and its history")
+            .WithDescription(
+                "Returns the ad-hoc price of the EVSE (`evseId` as in `getEvse`): what a session costs without contract or app " +
+                "account (AFIR), as reported by the sources. `current` holds the newest price with `since` (unchanged since) and " +
+                "`observedAt` (last confirmed); null if no source reports one. `history` lists the periods with constant price " +
+                "that overlap [`from`, `to`) (ISO 8601, defaults: `to` = now, `from` = `to` minus 90 days, at most 366 days), " +
+                "oldest first, not clipped (`to: null` = still valid). Each price has `source`, `currency`, `pricePerKwh`, " +
+                "`pricePerMinute`, `sessionFee`, `blockingFeePerMinute` with `blockingAfterMinutes` (minute of the session from " +
+                "which it applies), `freeOfCharge` (amounts null if the source does not tell) and `exampleCost`: the cost of " +
+                "charging 30 kWh in 40 minutes (`example`), unknown parts counted as 0. 422 for invalid or too long ranges; " +
+                "404 for an unknown EVSE. `meta.attribution` names the sources.")
+            .Produces<EvsePricesResponse>()
+            .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .WithResponseExample(
+                StatusCodes.Status200OK,
+                new EvsePricesResponse(
+                    new EvsePricesData(
+                        ExampleId,
+                        ExampleEvseId,
+                        nameof(TariffKind.AD_HOC),
+                        At("2026-07-16T08:15:00Z"),
+                        At("2026-10-14T08:15:00Z"),
+                        new PriceExampleSession(PriceExample.Kwh, PriceExample.Minutes),
+                        new CurrentPrice(ExamplePrice, At("2026-09-01T06:00:00Z"), At("2026-10-14T06:00:00Z")),
+                        [
+                            new PricePeriod(ExamplePrice with { PricePerKwh = 0.49m, ExampleCost = 14.70m }, At("2026-05-01T06:00:00Z"), At("2026-09-01T06:00:00Z")),
+                            new PricePeriod(ExamplePrice, At("2026-09-01T06:00:00Z"), null),
                         ]),
                     ExampleMeta));
 
@@ -216,6 +273,37 @@ public static class EvsesEndpoints
         var intervals = await queries.StatusHistoryAsync(evse.Id, start!.Value, end!.Value, source, cancellationToken);
         return Results.Ok(new StatusHistoryResponse(
             new StatusHistoryData(evse.Id, evse.EvseId, start.Value, end.Value, intervals),
+            new AttributionMeta(await queries.AttributionAsync(evse.Id, cancellationToken))));
+    }
+
+    private static async Task<IResult> GetPricesAsync(
+        string evseId, string? from, string? to, IEvseQueries queries, TimeProvider timeProvider, CancellationToken cancellationToken)
+    {
+        var end = to is null ? timeProvider.GetUtcNow() : ParseTime(to);
+        var start = from is null ? end?.AddDays(-DefaultPriceDays) : ParseTime(from);
+        var invalid = new Validation()
+            .Require(from is null || start is not null, "from", "Must be an ISO 8601 time, e.g. 2026-07-01T00:00:00Z.")
+            .Require(end is not null, "to", "Must be an ISO 8601 time, e.g. 2026-10-14T00:00:00Z.")
+            .ToResult()
+            ?? new Validation()
+                .Require(start < end, "from", "Must lie before 'to'.")
+                .Require(end - start <= TimeSpan.FromDays(MaxPriceDays), "to", $"The range must not exceed {MaxPriceDays} days.")
+                .ToResult();
+        if (invalid is not null)
+        {
+            return invalid;
+        }
+
+        if (await queries.FindAsync(evseId, cancellationToken) is not { } evse)
+        {
+            return NotFound(evseId);
+        }
+
+        var prices = await queries.PricesAsync(evse.Id, start!.Value, end!.Value, cancellationToken);
+        return Results.Ok(new EvsePricesResponse(
+            new EvsePricesData(
+                evse.Id, evse.EvseId, nameof(TariffKind.AD_HOC), start.Value, end.Value, new PriceExampleSession(PriceExample.Kwh, PriceExample.Minutes),
+                prices.Current, prices.History),
             new AttributionMeta(await queries.AttributionAsync(evse.Id, cancellationToken))));
     }
 
