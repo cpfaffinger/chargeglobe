@@ -16,7 +16,7 @@ Operator (CPO) ─┬─ 1..n ─ Location ─ 1..n ─ ChargingStation? ─ 1..
                 │                                                   │
                 │                                                   ├─ EvseStatusObservation (Zeitreihe)
                 │                                                   ├─ EvseStatusInterval    (abgeleitet)
-                │                                                   └─ EvseTariffAssignment ─ Tariff ─ Emp
+                │                                                   └─ (Geltung über Betreiber/Roaming) ─ Tariff ─ Emp
                 │                                                           │
                 └─ Source ─ SourceRecord (Quell-ID ↔ kanonische ID) ─ RawSnapshot   PriceObservation (Zeitreihe)
                                   └─ AttributeOrigin
@@ -28,7 +28,6 @@ Operator (CPO) ─┬─ 1..n ─ Location ─ 1..n ─ ChargingStation? ─ 1..
 |---|---|---|
 | `region` | `code` (PK, `AT-9` Wien, `AT-3` NÖ, …), `name`, `geom geography(MultiPolygon,4326)` (GiST) | ISO 3166-2 Codes; die neun Bundesländer kommen aus OpenStreetMap (Grenzrelationen `admin_level=4`, ODbL, „© OpenStreetMap contributors“) als vereinfachtes GeoJSON im Repo (`src/ChargeGlobe.Infrastructure/Persistence/Seed/regions-at.geojson`, neu erzeugbar mit `scripts/regions/build-regions-at.sh`); die API schreibt fehlende oder geänderte Regionen beim Start (`RegionSeeder`) und berechnet dann `location.region_code` aller Standorte neu |
 | `operator` | `id`, `name`, `country`, `operator_id` (z. B. `EVN`, eindeutig je `country`), `website`, `is_cpo`, `is_emp` | EVSE-ID-Präfix `AT*EVN` → Operator |
-| `emp` | `id`, `name`, `app_name`, `country` | Ladekarten-/App-Anbieter (ÖAMTC ePower, Electroverse, …); ein Unternehmen kann CPO und EMP sein |
 | `location` | `id uuid`, `name`, `address`, `postal_code`, `city`, `country`, `geom geography(Point,4326)` (GiST), `operator_id`, `region_code`, `opening_times jsonb` (OCPI `Hours`), `access` (`PUBLIC`/`RESTRICTED`), `green_energy` (100 % erneuerbar laut Betreiber, OCPI `EnergyMix.is_green_energy`), `free_parking`, `roofed_parking`, `barrier_free_parking_spaces` (Anzahl), `price_url` (Preisseite des Betreibers, OCPI `Tariff.tariff_alt_url`), `lifecycle` (`ACTIVE`/`PLANNED`/`REMOVED`), `first_seen`, `last_seen`, `last_confirmed_at` | `region_code` setzt der Trigger `location_assign_region` bei Insert und bei Änderung von `geom` (Region, deren Polygon den Punkt enthält) |
 | `charging_station` | `id`, `location_id`, `label`, `physical_reference` | optional; nur wenn Quelle Säulen-Ebene liefert |
 | `evse` | `id uuid`, `evse_id_norm` (UNIQUE, z. B. `ATEVNE12345`), `evse_id_display` (`AT*EVN*E1234*5`), `location_id`, `charging_station_id?`, `operator_id`, `max_power_kw`, `power_type` (OCPI: `AC_1_PHASE`, `AC_2_PHASE`, `AC_2_PHASE_SPLIT`, `AC_3_PHASE`, `DC`), `physical_reference`, `auth_methods text[]` (Vokabular `AuthMethod`, siehe unten; leer = unbekannt), `roaming` (Ladekarten anderer Anbieter werden akzeptiert; `null` = unbekannt), `first_seen`, `last_seen`, `last_confirmed_at`, `lifecycle` (`ACTIVE`/`PLANNED`/`REMOVED`), `identity_kind` (`EVSE_ID` / `SURROGATE`) | Ladepunkte ohne bekannte EVSE-ID bekommen eine Surrogat-ID `XX*CG*E<16 Hex-Zeichen aus dem Zufallsteil der UUID>` und `identity_kind=SURROGATE`; `XX` ist kein Ländercode, Kollisionen mit echten IDs sind ausgeschlossen |
@@ -90,17 +89,18 @@ Operator (CPO) ─┬─ 1..n ─ Location ─ 1..n ─ ChargingStation? ─ 1..
 
 ### Preise
 
-Tarife folgen dem OCPI-Tariff-Modell, weil nur das die Realität abbildet (kWh-Preis + Minutenpreis ab Minute X + Sessiongebühr + Blockiergebühr mit Zeitfenstern, Tag/Nacht, Leistungsklassen).
+Zwei Arten von Preisen (`TariffKind`): der **Ad-hoc-Preis** (`AD_HOC`, ohne Vertrag, von den Quellen je Ladepunkt gemeldet) und der **Tarif einer Ladekarte oder App** (`EMP`, je Anbieter von Hand gepflegt). Beide werden in dieselben Preisbestandteile übersetzt (`PriceComponents`: kWh-Preis, Minutenpreis, Startgebühr, Blockiergebühr ab Minute X, kostenlos) und mit derselben Beispielrechnung verglichen: 30 kWh in 40 Minuten (`PriceExample`), Unbekanntes zählt 0.
 
 | Tabelle | Spalten | Anmerkung |
 |---|---|---|
-| `tariff` | `id`, `emp_id` (NULL = Ad-hoc-Preis des CPO), `operator_id?`, `name`, `product` (z. B. „ÖAMTC ePower Mitglied“, „EVN Ladekarte“, „Electroverse“), `currency`, `elements jsonb` (OCPI `TariffElement[]` mit `price_components` und `restrictions`), `source_key`, `valid_from`, `valid_to`, `url`, `verified_by` (`AUTO`/`MANUAL`) | Versionierung über `valid_from/valid_to` |
-| `evse_tariff_assignment` | `evse_id`, `tariff_id`, `connector_id?`, `observed_at`, `valid_from`, `valid_to`, `source_key` | welcher Tarif gilt an welchem Ladepunkt (Zeitverlauf) |
-| `price_observation` (Hypertable, Chunks zu 30 Tagen, Kompression nach 30 Tagen, keine Löschfrist) | PK `evse_id` + `time` + `source_key` + `tariff_kind`; `tariff_kind` (`AD_HOC`), `currency`, `price_per_kwh`, `price_per_minute`, `blocking_fee_per_minute` (je `numeric(10,4)`), `session_fee` (`numeric(10,2)`), `blocking_after_minutes`, `free_of_charge` | eine Zeile je **Preisänderung** eines Ladepunkts und einer Quelle (`time` = erste Beobachtung des Preises); unveränderte Meldungen erzeugen keine Zeile. Vorgesehen: `emp_id` und `tariff_id` für Ladekarten-Tarife |
+| `emp` | `id`, `key` (eindeutig, 2–40 Zeichen aus Kleinbuchstaben, Ziffern und `-`, z. B. `oeamtc`), `name`, `website?` | Ladekarten-/App-Anbieter (ÖAMTC ePower, SMATRICS, Electroverse, …); ein Unternehmen kann CPO und EMP sein. Löschen nur ohne Tarife (FK `RESTRICT`) |
+| `tariff` | `id` (vom Client gewählte UUID), `emp_id`, `name`, `currency` (`varchar(3)`), `valid_from`, `valid_to?` (exklusiv), `price_per_kwh_ac`, `price_per_kwh_dc`, `price_per_minute`, `blocking_fee_per_minute` (je `numeric(10,4)`), `session_fee`, `monthly_fee` (je `numeric(10,2)`), `blocking_after_minutes`, `roaming_only`, `operator_ids uuid[]` | Geltung: mit `operator_ids` nur an den EVSEs dieser Betreiber (eigenes Netz; Betreiber des EVSE, sonst des Standorts), sonst mit `roaming_only` an allen EVSEs mit `roaming = true`, sonst überall. Für Gleichstrom (`power_type` des EVSE `DC` oder ein DC-Stecker) zählt `price_per_kwh_dc`, sonst `price_per_kwh_ac`. Die Grundgebühr gehört nicht zur Beispielrechnung. Preisänderungen = neuer Tarif mit neuem `valid_from`, der alte bekommt `valid_to` |
+| `price_observation` (Hypertable, Chunks zu 30 Tagen, Kompression nach 30 Tagen, keine Löschfrist) | PK `evse_id` + `time` + `source_key` + `tariff_kind`; `tariff_kind` (`AD_HOC`), `currency`, `price_per_kwh`, `price_per_minute`, `blocking_fee_per_minute` (je `numeric(10,4)`), `session_fee` (`numeric(10,2)`), `blocking_after_minutes`, `free_of_charge` | eine Zeile je **Preisänderung** eines Ladepunkts und einer Quelle (`time` = erste Beobachtung des Preises); unveränderte Meldungen erzeugen keine Zeile. `tariff_kind` `EMP` ist für Preise vorgesehen, die EMP-Apps je Ladepunkt melden |
 | `evse_price_current` | PK `evse_id` + `source_key` + `tariff_kind`, dieselben Preisspalten, `since` (seit wann so), `observed_at` (zuletzt bestätigt) | aktueller Preis je Ladepunkt und Quelle; Vergleichsbasis für die Änderungserkennung im Ingest |
-| `price_scenario` | `code` (`AC_11KW_20KWH_2H`, `DC_50KW_30KWH_40MIN`, `HPC_150KW_40KWH_20MIN`), Parameter | für die Vergleichsrechnung in API/Frontend |
 
-Die API berechnet pro Ladepunkt und EMP die **Szenario-Kosten** aus dem Tarif (`elements`) und, falls kein Tarif bekannt, aus der letzten `price_observation`.
+Der Preisvergleich je Ladepunkt (`GET /evses/{evseId}/prices`, Feld `emps`) rechnet zur Abfragezeit: alle Tarife, die jetzt gelten und am EVSE greifen, mit dem AC- oder DC-Preis, aufsteigend nach den Kosten der Beispielrechnung. Tarife sind wenige Zeilen und werden im Speicher gefiltert.
+
+Vorgesehen: Tarifelemente nach OCPI (Zeitfenster, Tag/Nacht, Leistungsklassen) statt der flachen Spalten, wählbare Szenarien (AC 11 kW / 20 kWh / 2 h, DC 50 kW / 30 kWh / 40 min, HPC 150 kW / 40 kWh / 20 min) und eine Zuordnung Tarif ↔ Ladepunkt aus den Roaming-Listen der EMPs, wo `roaming` allein nicht reicht.
 
 ## Identity Resolution
 

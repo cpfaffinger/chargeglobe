@@ -20,7 +20,7 @@ import {
 } from '../evses/labels';
 import { Segment, statusOf, timeline } from '../evses/status';
 import { OccupancyHeatmap, StatusTimeline } from '../evses/status-charts';
-import { EvsePricesResponse, money, priceParts } from '../evses/prices';
+import { EvsePricesResponse, comparison, money, priceParts } from '../evses/prices';
 
 /** Ranges of the status history in days; the API allows up to 90. */
 export const HISTORY_DAYS = [1, 7, 30];
@@ -174,7 +174,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
         <mat-card appearance="outlined">
           <mat-card-content>
             <section aria-labelledby="price-title">
-              <h2 id="price-title">Ad-hoc-Preis</h2>
+              <h2 id="price-title">Preise</h2>
               @switch (priceState()) {
                 @case ('loading') {
                   <p class="price-state">Preis wird geladen …</p>
@@ -197,7 +197,35 @@ const DAY_MS = 24 * 60 * 60 * 1000;
                   } @else {
                     <p id="price-current">Für diesen Ladepunkt ist kein Ad-hoc-Preis bekannt.</p>
                   }
+                  @let rows = compare(pricing);
+                  @if (rows.length > 0) {
+                    <h3 id="comparison-title">Vergleich mit Ladekarten</h3>
+                    <table id="price-comparison" class="data-table" aria-labelledby="comparison-title">
+                      <thead>
+                        <tr>
+                          <th scope="col">Tarif</th><th scope="col">Preis</th><th scope="col">Grundgebühr/Monat</th>
+                          <th scope="col">{{ pricing.example.kwh }} kWh / {{ pricing.example.minutes }} min</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (row of rows; track row.key) {
+                          <tr [class.cheapest]="row.cheapest">
+                            <td>
+                              {{ row.label }}
+                              @if (row.cheapest) {
+                                <span class="cheapest-badge">günstigste</span>
+                              }
+                            </td>
+                            <td>{{ parts(row.price).join(' · ') }}</td>
+                            <td>{{ row.monthlyFee === null ? '–' : money(row.monthlyFee, row.price.currency) }}</td>
+                            <td>{{ money(row.price.exampleCost, row.price.currency) }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  }
                   @if (pricing.history.length > 1) {
+                    <h3>Verlauf des Ad-hoc-Preises</h3>
                     <table id="price-history" class="data-table">
                       <thead>
                         <tr><th scope="col">von</th><th scope="col">bis</th><th scope="col">Preis</th><th scope="col">{{ pricing.example.kwh }} kWh / {{ pricing.example.minutes }} min</th></tr>
@@ -368,6 +396,7 @@ export class EvseDetailPage {
   protected readonly yesNo = yesNo;
   protected readonly parts = priceParts;
   protected readonly money = money;
+  protected readonly compare = comparison;
   /** The ad-hoc price needs price:read. */
   protected readonly prices = inject(AuthService).hasPermission('price:read');
   protected readonly priceData = signal<EvsePricesResponse | null>(null);

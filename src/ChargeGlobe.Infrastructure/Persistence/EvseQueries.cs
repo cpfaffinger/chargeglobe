@@ -130,7 +130,40 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             .ToList();
         return new EvsePrices(
             current is null ? null : new CurrentPrice(View(current.SourceKey, current.Components), current.Since, current.ObservedAt),
-            history);
+            history,
+            await EmpPricesAsync(id, cancellationToken));
+    }
+
+    /// <summary>
+    /// The EMP tariffs valid now that apply at the EVSE (own network by operator, otherwise roaming), with the energy price
+    /// for its current type: DC if the EVSE or one of its connectors is DC, otherwise AC. There are few tariffs; they are
+    /// filtered in memory.
+    /// </summary>
+    private async Task<IReadOnlyList<EmpPrice>> EmpPricesAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var evse = await db.Evses.AsNoTracking()
+            .Where(item => item.Id == id)
+            .Select(item => new
+            {
+                item.PowerType,
+                Dc = item.Connectors.Any(connector => connector.PowerType == PowerType.DC),
+                item.Roaming,
+                OperatorId = item.OperatorId ?? db.Locations.Where(location => location.Id == item.LocationId).Select(location => location.OperatorId).FirstOrDefault(),
+            })
+            .SingleAsync(cancellationToken);
+        var powerType = evse.PowerType ?? (evse.Dc ? PowerType.DC : null);
+        var now = timeProvider.GetUtcNow();
+        var tariffs = await db.Tariffs.AsNoTracking()
+            .Where(tariff => tariff.ValidFrom <= now && (tariff.ValidTo == null || tariff.ValidTo > now))
+            .Join(db.Emps, tariff => tariff.EmpId, emp => emp.Id, (tariff, emp) => new { Tariff = tariff, emp.Key, emp.Name })
+            .ToListAsync(cancellationToken);
+        return [.. tariffs
+            .Where(row => row.Tariff.AppliesTo(evse.OperatorId, evse.Roaming))
+            .Select(row => new EmpPrice(
+                row.Key, row.Name, row.Tariff.Id, row.Tariff.Name, row.Tariff.MonthlyFee, View($"emp:{row.Key}", row.Tariff.ComponentsFor(powerType))))
+            .OrderBy(price => price.Price.ExampleCost)
+            .ThenBy(price => price.EmpName, StringComparer.Ordinal)
+            .ThenBy(price => price.Tariff, StringComparer.Ordinal)];
     }
 
     private static PriceView View(string source, PriceComponents price) =>

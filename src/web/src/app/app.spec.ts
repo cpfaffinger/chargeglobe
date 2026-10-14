@@ -145,6 +145,7 @@ describe('App with its routes', () => {
         'nav-admin-crawler',
         'nav-admin-mail',
         'nav-admin-settings',
+        'nav-admin-tariffs',
         'nav-account',
       ]);
       expect(sheet.querySelector('#location-search')).not.toBeNull();

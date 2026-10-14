@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using System.Text.Json;
 using ChargeGlobe.Application.Ingest;
 using ChargeGlobe.Application.Sources;
@@ -141,6 +142,62 @@ public class PricesTests(IntegrationFactory factory) : IClassFixture<Integration
         var none = (await PricesAsync(bare.Id.ToString())).GetProperty("data");
         Assert.Equal(JsonValueKind.Null, none.GetProperty("current").ValueKind);
         Assert.Empty(none.GetProperty("history").EnumerateArray());
+    }
+
+    [Fact]
+    public async Task The_cards_that_apply_are_compared_by_the_cost_of_the_example()
+    {
+        var admin = factory.Client(_accessToken);
+        var operators = await factory.WithDbAsync(async db =>
+        {
+            var other = Operator.Create("Other Operator", "AT");
+            db.Operators.Add(other);
+            await db.SaveChangesAsync();
+            return (Own: await db.Operators.Where(item => item.OperatorId == "TST").Select(item => item.Id).SingleAsync(), Other: other.Id);
+        });
+        var now = DateTimeOffset.UtcNow;
+        async Task TariffAsync(string emp, decimal ac, decimal dc, object extra)
+        {
+            Assert.True((await admin.PutAsJsonAsync($"/api/v1/emps/{emp}", new { name = emp.ToUpperInvariant() })).IsSuccessStatusCode);
+            var values = JsonSerializer.SerializeToNode(new { emp, name = "Tarif", currency = "EUR", validFrom = now.AddDays(-30), pricePerKwhAc = ac, pricePerKwhDc = dc })!.AsObject();
+            foreach (var (name, value) in JsonSerializer.SerializeToNode(extra)!.AsObject())
+            {
+                values[name] = value?.DeepClone();
+            }
+
+            var response = await admin.PutAsJsonAsync($"/api/v1/tariffs/{Guid.NewGuid()}", values);
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        }
+
+        await TariffAsync("own", 0.30m, 0.50m, new { operatorIds = new[] { operators.Own }, monthlyFee = 5m });
+        await TariffAsync("roam", 0.40m, 0.60m, new { roamingOnly = true, sessionFee = 1m });
+        await TariffAsync("every", 0.70m, 0.70m, new { });
+        await TariffAsync("other", 0.10m, 0.10m, new { operatorIds = new[] { operators.Other } });
+        await TariffAsync("ended", 0.01m, 0.01m, new { validTo = now.AddDays(-1) });
+        await TariffAsync("later", 0.01m, 0.01m, new { validFrom = now.AddDays(1) });
+
+        static IEnumerable<(string, decimal)> Emps(JsonElement body) =>
+            body.GetProperty("data").GetProperty("emps").EnumerateArray()
+                .Select(emp => (emp.GetProperty("emp").GetString()!, emp.GetProperty("price").GetProperty("exampleCost").GetDecimal()));
+
+        // AC with roaming: own network, roaming with start fee (1 + 30 × 0.40), the card for everywhere.
+        var available = await PricesAsync(Available);
+        Assert.Equal([("own", 9.00m), ("roam", 13.00m), ("every", 21.00m)], Emps(available));
+        var own = available.GetProperty("data").GetProperty("emps")[0];
+        Assert.Equal(("OWN", "Tarif", 5m), (own.GetProperty("empName").GetString(), own.GetProperty("tariff").GetString(), own.GetProperty("monthlyFee").GetDecimal()));
+        Assert.Equal(("emp:own", 0.30m), (own.GetProperty("price").GetProperty("source").GetString(), own.GetProperty("price").GetProperty("pricePerKwh").GetDecimal()));
+        Assert.NotEqual(Guid.Empty, own.GetProperty("tariffId").GetGuid());
+        Assert.Equal(17.70m, available.GetProperty("data").GetProperty("current").GetProperty("price").GetProperty("exampleCost").GetDecimal());
+
+        // DC: the DC energy prices.
+        Assert.Equal([("own", 15.00m), ("roam", 19.00m), ("every", 21.00m)], Emps(await PricesAsync(Fast)));
+
+        // Without roaming and without a type: own network and everywhere, AC prices.
+        var surrogate = await factory.WithDbAsync(db => db.Evses
+            .Where(evse => evse.IdentityKind == IdentityKind.SURROGATE && evse.Roaming == false)
+            .Select(evse => evse.Id)
+            .SingleAsync());
+        Assert.Equal([("own", 9.00m), ("every", 21.00m)], Emps(await PricesAsync(surrogate.ToString())));
     }
 
     [Theory]

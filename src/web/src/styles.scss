@@ -1144,6 +1144,18 @@ app-evse-detail mat-button-toggle-group {
   font-weight: normal;
 }
 
+// The cheapest row of the price comparison.
+.data-table tr.cheapest td {
+  background: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
+}
+
+.cheapest-badge {
+  margin-left: 8px;
+  font: var(--mat-sys-label-medium);
+  color: var(--mat-sys-primary);
+}
+
 // ---- Favorites ------------------------------------------------------------------------------------------------------
 
 .favorite-toggle.saved {

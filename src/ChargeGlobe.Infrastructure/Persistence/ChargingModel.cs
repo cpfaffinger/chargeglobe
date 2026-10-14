@@ -56,6 +56,7 @@ internal static class ChargingModel
         ConfigureMasterData(builder);
         ConfigureProvenance(builder);
         ConfigureStatus(builder);
+        ConfigureTariffs(builder);
     }
 
     private static void ConfigureMasterData(ModelBuilder builder)
@@ -169,6 +170,30 @@ internal static class ChargingModel
         entity.Property<decimal?>("PricePerMinute").HasPrecision(10, 4);
         entity.Property<decimal?>("SessionFee").HasPrecision(10, 2);
         entity.Property<decimal?>("BlockingFeePerMinute").HasPrecision(10, 4);
+    }
+
+    private static void ConfigureTariffs(ModelBuilder builder)
+    {
+        builder.Entity<Emp>(entity =>
+        {
+            entity.ToTable("emp");
+            entity.HasIndex(emp => emp.Key).IsUnique();
+        });
+
+        builder.Entity<Tariff>(entity =>
+        {
+            entity.ToTable("tariff");
+            entity.HasOne<Emp>().WithMany().HasForeignKey(tariff => tariff.EmpId).OnDelete(DeleteBehavior.Restrict);
+            entity.Property(tariff => tariff.Currency).HasMaxLength(3);
+            entity.Property(tariff => tariff.PricePerKwhAc).HasPrecision(10, 4);
+            entity.Property(tariff => tariff.PricePerKwhDc).HasPrecision(10, 4);
+            entity.Property(tariff => tariff.PricePerMinute).HasPrecision(10, 4);
+            entity.Property(tariff => tariff.SessionFee).HasPrecision(10, 2);
+            entity.Property(tariff => tariff.BlockingFeePerMinute).HasPrecision(10, 4);
+            entity.Property(tariff => tariff.MonthlyFee).HasPrecision(10, 2);
+            // Empty: the tariff is not limited to operators.
+            entity.Property(tariff => tariff.OperatorIds).HasColumnType("uuid[]");
+        });
     }
 
     private static void ConfigureStatus(ModelBuilder builder)

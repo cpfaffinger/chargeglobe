@@ -108,8 +108,15 @@ public sealed record CurrentPrice(PriceView Price, DateTimeOffset Since, DateTim
 /// <summary>A period with a constant price; <paramref name="To"/> is null while it lasts.</summary>
 public sealed record PricePeriod(PriceView Price, DateTimeOffset From, DateTimeOffset? To);
 
+/// <summary>The price of a charging card or app (EMP) at the EVSE, from a tariff valid now.</summary>
+/// <param name="Emp">Key of the EMP.</param>
+/// <param name="MonthlyFee">Base fee per month of the card; not part of <see cref="PriceView.ExampleCost"/>.</param>
+/// <param name="Price">The components for the current type of the EVSE (energy price for AC or DC); source <c>emp:&lt;key&gt;</c>.</param>
+public sealed record EmpPrice(string Emp, string EmpName, Guid TariffId, string Tariff, decimal? MonthlyFee, PriceView Price);
+
 /// <param name="Current">The newest ad-hoc price of the sources; null if none is known.</param>
-public sealed record EvsePrices(CurrentPrice? Current, IReadOnlyList<PricePeriod> History);
+/// <param name="Emps">Prices of the EMP tariffs that apply at the EVSE, cheapest example first.</param>
+public sealed record EvsePrices(CurrentPrice? Current, IReadOnlyList<PricePeriod> History, IReadOnlyList<EmpPrice> Emps);
 
 /// <summary>Read model of the EVSE detail endpoints (permission <c>evse:read</c>, docs/06 "Ladepunkte").</summary>
 public interface IEvseQueries
@@ -128,7 +135,10 @@ public interface IEvseQueries
     Task<IReadOnlyList<OccupancyCell>?> OccupancyAsync(
         Guid id, DateTimeOffset from, DateTimeOffset to, string timeZone, CancellationToken cancellationToken);
 
-    /// <summary>The current ad-hoc price and the periods of the price history overlapping [<paramref name="from"/>, <paramref name="to"/>).</summary>
+    /// <summary>
+    /// The current ad-hoc price, the periods of the price history overlapping [<paramref name="from"/>, <paramref name="to"/>)
+    /// and the prices of the EMP tariffs valid now that apply at the EVSE.
+    /// </summary>
     Task<EvsePrices> PricesAsync(Guid id, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken);
 
     /// <summary>The sources with a record for the EVSE, from the table <c>source</c>.</summary>

@@ -3,7 +3,7 @@ export interface AdminPageLink {
   path: string;
   label: string;
   permission: string;
-  category: 'Benutzer' | 'Betrieb' | 'Konfiguration';
+  category: 'Benutzer' | 'Betrieb' | 'Konfiguration' | 'Preise';
   description: string;
 }
 
@@ -46,6 +46,13 @@ export const ADMIN_PAGES: AdminPageLink[] = [
     permission: 'settings:read',
     category: 'Konfiguration',
     description: 'Alle fachlichen Einstellungen: Datenquellen, Anmeldung, E-Mail, Karte.',
+  },
+  {
+    path: 'tariffs',
+    label: 'Tarife',
+    permission: 'tariff:write',
+    category: 'Preise',
+    description: 'Ladekarten und Apps (EMPs) mit ihren Tarifen für den Preisvergleich pflegen.',
   },
 ];
 

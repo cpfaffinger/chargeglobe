@@ -101,6 +101,35 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                     b.ToTable("connector", (string)null);
                 });
 
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.Emp", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("key");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Website")
+                        .HasColumnType("text")
+                        .HasColumnName("website");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.ToTable("emp", (string)null);
+                });
+
             modelBuilder.Entity("ChargeGlobe.Domain.Charging.Evse", b =>
                 {
                     b.Property<Guid>("Id")
@@ -598,6 +627,86 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Geom"), "gist");
 
                     b.ToTable("region", (string)null);
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.Tariff", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int?>("BlockingAfterMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("blocking_after_minutes");
+
+                    b.Property<decimal?>("BlockingFeePerMinute")
+                        .HasPrecision(10, 4)
+                        .HasColumnType("numeric(10,4)")
+                        .HasColumnName("blocking_fee_per_minute");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<Guid>("EmpId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("emp_id");
+
+                    b.Property<decimal?>("MonthlyFee")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)")
+                        .HasColumnName("monthly_fee");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.PrimitiveCollection<List<Guid>>("OperatorIds")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("operator_ids");
+
+                    b.Property<decimal?>("PricePerKwhAc")
+                        .HasPrecision(10, 4)
+                        .HasColumnType("numeric(10,4)")
+                        .HasColumnName("price_per_kwh_ac");
+
+                    b.Property<decimal?>("PricePerKwhDc")
+                        .HasPrecision(10, 4)
+                        .HasColumnType("numeric(10,4)")
+                        .HasColumnName("price_per_kwh_dc");
+
+                    b.Property<decimal?>("PricePerMinute")
+                        .HasPrecision(10, 4)
+                        .HasColumnType("numeric(10,4)")
+                        .HasColumnName("price_per_minute");
+
+                    b.Property<bool>("RoamingOnly")
+                        .HasColumnType("boolean")
+                        .HasColumnName("roaming_only");
+
+                    b.Property<decimal?>("SessionFee")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)")
+                        .HasColumnName("session_fee");
+
+                    b.Property<DateTimeOffset>("ValidFrom")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("valid_from");
+
+                    b.Property<DateTimeOffset?>("ValidTo")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("valid_to");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmpId");
+
+                    b.ToTable("tariff", (string)null);
                 });
 
             modelBuilder.Entity("ChargeGlobe.Domain.Provenance.AttributeOrigin", b =>
@@ -1778,6 +1887,15 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("EvseId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.Tariff", b =>
+                {
+                    b.HasOne("ChargeGlobe.Domain.Charging.Emp", null)
+                        .WithMany()
+                        .HasForeignKey("EmpId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 

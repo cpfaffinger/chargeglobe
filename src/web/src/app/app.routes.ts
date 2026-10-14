@@ -74,6 +74,11 @@ const pages: Routes = [
         loadComponent: () => import('./pages/admin-settings.page').then((page) => page.AdminSettingsPage),
         canActivate: [requirePermission('settings:read')],
       },
+      {
+        path: 'tariffs',
+        loadComponent: () => import('./pages/admin-tariffs.page').then((page) => page.AdminTariffsPage),
+        canActivate: [requirePermission('tariff:write')],
+      },
     ],
   },
   { path: '**', redirectTo: '' },
