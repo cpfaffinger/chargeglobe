@@ -3,14 +3,16 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { AuthService } from '../auth/auth.service';
-import { FOCUS_ZOOM, HomePage } from '../pages/home.page';
+import { EvsesService, LocationDetailResponse } from '../evses/evses.service';
+import { FOCUS_ZOOM, HomePage, LOCATIONS_FRESH_MS } from '../pages/home.page';
 import { MapFocus } from '../search/search.service';
 import { ThemeService, Viewport } from '../design/theme.service';
-import { ME, MAP_CONFIG, fakeAuth, fakeBrowser, fakeMapEngine, fakeViewport, flush, locationSummary, text } from '../testing';
+import { MAP_CONFIG, fakeAuth, fakeBrowser, fakeMapEngine, fakeViewport, flush, locationSummary, text } from '../testing';
 import { BrowserCapabilities } from './browser-capabilities';
 import { MapConfigService } from './map-config.service';
 import { GeolocateEvent, MapEngine, MapViewOptions } from './map-engine';
 import { Bbox, LocationsResponse, LocationsService } from './locations.service';
+import { HOME_VIEW_KEY, LAST_VIEW_KEY, MapView, MapViewStore } from './map-view.store';
 
 describe('MapConfigService', () => {
   it('loads the map configuration', async () => {
@@ -95,8 +97,11 @@ describe('HomePage (map)', () => {
   let browser: ReturnType<typeof fakeBrowser>;
   let auth: ReturnType<typeof fakeAuth>;
   let viewport: ReturnType<typeof fakeViewport>;
+  let evses: jasmine.SpyObj<EvsesService>;
 
   const root = () => fixture.nativeElement as HTMLElement;
+  /** View reported with every move in the specs. */
+  const view: MapView = { latitude: 48.2, longitude: 16.4, zoom: 12 };
   const locateButton = () => root().querySelector<HTMLButtonElement>('#locate')!;
   const options = (): MapViewOptions => map.engine.create.calls.mostRecent().args[0];
 
@@ -133,12 +138,18 @@ describe('HomePage (map)', () => {
     browser = fakeBrowser();
     auth = fakeAuth();
     viewport = fakeViewport();
+    // The details in the card load through their own service; by default they stay pending.
+    evses = jasmine.createSpyObj<EvsesService>('EvsesService', ['location', 'history', 'occupancy']);
+    evses.location.and.returnValue(new Promise(() => undefined));
+    localStorage.removeItem(LAST_VIEW_KEY);
+    localStorage.removeItem(HOME_VIEW_KEY);
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: AuthService, useValue: auth },
+        { provide: EvsesService, useValue: evses },
         { provide: Viewport, useValue: viewport },
         { provide: MapEngine, useValue: map.engine },
         { provide: BrowserCapabilities, useValue: browser },
@@ -152,6 +163,8 @@ describe('HomePage (map)', () => {
   afterEach(() => {
     http.verify();
     TestBed.inject(ThemeService).set('system');
+    localStorage.removeItem(LAST_VIEW_KEY);
+    localStorage.removeItem(HOME_VIEW_KEY);
   });
 
   it('creates the map in its container with style, attribution, center and zoom of the configuration', async () => {
@@ -170,6 +183,72 @@ describe('HomePage (map)', () => {
     expect(locateButton().disabled).toBeFalse();
     expect(text(root(), '#locate')).toBe('Mein Standort');
     expect(root().querySelector('#map-notice')).toBeNull();
+    expect(map.engine.prepare).toHaveBeenCalledTimes(1);
+  });
+
+  describe('views', () => {
+    const homeButton = () => root().querySelector<HTMLButtonElement>('#home')!;
+    const menuItem = (id: string) => document.querySelector<HTMLButtonElement>(`#${id}`)!;
+
+    async function openMenu(): Promise<void> {
+      root().querySelector<HTMLButtonElement>('#home-menu')!.click();
+      await settle();
+    }
+
+    it('opens at the last view, else at the start position, else at the configuration', async () => {
+      localStorage.setItem(HOME_VIEW_KEY, JSON.stringify({ latitude: 47.8, longitude: 13.0, zoom: 10 }));
+      await render();
+      expect(options()).toEqual(jasmine.objectContaining({ center: { latitude: 47.8, longitude: 13 }, zoom: 10 }));
+      fixture.destroy();
+
+      localStorage.setItem(LAST_VIEW_KEY, JSON.stringify({ latitude: 48.3, longitude: 14.3, zoom: 13.5 }));
+      await render();
+      expect(options()).toEqual(jasmine.objectContaining({ center: { latitude: 48.3, longitude: 14.3 }, zoom: 13.5 }));
+    });
+
+    it('remembers every view and sets, uses and resets the start position', async () => {
+      await render();
+      expect(homeButton().disabled).toBeFalse();
+      await openMenu();
+      expect(menuItem('set-home').disabled).toBeTrue();
+      expect(menuItem('reset-home').disabled).toBeTrue();
+      document.querySelector<HTMLElement>('.cdk-overlay-backdrop')!.click();
+      await settle();
+
+      // Without a start position "Startposition" returns to the default of the configuration.
+      homeButton().click();
+      expect(map.handle.flyTo).toHaveBeenCalledWith(48.2, 15.6, 7);
+
+      options().onViewChange({ west: 16.3, south: 48.15, east: 16.45, north: 48.25 }, view);
+      http.expectOne('/api/v1/locations?bbox=16.30000,48.15000,16.45000,48.25000&limit=2000').flush({
+        data: [],
+        meta: { returned: 0, limit: 2000, truncated: false, attribution: [] },
+      });
+      await settle();
+      expect(JSON.parse(localStorage.getItem(LAST_VIEW_KEY)!)).toEqual(view);
+
+      await openMenu();
+      menuItem('set-home').click();
+      await settle();
+      expect(TestBed.inject(MapViewStore).home()).toEqual(view);
+      expect(JSON.parse(localStorage.getItem(HOME_VIEW_KEY)!)).toEqual(view);
+      expect(text(root(), '#home-saved')).toBe('Dieser Ausschnitt ist jetzt deine Startposition.');
+
+      homeButton().click();
+      expect(map.handle.flyTo).toHaveBeenCalledWith(48.2, 16.4, 12);
+
+      // The message goes with the next move; the area is loaded already.
+      options().onViewChange({ west: 16.35, south: 48.17, east: 16.4, north: 48.2 }, { ...view, zoom: 14 });
+      await settle();
+      expect(root().querySelector('#home-saved')).toBeNull();
+
+      await openMenu();
+      menuItem('reset-home').click();
+      await settle();
+      expect(localStorage.getItem(HOME_VIEW_KEY)).toBeNull();
+      homeButton().click();
+      expect(map.handle.flyTo.calls.mostRecent().args).toEqual([48.2, 15.6, 7]);
+    });
   });
 
   it('shows a notice when the configuration cannot be loaded', async () => {
@@ -304,7 +383,7 @@ describe('HomePage (map)', () => {
     }
 
     async function moveTo(box: Bbox, answer: LocationsResponse | 'fail', expected = url): Promise<void> {
-      options().onViewChange(box);
+      options().onViewChange(box, view);
       const request = http.expectOne(expected);
       if (answer === 'fail') {
         request.flush('Bad Gateway', { status: 502, statusText: 'Bad Gateway' });
@@ -353,26 +432,52 @@ describe('HomePage (map)', () => {
       expect(root().querySelector('#map-notice')).toBeNull();
     });
 
-    it('drops answers and failures of older requests', async () => {
+    it('runs one request at a time and shows only the newest area', async () => {
       await render();
+      const east = '/api/v1/locations?bbox=16.00000,48.00000,17.00000,49.00000&limit=2000';
 
-      options().onViewChange({ west: 15, south: 47, east: 17, north: 49 });
-      options().onViewChange(vienna);
+      options().onViewChange({ west: 15, south: 47, east: 17, north: 49 }, view);
+      options().onViewChange({ west: 10, south: 46, east: 12, north: 47 }, view);
+      options().onViewChange(vienna, view);
       const older = http.expectOne(zoomedOut);
-      http.expectOne(url).flush(response());
-      await settle();
+      await fixture.whenStable();
+      expect(root().querySelector('#map-loading')).not.toBeNull();
       older.flush({ ...response(), data: [] });
+      await settle();
+      // The area passed over while the first request ran is never asked for.
+      http.expectOne(url).flush(response());
       await settle();
 
       expect(map.handle.showLocations).toHaveBeenCalledTimes(2);
       expect(map.handle.showLocations.calls.mostRecent().args[0].length).toBe(2);
+      expect(root().querySelector('#map-loading')).toBeNull();
 
-      options().onViewChange({ west: 15, south: 47, east: 17, north: 49 });
-      options().onViewChange(vienna);
+      // A failure of a request that is overtaken shows no notice.
+      options().onViewChange({ west: 15, south: 47, east: 17, north: 49 }, view);
+      options().onViewChange({ west: 16, south: 48, east: 17, north: 49 }, view);
       http.expectOne(zoomedOut).flush('Bad Gateway', { status: 502, statusText: 'Bad Gateway' });
-      http.expectOne(url).flush(response());
+      await settle();
+      http.expectOne(east).flush(response());
       await settle();
       expect(root().querySelector('#map-notice')).toBeNull();
+    });
+
+    it('needs no request when zooming into an area that is loaded completely and recently', async () => {
+      await render();
+      await moveTo(vienna, response());
+      const inner: Bbox = { west: 16.3, south: 48.15, east: 16.5, north: 48.25 };
+      const innerUrl = '/api/v1/locations?bbox=16.30000,48.15000,16.50000,48.25000&limit=2000';
+
+      options().onViewChange(inner, view);
+      expect(http.match(innerUrl)).toEqual([]);
+
+      // Older data is loaded again.
+      const now = Date.now();
+      spyOn(Date, 'now').and.returnValue(now + LOCATIONS_FRESH_MS);
+      await moveTo(inner, response({ truncated: true }), innerUrl);
+
+      // Incomplete data, too.
+      await moveTo({ west: 16.35, south: 48.17, east: 16.45, north: 48.2 }, response(), '/api/v1/locations?bbox=16.35000,48.17000,16.45000,48.20000&limit=2000');
     });
 
     it('shows the selected location and closes the card', async () => {
@@ -404,25 +509,40 @@ describe('HomePage (map)', () => {
       expect(root().querySelector('#location-card')).toBeNull();
     });
 
-    it('links the card to the detail page and tells anonymous visitors that it needs an account', async () => {
+    it('shows the details of the location in the card, without leaving the map', async () => {
+      const detail: LocationDetailResponse = {
+        data: {
+          location: locationSummary(),
+          evses: [
+            {
+              id: 'e-1',
+              evseId: 'AT*TST*E1*1',
+              hasEvseId: true,
+              status: 'AVAILABLE',
+              statusSince: null,
+              statusObservedAt: null,
+              maxPowerKw: 22,
+              powerType: 'AC_3_PHASE',
+              connectors: [{ standard: 'IEC_62196_T2', format: 'SOCKET', powerType: 'AC_3_PHASE', maxPowerKw: 22 }],
+            },
+          ],
+        },
+        meta: { attribution: [] },
+      };
+      evses.location.and.resolveTo(detail);
       await render();
       await moveTo(vienna, response());
+
       options().onSelect('loc-1');
       await settle();
-
-      expect(root().querySelector('#details')!.getAttribute('href')).toBe('/locations/loc-1');
-      expect(text(root(), '#location-card #details')).toBe('Details');
-      expect(text(root(), '#location-card .hint')).toBe('Verlauf und Auslastung nach Anmeldung');
-
-      // Like AuthService, the double reads the signal, so the card follows a change of the user.
-      auth.hasPermission.and.callFake((permission) => auth.me()?.permissions.includes(permission) ?? false);
-      auth.me.set(ME);
       await settle();
-      expect(text(root(), '#location-card .details')).toBe('Details');
 
-      auth.me.set({ ...ME, permissions: [] });
-      await settle();
-      expect(root().querySelector('#details')).toBeNull();
+      expect(evses.location).toHaveBeenCalledOnceWith('loc-1');
+      expect(text(root(), '#location-card app-location-details h3')).toBe('AT*TST*E1*1');
+      expect(text(root(), '#location-card #history-hint')).toBe('Statusverlauf und Auslastung siehst du nach der Anmeldung.');
+      expect(root().querySelector('#location-card app-location-details #location-name')).toBeNull();
+      expect(map.handle.flyTo).not.toHaveBeenCalled();
+      expect(map.handle.destroy).not.toHaveBeenCalled();
     });
 
     it('shows the card as bottom sheet on small screens', async () => {
@@ -471,7 +591,7 @@ describe('HomePage (map)', () => {
       await settle();
       expect(text(root(), '#location-card h2')).toBe('Parkgarage Stephansplatz');
       root().querySelector<HTMLButtonElement>('#close-card')!.click();
-      await moveTo(vienna, response());
+      await moveTo({ west: 15, south: 47, east: 17, north: 49 }, response(), zoomedOut);
       expect(root().querySelector('#location-card')).toBeNull();
     });
 
@@ -490,7 +610,7 @@ describe('HomePage (map)', () => {
 
     it('ignores answers that arrive after the page was destroyed', async () => {
       await render();
-      options().onViewChange(vienna);
+      options().onViewChange(vienna, view);
       const request = http.expectOne(url);
 
       fixture.destroy();
@@ -578,5 +698,54 @@ describe('HomePage (map) in light and dark mode', () => {
     expect(switched.status.OUT_OF_ORDER).toBe('rgb(255, 180, 171)');
     expect(switched.onStatus).toBe('rgb(15, 20, 22)');
     fixture.destroy();
+  });
+});
+
+describe('MapViewStore', () => {
+  const view: MapView = { latitude: 48.2, longitude: 16.4, zoom: 12 };
+
+  beforeEach(() => {
+    localStorage.removeItem(LAST_VIEW_KEY);
+    localStorage.removeItem(HOME_VIEW_KEY);
+  });
+
+  afterEach(() => {
+    localStorage.removeItem(LAST_VIEW_KEY);
+    localStorage.removeItem(HOME_VIEW_KEY);
+  });
+
+  it('keeps the last view and the start position in the browser', () => {
+    const store = TestBed.inject(MapViewStore);
+    expect(store.last()).toBeNull();
+    expect(store.home()).toBeNull();
+
+    store.saveLast(view);
+    store.setHome({ ...view, zoom: 9 });
+    expect(store.last()).toEqual(view);
+    expect(JSON.parse(localStorage.getItem(HOME_VIEW_KEY)!)).toEqual({ ...view, zoom: 9 });
+
+    store.resetHome();
+    expect(store.home()).toBeNull();
+    expect(localStorage.getItem(HOME_VIEW_KEY)).toBeNull();
+  });
+
+  it('ignores unreadable or impossible views', () => {
+    const store = TestBed.inject(MapViewStore);
+    for (const stored of ['{', '42', '{"latitude":91,"longitude":16,"zoom":5}', '{"latitude":48,"longitude":"16","zoom":5}', '{"latitude":48,"longitude":16,"zoom":30}']) {
+      localStorage.setItem(LAST_VIEW_KEY, stored);
+      expect(store.last()).withContext(stored).toBeNull();
+    }
+  });
+
+  it('works without storage', () => {
+    spyOn(Storage.prototype, 'getItem').and.throwError('blocked');
+    spyOn(Storage.prototype, 'setItem').and.throwError('blocked');
+    const store = TestBed.inject(MapViewStore);
+
+    expect(store.home()).toBeNull();
+    store.setHome(view);
+    store.saveLast(view);
+    expect(store.home()).toEqual(view);
+    expect(store.last()).toBeNull();
   });
 });

@@ -12,19 +12,26 @@ import {
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { RouterLink } from '@angular/router';
-import { AuthService } from '../auth/auth.service';
+import { MatMenuModule } from '@angular/material/menu';
 import { AppIcon } from '../design/icon';
 import { ThemeService, Viewport } from '../design/theme.service';
+import { LocationDetails } from '../evses/location-details';
 import { AVAILABILITIES, AVAILABILITY, resolveColors, tokenColor } from '../map/availability';
 import { BrowserCapabilities } from '../map/browser-capabilities';
 import { MapConfig, MapConfigService } from '../map/map-config.service';
 import { GeolocateEvent, MapEngine, MapHandle, MapTheme } from '../map/map-engine';
+import { MapView, MapViewStore } from '../map/map-view.store';
 import { Bbox, LocationSummary, LocationsService } from '../map/locations.service';
 import { MapFocus } from '../search/search.service';
 
 /** Zoom of the map on a search hit: streets and single locations visible. */
 export const FOCUS_ZOOM = 16;
+
+/**
+ * Age up to which loaded locations count as current: zooming into an area that was loaded completely within this
+ * time needs no new request.
+ */
+export const LOCATIONS_FRESH_MS = 60_000;
 
 /** Reasons the map or the own position cannot be shown. */
 export type MapNotice =
@@ -50,13 +57,19 @@ const NOTICES: Record<MapNotice, string> = {
   'not-ready': 'Die Standortfunktion ist noch nicht bereit. Bitte versuche es gleich noch einmal.',
 };
 
+/** Whether the box `inner` lies within `outer`. */
+const covers = (outer: Bbox, inner: Bbox): boolean =>
+  inner.west >= outer.west && inner.east <= outer.east && inner.south >= outer.south && inner.north <= outer.north;
+
 /**
- * Start page, usable without an account: the base map (docs/adr/0007-karte-standort-routing.md) with
- * the charging locations of the visible area and the own position. The position is processed in the
- * browser only and never sent to the API.
+ * Start page, usable without an account: the base map (docs/adr/0007-karte-standort-routing.md) with the charging
+ * locations of the visible area and the own position. A click on a location opens its details in the info card
+ * next to the map (a bottom sheet on small screens), so the map keeps its position. The map opens at the last
+ * view; "Startposition" returns to the view the user chose (both stay in the browser), else to the default of the
+ * configuration. The position is processed in the browser only and never sent to the API.
  */
 @Component({
-  imports: [AppIcon, DatePipe, DecimalPipe, MatButtonModule, MatCardModule, NgTemplateOutlet, RouterLink],
+  imports: [AppIcon, DatePipe, DecimalPipe, LocationDetails, MatButtonModule, MatCardModule, MatMenuModule, NgTemplateOutlet],
   selector: 'app-home',
   host: { '[class.has-card]': 'selected() !== null' },
   template: `
@@ -90,22 +103,26 @@ const NOTICES: Record<MapNotice, string> = {
                 Kein aktueller Status
               }
             </p>
-            @if (!auth.isAuthenticated()) {
-              <p class="details">
-                <a matButton="filled" id="details" [routerLink]="['/locations', location.id]">Details</a>
-                <span class="hint">Verlauf und Auslastung nach Anmeldung</span>
-              </p>
-            } @else if (auth.hasPermission('evse:read')) {
-              <p class="details"><a matButton="filled" id="details" [routerLink]="['/locations', location.id]">Details</a></p>
+            <!-- The details are a chunk of their own and load after the card is visible. -->
+            @defer (on immediate) {
+              <app-location-details [locationId]="location.id" />
+            } @placeholder {
+              <p class="details-state">Ladepunkte werden geladen …</p>
             }
           </mat-card-content>
         </mat-card>
       }
     </ng-template>
     <div #map id="map" role="region" aria-label="Karte"></div>
+    @if (loading()) {
+      <div id="map-loading" role="progressbar" aria-label="Ladepunkte werden geladen"></div>
+    }
     <div id="map-overlay">
       @if (notice(); as key) {
         <p id="map-notice" class="map-message" role="status">{{ notices[key] }}</p>
+      }
+      @if (homeSaved()) {
+        <p id="home-saved" class="map-message" role="status">Dieser Ausschnitt ist jetzt deine Startposition.</p>
       }
       @if (truncated()) {
         <p id="truncated" class="map-message" role="status">Es werden nur die nächsten {{ limit }} Standorte gezeigt – zoome hinein, um alle zu sehen.</p>
@@ -117,9 +134,23 @@ const NOTICES: Record<MapNotice, string> = {
     @if (viewport.mobile()) {
       <ng-container [ngTemplateOutlet]="card" />
     }
-    <button matFab extended type="button" id="locate" [disabled]="!handle()" (click)="locate()">
-      <app-icon name="my_location" />{{ locating() ? 'Standort wird gesucht …' : 'Mein Standort' }}
-    </button>
+    <div id="map-actions">
+      <div class="home-actions">
+        <button matMiniFab type="button" id="home" [disabled]="!handle()" title="Zur Startposition" aria-label="Zur Startposition" (click)="goHome()">
+          <app-icon name="home" />
+        </button>
+        <button matMiniFab type="button" id="home-menu" title="Startposition festlegen" aria-label="Startposition festlegen" [matMenuTriggerFor]="homeMenu">
+          <app-icon name="more_vert" />
+        </button>
+        <mat-menu #homeMenu="matMenu">
+          <button mat-menu-item type="button" id="set-home" [disabled]="!view()" (click)="setHome()">Aktuellen Ausschnitt als Startposition</button>
+          <button mat-menu-item type="button" id="reset-home" [disabled]="!views.home()" (click)="views.resetHome()">Startposition zurücksetzen</button>
+        </mat-menu>
+      </div>
+      <button matFab extended type="button" id="locate" [disabled]="!handle()" (click)="locate()">
+        <app-icon name="my_location" />{{ locating() ? 'Standort wird gesucht …' : 'Mein Standort' }}
+      </button>
+    </div>
     <ul id="legend" aria-label="Legende">
       @for (key of availabilities; track key) {
         <li>
@@ -139,20 +170,27 @@ export class HomePage {
   private readonly locationsService = inject(LocationsService);
   private readonly theme = inject(ThemeService);
   private readonly focus = inject(MapFocus);
+  protected readonly views = inject(MapViewStore);
   /** Location of a search hit whose info card opens once the map has loaded it. */
   private pending: string | null = null;
-  protected readonly auth = inject(AuthService);
   protected readonly viewport = inject(Viewport);
   private config: MapConfig | null = null;
-  /** Number of the newest location request; older answers are dropped. */
-  private request = 0;
+  /** The newest visible area that still has to be loaded; at most one request runs at a time. */
+  private queued: Bbox | null = null;
+  private busy = false;
+  /** Area, completeness and time of the shown locations. */
+  private shown: { box: Bbox; complete: boolean; at: number } | null = null;
   private readonly container = viewChild.required<ElementRef<HTMLElement>>('map');
   private destroyed = false;
 
   protected readonly notices = NOTICES;
   protected readonly notice = signal<MapNotice | null>(null);
   protected readonly locating = signal(false);
+  protected readonly loading = signal(false);
   protected readonly handle = signal<MapHandle | null>(null);
+  /** The current view (center and zoom), known after the map has loaded. */
+  protected readonly view = signal<MapView | null>(null);
+  protected readonly homeSaved = signal(false);
   protected readonly locations = signal<LocationSummary[]>([]);
   protected readonly attribution = signal<string[]>([]);
   protected readonly truncated = signal(false);
@@ -163,6 +201,8 @@ export class HomePage {
   protected readonly color = (key: keyof typeof AVAILABILITY) => tokenColor(AVAILABILITY[key].token);
 
   constructor() {
+    // The renderer is the largest download; it loads while the configuration is on its way.
+    this.engine.prepare();
     afterNextRender(() => void this.show());
     // Light/dark switch: the map takes the matching style and marker colours. A map created later reads them itself.
     effect(() => {
@@ -210,6 +250,21 @@ export class HomePage {
     }
   }
 
+  /** Back to the start position of the user, else to the default view of the configuration. */
+  protected goHome(): void {
+    const home = this.views.home() ?? this.defaultView();
+    this.handle()!.flyTo(home.latitude, home.longitude, home.zoom);
+  }
+
+  protected setHome(): void {
+    this.views.setHome(this.view()!);
+    this.homeSaved.set(true);
+  }
+
+  private defaultView(): MapView {
+    return { latitude: this.config!.center.latitude, longitude: this.config!.center.longitude, zoom: this.config!.zoom };
+  }
+
   private async show(): Promise<void> {
     let config;
     try {
@@ -225,15 +280,16 @@ export class HomePage {
       this.notice.set('webgl');
       return;
     }
+    const start = this.views.last() ?? this.views.home() ?? this.defaultView();
     try {
       const handle = await this.engine.create({
         container: this.container().nativeElement,
         theme: this.mapTheme(this.theme.dark()),
         attribution: config.attribution,
-        center: config.center,
-        zoom: config.zoom,
+        center: { latitude: start.latitude, longitude: start.longitude },
+        zoom: start.zoom,
         onGeolocate: (event) => this.geolocated(event),
-        onViewChange: (bbox) => void this.loadLocations(bbox),
+        onViewChange: (bbox, view) => this.viewChanged(bbox, view),
         onSelect: (id) => this.selected.set(this.locations().find((location) => location.id === id) ?? null),
       });
       if (this.destroyed) {
@@ -248,33 +304,60 @@ export class HomePage {
     }
   }
 
-  /** Loads the locations of the visible area; the box is clamped to valid coordinates (world wrap). */
-  private async loadLocations(bbox: Bbox): Promise<void> {
-    const request = ++this.request;
+  /** Remembers the view and loads the locations of the visible area; the box is clamped to valid coordinates. */
+  private viewChanged(bbox: Bbox, view: MapView): void {
+    this.view.set(view);
+    this.views.saveLast(view);
+    this.homeSaved.set(false);
     const box: Bbox = {
       west: Math.max(-180, bbox.west),
       south: Math.max(-90, bbox.south),
       east: Math.min(180, bbox.east),
       north: Math.min(90, bbox.north),
     };
-    try {
-      const response = await this.locationsService.inBox(box);
-      if (request !== this.request || this.destroyed) {
-        return;
-      }
-      this.locations.set(response.data);
-      this.attribution.set([...new Set(response.meta.attribution.map((source) => source.text))]);
-      this.truncated.set(response.meta.truncated);
-      this.handle()?.showLocations(response.data);
-      this.openPending();
-      if (this.notice() === 'locations') {
-        this.notice.set(null);
-      }
-    } catch {
-      if (request === this.request) {
-        this.notice.set('locations');
+    // Zoomed into an area whose locations are all shown and current: nothing new to load.
+    const shown = this.shown;
+    if (shown?.complete && Date.now() - shown.at < LOCATIONS_FRESH_MS && covers(shown.box, box)) {
+      return;
+    }
+    this.queued = box;
+    if (!this.busy) {
+      void this.loadLocations();
+    }
+  }
+
+  /**
+   * Loads the newest queued area until none is left. Areas passed over while a request runs are skipped, and an
+   * answer is only shown if no newer area is waiting, so fast panning causes one request at a time.
+   */
+  private async loadLocations(): Promise<void> {
+    this.busy = true;
+    this.loading.set(true);
+    while (this.queued && !this.destroyed) {
+      const box = this.queued;
+      this.queued = null;
+      try {
+        const response = await this.locationsService.inBox(box);
+        if (this.queued || this.destroyed) {
+          continue;
+        }
+        this.locations.set(response.data);
+        this.attribution.set([...new Set(response.meta.attribution.map((source) => source.text))]);
+        this.truncated.set(response.meta.truncated);
+        this.shown = { box, complete: !response.meta.truncated, at: Date.now() };
+        this.handle()?.showLocations(response.data);
+        this.openPending();
+        if (this.notice() === 'locations') {
+          this.notice.set(null);
+        }
+      } catch {
+        if (!this.queued) {
+          this.notice.set('locations');
+        }
       }
     }
+    this.busy = false;
+    this.loading.set(false);
   }
 
   /** Opens the card of the searched location as soon as it is among the loaded ones. */

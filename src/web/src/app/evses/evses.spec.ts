@@ -4,11 +4,13 @@ import {
   TestRequest,
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
+import { AuthService } from '../auth/auth.service';
 import { LocationDetailPage } from '../pages/location-detail.page';
-import { flush, locationSummary, text } from '../testing';
+import { ME, fakeAuth, flush, locationSummary, text } from '../testing';
+import { LocationDetails } from './location-details';
 import {
   EvseDetail,
   EvsesService,
@@ -263,10 +265,13 @@ describe('LocationDetailPage', () => {
       [weekday - 1].querySelectorAll('td')[hour];
 
   beforeEach(() => {
+    const auth = fakeAuth(ME);
+    auth.hasPermission.and.callFake((permission) => permission === 'evse:read');
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        { provide: AuthService, useValue: auth },
         provideRouter([{ path: 'locations/:id', component: LocationDetailPage }]),
       ],
     });
@@ -395,5 +400,84 @@ describe('LocationDetailPage', () => {
     await open(502);
 
     expect(text(page(), '#detail-notice')).toContain('konnte nicht geladen werden');
+  });
+});
+
+describe('LocationDetails (info card)', () => {
+  let http: HttpTestingController;
+  let auth: ReturnType<typeof fakeAuth>;
+  let fixture: ComponentFixture<LocationDetails>;
+
+  const root = () => fixture.nativeElement as HTMLElement;
+  const response = (id: string, evses: EvseDetail[]): LocationDetailResponse => ({
+    data: { location: locationSummary({ id }), evses },
+    meta: { attribution: [] },
+  });
+
+  async function settle(): Promise<void> {
+    await flush();
+    await fixture.whenStable();
+  }
+
+  async function show(id: string): Promise<void> {
+    fixture.componentRef.setInput('locationId', id);
+    await settle();
+  }
+
+  beforeEach(() => {
+    auth = fakeAuth();
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), { provide: AuthService, useValue: auth }],
+    });
+    http = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => http.verify());
+
+  it('shows anonymous visitors the EVSEs with their status and points to the login for more', async () => {
+    fixture = TestBed.createComponent(LocationDetails);
+    await show('loc-1');
+    expect(text(root(), '#details-loading')).toBe('Ladepunkte werden geladen …');
+
+    http.expectOne('/api/v1/locations/loc-1').flush(response('loc-1', [evse()]));
+    await settle();
+
+    expect(root().classList).toContain('compact');
+    expect(root().querySelector('#location-name')).toBeNull();
+    expect(text(root(), '.evse h3')).toBe('AT*VIE*E1*1');
+    expect(text(root(), '#history-hint')).toBe('Statusverlauf und Auslastung siehst du nach der Anmeldung.');
+    expect(root().querySelector('#history-hint a')!.getAttribute('href')).toBe('/login');
+    expect(root().querySelector('.timeline, .timeline-state, #heatmap')).toBeNull();
+  });
+
+  it('starts over for another location and drops the answers for the one before', async () => {
+    auth.hasPermission.and.returnValue(true);
+    fixture = TestBed.createComponent(LocationDetails);
+
+    // The location itself answers late, successfully or not.
+    await show('loc-1');
+    await show('loc-2');
+    http.expectOne('/api/v1/locations/loc-1').flush(response('loc-1', [evse()]));
+    await settle();
+    expect(text(root(), '#details-loading')).toBe('Ladepunkte werden geladen …');
+    await show('loc-3');
+    http.expectOne('/api/v1/locations/loc-2').flush({ title: 'Error' }, { status: 502, statusText: 'Error' });
+    await settle();
+    expect(root().querySelector('#detail-notice')).toBeNull();
+
+    // Timeline and heatmap of the location before arrive after the switch.
+    http.expectOne('/api/v1/locations/loc-3').flush(response('loc-3', [evse()]));
+    await settle();
+    const history = http.expectOne((request) => request.url === '/api/v1/evses/e-1/status/history');
+    const occupancy = http.expectOne('/api/v1/evses/e-1/occupancy?weeks=4');
+    await show('loc-4');
+    history.flush({ title: 'Error' }, { status: 500, statusText: 'Error' });
+    occupancy.flush({ title: 'Error' }, { status: 500, statusText: 'Error' });
+    await settle();
+    http.expectOne('/api/v1/locations/loc-4').flush(response('loc-4', []));
+    await settle();
+
+    expect(text(root(), '#no-evses')).toBe('Für diesen Standort sind keine Ladepunkte bekannt.');
+    expect(root().querySelector('.timeline-state')).toBeNull();
   });
 });

@@ -5,6 +5,7 @@ import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import { ICONS } from '../design/icon';
 import { AVAILABILITIES, AVAILABILITY } from './availability';
 import { Availability, Bbox, LocationSummary } from './locations.service';
+import { MapView } from './map-view.store';
 
 /** Base map style and marker colours of the current colour scheme, resolved from the theme tokens. */
 export interface MapTheme {
@@ -28,8 +29,8 @@ export interface MapViewOptions {
   zoom: number;
   /** Results of the browser geolocation; the position itself never leaves the engine. */
   onGeolocate: (event: GeolocateEvent) => void;
-  /** The visible area after loading and after every move or zoom. */
-  onViewChange: (bbox: Bbox) => void;
+  /** The visible area with center and zoom after loading and after every move or zoom. */
+  onViewChange: (bbox: Bbox, view: MapView) => void;
   /** A location marker was clicked. */
   onSelect: (locationId: string) => void;
 }
@@ -59,6 +60,8 @@ export interface MapHandle {
  */
 @Injectable({ providedIn: 'root', useFactory: () => new MapLibreEngine() })
 export abstract class MapEngine {
+  /** Starts loading the renderer, e.g. while the configuration is still on its way. */
+  abstract prepare(): void;
   abstract create(options: MapViewOptions): Promise<MapHandle>;
 }
 
@@ -68,8 +71,15 @@ export abstract class MapEngine {
  * needs a WebGL context to run, so it must not contain logic beyond translating the calls.
  */
 export class MapLibreEngine extends MapEngine {
+  private library: Promise<typeof import('maplibre-gl')> | null = null;
+
+  prepare(): void {
+    this.library ??= import('maplibre-gl');
+  }
+
   async create(options: MapViewOptions): Promise<MapHandle> {
-    const maplibre = await import('maplibre-gl');
+    this.prepare();
+    const maplibre = await this.library!;
     // The worker ships as an asset (angular.json), next to the app instead of next to the chunk.
     maplibre.setWorkerUrl(new URL(`maplibre/maplibre-gl-worker.mjs?v=${maplibre.getVersion()}`, document.baseURI).href);
 
@@ -105,7 +115,11 @@ export class MapLibreEngine extends MapEngine {
     let loaded = false;
     const emitView = () => {
       const bounds = map.getBounds();
-      options.onViewChange({ west: bounds.getWest(), south: bounds.getSouth(), east: bounds.getEast(), north: bounds.getNorth() });
+      const center = map.getCenter();
+      options.onViewChange(
+        { west: bounds.getWest(), south: bounds.getSouth(), east: bounds.getEast(), north: bounds.getNorth() },
+        { latitude: center.lat, longitude: center.lng, zoom: map.getZoom() },
+      );
     };
     // Every style load (the first one and each theme change) starts without the app's source, images and layers.
     map.on('style.load', () => {
