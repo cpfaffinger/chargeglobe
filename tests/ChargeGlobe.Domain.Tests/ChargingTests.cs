@@ -15,6 +15,16 @@ public class ChargingTests
         Assert.Equal(new GeoPoint(48.2082, 16.3738), Vienna);
     }
 
+    [Fact]
+    public void GeoPoint_survives_a_JSON_round_trip_and_is_validated_on_reading()
+    {
+        var json = System.Text.Json.JsonSerializer.Serialize(Vienna);
+
+        Assert.Equal(Vienna, System.Text.Json.JsonSerializer.Deserialize<GeoPoint>(json));
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => System.Text.Json.JsonSerializer.Deserialize<GeoPoint>(json.Replace("48.2082", "91")));
+    }
+
     [Theory]
     [InlineData(90.1, 0, "latitude")]
     [InlineData(-90.1, 0, "latitude")]
