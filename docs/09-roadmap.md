@@ -23,7 +23,8 @@
 - [ ] Adapter **OpenStreetMap** (Overpass) und **OpenChargeMap** als Ergänzung/Plausibilisierung
 - [ ] Region-Polygone, Lease-Scheduler (`poll_plan`), `ingest_queue`, clusterweites Rate-Budget, adaptive Statusabfrage, Metriken
 - [ ] API v1 (EVSE-Suche, Detail, Statushistorie, Belegung, Ad-hoc-Preis, Provenienz)
-- [ ] Angular: Karte mit MapLibre und OSM-Vektorkacheln (OpenFreeMap, `GET /map/config`), eigener Standort per Geolocation, anonym nur Karte ([ADR-0007](adr/0007-karte-standort-routing.md))
+- [x] Angular: Karte mit MapLibre und OSM-Vektorkacheln (OpenFreeMap, `GET /map/config`) als anonyme Startseite, eigener Standort per Geolocation ([ADR-0007](adr/0007-karte-standort-routing.md))
+- [ ] Angular: Ladepunkt-Marker aus `GET /locations` mit Clustering, Status-Farben und Filtern
 - [ ] Angular: Detailseite mit Historie (angemeldet), Admin (Nutzer, Rollen, API-Keys, Einstellungen)
 - [ ] Nutzer- und Rollenverwaltung in der API (`/users`, `/roles`, `GET /audit-log`)
 - [ ] Customizings: `GET/PUT /me/preferences`, Favoriten, Einstellungsseite

@@ -1,7 +1,13 @@
-import { Component, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Component, inject, signal } from '@angular/core';
 import { AuthService } from '../auth/auth.service';
 
-/** Example of a page for signed-in users only (guarded in app.routes.ts). */
+interface HealthResponse {
+  status: string;
+  db: string;
+}
+
+/** Account of the signed-in user (guarded in app.routes.ts) with the state of API and database. */
 @Component({
   selector: 'app-account',
   template: `
@@ -14,8 +20,28 @@ import { AuthService } from '../auth/auth.service';
       <dt>Berechtigungen</dt>
       <dd id="account-permissions">{{ auth.me()?.permissions?.join(', ') }}</dd>
     </dl>
+    <h3>Systemstatus</h3>
+    <p id="api-status">API: {{ apiStatus() }}</p>
+    <p id="db-status">DB: {{ dbStatus() }}</p>
   `,
 })
 export class AccountPage {
+  private readonly http = inject(HttpClient);
   protected readonly auth = inject(AuthService);
+
+  protected readonly apiStatus = signal('…');
+  protected readonly dbStatus = signal('…');
+
+  constructor() {
+    this.http.get<HealthResponse>('/api/v1/health').subscribe({
+      next: (health) => {
+        this.apiStatus.set(health.status);
+        this.dbStatus.set(health.db);
+      },
+      error: () => {
+        this.apiStatus.set('unavailable');
+        this.dbStatus.set('unknown');
+      },
+    });
+  }
 }

@@ -6,10 +6,13 @@ import { App } from './app';
 import { appConfig } from './app.config';
 import { routes } from './app.routes';
 import { AuthService } from './auth/auth.service';
-import { ME, fakeAuth, flush, text } from './testing';
+import { BrowserCapabilities } from './map/browser-capabilities';
+import { MapEngine } from './map/map-engine';
+import { MAP_CONFIG, ME, fakeAuth, fakeBrowser, fakeMapEngine, flush, text } from './testing';
 
 describe('App with its routes', () => {
   let auth: ReturnType<typeof fakeAuth>;
+  let map: ReturnType<typeof fakeMapEngine>;
   let fixture: ComponentFixture<App>;
   let http: HttpTestingController;
   let router: Router;
@@ -24,6 +27,7 @@ describe('App with its routes', () => {
 
   beforeEach(async () => {
     auth = fakeAuth();
+    map = fakeMapEngine();
     await TestBed.configureTestingModule({
       imports: [App],
       providers: [
@@ -31,6 +35,8 @@ describe('App with its routes', () => {
         provideHttpClientTesting(),
         provideRouter(routes),
         { provide: AuthService, useValue: auth },
+        { provide: MapEngine, useValue: map.engine },
+        { provide: BrowserCapabilities, useValue: fakeBrowser() },
       ],
     }).compileComponents();
 
@@ -42,53 +48,48 @@ describe('App with its routes', () => {
   afterEach(() => http.verify());
 
   describe('start page', () => {
-    it('is reachable anonymously and shows the map placeholder and a placeholder status', async () => {
+    it('is reachable anonymously and shows the map with the configuration of the API', async () => {
       await navigate('/');
+      http.expectOne('/api/v1/map/config').flush(MAP_CONFIG);
+      await flush();
+      await fixture.whenStable();
 
-      expect(root().querySelector('#map-placeholder')).not.toBeNull();
-      expect(text(root(), '#api-status')).toBe('API: …');
-      expect(text(root(), '#db-status')).toBe('DB: …');
-      expect(text(root(), '#anonymous')).toContain('Anmelden oder Konto anlegen');
-      expect(root().querySelector('#session')).toBeNull();
+      expect(router.url).toBe('/');
+      expect(root().querySelector('app-home #map')).not.toBeNull();
+      expect(map.engine.create).toHaveBeenCalledOnceWith(jasmine.objectContaining({ zoom: 7 }));
       expect(root().querySelector('#nav-login')).not.toBeNull();
       expect(root().querySelector('#nav-register')).not.toBeNull();
       expect(root().querySelector('#nav-account')).toBeNull();
-      http.expectOne('/api/v1/health');
+      expect(root().querySelector('#logout')).toBeNull();
     });
+  });
 
-    it('shows the API and database state reported by the API', async () => {
-      await navigate('/');
-      http.expectOne('/api/v1/health').flush({ status: 'ok', db: 'unavailable' });
-      await fixture.whenStable();
-
-      expect(text(root(), '#api-status')).toBe('API: ok');
-      expect(text(root(), '#db-status')).toBe('DB: unavailable');
-    });
-
-    it('shows "API: unavailable" when the request fails', async () => {
-      await navigate('/');
-      http.expectOne('/api/v1/health').flush('Bad Gateway', { status: 502, statusText: 'Bad Gateway' });
-      await fixture.whenStable();
-
-      expect(text(root(), '#api-status')).toBe('API: unavailable');
-      expect(text(root(), '#db-status')).toBe('DB: unknown');
-    });
-
-    it('shows e-mail, permissions and a logout button after login', async () => {
+  describe('header', () => {
+    it('shows the e-mail as link to the account and a logout button after login', async () => {
       auth.me.set(ME);
-      auth.logout.and.resolveTo();
       await navigate('/');
-      http.expectOne('/api/v1/health').flush({ status: 'ok', db: 'ok' });
+      http.expectOne('/api/v1/map/config');
 
-      expect(text(root(), '#me-email')).toBe('anna@example.org');
-      expect(text(root(), '#me-permissions')).toBe('Berechtigungen: apikey:manage, evse:read, price:read, route:read');
-      expect(root().querySelector('#anonymous')).toBeNull();
-      expect(root().querySelector('#nav-account')).not.toBeNull();
+      expect(text(root(), '#nav-account')).toBe('anna@example.org');
+      expect(root().querySelector('#nav-account')!.getAttribute('href')).toBe('/account');
       expect(root().querySelector('#nav-login')).toBeNull();
+      expect(root().querySelector('#nav-register')).toBeNull();
+    });
+
+    it('logs out and returns to the map', async () => {
+      auth.me.set(ME);
+      auth.logout.and.callFake(async () => auth.me.set(null));
+      await navigate('/account');
+      http.expectOne('/api/v1/health');
 
       root().querySelector<HTMLButtonElement>('#logout')!.click();
+      await flush();
+      await fixture.whenStable();
 
       expect(auth.logout).toHaveBeenCalledTimes(1);
+      expect(router.url).toBe('/');
+      expect(root().querySelector('#nav-login')).not.toBeNull();
+      http.expectOne('/api/v1/map/config');
     });
   });
 
@@ -108,7 +109,7 @@ describe('App with its routes', () => {
 
       expect(router.url).toBe('/');
       expect(root().querySelector('#nav-settings')).toBeNull();
-      http.expectOne('/api/v1/health');
+      http.expectOne('/api/v1/map/config');
 
       auth.hasPermission.and.callFake((permission) => permission === 'settings:read');
       await navigate('/admin/settings');
@@ -127,7 +128,7 @@ describe('App with its routes', () => {
 
       expect(router.url).toBe('/');
       expect(root().querySelector('#nav-mail')).toBeNull();
-      http.expectOne('/api/v1/health');
+      http.expectOne('/api/v1/map/config');
 
       auth.hasPermission.and.returnValue(true);
       await navigate('/admin/mail');
@@ -157,6 +158,7 @@ describe('App with its routes', () => {
 
       expect(router.url).toBe('/account');
       expect(text(root(), '#account-email')).toBe('anna@example.org');
+      http.expectOne('/api/v1/health');
     });
 
     it('serves the account pages without login', async () => {
@@ -177,7 +179,7 @@ describe('App with its routes', () => {
       await navigate('/does-not-exist');
 
       expect(router.url).toBe('/');
-      http.expectOne('/api/v1/health');
+      http.expectOne('/api/v1/map/config');
     });
   });
 });

@@ -30,9 +30,15 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "maplibre-gl-worker.mjs",
+                "input": "node_modules/maplibre-gl/dist",
+                "output": "maplibre"
               }
             ],
             "styles": [
+              "node_modules/maplibre-gl/dist/maplibre-gl.css",
               "src/styles.css"
             ]
           },
@@ -80,7 +86,10 @@
           "options": {
             "tsConfig": "tsconfig.spec.json",
             "karmaConfig": "karma.conf.js",
-            "browsers": "ChromeHeadless"
+            "browsers": "ChromeHeadless",
+            "codeCoverageExclude": [
+              "src/app/map/map-engine.ts"
+            ]
           }
         }
       }

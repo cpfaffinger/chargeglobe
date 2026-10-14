@@ -1,8 +1,12 @@
 # web
 
-Angular-22-Frontend von chargeglobe (Standalone Components, Signals, Zoneless). Die Startseite ist anonym
-erreichbar (Platzhalter für die Karte, Zustand von API und Datenbank aus `/api/v1/health`) und zeigt nach dem
-Login E-Mail und Permissions. Seiten: `/register`, `/confirm-email`, `/login`, `/forgot-password`,
+Angular-22-Frontend von chargeglobe (Standalone Components, Signals, Zoneless). Die Startseite ist die anonym
+erreichbare Karte (`src/app/pages/home.page.ts`, Code unter `src/app/map`): MapLibre GL JS mit der Konfiguration aus
+`/api/v1/map/config`, Knopf „Mein Standort“ ([ADR-0007](../../docs/adr/0007-karte-standort-routing.md)). `maplibre-gl` wird nur
+von `src/app/map/map-engine.ts` importiert und erst auf der Kartenseite nachgeladen; die Datei braucht WebGL, ist per
+`codeCoverageExclude` (angular.json) von der Coverage ausgenommen und wird in den Specs durch einen Stub ersetzt. Der
+Web-Worker von MapLibre wird als Asset unter `/maplibre/` ausgeliefert. Die Kopfzeile zeigt angemeldet die E-Mail-Adresse
+(Link auf `/account`) und „Abmelden“; `/account` zeigt Rollen, Permissions und den Zustand von API und Datenbank. Seiten: `/register`, `/confirm-email`, `/login`, `/forgot-password`,
 `/reset-password`, `/account` (nur angemeldet), `/admin/settings` (mit `settings:read`; generisch aus `GET /api/v1/settings` gerendert, Code unter `src/app/settings`), `/admin/mail` (mit `settings:manage`; Testmail und Postausgang, Client unter `src/app/mail`). Spec-Hilfen liegen in `src/app/testing.ts` und gehören nur zum Test-Build (`tsconfig.spec.json`). `src/app/auth` enthält `AuthService` (Access-Token im Speicher,
 Refresh über Cookie), den HTTP-Interceptor und den Guard `requirePermission`.
 

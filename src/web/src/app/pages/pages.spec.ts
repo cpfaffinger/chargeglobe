@@ -1,3 +1,5 @@
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
@@ -35,6 +37,9 @@ describe('account pages', () => {
     auth = fakeAuth();
     TestBed.configureTestingModule({
       providers: [
+        // AccountPage (also the target of a login) requests the health; no request leaves the test.
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: AuthService, useValue: auth },
         provideRouter([
           { path: '', component: TargetPage },
@@ -192,14 +197,38 @@ describe('account pages', () => {
   });
 
   describe('AccountPage', () => {
-    it('shows identity, roles and permissions of the signed-in user', async () => {
-      auth.me.set(ME);
+    let http: HttpTestingController;
 
+    beforeEach(() => {
+      http = TestBed.inject(HttpTestingController);
+      auth.me.set(ME);
+    });
+
+    afterEach(() => http.verify());
+
+    it('shows identity, roles and permissions of the signed-in user and the state of API and database', async () => {
       await open('/account');
 
       expect(text(page(), '#account-email')).toBe('anna@example.org');
       expect(text(page(), '#account-roles')).toBe('User');
       expect(text(page(), '#account-permissions')).toBe('apikey:manage, evse:read, price:read, route:read');
+      expect(text(page(), '#api-status')).toBe('API: …');
+
+      http.expectOne('/api/v1/health').flush({ status: 'ok', db: 'unavailable' });
+      await settle();
+
+      expect(text(page(), '#api-status')).toBe('API: ok');
+      expect(text(page(), '#db-status')).toBe('DB: unavailable');
+    });
+
+    it('shows "API: unavailable" when the health request fails', async () => {
+      await open('/account');
+
+      http.expectOne('/api/v1/health').flush('Bad Gateway', { status: 502, statusText: 'Bad Gateway' });
+      await settle();
+
+      expect(text(page(), '#api-status')).toBe('API: unavailable');
+      expect(text(page(), '#db-status')).toBe('DB: unknown');
     });
   });
 });
