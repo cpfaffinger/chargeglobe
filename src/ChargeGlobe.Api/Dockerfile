@@ -3,11 +3,13 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /repo
 COPY Directory.Build.props ./
 COPY src/ChargeGlobe.Domain/ChargeGlobe.Domain.csproj src/ChargeGlobe.Domain/
+COPY src/ChargeGlobe.Providers.Abstractions/ChargeGlobe.Providers.Abstractions.csproj src/ChargeGlobe.Providers.Abstractions/
 COPY src/ChargeGlobe.Application/ChargeGlobe.Application.csproj src/ChargeGlobe.Application/
 COPY src/ChargeGlobe.Infrastructure/ChargeGlobe.Infrastructure.csproj src/ChargeGlobe.Infrastructure/
 COPY src/ChargeGlobe.Api/ChargeGlobe.Api.csproj src/ChargeGlobe.Api/
 RUN dotnet restore src/ChargeGlobe.Api/ChargeGlobe.Api.csproj
 COPY src/ChargeGlobe.Domain/ src/ChargeGlobe.Domain/
+COPY src/ChargeGlobe.Providers.Abstractions/ src/ChargeGlobe.Providers.Abstractions/
 COPY src/ChargeGlobe.Application/ src/ChargeGlobe.Application/
 COPY src/ChargeGlobe.Infrastructure/ src/ChargeGlobe.Infrastructure/
 COPY src/ChargeGlobe.Api/ src/ChargeGlobe.Api/
