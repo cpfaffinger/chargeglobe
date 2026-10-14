@@ -52,6 +52,8 @@ internal static class EControl
 {
     public static readonly DateTimeOffset Now = new(2026, 10, 14, 8, 0, 0, TimeSpan.Zero);
 
+    public static ProviderDescriptor EControlDescriptor => EControlProvider.DescriptorValue;
+
     public static string Fixture(string name) => File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "fixtures", "econtrol", name));
 
     public static EControlClient Client(StubHandler handler, IProviderSettings? settings = null) =>

@@ -131,3 +131,85 @@ public sealed class EmailOutboxEntry
     /// <summary>Earliest time of the next delivery attempt after a failure; null means "now".</summary>
     public DateTimeOffset? NextAttemptAt { get; set; }
 }
+
+/// <summary>Work item of the crawlers: provider × job type × region with interval (docs/02, lease scheduler).</summary>
+public sealed class PollPlan
+{
+    public Guid Id { get; set; }
+
+    public required string ProviderKey { get; set; }
+
+    /// <summary>Name of <c>JobType</c>, e.g. <c>STATUS_POLL</c>.</summary>
+    public required string JobType { get; set; }
+
+    /// <summary>ISO 3166-2 code of the covered region.</summary>
+    public required string RegionCode { get; set; }
+
+    public double MinLongitude { get; set; }
+
+    public double MinLatitude { get; set; }
+
+    public double MaxLongitude { get; set; }
+
+    public double MaxLatitude { get; set; }
+
+    public TimeSpan Interval { get; set; }
+
+    public DateTimeOffset NextRunAt { get; set; }
+
+    public string? LeasedBy { get; set; }
+
+    public DateTimeOffset? LeaseUntil { get; set; }
+
+    public DateTimeOffset? LastRunAt { get; set; }
+
+    public string? LastResult { get; set; }
+}
+
+/// <summary>Cluster-wide token bucket of a provider.</summary>
+public sealed class ProviderRateBudgetState
+{
+    public required string ProviderKey { get; set; }
+
+    public double Tokens { get; set; }
+
+    public DateTimeOffset RefilledAt { get; set; }
+
+    /// <summary>Requests since <see cref="DayResetAt"/> minus one day.</summary>
+    public int DayCount { get; set; }
+
+    public DateTimeOffset DayResetAt { get; set; }
+}
+
+/// <summary>Message crawler → worker with a serialized <c>IngestBatch</c>.</summary>
+public sealed class IngestMessage
+{
+    public long Id { get; set; }
+
+    public required string ProviderKey { get; set; }
+
+    public Guid JobId { get; set; }
+
+    public required string Payload { get; set; }
+
+    public DateTimeOffset EnqueuedAt { get; set; }
+
+    public int Attempts { get; set; }
+
+    /// <summary>Earliest retry after a failure; null means "now".</summary>
+    public DateTimeOffset? NextAttemptAt { get; set; }
+
+    public string? Error { get; set; }
+
+    public DateTimeOffset? ProcessedAt { get; set; }
+}
+
+/// <summary>Holder of a single-runner job until <see cref="LeaseUntil"/>.</summary>
+public sealed class JobLease
+{
+    public required string JobName { get; set; }
+
+    public required string LeasedBy { get; set; }
+
+    public DateTimeOffset LeaseUntil { get; set; }
+}

@@ -12,7 +12,8 @@ public static class EControlServiceCollectionExtensions
     /// <summary>
     /// Registers the adapter as <see cref="IProvider"/>, <see cref="IInventorySource"/>,
     /// <see cref="IStatusSource"/>, <see cref="IPriceSource"/> and <see cref="IProviderHealth"/>.
-    /// Requires an <see cref="IProviderSettings"/> registration (key and referer from the config service).
+    /// Requires an <see cref="IProviderSettings"/> registration (key and referer from the config service);
+    /// uses an <see cref="IProviderRequestBudget"/> registration if there is one.
     /// </summary>
     public static IServiceCollection AddEControlProvider(this IServiceCollection services)
     {
@@ -25,7 +26,11 @@ public static class EControlServiceCollectionExtensions
                 http.Timeout = TimeSpan.FromSeconds(60);
                 http.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
             })
-            .AddHttpMessageHandler(provider => new RateLimitingHandler(limiter, provider.GetRequiredService<TimeProvider>()));
+            .AddHttpMessageHandler(provider => new RateLimitingHandler(limiter, provider.GetRequiredService<TimeProvider>()))
+            // The cluster-wide budget, if the host has one (the crawler does); otherwise a pass-through.
+            .AddHttpMessageHandler(provider => provider.GetService<IProviderRequestBudget>() is { } budget
+                ? new RequestBudgetHandler(budget, EControlProvider.DescriptorValue)
+                : new PassThroughHandler());
         services.AddSingleton(_ => EControlMapper.CreateDefault());
         services.AddTransient<EControlProvider>();
         services.AddTransient<IProvider>(provider => provider.GetRequiredService<EControlProvider>());
@@ -36,3 +41,6 @@ public static class EControlServiceCollectionExtensions
         return services;
     }
 }
+
+/// <summary>Handler without effect, for hosts without a shared request budget.</summary>
+internal sealed class PassThroughHandler : DelegatingHandler;

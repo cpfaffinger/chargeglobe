@@ -20,10 +20,11 @@
 ### Phase 1 – MVP Ost-Österreich (Wien, NÖ, OÖ, Bgld)
 - [x] Domain + Datenmodell + Migration `ChargingDomain` (PostGIS-Geometrie mit GiST, Hypertables mit Kompression/Retention, Region-Trigger)
 - [x] `Providers.Abstractions` (Descriptor, Capabilities, Quell-Interfaces, Ingest-Modell, Status-Mapping)
-- [ ] Ingest-Pipeline (Lease-Scheduler, `ingest_queue`), Matching-Kaskade, Region-Seed, Continuous Aggregate `evse_occupancy_hourly`
+- [x] Ingest-Pipeline: Lease-Scheduler (`poll_plan`), clusterweites Request-Budget (`provider_rate_budget`), `raw_snapshot`, `ingest_queue`, Merge mit Matching-Schritten 1/2/5, Status-Intervalle, Retention unter `job_lease`
+- [ ] Matching-Heuristiken (Geo + Operator), Quellen-Präzedenz je Attribut, Region-Seed, Continuous Aggregate `evse_occupancy_hourly`, adaptive Intervalle
 - [x] Adapter **E-Control** (Inventar + Status + Ad-hoc-Preis über `GET /search` mit adaptivem Raster, Health-Probe im Crawler, Provider-Einstellungen je Quelle im Config-Service) – Tier 0
 - [ ] Adapter **OpenStreetMap** (Overpass) und **OpenChargeMap** als Ergänzung/Plausibilisierung
-- [ ] Region-Polygone, Lease-Scheduler (`poll_plan`), `ingest_queue`, clusterweites Rate-Budget, adaptive Statusabfrage, Metriken
+- [ ] Region-Polygone, adaptive Statusabfrage, Metriken
 - [ ] API v1 (EVSE-Suche, Detail, Statushistorie, Belegung, Ad-hoc-Preis, Provenienz)
 - [x] Angular: Karte mit MapLibre und OSM-Vektorkacheln (OpenFreeMap, `GET /map/config`) als anonyme Startseite, eigener Standort per Geolocation ([ADR-0007](adr/0007-karte-standort-routing.md))
 - [ ] Angular: Ladepunkt-Marker aus `GET /locations` mit Clustering, Status-Farben und Filtern

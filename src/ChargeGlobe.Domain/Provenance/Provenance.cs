@@ -132,6 +132,15 @@ public sealed class SourceRecord
             LastSnapshotId = snapshotId,
         };
 
+    /// <summary>The record now points to another entity, e.g. because its old one was deleted.</summary>
+    public void Rematch(Guid entityId, MatchMethod matchMethod, double matchConfidence, DateTimeOffset at, long? snapshotId)
+    {
+        EntityId = entityId;
+        MatchMethod = matchMethod;
+        MatchConfidence = Guard.Fraction(matchConfidence);
+        Seen(at, snapshotId);
+    }
+
     public void Seen(DateTimeOffset at, long? snapshotId)
     {
         if (at < LastSeen)
@@ -176,6 +185,17 @@ public sealed class AttributeOrigin
             ObservedAt = observedAt,
             ValueHash = Hash.Sha256(value ?? string.Empty),
         };
+
+    /// <summary>Whether <paramref name="value"/> is the value this origin was recorded for.</summary>
+    public bool Matches(string? value) => ValueHash == Hash.Sha256(value ?? string.Empty);
+
+    /// <summary>The attribute now has <paramref name="value"/> from <paramref name="sourceKey"/>.</summary>
+    public void Update(string sourceKey, string? value, DateTimeOffset observedAt)
+    {
+        SourceKey = Guard.NotBlank(sourceKey);
+        ValueHash = Hash.Sha256(value ?? string.Empty);
+        ObservedAt = observedAt;
+    }
 }
 
 /// <summary>Unchanged response of a source, kept for replay and debugging (retention 30 days).</summary>

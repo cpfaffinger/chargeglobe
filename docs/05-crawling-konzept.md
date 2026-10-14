@@ -27,11 +27,11 @@
 Adapter deklarieren per Capability, was geht. Der Scheduler bevorzugt:
 
 1. `BulkAll` – ein Request liefert alle Status (ideal, z. B. OCPI-`Locations` mit Status, manche Web-Karten).
-2. `BulkByBoundingBox` – Scope-Regionen werden in Kacheln zerlegt (Z8–Z10, abhängig von Antwortgrößen-Limits der Quelle). Kacheln ohne Ladepunkte werden übersprungen, Kacheln mit vielen Ladepunkten weiter unterteilt (Quadtree, persistiert in `poll_tile`).
+2. `BulkByBoundingBox` – je Region ein Plan mit der Bounding-Box der Region (`poll_plan`); der Adapter zerlegt sie selbst, wenn die Quelle es verlangt (E-Control: adaptives Raster, siehe [Endpunkt-Notiz](endpunkte/econtrol.md)). Vorgesehen: persistierte Kacheln (`poll_tile`), damit leere Kacheln übersprungen werden.
 3. `ByEvseId` – nur für Ladepunkte, die anders nicht erreichbar sind; streng rate-limitiert.
 
-### 2. Adaptive Intervalle je Ladepunkt
-Ziel: Frische dort, wo sich etwas ändert, ohne Request-Budget zu sprengen.
+### 2. Adaptive Intervalle je Ladepunkt (vorgesehen)
+Derzeit gilt je Plan ein festes Intervall (`provider.interval.*` bzw. `PollDefaults`). Ziel: Frische dort, wo sich etwas ändert, ohne Request-Budget zu sprengen.
 
 ```
 interval = clamp(base[power_class] × activity_factor × time_of_day_factor, min, max)
@@ -47,7 +47,7 @@ Bei Bulk-Modi ist das Intervall je Kachel = Minimum der enthaltenen EVSE-Interva
 ### 3. Request-Budget je Provider
 `RateLimitPolicy` (z. B. 60/min, Burst 10) wird als **clusterweiter** Token-Bucket in Postgres (`provider_rate_budget`) umgesetzt, damit mehrere Crawler-Instanzen zusammen das Limit einhalten; die Werte sind im Config-Service änderbar. Zusätzlich ein **Tagesbudget**; bei Überschreitung werden Intervalle global gestreckt statt Requests fallen zu lassen. Antworten mit `429`/`503` → exponentielles Backoff mit Jitter, Beachtung von `Retry-After`, nach 5 Fehlern in Folge Circuit-Breaker für 10 min + Alarm.
 
-Umgesetzt ist bisher die Stufe im Adapter: `RateLimitingHandler` (Token-Bucket je Prozess aus der `RateLimitPolicy` des Descriptors) wartet vor jedem Request auf ein Token und wiederholt einen `429`/`503` mit `Retry-After` einmal nach der angekündigten Pause (höchstens 2 min). Clusterweites Budget, Tagesbudget, Backoff und Circuit-Breaker kommen mit dem Lease-Scheduler.
+Umgesetzt: (1) im Adapter `RateLimitingHandler` (Token-Bucket je Prozess aus der `RateLimitPolicy`), der einen `429`/`503` mit `Retry-After` einmal nach der angekündigten Pause (höchstens 2 min) wiederholt; (2) clusterweit `provider_rate_budget` (Token-Bucket mit `PerMinute`, `Burst` und optionalem `PerDay`, Reset um Mitternacht UTC), aus dem jeder Request vor dem Senden ein Token nimmt; ohne Token wartet er die errechnete Zeit (100 ms – 1 min) und versucht es erneut, Requests fallen also nie weg, Läufe dauern nur länger. Die Werte kommen derzeit aus dem Descriptor. Vorgesehen: Budget-Werte im Config-Service, exponentielles Backoff mit Jitter, Circuit-Breaker.
 
 ### 4. Change Detection & Dedupe
 - `content_hash` der Antwort: identische Antwort → nur `last_seen` aktualisieren, kein neuer Snapshot.

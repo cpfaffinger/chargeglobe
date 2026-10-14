@@ -121,3 +121,34 @@ public class ContractTests
         Assert.Equal("econtrol", new ProviderMappingIssue("econtrol", "4711", "no coordinates").ProviderKey);
     }
 }
+
+public class RequestBudgetHandlerTests
+{
+    private sealed class CountingBudget : IProviderRequestBudget
+    {
+        public List<string> Acquired { get; } = [];
+
+        public Task AcquireAsync(ProviderDescriptor descriptor, CancellationToken cancellationToken)
+        {
+            Acquired.Add(descriptor.Key);
+            return Task.CompletedTask;
+        }
+    }
+
+    [Fact]
+    public async Task Every_request_takes_one_unit_of_the_shared_budget_first()
+    {
+        var budget = new CountingBudget();
+        var inner = new StubHandler(_ => StubHandler.Json("[]"));
+        using var client = new HttpClient(new RequestBudgetHandler(budget, EControl.EControlDescriptor) { InnerHandler = inner })
+        {
+            BaseAddress = new Uri("https://source.test/"),
+        };
+
+        await client.GetAsync("a");
+        await client.GetAsync("b");
+
+        Assert.Equal(["econtrol", "econtrol"], budget.Acquired);
+        Assert.Equal(2, inner.Requests.Count);
+    }
+}

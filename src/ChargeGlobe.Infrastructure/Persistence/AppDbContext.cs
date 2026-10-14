@@ -57,6 +57,14 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<LocationStatusObservation> LocationStatusObservations => Set<LocationStatusObservation>();
 
+    public DbSet<PollPlan> PollPlans => Set<PollPlan>();
+
+    public DbSet<ProviderRateBudgetState> ProviderRateBudgets => Set<ProviderRateBudgetState>();
+
+    public DbSet<IngestMessage> IngestQueue => Set<IngestMessage>();
+
+    public DbSet<JobLease> JobLeases => Set<JobLease>();
+
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder) =>
         ChargingModel.ConfigureConventions(configurationBuilder);
 
@@ -114,6 +122,33 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
         });
 
         builder.Entity<DataProtectionKey>().ToTable("data_protection_key");
+
+        builder.Entity<PollPlan>(entity =>
+        {
+            entity.ToTable("poll_plan");
+            entity.HasIndex(plan => new { plan.ProviderKey, plan.JobType, plan.RegionCode }).IsUnique();
+            entity.HasIndex(plan => plan.NextRunAt);
+        });
+
+        builder.Entity<ProviderRateBudgetState>(entity =>
+        {
+            entity.ToTable("provider_rate_budget");
+            entity.HasKey(budget => budget.ProviderKey);
+        });
+
+        builder.Entity<IngestMessage>(entity =>
+        {
+            entity.ToTable("ingest_queue");
+            entity.Property(message => message.Payload).HasColumnType("jsonb");
+            entity.HasIndex(message => message.Id).HasFilter("processed_at IS NULL").HasDatabaseName("IX_ingest_queue_pending");
+            entity.HasIndex(message => message.ProcessedAt);
+        });
+
+        builder.Entity<JobLease>(entity =>
+        {
+            entity.ToTable("job_lease");
+            entity.HasKey(lease => lease.JobName);
+        });
 
         // Own tables use snake_case columns; the ASP.NET Core Identity tables keep their defaults.
         // Columns named explicitly in the mapping (e.g. location.geom) keep their name.

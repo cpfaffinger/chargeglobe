@@ -39,7 +39,9 @@ public sealed class EControlProvider(
         "E-Control API terms of use (free, registration required); redistribution only with written consent",
         "Datenquelle: Ladestellenverzeichnis der E-Control (ladestellen.at)",
         ["AT"],
-        new PollDefaults(TimeSpan.FromDays(1), TimeSpan.FromMinutes(5), TimeSpan.FromDays(1)),
+        // Status every 15 min: one pass over the four start regions takes a few hundred searches
+        // (nearest 100 per request), 4 passes per hour stay below 2,400 requests.
+        new PollDefaults(TimeSpan.FromDays(1), TimeSpan.FromMinutes(15), TimeSpan.FromDays(1)),
         // Terms of use: 2,500 requests per hour and at most 30 in parallel; 40/min stays below.
         new RateLimitPolicy(PerMinute: 40, Burst: 10));
 
