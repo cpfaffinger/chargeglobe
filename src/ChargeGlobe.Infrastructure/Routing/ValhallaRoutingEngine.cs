@@ -12,7 +12,7 @@ namespace ChargeGlobe.Infrastructure.Routing;
 /// lengths in kilometres, no turn-by-turn directions. The line comes as polyline with six decimals per leg. Logs only
 /// the error of the engine, never the positions.
 /// </summary>
-public sealed partial class ValhallaRoutingEngine(HttpClient http, ILogger<ValhallaRoutingEngine> logger) : IRoutingEngine
+public sealed class ValhallaRoutingEngine(HttpClient http, ILogger<ValhallaRoutingEngine> logger) : IRoutingEngine
 {
     /// <summary>Address of the engine inside the compose network (service <c>routing</c>).</summary>
     public static readonly Uri Address = new("http://routing:8002/");
@@ -31,7 +31,7 @@ public sealed partial class ValhallaRoutingEngine(HttpClient http, ILogger<Valha
         }
         catch (Exception exception) when (exception is HttpRequestException || (exception is TaskCanceledException && !cancellationToken.IsCancellationRequested))
         {
-            LogUnavailable(logger, exception.Message);
+            logger.LogWarning("Routing engine unavailable: {Reason}", exception.Message);
             return new RouteResult(RouteOutcome.Unavailable, null);
         }
 
@@ -41,13 +41,13 @@ public sealed partial class ValhallaRoutingEngine(HttpClient http, ILogger<Valha
             {
                 // Valhalla answers 400 when it finds no path (442) or no road near a point (171).
                 var error = await response.Content.ReadFromJsonAsync<ValhallaError>(cancellationToken);
-                LogNoRoute(logger, error?.ErrorCode, error?.Error);
+                logger.LogInformation("Routing engine found no route: {Code} {Error}", error?.ErrorCode, error?.Error);
                 return new RouteResult(RouteOutcome.NoRoute, null);
             }
 
             if (!response.IsSuccessStatusCode)
             {
-                LogUnavailable(logger, $"HTTP {(int)response.StatusCode}");
+                logger.LogWarning("Routing engine unavailable: HTTP {Status}", (int)response.StatusCode);
                 return new RouteResult(RouteOutcome.Unavailable, null);
             }
 
@@ -61,12 +61,7 @@ public sealed partial class ValhallaRoutingEngine(HttpClient http, ILogger<Valha
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Routing engine unavailable: {Reason}")]
-    private static partial void LogUnavailable(ILogger logger, string reason);
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "Routing engine found no route: {Code} {Error}")]
-    private static partial void LogNoRoute(ILogger logger, int? code, string? error);
-
+    // Plain logger calls: coverlet cannot resolve the [LoggerMessage] attribute when it instruments this assembly.
     private sealed record ValhallaRequest(
         IReadOnlyList<ValhallaLocation> Locations,
         string Costing,
