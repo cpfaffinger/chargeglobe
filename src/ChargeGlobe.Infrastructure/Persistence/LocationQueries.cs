@@ -19,15 +19,39 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
 
     private static readonly string[] AdHocMethods = [.. AuthMethods.AdHoc.Select(method => method.ToString())];
 
+    private static readonly LocationFilter NoFilter = new([], null, null, null, [], false, false, false, false, false);
+
     public async Task<LocationPage> InBoundingBoxAsync(BoundingBox box, LocationFilter filter, int limit, CancellationToken cancellationToken)
     {
+        var rows = await SummariesAsync(box, null, filter, limit + 1, cancellationToken);
+        var locations = rows.Take(limit).Select(row => row.ToSummary()).ToList();
+        return new LocationPage(locations, rows.Count > limit, await AttributionAsync([.. locations.Select(location => location.Id)], cancellationToken));
+    }
+
+    public async Task<LocationPage> ByIdsAsync(IReadOnlyList<Guid> ids, CancellationToken cancellationToken)
+    {
+        var rows = await SummariesAsync(null, [.. ids], NoFilter, ids.Count, cancellationToken);
+        var locations = rows.Select(row => row.ToSummary()).ToList();
+        return new LocationPage(locations, false, await AttributionAsync([.. locations.Select(location => location.Id)], cancellationToken));
+    }
+
+    /// <summary>
+    /// Active locations with the counts of their EVSEs: in the box (nearest to its centre first) or with one of the ids,
+    /// matching the filter, at most <paramref name="take"/>.
+    /// </summary>
+    private Task<List<SummaryRow>> SummariesAsync(BoundingBox? within, Guid[]? ids, LocationFilter filter, int take, CancellationToken cancellationToken)
+    {
+        var box = within ?? new BoundingBox(-180, -90, 180, 90);
+        var anyBox = within is null;
+        var anyId = ids is null;
+        Guid[] wanted = ids ?? [];
         var fresh = FreshSince();
         string[] connectors = [.. filter.Connectors];
         var operatorPattern = filter.Operator is null ? null : LikePattern.Contains(filter.Operator);
         Guid[] operatorIds = [.. filter.OperatorIds];
         var centerLongitude = (box.MinLongitude + box.MaxLongitude) / 2;
         var centerLatitude = (box.MinLatitude + box.MaxLatitude) / 2;
-        var rows = await db.Database
+        return db.Database
             .SqlQuery<SummaryRow>($"""
                 SELECT l.id AS "Id", l.name AS "Name", l.address AS "Address", l.postal_code AS "PostalCode", l.city AS "City",
                        l.country AS "Country", ST_Y(l.geom::geometry) AS "Latitude", ST_X(l.geom::geometry) AS "Longitude",
@@ -46,7 +70,8 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
                 LEFT JOIN evse e ON e.location_id = l.id AND e.lifecycle = 'ACTIVE'
                 LEFT JOIN evse_status_current c ON c.evse_id = e.id
                 WHERE l.lifecycle = 'ACTIVE'
-                  AND l.geom && ST_MakeEnvelope({box.MinLongitude}, {box.MinLatitude}, {box.MaxLongitude}, {box.MaxLatitude}, 4326)::geography
+                  AND ({anyBox} OR l.geom && ST_MakeEnvelope({box.MinLongitude}, {box.MinLatitude}, {box.MaxLongitude}, {box.MaxLatitude}, 4326)::geography)
+                  AND ({anyId} OR l.id = ANY({wanted}::uuid[]))
                   AND ({operatorPattern}::text IS NULL OR o.name ILIKE {operatorPattern}::text)
                   AND (cardinality({operatorIds}::uuid[]) = 0 OR l.operator_id = ANY({operatorIds}::uuid[]))
                   AND (NOT {filter.GreenEnergy} OR l.green_energy)
@@ -63,11 +88,9 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
                 GROUP BY l.id, o.name
                 HAVING NOT {filter.AvailableOnly} OR count(e.id) FILTER (WHERE c.status = 'AVAILABLE' AND c.observed_at >= {fresh}) > 0
                 ORDER BY l.geom <-> ST_SetSRID(ST_MakePoint({centerLongitude}, {centerLatitude}), 4326)::geography, l.id
-                LIMIT {limit + 1}
+                LIMIT {take}
                 """)
             .ToListAsync(cancellationToken);
-        var locations = rows.Take(limit).Select(row => row.ToSummary()).ToList();
-        return new LocationPage(locations, rows.Count > limit, await AttributionAsync([.. locations.Select(location => location.Id)], cancellationToken));
     }
 
     public async Task<LocationDetail?> FindAsync(Guid id, CancellationToken cancellationToken)

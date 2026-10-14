@@ -8,6 +8,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { AuthService } from '../auth/auth.service';
+import { FavoritesService } from '../favorites/favorites.service';
 import { LocationDetailPage } from '../pages/location-detail.page';
 import { ME, fakeAuth, flush, locationSummary, text } from '../testing';
 import { LocationDetails } from './location-details';
@@ -272,6 +273,8 @@ describe('LocationDetailPage', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: AuthService, useValue: auth },
+        // The star of the page has its own spec.
+        { provide: FavoritesService, useValue: jasmine.createSpyObj<FavoritesService>('FavoritesService', ['isFavorite', 'add', 'remove', 'list']) },
         provideRouter([{ path: 'locations/:id', component: LocationDetailPage }]),
       ],
     });

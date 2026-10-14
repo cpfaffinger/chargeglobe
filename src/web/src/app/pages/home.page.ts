@@ -16,6 +16,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { AppIcon } from '../design/icon';
 import { ThemeService, Viewport } from '../design/theme.service';
 import { LocationDetails } from '../evses/location-details';
+import { FavoriteButton } from '../favorites/favorite-button';
 import { MARKERS, MARKER_KEYS, MarkerKey, markerOf, resolveColors, tokenColor } from '../map/availability';
 import { BrowserCapabilities } from '../map/browser-capabilities';
 import { MapConfig, MapConfigService } from '../map/map-config.service';
@@ -81,7 +82,7 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
  * configuration. The position is processed in the browser only and never sent to the API.
  */
 @Component({
-  imports: [AppIcon, DatePipe, DecimalPipe, LocationDetails, MapFilterPanel, MapOptionsPanel, MatButtonModule, MatCardModule, MatMenuModule, NgTemplateOutlet],
+  imports: [AppIcon, DatePipe, DecimalPipe, FavoriteButton, LocationDetails, MapFilterPanel, MapOptionsPanel, MatButtonModule, MatCardModule, MatMenuModule, NgTemplateOutlet],
   selector: 'app-home',
   host: { '[class.has-card]': 'selected() !== null', '[class.has-filters]': 'filtersOpen() || optionsOpen()' },
   template: `
@@ -94,6 +95,7 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
                 <h2>{{ location.name ?? 'Ladestandort' }}</h2>
                 <p class="address">{{ location.address }}, {{ location.postalCode }} {{ location.city }}</p>
               </div>
+              <app-favorite-button [locationId]="location.id" />
               <button matIconButton type="button" id="close-card" aria-label="Schließen" (click)="selected.set(null)">
                 <app-icon name="close" />
               </button>

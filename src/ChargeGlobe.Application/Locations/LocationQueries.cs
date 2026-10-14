@@ -114,5 +114,8 @@ public interface ILocationQueries
     /// <summary>Active locations in the box that match the filter, nearest to its centre first, at most <paramref name="limit"/>.</summary>
     Task<LocationPage> InBoundingBoxAsync(BoundingBox box, LocationFilter filter, int limit, CancellationToken cancellationToken);
 
+    /// <summary>The active locations among <paramref name="ids"/> (e.g. favorites), aggregated like <see cref="InBoundingBoxAsync"/>.</summary>
+    Task<LocationPage> ByIdsAsync(IReadOnlyList<Guid> ids, CancellationToken cancellationToken);
+
     Task<LocationDetail?> FindAsync(Guid id, CancellationToken cancellationToken);
 }

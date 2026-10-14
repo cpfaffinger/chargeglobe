@@ -1049,6 +1049,27 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                     b.ToTable("email_outbox", (string)null);
                 });
 
+            modelBuilder.Entity("ChargeGlobe.Infrastructure.Persistence.FavoriteLocation", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("LocationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("location_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.HasKey("UserId", "LocationId");
+
+                    b.HasIndex("LocationId");
+
+                    b.ToTable("favorite_location", (string)null);
+                });
+
             modelBuilder.Entity("ChargeGlobe.Infrastructure.Persistence.IngestMessage", b =>
                 {
                     b.Property<long>("Id")
@@ -1611,6 +1632,21 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                     b.HasOne("ChargeGlobe.Infrastructure.Persistence.AppUser", null)
                         .WithMany()
                         .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Infrastructure.Persistence.FavoriteLocation", b =>
+                {
+                    b.HasOne("ChargeGlobe.Domain.Charging.Location", null)
+                        .WithMany()
+                        .HasForeignKey("LocationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ChargeGlobe.Infrastructure.Persistence.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

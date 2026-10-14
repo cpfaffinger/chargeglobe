@@ -133,7 +133,7 @@ describe('App with its routes', () => {
       await fixture.whenStable();
       const sheet = root().querySelector('mat-sidenav')!;
       expect(sheet.classList).toContain('mat-drawer-opened');
-      expect(Array.from(sheet.querySelectorAll('nav a')).map((link) => link.id)).toEqual(['nav-map', 'nav-admin', 'nav-account']);
+      expect(Array.from(sheet.querySelectorAll('nav a')).map((link) => link.id)).toEqual(['nav-map', 'nav-favorites', 'nav-admin', 'nav-account']);
       expect(sheet.querySelector('#location-search')).not.toBeNull();
 
       sheet.querySelectorAll<HTMLButtonElement>('#theme-toggle button')[0].click();
@@ -293,6 +293,12 @@ describe('App with its routes', () => {
       await navigate('/locations/loc-1');
       expect(router.url).toBe('/locations/loc-1');
       http.expectOne('/api/v1/locations/loc-1').flush({ title: 'Not found' }, { status: 404, statusText: 'Not Found' });
+      // The star of the page loads the favorites of the signed-in user.
+      http.expectOne('/api/v1/me/favorites').flush({ data: [], meta: { returned: 0, max: 200, attribution: [] } });
+
+      await navigate('/favorites');
+      expect(text(root(), 'h1')).toBe('Favoriten');
+      http.expectOne('/api/v1/me/favorites').flush({ data: [], meta: { returned: 0, max: 200, attribution: [] } });
 
       await navigate('/evses/AT*TST*E1*1');
       http.expectOne('/api/v1/evses/AT*TST*E1*1').flush({ title: 'Not found' }, { status: 404, statusText: 'Not Found' });

@@ -74,10 +74,10 @@ public class OpenApiContractTests(IntegrationFactory factory)
         Assert.Equal(
             new[]
             {
-                "confirmEmail", "createApiKey", "createInitialAdmin", "deleteRole", "getCrawlerStatus", "getEvse", "getEvseOccupancy",
+                "addFavorite", "confirmEmail", "createApiKey", "createInitialAdmin", "deleteRole", "getCrawlerStatus", "getEvse", "getEvseOccupancy",
                 "getEvseStatusHistory", "getHealth", "getLocation", "getMapConfig", "getMe", "getSetting", "getSetupStatus", "getUser",
-                "listApiKeys", "listCrawlerRuns", "listLocations", "listMailOutbox", "listOperators", "listPermissions", "listRoles", "listSettings",
-                "listUsers", "login", "logout", "putRole", "refreshToken", "register", "requestPasswordReset", "resendConfirmation",
+                "listApiKeys", "listCrawlerRuns", "listFavorites", "listLocations", "listMailOutbox", "listOperators", "listPermissions", "listRoles", "listSettings",
+                "listUsers", "login", "logout", "putRole", "refreshToken", "register", "removeFavorite", "requestPasswordReset", "resendConfirmation",
                 "resetPassword", "revokeApiKey", "search", "sendTestMail", "sendUserConfirmationMail", "setUserApproval", "setUserEnabled",
                 "setUserRoles", "updateSetting",
             },

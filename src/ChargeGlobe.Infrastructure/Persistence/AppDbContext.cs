@@ -14,6 +14,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<UserPermission> UserPermissions => Set<UserPermission>();
 
+    public DbSet<FavoriteLocation> FavoriteLocations => Set<FavoriteLocation>();
+
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
 
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
@@ -91,6 +93,14 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.ToTable("user_permission");
             entity.HasKey(permission => new { permission.UserId, permission.Permission });
             entity.HasOne<AppUser>().WithMany().HasForeignKey(permission => permission.UserId);
+        });
+
+        builder.Entity<FavoriteLocation>(entity =>
+        {
+            entity.ToTable("favorite_location");
+            entity.HasKey(favorite => new { favorite.UserId, favorite.LocationId });
+            entity.HasOne<AppUser>().WithMany().HasForeignKey(favorite => favorite.UserId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<Location>().WithMany().HasForeignKey(favorite => favorite.LocationId).OnDelete(DeleteBehavior.Cascade);
         });
 
         builder.Entity<ApiKey>(entity =>

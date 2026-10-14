@@ -1,4 +1,5 @@
 using System.Threading.RateLimiting;
+using ChargeGlobe.Api.Account;
 using ChargeGlobe.Api.Admin;
 using ChargeGlobe.Api.Auth;
 using ChargeGlobe.Api.Crawler;
@@ -136,6 +137,7 @@ public static class ApiSetup
         app.MapUsersEndpoints();
         app.MapSearchEndpoints();
         app.MapOperatorsEndpoints();
+        app.MapFavoritesEndpoints();
         return app;
     }
 }

@@ -39,7 +39,7 @@
 - [x] Eigene Seite je Ladepunkt `/evses/:evseId` mit Technik, Bezahlen und Zugang, Statusverlauf (24 h/7/30 Tage) mit Intervallliste, Auslastung (4/12 Wochen) und Herkunft der Daten; `GET /evses/{evseId}` liefert dafür Zugang, Öffnungszeiten, Ausstattung, Quell-Datensätze und Herkunft je Attribut
 - [x] Betreiber-Filter als Liste aus der Datenbank (`GET /operators`, nach Zahl der Standorte, mit Suche), Leistungsbereich mit Minimum und Maximum, Farben freier Stationen nach freier Leistung (bis 22, 23–149, ab 150 kW)
 - [x] Kartenoptionen je Browser: Umkreis und Zoomstufe des Zusammenfassens (Cluster) mit „Auf Standard zurücksetzen“, wirksam ohne Neuladen
-- [ ] Favoriten (angemeldet): Stationen merken, Liste mit aktuellem Status (`/me/favorites`)
+- [x] Favoriten (angemeldet): Stern in Infokarte, Standort-Seite und Liste, Seite `/favorites` mit aktuellem Status (jede Minute), `GET/PUT/DELETE /me/favorites`
 - [ ] Ad-hoc-Preise aus E-Control speichern (`PRICE_POLL` aus dem Register, `price_observation`, `GET /evses/{evseId}/prices`)
 - [ ] Lebenszyklus: Standorte und EVSEs, die eine Quelle nicht mehr meldet oder als inaktiv führt, auf `REMOVED` setzen
 - [x] Angular: Standort-Detailseite `/locations/:id` (angemeldet, `evse:read`) mit Status-Timeline je EVSE und Heatmap Wochentag × Stunde, Link „Details“ in der Infokarte
@@ -49,7 +49,7 @@
 - [x] Standortdetails direkt in der Infokarte der Karte (für alle Ladepunkte mit Status und Steckern, mit `evse:read` Verlauf und Auslastung), gemerkter Kartenausschnitt und eigene Startposition im Browser mit Knopf „Startposition“, ein Standort-Request zugleich ohne Abfrage beim Hineinzoomen, MapLibre lädt parallel zur Konfiguration
 - [ ] Startposition und Kartenausschnitt angemeldeter Nutzer serverseitig in `/me/preferences` (geräteübergreifend)
 - [ ] Angular: API-Keys fremder Konten, Audit-Log (`GET /audit-log`)
-- [ ] Customizings: `GET/PUT /me/preferences`, Favoriten, Einstellungsseite
+- [ ] Customizings: `GET/PUT /me/preferences` (Startposition, Filter, Kartenoptionen geräteübergreifend), Einstellungsseite
 - [ ] Routing: Compose-Service `routing` (Valhalla, OSM-Extrakt Österreich), `IRoutingEngine`, `POST /routes`, Routen-Layer in der Karte
 - [ ] Erste EMP-Tarife: 2–3 Ladekarten-Anbieter mit Tarif-Editor (manuell gepflegt), Szenario-Preisvergleich; welche Ladekarte an welchem Ladepunkt geht, liefert die E-Control nicht (nur `roaming` ja/nein) – Quelle dafür sind die Roaming-Listen der EMPs ([07](07-bestandsanalyse-apps-at.md))
 

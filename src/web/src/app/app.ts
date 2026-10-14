@@ -43,6 +43,7 @@ const THEMES: { mode: ThemeMode; label: string; icon: IconName }[] = [
     <ng-template #links>
       @if (auth.me(); as me) {
         <a matButton routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" id="nav-map" (click)="close()">Karte</a>
+        <a matButton routerLink="/favorites" routerLinkActive="active" id="nav-favorites" (click)="close()">Favoriten</a>
         @if (adminPages(); as pages) {
           @if (pages.length > 0) {
             @if (viewport.mobile()) {
