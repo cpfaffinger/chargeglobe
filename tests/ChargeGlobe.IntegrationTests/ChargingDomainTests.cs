@@ -135,36 +135,39 @@ public class ChargingDomainTests(IntegrationFactory factory)
     public async Task Region_of_a_location_follows_its_coordinates()
     {
         await EnsureMigratedAsync();
+        // A test region outside the seeded Austrian states (Seed/regions-at.geojson).
         var factoryNts = new GeometryFactory(new PrecisionModel(), 4326);
-        var vienna = Region.Create("AT-9", "Wien");
-        var polygon = factoryNts.CreatePolygon([new(16.18, 48.11), new(16.58, 48.11), new(16.58, 48.33), new(16.18, 48.33), new(16.18, 48.11)]);
-        var inside = DomainLocation.Create(StStephen, "AT", T0);
-        var outside = DomainLocation.Create(new GeoPoint(48.2047, 15.6256), "AT", T0);
+        var region = Region.Create("XX-1", "Testland");
+        var polygon = factoryNts.CreatePolygon([new(-30, 10), new(-29, 10), new(-29, 11), new(-30, 11), new(-30, 10)]);
+        var inside = DomainLocation.Create(new GeoPoint(10.5, -29.5), "XX", T0);
+        var outside = DomainLocation.Create(new GeoPoint(12.5, -29.5), "XX", T0);
+        var vienna = DomainLocation.Create(StStephen, "AT", T0);
 
         await factory.WithDbAsync(async db =>
         {
-            db.Add(vienna);
-            db.Entry(vienna).Property("Geom").CurrentValue = factoryNts.CreateMultiPolygon([polygon]);
+            db.Add(region);
+            db.Entry(region).Property("Geom").CurrentValue = factoryNts.CreateMultiPolygon([polygon]);
             await db.SaveChangesAsync();
-            db.AddRange(inside, outside);
+            db.AddRange(inside, outside, vienna);
             return await db.SaveChangesAsync();
         });
 
         // EF reads the value computed by the trigger back on insert ...
-        Assert.Equal("AT-9", inside.RegionCode);
+        Assert.Equal("XX-1", inside.RegionCode);
         Assert.Null(outside.RegionCode);
+        Assert.Equal("AT-9", vienna.RegionCode);
 
         // ... and on update of the coordinates.
         await factory.WithDbAsync(async db =>
         {
             var moved = await db.Locations.SingleAsync(location => location.Id == outside.Id);
-            moved.Coordinates = new GeoPoint(48.25, 16.40);
+            moved.Coordinates = new GeoPoint(10.25, -29.75);
             await db.SaveChangesAsync();
-            Assert.Equal("AT-9", moved.RegionCode);
+            Assert.Equal("XX-1", moved.RegionCode);
             return true;
         });
-        var region = await factory.WithDbAsync(db => db.Regions.SingleAsync(item => item.Code == "AT-9"));
-        Assert.Equal("Wien", region.Name);
+        var stored = await factory.WithDbAsync(db => db.Regions.SingleAsync(item => item.Code == "XX-1"));
+        Assert.Equal("Testland", stored.Name);
     }
 
     [Fact]

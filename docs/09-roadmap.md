@@ -22,10 +22,11 @@
 - [x] `Providers.Abstractions` (Descriptor, Capabilities, Quell-Interfaces, Ingest-Modell, Status-Mapping)
 - [x] Ingest-Pipeline: Lease-Scheduler (`poll_plan`), clusterweites Request-Budget (`provider_rate_budget`), `raw_snapshot`, `ingest_queue`, Merge mit Matching-Schritten 1/2/5, Status-Intervalle, Retention unter `job_lease`
 - [x] Continuous Aggregate `evse_occupancy_hourly` (stündlich je EVSE, Real-Time-Aggregation, Refresh-Policy)
-- [ ] Matching-Heuristiken (Geo + Operator), Quellen-Präzedenz je Attribut, Region-Seed, adaptive Intervalle
+- [x] Region-Seed: die neun Bundesländer aus OSM-Grenzen (`regions-at.geojson`, ODbL, Skript `scripts/regions/build-regions-at.sh`), Import beim API-Start, `location.region_code` wird neu berechnet; `RegionBounds` aus den Polygonen abgeleitet
+- [ ] Matching-Heuristiken (Geo + Operator), Quellen-Präzedenz je Attribut, adaptive Intervalle
 - [x] Adapter **E-Control** (Inventar + Status + Ad-hoc-Preis über `GET /search` mit adaptivem Raster, Health-Probe im Crawler, Provider-Einstellungen je Quelle im Config-Service) – Tier 0
 - [ ] Adapter **OpenStreetMap** (Overpass) und **OpenChargeMap** als Ergänzung/Plausibilisierung
-- [ ] Region-Polygone, adaptive Statusabfrage, Metriken
+- [ ] Adaptive Statusabfrage, Metriken
 - [x] API v1: `GET /evses/{evseId}` (EVSE-ID in jeder Schreibweise oder UUID), Statushistorie, Belegung (`evse:read`)
 - [ ] API v1: EVSE-Suche (`GET /evses`), Ad-hoc-Preis, Provenienz
 - [x] Angular: Karte mit MapLibre und OSM-Vektorkacheln (OpenFreeMap, `GET /map/config`) als anonyme Startseite, eigener Standort per Geolocation ([ADR-0007](adr/0007-karte-standort-routing.md))

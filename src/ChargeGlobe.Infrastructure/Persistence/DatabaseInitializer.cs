@@ -10,7 +10,7 @@ using Npgsql;
 namespace ChargeGlobe.Infrastructure.Persistence;
 
 /// <summary>
-/// Applies pending migrations and reconciles roles, permissions and the admin seed. Runs at
+/// Applies pending migrations, seeds the region polygons and reconciles roles, permissions and the admin seed. Runs at
 /// API start; a session-level advisory lock serializes parallel starts.
 /// </summary>
 public sealed class DatabaseInitializer(
@@ -20,6 +20,7 @@ public sealed class DatabaseInitializer(
     UserManager<AppUser> users,
     AuthSettings settings,
     SettingsCache settingsCache,
+    RegionSeeder regions,
     ILogger<DatabaseInitializer> logger)
 {
     // Arbitrary, but fixed: identifies the "chargeglobe schema" lock within the database.
@@ -32,6 +33,7 @@ public sealed class DatabaseInitializer(
         try
         {
             await db.Database.MigrateAsync(cancellationToken);
+            await regions.SeedAsync(cancellationToken);
             await SeedRolesAsync(cancellationToken);
             await SeedAdminAsync(cancellationToken);
             await ReconcileSettingsAsync(cancellationToken);

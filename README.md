@@ -9,14 +9,14 @@ Anbieter und Tarifmodelle hinweg. Alles wird über eine öffentliche API und ein
 
 | | |
 |---|---|
-| **Status** | Lauffähiges Grundgerüst: Compose-Stack, Benutzerkonten (Selbstregistrierung, Login, Passwort-Reset, API-Keys, Permissions), zentraler Config-Service mit Admin-Seite, Mail-Versand über konfigurierbaren SMTP-Server, OpenAPI 3.1, Angular-Seiten für Konto und Anmeldung, Karte als anonyme Startseite (MapLibre, OpenFreeMap, eigener Standort, Ladepunkte mit Clustering und Verfügbarkeitsfarben), Ingest-Pipeline für das E-Control-Ladestellenverzeichnis (Scheduler, Request-Budget, Queue, Merge, Statushistorie), Ladepunkt-API mit Statushistorie und Belegungsprofil (angemeldet), Standort-Detailseite mit Status-Timeline und Heatmap, Jobs-Heartbeat; Preise, Filter und weitere Quellen folgen laut [Roadmap](docs/09-roadmap.md) |
+| **Status** | Lauffähiges Grundgerüst: Compose-Stack, Benutzerkonten (Selbstregistrierung, Login, Passwort-Reset, API-Keys, Permissions), zentraler Config-Service mit Admin-Seite, Mail-Versand über konfigurierbaren SMTP-Server, OpenAPI 3.1, Angular-Seiten für Konto und Anmeldung, Karte als anonyme Startseite (MapLibre, OpenFreeMap, eigener Standort, Ladepunkte mit Clustering und Verfügbarkeitsfarben), Ingest-Pipeline für das E-Control-Ladestellenverzeichnis (Scheduler, Request-Budget, Queue, Merge, Statushistorie), Ladepunkt-API mit Statushistorie und Belegungsprofil (angemeldet), Standort-Detailseite mit Status-Timeline und Heatmap, Bundesländer aus OpenStreetMap-Grenzen für die Regionszuordnung, Jobs-Heartbeat; Preise, Filter und weitere Quellen folgen laut [Roadmap](docs/09-roadmap.md) |
 | **Start-Scope** | Wien, Niederösterreich, Oberösterreich, Burgenland |
 | **Ziel-Scope** | Österreich → DACH → Italien |
 | **Stack** | ASP.NET Core / C# / .NET 10 · Angular 22 / TypeScript · PostgreSQL (PostGIS + TimescaleDB) |
 | **Zugriff** | anonym ist nur die Karte nutzbar (Ladepunkte mit Basisdaten und aktuellem Status, eigener Standort); alle erweiterten Funktionen und persönlichen Einstellungen setzen ein Benutzerkonto voraus (kostenlose Selbstregistrierung); rollenbasierte Berechtigungen (RBAC) für Pflege/Admin; API-Keys und OpenAPI 3.1 für KI-Agenten und Integrationen |
 | **Karte** | MapLibre GL JS mit OpenStreetMap-Vektorkacheln (OpenFreeMap), eigener Standort; Routing über selbst gehostete OSM-Engine (geplant) |
 | **Betrieb** | Docker Compose, Konfiguration über `.env`, Web-App + API auf einem HTTPS-Port (Default 5005, self-signed Zertifikat); gültiges Zertifikat über externen Loadbalancer |
-| **Lizenz** | noch offen – Vorschlag siehe [docs/09-roadmap.md](docs/09-roadmap.md) |
+| **Lizenz** | noch offen – Vorschlag siehe [docs/09-roadmap.md](docs/09-roadmap.md); die Region-Polygone (`src/ChargeGlobe.Infrastructure/Persistence/Seed/regions-at.geojson`) stammen aus OpenStreetMap, © OpenStreetMap contributors, ODbL 1.0 |
 
 ## Dokumentation
 
@@ -75,5 +75,6 @@ chargeglobe/
 ├─ docker-compose.yml            # db · api · crawler · worker · web, gesteuert über .env
 ├─ docker-compose.test.yml       # Testlauf statt App: test-db · test-smtp · test-dotnet · test-web (Projekt chargeglobe-test)
 ├─ scripts/test.sh               # ein Aufruf: bauen, beide Suiten, Coverage-Zusammenfassung, aufräumen
+├─ scripts/regions/              # build-regions-at.sh: Bundesländer-Polygone aus OpenStreetMap (Overpass + PostGIS) → Persistence/Seed/regions-at.geojson
 └─ .env.example                  # vollständige Liste aller Variablen
 ```

@@ -26,7 +26,7 @@ Operator (CPO) ─┬─ 1..n ─ Location ─ 1..n ─ ChargingStation? ─ 1..
 
 | Tabelle | Wichtige Spalten | Anmerkung |
 |---|---|---|
-| `region` | `code` (PK, `AT-9` Wien, `AT-3` NÖ, …), `name`, `geom geography(MultiPolygon,4326)` (GiST) | ISO 3166-2 Codes; Polygone aus OSM-Admin-Grenzen (Seed vorgesehen) |
+| `region` | `code` (PK, `AT-9` Wien, `AT-3` NÖ, …), `name`, `geom geography(MultiPolygon,4326)` (GiST) | ISO 3166-2 Codes; die neun Bundesländer kommen aus OpenStreetMap (Grenzrelationen `admin_level=4`, ODbL, „© OpenStreetMap contributors“) als vereinfachtes GeoJSON im Repo (`src/ChargeGlobe.Infrastructure/Persistence/Seed/regions-at.geojson`, neu erzeugbar mit `scripts/regions/build-regions-at.sh`); die API schreibt fehlende oder geänderte Regionen beim Start (`RegionSeeder`) und berechnet dann `location.region_code` aller Standorte neu |
 | `operator` | `id`, `name`, `country`, `operator_id` (z. B. `EVN`, eindeutig je `country`), `website`, `is_cpo`, `is_emp` | EVSE-ID-Präfix `AT*EVN` → Operator |
 | `emp` | `id`, `name`, `app_name`, `country` | Ladekarten-/App-Anbieter (ÖAMTC ePower, Electroverse, …); ein Unternehmen kann CPO und EMP sein |
 | `location` | `id uuid`, `name`, `address`, `postal_code`, `city`, `country`, `geom geography(Point,4326)` (GiST), `operator_id`, `region_code`, `opening_times jsonb` (OCPI `Hours`), `access` (`PUBLIC`/`RESTRICTED`), `lifecycle` (`ACTIVE`/`PLANNED`/`REMOVED`), `first_seen`, `last_seen`, `last_confirmed_at` | `region_code` setzt der Trigger `location_assign_region` bei Insert und bei Änderung von `geom` (Region, deren Polygon den Punkt enthält) |
