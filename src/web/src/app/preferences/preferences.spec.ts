@@ -7,6 +7,7 @@ import { FILTERS_STORAGE_KEY, MapFilterStore, NO_FILTERS } from '../map/map-filt
 import { DEFAULT_MAP_OPTIONS, MapOptionsStore, OPTIONS_STORAGE_KEY } from '../map/map-options';
 import { HOME_VIEW_KEY, MapViewStore } from '../map/map-view.store';
 import { ME, fakeAuth, flush } from '../testing';
+import { CardsStore } from './cards.store';
 import { PREFERENCES_DEBOUNCE_MS, PreferencesDocument, PreferencesService } from './preferences.service';
 
 const URL = '/api/v1/me/preferences';
@@ -77,7 +78,7 @@ describe('PreferencesService', () => {
     await flush();
 
     const put = http.expectOne((request) => request.method === 'PUT' && request.url === URL);
-    expect(put.request.body).toEqual({ home: HOME, filters: NO_FILTERS, mapOptions: { clusterRadius: 80, clusterMaxZoom: 15 } });
+    expect(put.request.body).toEqual({ home: HOME, filters: NO_FILTERS, mapOptions: { clusterRadius: 80, clusterMaxZoom: 15 }, cards: [] });
     put.flush({ data: put.request.body, meta: { updatedAt: '2026-10-14T08:00:00Z' } });
     await flush();
 
@@ -109,6 +110,27 @@ describe('PreferencesService', () => {
     TestBed.tick();
     TestBed.inject(MapViewStore).setHome(HOME);
     await waitForWrite();
+  });
+
+  it('takes the own cards of the account, writes a changed choice and forgets them after the logout', async () => {
+    setUp();
+    await signIn();
+    respond({ home: null, filters: null, mapOptions: null, cards: ['smatrics'] });
+    await flush();
+    const cards = TestBed.inject(CardsStore);
+    expect(cards.cards()).toEqual(['smatrics']);
+
+    cards.toggle('oeamtc', true);
+    cards.toggle('smatrics', false);
+    await waitForWrite();
+    const put = http.expectOne((request) => request.method === 'PUT');
+    expect(put.request.body.cards).toEqual(['oeamtc']);
+    put.flush({ data: put.request.body, meta: { updatedAt: '2026-10-15T08:00:00Z' } });
+    await flush();
+
+    auth.me.set(null);
+    TestBed.tick();
+    expect(cards.cards()).toEqual([]);
   });
 
   it('applies an account without values as defaults and keeps the filters of a shared link', async () => {

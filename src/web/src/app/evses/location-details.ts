@@ -16,7 +16,8 @@ import {
 } from './evses.service';
 import { Segment, combine, statusOf, timeline } from './status';
 import { OccupancyHeatmap, StatusTimeline } from './status-charts';
-import { EvsePricesResponse, money, priceParts } from './prices';
+import { CardsStore } from '../preferences/cards.store';
+import { EmpPrice, EvsePricesResponse, money, priceParts } from './prices';
 import { AVAILABILITY, tokenColor } from '../map/availability';
 
 /** Days of the status timeline and weeks of the occupancy matrix. */
@@ -140,11 +141,20 @@ type LoadState = 'loading' | 'error' | 'ready';
                     } @else {
                       <p class="price price-state">Kein Ad-hoc-Preis bekannt.</p>
                     }
-                    @if (pricing.emps[0]; as card) {
-                      <p class="price cheapest-card">
-                        günstigste Karte: {{ card.empName }} ({{ card.tariff }})
-                        <span class="price-example">· {{ example }}: {{ money(card.price.exampleCost, card.price.currency) }}</span>
+                    @let own = ownCheapest(pricing);
+                    @if (own) {
+                      <p class="price own-card">
+                        deine günstigste Karte: {{ own.empName }} ({{ own.tariff }})
+                        <span class="price-example">· {{ example }}: {{ money(own.price.exampleCost, own.price.currency) }}</span>
                       </p>
+                    }
+                    @if (pricing.emps[0]; as card) {
+                      @if (card !== own) {
+                        <p class="price cheapest-card">
+                          günstigste Karte: {{ card.empName }} ({{ card.tariff }})
+                          <span class="price-example">· {{ example }}: {{ money(card.price.exampleCost, card.price.currency) }}</span>
+                        </p>
+                      }
                     }
                   }
                 }
@@ -242,6 +252,7 @@ export class LocationDetails {
   protected readonly history = this.auth.hasPermission('evse:read');
   /** The ad-hoc price per EVSE needs price:read. */
   protected readonly prices = this.auth.hasPermission('price:read');
+  private readonly cards = inject(CardsStore);
   protected readonly example = '30 kWh in 40 min';
   protected readonly parts = priceParts;
   protected readonly money = money;
@@ -366,6 +377,12 @@ export class LocationDetails {
   protected priceState(evseId: string): LoadState {
     const result = this.priceResults()[evseId];
     return result === undefined ? 'loading' : result === 'error' ? 'error' : 'ready';
+  }
+
+  /** The cheapest of the user's own cards at the EVSE (the list is sorted by cost); undefined without one. */
+  protected ownCheapest(pricing: EvsePricesResponse['data']): EmpPrice | undefined {
+    const cards = this.cards.cards();
+    return pricing.emps.find((emp) => cards.includes(emp.emp));
   }
 
   protected priceOf(evseId: string): EvsePricesResponse['data'] {

@@ -11,6 +11,7 @@ import { AuthService } from '../auth/auth.service';
 import { FavoritesService } from '../favorites/favorites.service';
 import { LocationDetailPage } from '../pages/location-detail.page';
 import { ME, fakeAuth, flush, locationSummary, text } from '../testing';
+import { CardsStore } from '../preferences/cards.store';
 import { LocationDetails } from './location-details';
 import { EmpPrice, EvsePricesResponse, PriceView, comparison, money, priceParts } from './prices';
 import {
@@ -563,6 +564,35 @@ describe('LocationDetails with prices', () => {
     ]);
     expect(root().querySelector('.timeline, #heatmap')).toBeNull();
   });
+
+  it('names the cheapest own card and the cheapest card overall if it is another one', async () => {
+    const cards = TestBed.inject(CardsStore);
+    const empPrice = (emp: string, exampleCost: number): EmpPrice => ({
+      emp,
+      empName: emp.toUpperCase(),
+      tariffId: `t-${emp}`,
+      tariff: 'Basic',
+      monthlyFee: null,
+      price: priceView({ source: `emp:${emp}`, exampleCost }),
+    });
+    fixture = TestBed.createComponent(LocationDetails);
+    fixture.componentRef.setInput('locationId', 'loc-1');
+    await settle();
+    http.expectOne('/api/v1/locations/loc-1').flush({ data: { location: locationSummary(), evses: [evse()] }, meta: { attribution: [] } });
+    await settle();
+    http.expectOne('/api/v1/evses/e-1/prices').flush(prices(null, [empPrice('cheap', 10), empPrice('mine', 12), empPrice('other', 15)]));
+    await settle();
+    const lines = () => Array.from(root().querySelectorAll('.own-card, .cheapest-card')).map((line) => line.textContent!.replace(/\s+/g, ' ').trim());
+
+    cards.set(['mine', 'other']);
+    await settle();
+    expect(lines()).toEqual(['deine günstigste Karte: MINE (Basic) · 30 kWh in 40 min: 12,00 €', 'günstigste Karte: CHEAP (Basic) · 30 kWh in 40 min: 10,00 €']);
+
+    // The own card is the cheapest one: one line.
+    cards.set(['cheap']);
+    await settle();
+    expect(lines()).toEqual(['deine günstigste Karte: CHEAP (Basic) · 30 kWh in 40 min: 10,00 €']);
+  });
 });
 
 describe('price texts', () => {
@@ -630,5 +660,11 @@ describe('price texts', () => {
       ['b', 'Karte · b', 2, false],
     ]);
     expect(comparison(data(null, [card('a', 13), card('b', 13)])).map((row) => row.cheapest)).toEqual([true, true]);
+    // Own cards are marked; the ad-hoc price is never one.
+    expect(comparison(data(adHoc, [{ ...card('a', 13), emp: 'mine' }, card('b', 20)]), ['mine']).map((row) => [row.key, row.own])).toEqual([
+      ['ad-hoc', false],
+      ['a', true],
+      ['b', false],
+    ]);
   });
 });

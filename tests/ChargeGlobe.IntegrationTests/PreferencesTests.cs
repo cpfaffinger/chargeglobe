@@ -77,7 +77,31 @@ public class PreferencesTests(IntegrationFactory factory)
         { "{\"filters\":{\"operatorId\":[" + string.Join(',', Enumerable.Range(0, 101).Select(_ => $"\"{Guid.NewGuid()}\"")) + "]}}", "filters.operatorId" },
         { """{"mapOptions":{"clusterRadius":121,"clusterMaxZoom":13}}""", "mapOptions.clusterRadius" },
         { """{"mapOptions":{"clusterRadius":50}}""", "mapOptions.clusterMaxZoom" },
+        { "{\"cards\":[" + string.Join(',', Enumerable.Range(0, 21).Select(index => $"\"card-{index}\"")) + "]}", "cards" },
+        { """{"cards":["no-such-emp"]}""", "cards" },
     };
+
+    [Fact]
+    public async Task Own_cards_are_keys_of_known_EMPs_without_duplicates()
+    {
+        var (client, _) = await SignedInAsync();
+        var keys = new[] { $"card-{Guid.NewGuid():N}"[..20], $"card-{Guid.NewGuid():N}"[..20] };
+        await factory.WithDbAsync(db =>
+        {
+            db.Emps.AddRange(keys.Select(key => ChargeGlobe.Domain.Charging.Emp.Create(key, key.ToUpperInvariant(), null)));
+            return db.SaveChangesAsync();
+        });
+
+        var put = await client.PutAsJsonAsync("/api/v1/me/preferences", new { cards = new[] { keys[1], keys[0], keys[1] } });
+
+        Assert.Equal(HttpStatusCode.OK, put.StatusCode);
+        var read = await (await client.GetAsync("/api/v1/me/preferences")).ReadJsonAsync();
+        Assert.Equal([keys[1], keys[0]], read.GetProperty("data").GetProperty("cards").EnumerateArray().Select(card => card.GetString()));
+
+        // An empty list needs no lookup and clears the choice.
+        await client.PutAsJsonAsync("/api/v1/me/preferences", new { cards = Array.Empty<string>() });
+        Assert.Empty((await (await client.GetAsync("/api/v1/me/preferences")).ReadJsonAsync()).GetProperty("data").GetProperty("cards").EnumerateArray());
+    }
 
     [Theory]
     [MemberData(nameof(InvalidDocuments))]

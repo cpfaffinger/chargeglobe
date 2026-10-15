@@ -52,7 +52,7 @@
 - [ ] Angular: API-Keys fremder Konten, Audit-Log (`GET /audit-log`)
 - [x] „Passwort ändern“ auf `/account` (`POST /auth/password/change`, beendet die anderen Sitzungen)
 - [x] Einstellungen im Konto: `GET/PUT /me/preferences` mit Startposition, Filtern und Kartenoptionen, im Web nach dem Login geladen und 1 s nach jeder Änderung gespeichert; letzter Ausschnitt bleibt je Gerät
-- [ ] Eigene Ladekarten des Nutzers für den Preisvergleich (Teil der Einstellungen)
+- [x] Eigene Ladekarten des Nutzers (`cards` in `/me/preferences`, Auswahl unter „Mein Konto“, „deine Karte“ im Preisvergleich und „deine günstigste Karte“ in der Infokarte)
 - [x] Ingest-Durchsatz: Vorladen je Nachricht, ein Schreibvorgang je Nachricht; ein Register-Lauf ist in unter 3 min statt 16 min verarbeitet (docs/05)
 - [x] Routing: Compose-Service `routing` (Valhalla 3.9.1, OSM-Extrakt Österreich, Profil `routing`), `IRoutingEngine`, `POST /routes`, „Route hierher“ in der Infokarte mit Routenlinie auf der Karte
 - [ ] Routing-Extrakt automatisch aktualisieren (monatlich; Bau außerhalb des Live-Hosts)

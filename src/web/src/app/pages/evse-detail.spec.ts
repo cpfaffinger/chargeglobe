@@ -7,6 +7,7 @@ import { EvseResponse, EvseView, EvsesService, OccupancyResponse, StatusHistoryR
 import { attributeLabel, authMethodLabel, connectorLabel, formatLabel, powerTypeLabel, yesNo } from '../evses/labels';
 import { AuthService } from '../auth/auth.service';
 import { EmpPrice, EvsePricesResponse, PriceView } from '../evses/prices';
+import { CardsStore } from '../preferences/cards.store';
 import { ME, fakeAuth, flush, text } from '../testing';
 import { EvseDetailPage, LISTED_INTERVALS } from './evse-detail.page';
 
@@ -438,6 +439,8 @@ describe('EvseDetailPage with prices', () => {
       monthlyFee,
       price: price({ source: `emp:${tariffId}`, pricePerKwh: 0.45, pricePerMinute: null, sessionFee: null, exampleCost }),
     });
+    // The user has the ÖAMTC card.
+    TestBed.inject(CardsStore).set(['t-2']);
     await open(
       prices({ price: price(), since: '2026-09-01T06:00:00Z', observedAt: '2026-10-14T06:00:00Z' }, [], [
         card('t-1', 'SMATRICS', null, 13.5),
@@ -446,8 +449,9 @@ describe('EvseDetailPage with prices', () => {
     );
 
     const rows = Array.from(page().querySelectorAll('#price-comparison tbody tr'));
-    expect(rows.map((row) => text(row, 'td:first-child'))).toEqual(['SMATRICS · Basic günstigste', 'Ad-hoc (ohne Vertrag)', 'ÖAMTC · Basic']);
+    expect(rows.map((row) => text(row, 'td:first-child'))).toEqual(['SMATRICS · Basic günstigste', 'Ad-hoc (ohne Vertrag)', 'ÖAMTC · Basic deine Karte']);
     expect(rows.map((row) => row.classList.contains('cheapest'))).toEqual([true, false, false]);
+    expect(rows.map((row) => row.classList.contains('own'))).toEqual([false, false, true]);
     expect(rows.map((row) => text(row, 'td:nth-child(3)'))).toEqual(['–', '–', '4,90 €']);
     expect(text(rows[0], 'td:nth-child(2)')).toBe('0,45 €/kWh');
     expect(text(rows[0], 'td:nth-child(4)')).toBe('13,50 €');
