@@ -1,22 +1,44 @@
-import { DatePipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { attempt } from '../auth/problem';
-import { Conflict, ConflictsService, describeConflict } from '../conflicts/conflicts.service';
+import { Conflict, ConflictAction, ConflictsService, describeConflict } from '../conflicts/conflicts.service';
 
 const KINDS: Record<string, string> = {
   identity: 'Zuordnung mehrdeutig',
   evse_id: 'EVSE-ID-Schreibweise',
 };
 
+const DONE: Record<ConflictAction, string> = {
+  merge: 'Datensatz dem Standort zugeordnet.',
+  separate: 'Datensatz wird ein eigener Standort.',
+  keep: 'EVSE-ID bleibt wie gespeichert.',
+};
+
 /**
  * Disagreements between sources that the merge did not decide (conflict:resolve): open ones by default, resolved ones on
- * demand, each with the location or EVSE it concerns.
+ * demand, each with the location or EVSE it concerns. An open identity conflict lists its candidates with distance and
+ * can be assigned to one of them or kept as a location of its own; an evse_id conflict can be kept.
  */
 @Component({
-  imports: [DatePipe, MatButtonToggleModule, RouterLink],
+  imports: [DatePipe, DecimalPipe, MatButtonModule, MatButtonToggleModule, RouterLink],
   selector: 'app-admin-conflicts',
+  styles: `
+    .candidates {
+      list-style: none;
+      margin: 4px 0 0;
+      padding: 0;
+    }
+    .candidates li {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px 8px;
+    }
+  `,
   template: `
     <h1>Konflikte</h1>
     <p class="muted">
@@ -47,8 +69,37 @@ const KINDS: Record<string, string> = {
                 }
               </td>
               <td>{{ kind(conflict.attribute) }}</td>
-              <td>{{ describe(conflict) }}</td>
-              <td>{{ conflict.resolvedAt ? (conflict.resolvedAt | date: 'dd.MM.yyyy') + ' · ' + conflict.resolution : '–' }}</td>
+              <td>
+                {{ describe(conflict) }}
+                @if (conflict.candidates.length > 0) {
+                  <ul class="candidates">
+                    @for (candidate of conflict.candidates; track candidate.locationId) {
+                      <li [attr.data-candidate]="candidate.locationId">
+                        <a [routerLink]="['/locations', candidate.locationId]">{{ candidate.label ?? 'nicht mehr vorhanden' }}</a>
+                        @if (candidate.distanceMeters !== null) {
+                          <span class="muted distance">{{ candidate.distanceMeters | number: '1.0-0' }} m</span>
+                        }
+                        @if (!conflict.resolvedAt && candidate.label) {
+                          <button matButton="tonal" type="button" class="merge" [disabled]="busy()" (click)="resolve(conflict, 'merge', candidate.locationId)">
+                            diesem Standort zuordnen
+                          </button>
+                        }
+                      </li>
+                    }
+                  </ul>
+                }
+              </td>
+              <td>
+                @if (conflict.resolvedAt) {
+                  {{ conflict.resolvedAt | date: 'dd.MM.yyyy' }} · {{ conflict.resolution }}
+                } @else if (conflict.attribute === 'identity') {
+                  <button matButton type="button" class="separate" [disabled]="busy()" (click)="resolve(conflict, 'separate')">eigener Standort</button>
+                } @else if (conflict.attribute === 'evse_id') {
+                  <button matButton type="button" class="keep" [disabled]="busy()" (click)="resolve(conflict, 'keep')">behalten</button>
+                } @else {
+                  –
+                }
+              </td>
             </tr>
           } @empty {
             <tr><td colspan="5" class="muted">{{ busy() ? 'Wird geladen …' : 'Keine Konflikte.' }}</td></tr>
@@ -60,6 +111,7 @@ const KINDS: Record<string, string> = {
 })
 export class AdminConflictsPage {
   private readonly service = inject(ConflictsService);
+  private readonly snackBar = inject(MatSnackBar);
 
   protected readonly conflicts = signal<Conflict[]>([]);
   protected readonly open = signal(0);
@@ -86,11 +138,21 @@ export class AdminConflictsPage {
     return this.load();
   }
 
-  private load(): Promise<void> {
+  protected resolve(conflict: Conflict, action: ConflictAction, targetId: string | null = null): Promise<void> {
     return attempt(this.busy, this.errors, async () => {
-      const response = await this.service.list(this.resolved());
-      this.conflicts.set(response.data);
-      this.open.set(response.meta.open);
+      await this.service.resolve(conflict.id, action, targetId);
+      this.snackBar.open(DONE[action], 'OK', { duration: 4000 });
+      await this.reload();
     });
+  }
+
+  private load(): Promise<void> {
+    return attempt(this.busy, this.errors, () => this.reload());
+  }
+
+  private async reload(): Promise<void> {
+    const response = await this.service.list(this.resolved());
+    this.conflicts.set(response.data);
+    this.open.set(response.meta.open);
   }
 }

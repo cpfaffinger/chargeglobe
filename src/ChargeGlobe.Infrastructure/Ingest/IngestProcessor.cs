@@ -45,6 +45,9 @@ public sealed class IngestProcessor(AppDbContext db)
     private int _skipped;
     private Dictionary<string, SourceTier> _tiers = [];
 
+    /// <summary>Records of the message a maintainer declared locations of their own (match decision SEPARATE).</summary>
+    private HashSet<string> _separate = [];
+
     public async Task<IngestResult> ProcessAsync(string sourceKey, IngestBatch batch, CancellationToken cancellationToken)
     {
         _locations = _evses = _statuses = _unknownEvses = _conflicts = _skipped = 0;
@@ -120,6 +123,10 @@ public sealed class IngestProcessor(AppDbContext db)
         await db.Operators.Where(item => item.OperatorId != null && operatorCodes.Contains(item.OperatorId)).LoadAsync(cancellationToken);
         // The tiers decide which source may take an attribute over (docs/03, precedence).
         _tiers = await db.Sources.AsNoTracking().ToDictionaryAsync(source => source.Key, source => source.Tier, cancellationToken);
+        _separate = [.. await db.MatchDecisions
+            .Where(decision => decision.SourceKey == sourceKey && decision.Decision == MatchDecision.Separate && locationKeys.Contains(decision.ExternalId))
+            .Select(decision => decision.ExternalId)
+            .ToListAsync(cancellationToken)];
     }
 
     /// <summary>
@@ -178,9 +185,9 @@ public sealed class IngestProcessor(AppDbContext db)
             location = knownLocation is { } id ? await db.Locations.FindAsync([id], cancellationToken) : null;
             method = knownLocation is null ? MatchMethod.CREATED : MatchMethod.EVSE_ID_NORMALIZED;
             var confidence = 1d;
-            if (location is null)
+            if (location is null && !_separate.Contains(snapshot.ExternalId))
             {
-                // Matching steps 3 and 4: a location of another source close by.
+                // Matching steps 3 and 4: a location of another source close by (unless a maintainer decided otherwise).
                 var (match, ambiguous) = await GeoMatchAsync(sourceKey, snapshot, at, cancellationToken);
                 if (ambiguous)
                 {
@@ -248,8 +255,8 @@ public sealed class IngestProcessor(AppDbContext db)
         Touch(location, attributes.Changed, at);
         _locations++;
 
-        // At a location found by distance, charge points without EVSE-ID would duplicate those of the other sources.
-        var othersHaveEvses = method is MatchMethod.GEO_OPERATOR or MatchMethod.GEO_ONLY
+        // At a location found by distance or chosen by a maintainer, charge points without EVSE-ID would duplicate those of the other sources.
+        var othersHaveEvses = method is MatchMethod.GEO_OPERATOR or MatchMethod.GEO_ONLY or MatchMethod.MANUAL
             && await OtherSourcesHaveEvsesAsync(sourceKey, location.Id, cancellationToken);
         foreach (var evseSnapshot in snapshot.Evses)
         {
@@ -447,7 +454,7 @@ public sealed class IngestProcessor(AppDbContext db)
 
         if (found.Count > 1)
         {
-            AmbiguousConflict(sourceKey, snapshot.ExternalId, found, at);
+            AmbiguousConflict(sourceKey, snapshot, found, at);
             return (null, true);
         }
 
@@ -467,12 +474,15 @@ public sealed class IngestProcessor(AppDbContext db)
         delivered == 0 || known == 0 || Math.Min(delivered, known) * 2 >= Math.Max(delivered, known);
 
     /// <summary>A record that fits several locations; the same open conflict is not recorded twice.</summary>
-    private void AmbiguousConflict(string sourceKey, string externalId, List<GeoCandidate> candidates, DateTimeOffset at)
+    private void AmbiguousConflict(string sourceKey, ProviderLocationSnapshot snapshot, List<GeoCandidate> candidates, DateTimeOffset at)
     {
+        // The position of the record lets the conflict list show how far each candidate is away.
         var values = JsonSerializer.Serialize(new Dictionary<string, object>
         {
             ["source"] = sourceKey,
-            ["externalId"] = externalId,
+            ["externalId"] = snapshot.ExternalId,
+            ["latitude"] = snapshot.Coordinates.Latitude,
+            ["longitude"] = snapshot.Coordinates.Longitude,
             ["candidates"] = candidates.Select(candidate => candidate.Id).Order().ToList(),
         });
         if (OpenConflictExists("identity", values))

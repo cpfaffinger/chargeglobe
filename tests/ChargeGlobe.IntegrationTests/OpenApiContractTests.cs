@@ -78,7 +78,7 @@ public class OpenApiContractTests(IntegrationFactory factory)
                 "getEvseOccupancy", "getEvsePrices", "getEvseStatusHistory", "getHealth", "getLocation", "getMapConfig", "getMe", "getPreferences", "getSetting", "getSetupStatus", "getUser",
                 "listApiKeys", "listConflicts", "listCrawlerRuns", "listEmps", "listFavorites", "listLocations", "listMailOutbox", "listOperators", "listPermissions", "listRoles", "listSettings",
                 "listTariffs", "listUsers", "login", "logout", "putEmp", "putPreferences", "putRole", "putTariff", "refreshToken", "register", "removeFavorite", "requestPasswordReset", "resendConfirmation",
-                "resetPassword", "revokeApiKey", "search", "sendTestMail", "sendUserConfirmationMail", "setUserApproval", "setUserEnabled",
+                "resetPassword", "resolveConflict", "revokeApiKey", "search", "sendTestMail", "sendUserConfirmationMail", "setUserApproval", "setUserEnabled",
                 "setUserRoles", "updateSetting",
             },
             operationIds.Order(StringComparer.Ordinal));
@@ -110,6 +110,7 @@ public class OpenApiContractTests(IntegrationFactory factory)
     [InlineData("/api/v1/evses/{evseId}/prices", "get", "price:read")]
     [InlineData("/api/v1/routes", "post", "route:read")]
     [InlineData("/api/v1/conflicts", "get", "conflict:resolve")]
+    [InlineData("/api/v1/conflicts/{id}/resolve", "post", "conflict:resolve")]
     [InlineData("/api/v1/emps", "get", "price:read")]
     [InlineData("/api/v1/emps/{key}", "put", "tariff:write")]
     [InlineData("/api/v1/emps/{key}", "delete", "tariff:write")]

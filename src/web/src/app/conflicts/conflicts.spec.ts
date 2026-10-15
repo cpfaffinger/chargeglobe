@@ -1,6 +1,7 @@
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { provideRouter } from '@angular/router';
 import { AdminConflictsPage } from '../pages/admin-conflicts.page';
 import { flush, text } from '../testing';
@@ -17,6 +18,7 @@ function conflict(overrides: Partial<Conflict> = {}): Conflict {
     detectedAt: '2026-10-15T08:00:00Z',
     resolvedAt: null,
     resolution: null,
+    candidates: [],
     ...overrides,
   };
 }
@@ -36,6 +38,18 @@ describe('ConflictsService', () => {
     const resolved = service.list(true);
     http.expectOne('/api/v1/conflicts?limit=200&resolved=true').flush(response([]));
     expect((await resolved).meta.open).toBe(0);
+
+    const merged = service.resolve('c-1', 'merge', 'loc-2');
+    const request = http.expectOne('/api/v1/conflicts/c-1/resolve');
+    expect([request.request.method, request.request.body]).toEqual(['POST', { action: 'merge', targetId: 'loc-2' }]);
+    request.flush({ data: conflict({ resolvedAt: '2026-10-16T08:00:00Z' }) });
+    expect((await merged).resolvedAt).toBe('2026-10-16T08:00:00Z');
+
+    const kept = service.resolve('c-2', 'keep');
+    const keep = http.expectOne('/api/v1/conflicts/c-2/resolve');
+    expect(keep.request.body).toEqual({ action: 'keep', targetId: null });
+    keep.flush({ data: conflict({ id: 'c-2' }) });
+    await kept;
     http.verify();
   });
 
@@ -49,6 +63,7 @@ describe('ConflictsService', () => {
 
 describe('AdminConflictsPage', () => {
   let service: jasmine.SpyObj<ConflictsService>;
+  let snackBar: jasmine.SpyObj<MatSnackBar>;
   let fixture: ComponentFixture<AdminConflictsPage>;
   const root = () => fixture.nativeElement as HTMLElement;
 
@@ -59,8 +74,11 @@ describe('AdminConflictsPage', () => {
   }
 
   beforeEach(() => {
-    service = jasmine.createSpyObj<ConflictsService>('ConflictsService', ['list']);
-    TestBed.configureTestingModule({ providers: [provideRouter([]), { provide: ConflictsService, useValue: service }] });
+    service = jasmine.createSpyObj<ConflictsService>('ConflictsService', ['list', 'resolve']);
+    snackBar = jasmine.createSpyObj<MatSnackBar>('MatSnackBar', ['open']);
+    TestBed.configureTestingModule({
+      providers: [provideRouter([]), { provide: ConflictsService, useValue: service }, { provide: MatSnackBar, useValue: snackBar }],
+    });
   });
 
   it('lists the open conflicts with a link to what they concern and switches to the resolved ones', async () => {
@@ -86,7 +104,8 @@ describe('AdminConflictsPage', () => {
       'EVSE-ID-Schreibweise',
       'other',
     ]);
-    expect(text(root(), '[data-conflict="c-1"] td:nth-child(5)')).toBe('–');
+    expect(text(root(), '[data-conflict="c-1"] td:nth-child(5)')).toBe('eigener Standort');
+    expect(text(root(), '[data-conflict="c-2"] td:nth-child(5)')).toBe('behalten');
 
     root().querySelectorAll<HTMLButtonElement>('#conflict-filter button')[1].click();
     await flush();
@@ -94,6 +113,53 @@ describe('AdminConflictsPage', () => {
     expect(service.list).toHaveBeenCalledWith(true);
     expect(text(root(), '[data-conflict="c-9"] td:nth-child(5)')).toBe('16.10.2026 · merged by hand');
     expect(text(root(), '#open-count')).toBe('2');
+  });
+
+  it('assigns a record to a candidate, keeps it separate or keeps an EVSE-ID, then reloads', async () => {
+    const identity = conflict({
+      candidates: [
+        { locationId: 'loc-1', label: 'Parkgarage Stephansplatz, Wien', distanceMeters: 18.4 },
+        { locationId: 'loc-2', label: 'Teststation Dom, Wien', distanceMeters: null },
+        { locationId: 'loc-3', label: null, distanceMeters: null },
+      ],
+    });
+    const evseId = conflict({ id: 'c-2', entityType: 'EVSE', entityId: 'e-1', attribute: 'evse_id', values: { stored: 'AT*TST*E1*1' } });
+    service.list.and.resolveTo(response([identity, evseId, conflict({ id: 'c-3', attribute: 'other' })]));
+    service.resolve.and.resolveTo(conflict({ resolvedAt: '2026-10-16T08:00:00Z' }));
+    await render();
+
+    const candidate = (id: string) => root().querySelector<HTMLElement>(`[data-candidate="${id}"]`)!;
+    expect(text(candidate('loc-1'), '.distance')).toBe('18 m');
+    expect(candidate('loc-2').querySelector('.distance')).toBeNull();
+    // A candidate that no longer exists cannot be chosen.
+    expect(text(candidate('loc-3'), 'a')).toBe('nicht mehr vorhanden');
+    expect(candidate('loc-3').querySelector('button')).toBeNull();
+    expect(text(root(), '[data-conflict="c-3"] td:nth-child(5)')).toBe('–');
+
+    candidate('loc-2').querySelector<HTMLButtonElement>('.merge')!.click();
+    await flush();
+    await fixture.whenStable();
+    expect(service.resolve).toHaveBeenCalledWith('c-1', 'merge', 'loc-2');
+    expect(snackBar.open).toHaveBeenCalledWith('Datensatz dem Standort zugeordnet.', 'OK', { duration: 4000 });
+    expect(service.list).toHaveBeenCalledTimes(2);
+
+    root().querySelector<HTMLButtonElement>('[data-conflict="c-1"] .separate')!.click();
+    await flush();
+    await fixture.whenStable();
+    expect(service.resolve).toHaveBeenCalledWith('c-1', 'separate', null);
+    expect(snackBar.open).toHaveBeenCalledWith('Datensatz wird ein eigener Standort.', 'OK', { duration: 4000 });
+
+    root().querySelector<HTMLButtonElement>('[data-conflict="c-2"] .keep')!.click();
+    await flush();
+    await fixture.whenStable();
+    expect(service.resolve).toHaveBeenCalledWith('c-2', 'keep', null);
+    expect(snackBar.open).toHaveBeenCalledWith('EVSE-ID bleibt wie gespeichert.', 'OK', { duration: 4000 });
+
+    service.resolve.and.rejectWith(new HttpErrorResponse({ status: 422, error: { title: 'Validation failed', errors: { targetId: ['Must be one of the candidates.'] } } }));
+    candidate('loc-1').querySelector<HTMLButtonElement>('.merge')!.click();
+    await flush();
+    await fixture.whenStable();
+    expect(text(root(), '.error')).toBe('Must be one of the candidates.');
   });
 
   it('says when there are none and shows errors', async () => {

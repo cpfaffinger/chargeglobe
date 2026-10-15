@@ -133,7 +133,9 @@ curl -k -X PUT -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/m
 curl -k -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/me/favorites   # Favoriten mit aktuellem Status; UI: /favorites
 curl -k -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/me/preferences   # Startposition, Filter, Kartenoptionen und eigene Ladekarten (cards) des Kontos (updatedAt null = noch keine)
 curl -k -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/admin/crawler/status   # Budget, Pause, Abfragepunkte, Pläne, Queue je Quelle (econtrol, ocm) (jobs:read); UI: /admin/crawler
-curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/conflicts?limit=20"   # offene Konflikte zwischen Quellen (conflict:resolve); UI: /admin/conflicts
+curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/conflicts?limit=20"   # offene Konflikte zwischen Quellen mit Kandidaten und Abstand (conflict:resolve); UI: /admin/conflicts
+curl -k -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"action":"keep"}' https://localhost:5005/api/v1/conflicts/<id>/resolve   # entscheiden: merge (+targetId) / separate bei identity, keep bei evse_id
+docker compose exec db psql -U chargeglobe -d chargeglobe -c "select decision, count(*) from match_decision group by 1"   # Entscheidungen über mehrdeutige Datensätze
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select source_key, entity_type, count(*) from source_record group by 1,2 order by 1,2"   # Datensätze je Quelle (econtrol, ocm)
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select match_method, count(*), round(avg(match_confidence)::numeric,2) from source_record where source_key='ocm' group by 1"   # EVSE_ID_*, GEO_OPERATOR, GEO_ONLY, CREATED
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select template_key, status, attempts, last_error from email_outbox"
@@ -175,4 +177,4 @@ Vor einem neuen lokalen Coverage-Lauf alte Ergebnisse löschen (`tests/*/TestRes
 
 ## Nächste Schritte (Stand jetzt)
 
-Siehe `docs/09-roadmap.md`: reale Ladekarten-Tarife pflegen, OpenChargeMap-Key eintragen und den ersten Lauf auswerten, Konflikte im Admin-UI entscheiden, Mail-Absender auf `chargeglobe.net`; außerdem Lizenz festlegen und die E-Control-Nutzungsbedingungen archivieren. API-Keys von Quellen werden nur im Admin-UI eingetragen (`provider.api_key`, Scope `provider:<key>`), nie in Dateien.
+Siehe `docs/09-roadmap.md`: reale Ladekarten-Tarife pflegen, OpenChargeMap-Key eintragen und den ersten Lauf auswerten, offene Konflikte unter /admin/conflicts entscheiden, Mail-Absender auf `chargeglobe.net`; außerdem Lizenz festlegen und die E-Control-Nutzungsbedingungen archivieren. API-Keys von Quellen werden nur im Admin-UI eingetragen (`provider.api_key`, Scope `provider:<key>`), nie in Dateien.

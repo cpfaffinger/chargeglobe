@@ -2,6 +2,15 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
+/** A location an identity conflict may belong to. */
+export interface ConflictCandidate {
+  locationId: string;
+  /** Name and address; null if the location no longer exists. */
+  label: string | null;
+  /** Distance to the record of the source; null if unknown. */
+  distanceMeters: number | null;
+}
+
 /** Element of GET /api/v1/conflicts. */
 export interface Conflict {
   id: string;
@@ -15,12 +24,17 @@ export interface Conflict {
   detectedAt: string;
   resolvedAt: string | null;
   resolution: string | null;
+  /** The locations of an identity conflict, nearest first. */
+  candidates: ConflictCandidate[];
 }
 
 export interface ConflictsResponse {
   data: Conflict[];
   meta: { returned: number; limit: number; open: number };
 }
+
+/** merge (identity, with a candidate), separate (identity), keep (evse_id). */
+export type ConflictAction = 'merge' | 'separate' | 'keep';
 
 /** Conflicts between sources (conflict:resolve). */
 @Injectable({ providedIn: 'root' })
@@ -33,6 +47,11 @@ export class ConflictsService {
       params['resolved'] = 'true';
     }
     return firstValueFrom(this.http.get<ConflictsResponse>('/api/v1/conflicts', { params }));
+  }
+
+  /** Decides the conflict; a conflict resolved before answers with its state. */
+  async resolve(id: string, action: ConflictAction, targetId: string | null = null): Promise<Conflict> {
+    return (await firstValueFrom(this.http.post<{ data: Conflict }>(`/api/v1/conflicts/${id}/resolve`, { action, targetId }))).data;
   }
 }
 

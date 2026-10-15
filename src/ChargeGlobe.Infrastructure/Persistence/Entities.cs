@@ -52,6 +52,34 @@ public sealed class FavoriteLocation
     public DateTimeOffset CreatedAt { get; set; }
 }
 
+/// <summary>
+/// Decision of a maintainer about a record of a source that fitted several locations (docs/03): the record belongs to a
+/// location (<see cref="Merge"/>, the source record carries it) or is a location of its own (<see cref="Separate"/>,
+/// the merge skips the geo steps for it).
+/// </summary>
+public sealed class MatchDecision
+{
+    public const string Merge = "MERGE";
+    public const string Separate = "SEPARATE";
+
+    public required string SourceKey { get; set; }
+
+    public required string ExternalId { get; set; }
+
+    public required string Decision { get; set; }
+
+    /// <summary>The chosen location of a <see cref="Merge"/>; null otherwise or once the location is deleted.</summary>
+    public Guid? LocationId { get; set; }
+
+    /// <summary>The conflict the decision resolved.</summary>
+    public Guid ConflictId { get; set; }
+
+    public DateTimeOffset DecidedAt { get; set; }
+
+    /// <summary>The user who decided; null for an API key without user.</summary>
+    public Guid? DecidedBy { get; set; }
+}
+
 /// <summary>API key of a user. Only the SHA-256 hash of the full key is stored.</summary>
 public sealed class ApiKey
 {
