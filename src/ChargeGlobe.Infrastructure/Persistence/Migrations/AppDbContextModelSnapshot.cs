@@ -1369,6 +1369,44 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                     b.ToTable("job_lease", (string)null);
                 });
 
+            modelBuilder.Entity("ChargeGlobe.Infrastructure.Persistence.MatchDecision", b =>
+                {
+                    b.Property<string>("SourceKey")
+                        .HasColumnType("text")
+                        .HasColumnName("source_key");
+
+                    b.Property<string>("ExternalId")
+                        .HasColumnType("text")
+                        .HasColumnName("external_id");
+
+                    b.Property<Guid>("ConflictId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("conflict_id");
+
+                    b.Property<DateTimeOffset>("DecidedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("decided_at");
+
+                    b.Property<Guid?>("DecidedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("decided_by");
+
+                    b.Property<string>("Decision")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("decision");
+
+                    b.Property<Guid?>("LocationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("location_id");
+
+                    b.HasKey("SourceKey", "ExternalId");
+
+                    b.HasIndex("LocationId");
+
+                    b.ToTable("match_decision", (string)null);
+                });
+
             modelBuilder.Entity("ChargeGlobe.Infrastructure.Persistence.PollPlan", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1921,6 +1959,14 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("ChargeGlobe.Infrastructure.Persistence.MatchDecision", b =>
+                {
+                    b.HasOne("ChargeGlobe.Domain.Charging.Location", null)
+                        .WithMany()
+                        .HasForeignKey("LocationId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("ChargeGlobe.Infrastructure.Persistence.RefreshToken", b =>

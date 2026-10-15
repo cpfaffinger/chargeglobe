@@ -52,6 +52,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<ISearchQueries, SearchQueries>();
         services.AddScoped<IOperatorQueries, OperatorQueries>();
         services.AddScoped<IConflictQueries, ConflictQueries>();
+        services.AddScoped<IConflictResolution, ConflictResolution>();
         services.AddScoped<IFavorites, Favorites>();
         services.AddScoped<IUserPreferences, UserPreferences>();
         services.AddScoped<ITariffCatalog, TariffCatalog>();

@@ -20,7 +20,7 @@ public class DatabaseAndStartupTests(IntegrationFactory factory)
 
         var applied = await factory.WithDbAsync(db => db.Database.GetAppliedMigrationsAsync());
         Assert.Equal(
-            ["InitialIdentity", "AppSettings", "MailDelivery", "ChargingDomain", "IngestPipeline", "OccupancyHourly", "EvseAuthAndFacilities", "PassiveCrawling", "AdminAndSearch", "Favorites", "AdHocPrices", "UserPreferences", "EmpTariffs", "DeduplicateConflicts"],
+            ["InitialIdentity", "AppSettings", "MailDelivery", "ChargingDomain", "IngestPipeline", "OccupancyHourly", "EvseAuthAndFacilities", "PassiveCrawling", "AdminAndSearch", "Favorites", "AdHocPrices", "UserPreferences", "EmpTariffs", "DeduplicateConflicts", "MatchDecisions"],
             applied.Select(migration => migration[(migration.IndexOf('_') + 1)..]));
         Assert.Empty(await factory.WithDbAsync(db => db.Database.GetPendingMigrationsAsync()));
 

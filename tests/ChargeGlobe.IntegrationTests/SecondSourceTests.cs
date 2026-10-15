@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using System.Text.Json;
 using ChargeGlobe.Application.Ingest;
 using ChargeGlobe.Application.Sources;
@@ -6,6 +7,7 @@ using ChargeGlobe.Domain;
 using ChargeGlobe.Domain.Charging;
 using ChargeGlobe.Domain.Provenance;
 using ChargeGlobe.Infrastructure.Ingest;
+using ChargeGlobe.Infrastructure.Persistence;
 using ChargeGlobe.Providers.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -221,5 +223,126 @@ public class SecondSourceTests(IntegrationFactory factory) : IClassFixture<Integ
         var email = $"conflicts-{Guid.NewGuid():N}@chargeglobe.test";
         await factory.CreateConfirmedUserAsync(email);
         Assert.Equal(HttpStatusCode.Forbidden, (await factory.Client((await factory.LoginAsync(email)).AccessToken).GetAsync("/api/v1/conflicts")).StatusCode);
+    }
+
+    /// <summary>Two locations of another source next to each other and an OCM site between them: an open identity conflict.</summary>
+    private async Task<SourceConflict> AmbiguousAsync(string name, double latitude, double longitude)
+    {
+        var pair = Read("econtrol", "search-wien.expected.json")[0] with { OperatorName = null, OperatorId = null, Evses = [] };
+        await IngestAsync(name, [
+            pair with { ExternalId = $"{name}-1", Coordinates = new GeoPoint(latitude, longitude) },
+            pair with { ExternalId = $"{name}-2", Coordinates = new GeoPoint(latitude + 0.00004, longitude + 0.00004) },
+        ]);
+        var site = Ocm().Single(item => item.ExternalId == "104") with { ExternalId = name, Coordinates = new GeoPoint(latitude + 0.00002, longitude + 0.00002) };
+        await IngestAsync("ocm", [site]);
+        return Assert.Single(
+            await factory.WithDbAsync(db => db.SourceConflicts.Where(item => item.Attribute == "identity").ToListAsync()),
+            item => JsonDocument.Parse(item.Values).RootElement.GetProperty("externalId").GetString() == name);
+    }
+
+    private async Task<HttpClient> AdminAsync() =>
+        factory.Client((await factory.LoginAsync(IntegrationFactory.AdminEmail, IntegrationFactory.AdminPassword)).AccessToken);
+
+    private static Task<HttpResponseMessage> ResolveAsync(HttpClient client, Guid id, object body) =>
+        client.PostAsJsonAsync($"/api/v1/conflicts/{id}/resolve", body);
+
+    [Fact]
+    public async Task Merging_maps_the_record_to_the_chosen_candidate_for_the_next_runs()
+    {
+        var conflict = await AmbiguousAsync("merge-site", 48.26, 16.46);
+        var admin = await AdminAsync();
+        var target = (await RecordAsync("merge-site", "merge-site-2")).EntityId;
+
+        // The list shows the candidates with their distance to the record, nearest first.
+        var listed = (await (await admin.GetAsync("/api/v1/conflicts")).ReadJsonAsync()).GetProperty("data").EnumerateArray()
+            .Single(item => item.GetProperty("id").GetGuid() == conflict.Id);
+        var candidates = listed.GetProperty("candidates").EnumerateArray().ToList();
+        Assert.Equal(2, candidates.Count);
+        Assert.All(candidates, candidate => Assert.InRange(candidate.GetProperty("distanceMeters").GetDouble(), 1, 5));
+        Assert.StartsWith("Teststation Stephansplatz", candidates[0].GetProperty("label").GetString(), StringComparison.Ordinal);
+
+        var response = await ResolveAsync(admin, conflict.Id, new { action = "merge", targetId = target, note = "Gleiche Garage." });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var data = (await response.ReadJsonAsync()).GetProperty("data");
+        Assert.Equal($"Merged into location {target}. Gleiche Garage.", data.GetProperty("resolution").GetString());
+        Assert.NotEqual(JsonValueKind.Null, data.GetProperty("resolvedAt").ValueKind);
+        var record = await RecordAsync("ocm", "merge-site");
+        Assert.Equal((target, MatchMethod.MANUAL, 1d), (record.EntityId, record.MatchMethod, record.MatchConfidence));
+        var decision = await factory.WithDbAsync(db => db.MatchDecisions.SingleAsync(item => item.SourceKey == "ocm" && item.ExternalId == "merge-site"));
+        Assert.Equal((MatchDecision.Merge, (Guid?)target, conflict.Id), (decision.Decision, decision.LocationId, decision.ConflictId));
+        Assert.Equal(1, await factory.WithDbAsync(db => db.AuditLog.CountAsync(entry => entry.Action == "conflict.resolve" && entry.Target == $"conflict:{conflict.Id}")));
+
+        // The next run finds the record; no new conflict, the EVSEs join the chosen location.
+        var site = Ocm().Single(item => item.ExternalId == "104") with { ExternalId = "merge-site", Coordinates = new GeoPoint(48.26002, 16.46002), ObservedAt = T0.AddDays(2) };
+        await IngestAsync("ocm", [site]);
+        Assert.Equal(target, (await RecordAsync("ocm", "merge-site")).EntityId);
+        Assert.Equal(2, await factory.WithDbAsync(db => db.Evses.CountAsync(evse => evse.LocationId == target)));
+        Assert.Equal(0, await factory.WithDbAsync(db => db.SourceConflicts.CountAsync(item => item.ResolvedAt == null && item.EntityId == conflict.EntityId)));
+
+        // Idempotent: a resolved conflict answers with its state, whatever the request says.
+        var again = await ResolveAsync(admin, conflict.Id, new { action = "separate" });
+        Assert.Equal(HttpStatusCode.OK, again.StatusCode);
+        Assert.Equal($"Merged into location {target}. Gleiche Garage.", (await again.ReadJsonAsync()).GetProperty("data").GetProperty("resolution").GetString());
+    }
+
+    [Fact]
+    public async Task A_separate_record_becomes_a_location_of_its_own_with_the_next_run()
+    {
+        var conflict = await AmbiguousAsync("separate-site", 48.27, 16.47);
+        var admin = await AdminAsync();
+
+        var response = await ResolveAsync(admin, conflict.Id, new { action = "separate" });
+
+        Assert.Equal("Kept as a location of its own.", (await response.ReadJsonAsync()).GetProperty("data").GetProperty("resolution").GetString());
+        Assert.Equal(MatchDecision.Separate, (await factory.WithDbAsync(db => db.MatchDecisions.SingleAsync(item => item.ExternalId == "separate-site"))).Decision);
+        var site = Ocm().Single(item => item.ExternalId == "104") with { ExternalId = "separate-site", Coordinates = new GeoPoint(48.27002, 16.47002), ObservedAt = T0.AddDays(2) };
+        await IngestAsync("ocm", [site]);
+        var record = await RecordAsync("ocm", "separate-site");
+        Assert.Equal(MatchMethod.CREATED, record.MatchMethod);
+        Assert.DoesNotContain(record.EntityId, new[] { (await RecordAsync("separate-site", "separate-site-1")).EntityId, (await RecordAsync("separate-site", "separate-site-2")).EntityId });
+        Assert.Equal(0, await factory.WithDbAsync(db => db.SourceConflicts.CountAsync(item => item.ResolvedAt == null && item.EntityId == conflict.EntityId)));
+    }
+
+    [Fact]
+    public async Task Actions_must_fit_the_conflict_and_only_maintainers_decide()
+    {
+        var identity = await AmbiguousAsync("checks-site", 48.28, 16.48);
+        var evse = (await RecordAsync("econtrol", "AT*TST*ETEST0001*2", EntityType.EVSE)).EntityId;
+        var evseConflict = SourceConflict.Create(EntityType.EVSE, evse, "evse_id", """{"stored":"AT*TST*ETEST0001*2","test":"AT-TST-ETEST0001-2"}""", T0);
+        await factory.WithDbAsync(db =>
+        {
+            db.SourceConflicts.Add(evseConflict);
+            return db.SaveChangesAsync();
+        });
+        var admin = await AdminAsync();
+
+        async Task FieldAsync(Guid id, object body, string field)
+        {
+            var problem = await (await ResolveAsync(admin, id, body)).AssertProblemAsync(HttpStatusCode.UnprocessableEntity);
+            Assert.True(problem.GetProperty("errors").TryGetProperty(field, out _), field);
+        }
+
+        await FieldAsync(identity.Id, new { action = "delete" }, "action");
+        await FieldAsync(identity.Id, new { action = "merge" }, "targetId");
+        await FieldAsync(identity.Id, new { action = "merge", targetId = Guid.NewGuid() }, "targetId");
+        await FieldAsync(identity.Id, new { action = "keep" }, "action");
+        await FieldAsync(evseConflict.Id, new { action = "separate" }, "action");
+        await FieldAsync(identity.Id, new { action = "separate", note = new string('x', 501) }, "note");
+        await (await ResolveAsync(admin, Guid.NewGuid(), new { action = "keep" })).AssertProblemAsync(HttpStatusCode.NotFound);
+        // A candidate that is no longer active cannot be chosen.
+        var gone = (await RecordAsync("checks-site", "checks-site-1")).EntityId;
+        await factory.WithDbAsync(db => db.Locations.Where(location => location.Id == gone).ExecuteUpdateAsync(set => set.SetProperty(location => location.Lifecycle, Lifecycle.REMOVED)));
+        await FieldAsync(identity.Id, new { action = "merge", targetId = gone }, "targetId");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, (await factory.Client().PostAsJsonAsync($"/api/v1/conflicts/{evseConflict.Id}/resolve", new { action = "keep" })).StatusCode);
+        var email = $"resolve-{Guid.NewGuid():N}@chargeglobe.test";
+        await factory.CreateConfirmedUserAsync(email);
+        Assert.Equal(HttpStatusCode.Forbidden, (await ResolveAsync(factory.Client((await factory.LoginAsync(email)).AccessToken), evseConflict.Id, new { action = "keep" })).StatusCode);
+
+        var kept = await (await ResolveAsync(admin, evseConflict.Id, new { action = "KEEP" })).ReadJsonAsync();
+        Assert.Equal("Kept as stored.", kept.GetProperty("data").GetProperty("resolution").GetString());
+        Assert.Empty(kept.GetProperty("data").GetProperty("candidates").EnumerateArray());
+        Assert.False(await factory.WithDbAsync(db => db.MatchDecisions.AnyAsync(item => item.ConflictId == evseConflict.Id)));
     }
 }

@@ -22,6 +22,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<EvsePriceCurrent> EvsePriceCurrent => Set<EvsePriceCurrent>();
 
+    public DbSet<MatchDecision> MatchDecisions => Set<MatchDecision>();
+
     public DbSet<Emp> Emps => Set<Emp>();
 
     public DbSet<Tariff> Tariffs => Set<Tariff>();
@@ -111,6 +113,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.HasKey(preferences => preferences.UserId);
             entity.Property(preferences => preferences.Document).HasColumnType("jsonb");
             entity.HasOne<AppUser>().WithOne().HasForeignKey<UserPreferencesDocument>(preferences => preferences.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<MatchDecision>(entity =>
+        {
+            entity.ToTable("match_decision");
+            entity.HasKey(decision => new { decision.SourceKey, decision.ExternalId });
+            entity.HasOne<Location>().WithMany().HasForeignKey(decision => decision.LocationId).OnDelete(DeleteBehavior.SetNull);
         });
 
         builder.Entity<FavoriteLocation>(entity =>
