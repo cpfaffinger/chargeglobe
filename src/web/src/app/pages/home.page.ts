@@ -29,7 +29,17 @@ import { MapOptionsStore } from '../map/map-options';
 import { MapFilterStore, filterParams } from '../map/map-filters';
 import { MapLink, ShareResult } from '../map/map-link';
 import { MapView, MapViewStore } from '../map/map-view.store';
-import { RouteLocation, RouteResponse, RoutesService, kilometres, routeSummary } from '../map/routes.service';
+import {
+  MAX_CHARGING_STOPS,
+  RouteLocation,
+  RouteResponse,
+  RoutesService,
+  Trip,
+  kilometres,
+  routeSummary,
+  stopsSummary,
+  withStop,
+} from '../map/routes.service';
 import { Bbox, LocationSummary, LocationsService } from '../map/locations.service';
 import { MapFocus } from '../search/search.service';
 
@@ -154,9 +164,14 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
                 <p class="muted" id="stops-hint">{{ stopsTruncated() ? 'Die ersten ' : '' }}{{ stops().length }} Standorte bis 1 km neben der Route, mit den Filtern der Karte.</p>
                 <ol>
                   @for (stop of stops(); track stop.id) {
-                    <li>
-                      <button type="button" [attr.data-stop]="stop.id" (click)="openStop(stop)">
-                        <span class="stop-name">{{ km(stop.positionOnRouteMeters) }} · {{ stop.name ?? 'Ladestandort' }}</span>
+                    <li [class.planned]="isPlanned(stop)">
+                      <button type="button" class="open-stop" [attr.data-stop]="stop.id" (click)="openStop(stop)">
+                        <span class="stop-name">
+                          {{ km(stop.positionOnRouteMeters) }} · {{ stop.name ?? 'Ladestandort' }}
+                          @if (isPlanned(stop)) {
+                            <span class="stop-badge">Ladestopp</span>
+                          }
+                        </span>
                         <span class="stop-state">
                           <span class="status-dot" [style.background]="color(marker(stop))"><app-icon [name]="markers[marker(stop)].icon" /></span>
                           {{ stop.evsesAvailable }} von {{ stop.evsesTotal }} frei
@@ -165,6 +180,9 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
                           }
                         </span>
                       </button>
+                      @if (canPlan(stop)) {
+                        <button matButton type="button" class="add-stop" [disabled]="routing()" (click)="addStop(stop)">als Ladestopp</button>
+                      }
                     </li>
                   } @empty {
                     <li class="muted">Keine Ladepunkte entlang der Route.</li>
@@ -185,10 +203,20 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
         <p id="map-notice" class="map-message" role="status">{{ notices[key] }}</p>
       }
       @if (route(); as summary) {
-        <p id="route-summary" class="map-message" role="status">
+        <div id="route-summary" class="map-message" role="status">
           Route: {{ summary }}
           <button matButton type="button" id="route-clear" (click)="clearRoute()">Route entfernen</button>
-        </p>
+          @if (trip()?.stops?.length) {
+            <div class="trip-stops">
+              @for (stop of trip()!.stops; track stop.id) {
+                <button matButton="tonal" type="button" class="remove-stop" [attr.data-stop]="stop.id" [disabled]="routing()"
+                  [attr.aria-label]="'Stopp entfernen: ' + (stop.name ?? 'Ladestandort')" (click)="removeStop(stop)">
+                  ✕ {{ stop.name ?? 'Ladestandort' }}
+                </button>
+              }
+            </div>
+          }
+        </div>
       }
       @if (homeSaved()) {
         <p id="home-saved" class="map-message" role="status">Dieser Ausschnitt ist jetzt deine Startposition.</p>
@@ -284,6 +312,10 @@ export class HomePage {
   protected readonly km = kilometres;
   /** Answers for an earlier route are dropped. */
   private routeRequest = 0;
+  /** Start, charging stops and destination of the shown route; null while there is none. */
+  protected readonly trip = signal<Trip | null>(null);
+  /** Line of the shown route, for loading its stops again when the filters change. */
+  private routeLine: RouteResponse['data']['geometry'] | null = null;
   /** The newest visible area, loaded again when the filters change. */
   private box: Bbox | null = null;
   /** Query parameters of the filters of the shown locations. */
@@ -353,9 +385,15 @@ export class HomePage {
     effect(() => {
       const key = JSON.stringify(filterParams(this.filterStore.filters()));
       untracked(() => {
-        if (this.filterKey !== null && key !== this.filterKey && this.box) {
-          this.shown = null;
-          this.queue(this.box);
+        if (this.filterKey !== null && key !== this.filterKey) {
+          if (this.box) {
+            this.shown = null;
+            this.queue(this.box);
+          }
+          // The stops along a shown route follow the filters, without a new route.
+          if (this.routeLine) {
+            void this.loadStops(this.routeLine);
+          }
         }
         this.filterKey = key;
       });
@@ -413,22 +451,70 @@ export class HomePage {
         this.notice.set((error as GeolocationPositionError).code === 1 ? 'denied' : 'unavailable');
         return;
       }
-      const response = await this.routes.route([start, { latitude: location.latitude, longitude: location.longitude }]);
-      this.route.set(routeSummary(response.data.distanceMeters, response.data.durationSeconds));
-      this.handle()!.showRoute(response.data.geometry.coordinates);
       // The list of stops replaces the card of the destination.
-      this.selected.set(null);
-      void this.loadStops(response.data.geometry);
-    } catch (error) {
-      const status = error instanceof HttpErrorResponse ? error.status : 0;
-      this.notice.set(status === 503 ? 'route-unavailable' : status === 422 ? 'route-none' : 'route-failed');
+      if (await this.plan({ start, destination: location, stops: [] })) {
+        this.selected.set(null);
+      }
     } finally {
       this.routing.set(false);
     }
   }
 
+  protected isPlanned(stop: RouteLocation): boolean {
+    return this.trip()?.stops.some((planned) => planned.id === stop.id) ?? false;
+  }
+
+  /** Neither the destination nor a planned stop, and room for one more. */
+  protected canPlan(stop: RouteLocation): boolean {
+    const trip = this.trip()!;
+    return stop.id !== trip.destination.id && !this.isPlanned(stop) && trip.stops.length < MAX_CHARGING_STOPS;
+  }
+
+  /** The route anew via this location, in the order of the current route. */
+  protected async addStop(stop: RouteLocation): Promise<void> {
+    const trip = this.trip()!;
+    await this.replan({ ...trip, stops: withStop(trip.stops, stop, this.stops()) });
+  }
+
+  protected async removeStop(stop: RouteLocation): Promise<void> {
+    const trip = this.trip()!;
+    await this.replan({ ...trip, stops: trip.stops.filter((planned) => planned.id !== stop.id) });
+  }
+
+  private async replan(trip: Trip): Promise<void> {
+    this.routing.set(true);
+    try {
+      await this.plan(trip);
+    } finally {
+      this.routing.set(false);
+    }
+  }
+
+  /**
+   * Calculates the route of the trip (start, stops, destination), draws it and loads its stops; true if it worked. A
+   * failed route leaves the shown one as it was and explains why.
+   */
+  private async plan(trip: Trip): Promise<boolean> {
+    const waypoints = [trip.start, ...trip.stops, trip.destination].map(({ latitude, longitude }) => ({ latitude, longitude }));
+    try {
+      const response = await this.routes.route(waypoints);
+      this.trip.set(trip);
+      this.route.set(routeSummary(response.data.distanceMeters, response.data.durationSeconds) + stopsSummary(trip.stops.length));
+      this.routeLine = response.data.geometry;
+      this.handle()!.showRoute(response.data.geometry.coordinates);
+      void this.loadStops(response.data.geometry);
+      return true;
+    } catch (error) {
+      const status = error instanceof HttpErrorResponse ? error.status : 0;
+      this.notice.set(status === 503 ? 'route-unavailable' : status === 422 ? 'route-none' : 'route-failed');
+      return false;
+    }
+  }
+
   protected clearRoute(): void {
     this.routeRequest++;
+    this.trip.set(null);
+    this.routeLine = null;
     this.route.set(null);
     this.stopsState.set(null);
     this.stops.set([]);

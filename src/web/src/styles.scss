@@ -385,7 +385,25 @@ app-location-details .details-state {
   padding: 0;
 }
 
-#route-stops li button {
+#route-stops li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+#route-stops li.planned {
+  background: color-mix(in srgb, var(--mat-sys-tertiary) 10%, transparent);
+}
+
+#route-stops .stop-badge {
+  color: var(--mat-sys-tertiary);
+  font: var(--mat-sys-label-medium);
+}
+
+#route-stops li button.open-stop {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -393,7 +411,6 @@ app-location-details .details-state {
   width: 100%;
   padding: 8px 4px;
   border: none;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
   background: none;
   color: inherit;
   font: var(--mat-sys-body-medium);
@@ -401,8 +418,8 @@ app-location-details .details-state {
   cursor: pointer;
 }
 
-#route-stops li button:hover,
-#route-stops li button:focus-visible {
+#route-stops li button.open-stop:hover,
+#route-stops li button.open-stop:focus-visible {
   background: var(--mat-sys-surface-container-high);
 }
 
@@ -411,6 +428,14 @@ app-location-details .details-state {
   align-items: center;
   gap: 6px;
   color: var(--mat-sys-on-surface-variant);
+}
+
+// Charging stops of the route as chips in its summary, each removable.
+#route-summary .trip-stops {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
 }
 
 // Start position and own position, bottom right.

@@ -38,6 +38,30 @@ export const CORRIDOR_METERS = 1000;
 /** Stops asked for; a long route through a city has hundreds of locations near it. */
 export const ROUTE_STOPS_LIMIT = 500;
 
+/** Charging stops one route may have (waypoints of POST /routes: start, stops, destination). */
+export const MAX_CHARGING_STOPS = 3;
+
+/** A planned trip: from the own position via charging stops (in the order of the route) to a location. */
+export interface Trip {
+  start: Position;
+  destination: LocationSummary;
+  stops: RouteLocation[];
+}
+
+/**
+ * The stops with <paramref name="added"/> in the order of the current route: by their position in <paramref name="along"/>
+ * (the list of the current route), a stop missing there keeps the position it had when it was chosen.
+ */
+export function withStop(stops: RouteLocation[], added: RouteLocation, along: RouteLocation[]): RouteLocation[] {
+  const position = (stop: RouteLocation) => along.find((item) => item.id === stop.id)?.positionOnRouteMeters ?? stop.positionOnRouteMeters;
+  return [...stops, added].sort((a, b) => position(a) - position(b));
+}
+
+/** "· 1 Ladestopp" / "· 2 Ladestopps" after the summary of a route; empty without stops. */
+export function stopsSummary(count: number): string {
+  return count === 0 ? '' : ` · ${count} ${count === 1 ? 'Ladestopp' : 'Ladestopps'}`;
+}
+
 /** Routes by car (route:read); the positions go to the own API only, which neither stores nor logs them. */
 @Injectable({ providedIn: 'root' })
 export class RoutesService {

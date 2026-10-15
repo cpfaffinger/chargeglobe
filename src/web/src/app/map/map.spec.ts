@@ -1,5 +1,5 @@
 import { provideHttpClient } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { AuthService } from '../auth/auth.service';
@@ -17,7 +17,7 @@ import { HOME_VIEW_KEY, LAST_VIEW_KEY, MapView, MapViewStore } from './map-view.
 import { FILTERS_STORAGE_KEY, MapFilterStore, NO_FILTERS } from './map-filters';
 import { MapLink } from './map-link';
 import { DEFAULT_MAP_OPTIONS, MapOptionsStore, OPTIONS_STORAGE_KEY } from './map-options';
-import { RouteLocation, RoutesService, kilometres, routeSummary } from './routes.service';
+import { RouteLocation, RoutesService, kilometres, routeSummary, stopsSummary, withStop } from './routes.service';
 
 describe('MapConfigService', () => {
   it('loads the map configuration', async () => {
@@ -714,7 +714,7 @@ describe('HomePage (map)', () => {
 
         expect(map.handle.highlightLocations).toHaveBeenCalledWith([jasmine.objectContaining({ id: 'loc-1' }), jasmine.objectContaining({ id: 'loc-2' })]);
         expect(text(root(), '#stops-hint')).toBe('Die ersten 2 Standorte bis 1 km neben der Route, mit den Filtern der Karte.');
-        const stops = Array.from(root().querySelectorAll<HTMLButtonElement>('#route-stops li button'));
+        const stops = Array.from(root().querySelectorAll<HTMLButtonElement>('#route-stops li button.open-stop'));
         expect(stops.map((button) => text(button, '.stop-name'))).toEqual(['1,8 km · Parkgarage Stephansplatz', '12,4 km · Ladestandort']);
         expect(stops.map((button) => text(button, '.stop-state'))).toEqual(['2 von 4 frei · bis 22 kW frei', '0 von 4 frei']);
 
@@ -733,6 +733,163 @@ describe('HomePage (map)', () => {
         expect(map.handle.highlightLocations).toHaveBeenCalledWith([]);
         expect(root().querySelector('#route-summary')).toBeNull();
         expect(root().querySelector('#route-stops')).toBeNull();
+      });
+
+      describe('charging stops', () => {
+        const START = { latitude: 48.21, longitude: 16.37 };
+        const DESTINATION = { latitude: 48.2085, longitude: 16.3731 };
+        const along = [
+          stop('loc-3', 3000, { name: 'Stopp A', latitude: 48.1, longitude: 16.1 }),
+          stop('loc-4', 5000, { name: 'Stopp B', latitude: 48.2, longitude: 15.6 }),
+          stop('loc-5', 7000, { name: null, latitude: 48.3, longitude: 15.1 }),
+          stop('loc-6', 9000, { name: 'Stopp D', latitude: 48.3, longitude: 14.5 }),
+          stop('loc-1', 12000),
+        ];
+        const point = (location: RouteLocation) => ({ latitude: location.latitude, longitude: location.longitude });
+        const addButton = (id: string) =>
+          root().querySelector<HTMLButtonElement>(`#route-stops li:has([data-stop="${id}"]) .add-stop`);
+        const removeButton = (id: string) => root().querySelector<HTMLButtonElement>(`#route-summary .remove-stop[data-stop="${id}"]`);
+
+        /** Answers the pending route and then the list along it. */
+        async function answerRoute(distanceMeters: number, durationSeconds: number, request = http.expectOne('/api/v1/routes')): Promise<void> {
+          request.flush({ data: { distanceMeters, durationSeconds, geometry: { type: 'LineString', coordinates: geometry } }, meta: { attribution: [] } });
+          await settle();
+          http.expectOne('/api/v1/routes/locations').flush({ data: along, meta: { returned: along.length, limit: 500, truncated: false, attribution: [] } });
+          await settle();
+        }
+
+        async function showRoute(): Promise<void> {
+          await openCard();
+          await clickRoute();
+          await answerRoute(12480, 960);
+        }
+
+        /** The pending route request, after checking its waypoints. */
+        function expectWaypoints(...waypoints: unknown[]): TestRequest {
+          const request = http.expectOne('/api/v1/routes');
+          expect(request.request.body).toEqual({ waypoints });
+          return request;
+        }
+
+        it('plans up to three stops in the order of the route and removes them again', async () => {
+          await showRoute();
+          // Every location of the list but the destination can become a stop.
+          expect(Array.from(root().querySelectorAll('#route-stops .add-stop')).length).toBe(4);
+          expect(addButton('loc-1')).toBeNull();
+
+          addButton('loc-4')!.click();
+          await settle();
+          const request = expectWaypoints(START, point(along[1]), DESTINATION);
+          expect(addButton('loc-3')!.disabled).toBeTrue();
+          request.flush({ data: { distanceMeters: 182_000, durationSeconds: 8_040, geometry: { type: 'LineString', coordinates: geometry } }, meta: { attribution: [] } });
+          await settle();
+          http.expectOne('/api/v1/routes/locations').flush({ data: along, meta: { returned: 5, limit: 500, truncated: false, attribution: [] } });
+          await settle();
+          expect(text(root(), '#route-summary')).toBe('Route: 182 km · 2 h 14 min · 1 Ladestopp Route entfernen ✕ Stopp B');
+          expect(text(root(), '#route-stops li.planned .stop-name')).toBe('5,0 km · Stopp B Ladestopp');
+          expect(addButton('loc-4')).toBeNull();
+          expect(map.handle.showRoute).toHaveBeenCalledTimes(2);
+
+          // A stop earlier on the route goes before the first one, a later one after it.
+          addButton('loc-3')!.click();
+          await settle();
+          await answerRoute(190_000, 8_400, expectWaypoints(START, point(along[0]), point(along[1]), DESTINATION));
+          addButton('loc-6')!.click();
+          await settle();
+          await answerRoute(200_000, 9_000, expectWaypoints(START, point(along[0]), point(along[1]), point(along[3]), DESTINATION));
+          expect(text(root(), '#route-summary')).toBe('Route: 200 km · 2 h 30 min · 3 Ladestopps Route entfernen ✕ Stopp A ✕ Stopp B ✕ Stopp D');
+          // Three stops: no room for another.
+          expect(root().querySelector('#route-stops .add-stop')).toBeNull();
+          expect(Array.from(root().querySelectorAll('#route-stops li.planned')).length).toBe(3);
+
+          removeButton('loc-4')!.click();
+          await settle();
+          expect(removeButton('loc-3')!.disabled).toBeTrue();
+          await answerRoute(185_000, 8_100, expectWaypoints(START, point(along[0]), point(along[3]), DESTINATION));
+          expect(text(root(), '#route-summary')).toBe('Route: 185 km · 2 h 15 min · 2 Ladestopps Route entfernen ✕ Stopp A ✕ Stopp D');
+          expect(addButton('loc-4')).not.toBeNull();
+        });
+
+        it('keeps the shown route when the new one fails', async () => {
+          await showRoute();
+          addButton('loc-5')!.click();
+          await settle();
+          http.expectOne('/api/v1/routes').flush({ title: 'Error' }, { status: 500, statusText: 'Error' });
+          await settle();
+
+          expect(text(root(), '#map-notice')).toBe('Die Route konnte nicht berechnet werden. Bitte versuche es erneut.');
+          expect(text(root(), '#route-summary')).toBe('Route: 12 km · 16 min Route entfernen');
+          expect(addButton('loc-5')!.disabled).toBeFalse();
+          expect(root().querySelector('#route-stops li.planned')).toBeNull();
+
+          // A stop without a name is named in its button.
+          addButton('loc-5')!.click();
+          await settle();
+          await answerRoute(13_000, 1_000);
+          expect(removeButton('loc-5')!.getAttribute('aria-label')).toBe('Stopp entfernen: Ladestandort');
+          expect(text(root(), '#route-summary .trip-stops')).toBe('✕ Ladestandort');
+        });
+
+        it('starts every route without stops and forgets them with the route', async () => {
+          await showRoute();
+          addButton('loc-3')!.click();
+          await settle();
+          await answerRoute(13_000, 1_000);
+
+          root().querySelector<HTMLButtonElement>('#route-clear')!.click();
+          await settle();
+          options().onSelect('loc-1');
+          await settle();
+          await clickRoute();
+          await answerRoute(12_480, 960, expectWaypoints(START, DESTINATION));
+          expect(root().querySelector('#route-summary .trip-stops')).toBeNull();
+        });
+
+        it('loads the stops of the shown route again when the filters change, without a new route', async () => {
+          await showRoute();
+          const filters = TestBed.inject(MapFilterStore);
+          const flushLocations = async () => {
+            for (const request of http.match((r) => r.url.startsWith('/api/v1/locations'))) {
+              request.flush(response());
+            }
+            await settle();
+          };
+
+          filters.set({ ...NO_FILTERS, minPowerKw: 150 });
+          await settle();
+          const reload = http.expectOne('/api/v1/routes/locations');
+          expect(reload.request.body).toEqual({ geometry: { type: 'LineString', coordinates: geometry }, corridorMeters: 1000, limit: 500, ...NO_FILTERS, minPowerKw: 150 });
+          expect(text(root(), '#route-stops p')).toBe('Ladepunkte entlang der Route werden gesucht …');
+          reload.flush({ data: [along[1]], meta: { returned: 1, limit: 500, truncated: false, attribution: [] } });
+          await settle();
+          await flushLocations();
+          expect(Array.from(root().querySelectorAll('#route-stops li')).length).toBe(1);
+          http.expectNone('/api/v1/routes');
+
+          // Two changes in a row: only the answer for the newest filters counts.
+          filters.set({ ...NO_FILTERS, minPowerKw: 50 });
+          await settle();
+          filters.set({ ...NO_FILTERS, minPowerKw: 300 });
+          await settle();
+          const [older, newer] = http.match('/api/v1/routes/locations');
+          expect(newer.request.body.minPowerKw).toBe(300);
+          newer.flush({ data: [], meta: { returned: 0, limit: 500, truncated: false, attribution: [] } });
+          await settle();
+          older.flush({ data: along, meta: { returned: 5, limit: 500, truncated: false, attribution: [] } });
+          await settle();
+          await flushLocations();
+          await flushLocations();
+          expect(text(root(), '#route-stops li')).toBe('Keine Ladepunkte entlang der Route.');
+
+          // Without a route the filters only change the map.
+          root().querySelector<HTMLButtonElement>('#route-clear')!.click();
+          await settle();
+          filters.set({ ...NO_FILTERS });
+          await settle();
+          await flushLocations();
+          await flushLocations();
+          http.expectNone('/api/v1/routes/locations');
+        });
       });
 
       it('explains stops that cannot be loaded, an empty corridor and drops the answer for a removed route', async () => {
@@ -1056,6 +1213,23 @@ describe('RoutesService', () => {
     request.flush({ data: [], meta: { returned: 0, limit: 200, truncated: false, attribution: [] } });
     expect((await along).meta.returned).toBe(0);
     http.verify();
+  });
+
+  it('puts a new stop in the order of the current route', () => {
+    const at = (id: string, positionOnRouteMeters: number): RouteLocation => ({ ...locationSummary({ id }), distanceFromRouteMeters: 0, positionOnRouteMeters });
+    const along = [at('a', 1000), at('c', 3000), at('d', 4000)];
+
+    expect(withStop([at('c', 3000)], at('a', 1000), along).map((s) => s.id)).toEqual(['a', 'c']);
+    expect(withStop([at('a', 1000)], at('d', 4000), along).map((s) => s.id)).toEqual(['a', 'd']);
+    // A planned stop the filters hide keeps the position it was chosen at.
+    expect(withStop([at('b', 2000)], at('c', 3000), along).map((s) => s.id)).toEqual(['b', 'c']);
+    expect(withStop([at('b', 5000)], at('c', 3000), along).map((s) => s.id)).toEqual(['c', 'b']);
+  });
+
+  it('counts the charging stops in German', () => {
+    expect(stopsSummary(0)).toBe('');
+    expect(stopsSummary(1)).toBe(' · 1 Ladestopp');
+    expect(stopsSummary(3)).toBe(' · 3 Ladestopps');
   });
 
   it('tells the kilometre of a stop in German', () => {
