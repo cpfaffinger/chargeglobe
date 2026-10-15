@@ -85,7 +85,7 @@ public class AreaLocationsTests(IntegrationFactory factory) : IClassFixture<Inte
         Assert.Equal(["Testladepark Ring", "Teststation Stephansplatz"], Names(body.GetProperty("data").EnumerateArray()));
         Assert.Equal(2, body.GetProperty("data")[0].GetProperty("evsesTotal").GetInt32());
         var meta = body.GetProperty("meta");
-        Assert.Equal((2, 200, false), (meta.GetProperty("returned").GetInt32(), meta.GetProperty("limit").GetInt32(), meta.GetProperty("truncated").GetBoolean()));
+        Assert.Equal((2, 2, 200, false), (meta.GetProperty("returned").GetInt32(), meta.GetProperty("total").GetInt32(), meta.GetProperty("limit").GetInt32(), meta.GetProperty("truncated").GetBoolean()));
         Assert.Equal("econtrol", meta.GetProperty("attribution")[0].GetProperty("source").GetString());
 
         // From Stephansplatz the order turns round.
@@ -123,6 +123,14 @@ public class AreaLocationsTests(IntegrationFactory factory) : IClassFixture<Inte
         var limited = await (await PostAsync(new { geometry = Polygon(CityCentre), limit = 1 })).ReadJsonAsync();
         Assert.Equal(1, limited.GetProperty("data").GetArrayLength());
         Assert.True(limited.GetProperty("meta").GetProperty("truncated").GetBoolean());
+        Assert.Equal(2, limited.GetProperty("meta").GetProperty("total").GetInt32());
+
+        // Limit 0 only counts; an empty area counts 0.
+        var counted = await (await PostAsync(new { geometry = Polygon(CityCentre), limit = 0, minPowerKw = 100 })).ReadJsonAsync();
+        Assert.Equal((0, 1), (counted.GetProperty("data").GetArrayLength(), counted.GetProperty("meta").GetProperty("total").GetInt32()));
+        double[][] nowhere = [[10.0, 47.0], [10.1, 47.0], [10.1, 47.1], [10.0, 47.0]];
+        var empty = await (await PostAsync(new { geometry = Polygon(nowhere) })).ReadJsonAsync();
+        Assert.Equal(0, empty.GetProperty("meta").GetProperty("total").GetInt32());
     }
 
     private const string Square = "[[16.3,48.2],[16.4,48.2],[16.4,48.3],[16.3,48.2]]";

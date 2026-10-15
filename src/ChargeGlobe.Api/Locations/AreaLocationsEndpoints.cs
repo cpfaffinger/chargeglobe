@@ -27,11 +27,18 @@ public sealed record AreaLocationsRequest(
     bool? BarrierFree,
     int? Limit);
 
+/// <param name="Total">All matching locations inside the area, also those beyond <paramref name="Limit"/>.</param>
+public sealed record AreaLocationsMeta(int Returned, int Total, int Limit, bool Truncated, IReadOnlyList<SourceAttribution> Attribution);
+
+public sealed record AreaLocationsResponse(IReadOnlyList<LocationSummary> Data, AreaLocationsMeta Meta);
+
 /// <summary>The charging locations inside an area such as a reach (docs/06, "Standorte").</summary>
 public static class AreaLocationsEndpoints
 {
     public const int MaxPositions = 20_000;
     public const int DefaultLimit = 200;
+    /// <summary>0 only counts (<c>meta.total</c>), e.g. for the smaller areas of a reach.</summary>
+    public const int MinLimit = 0;
     public const int MaxLimit = 500;
 
     public static IEndpointRouteBuilder MapAreaLocationsEndpoints(this IEndpointRouteBuilder endpoints)
@@ -48,16 +55,17 @@ public static class AreaLocationsEndpoints
                 "`listLocations`, nearest to `center` (`latitude`, `longitude`; default: the centroid of the area) first. " +
                 "Filters as in `listLocations`: `connector` (OCPI standards), `minPowerKw`, `maxPowerKw` (above 0, at most " +
                 "1000), `operatorId` (at most 100), `availableOnly`, `adHoc`, `roaming`, `greenEnergy`, `barrierFree`. At " +
-                "most `limit` (1–500, default 200); `meta.truncated` says that more lie inside. POST because the area " +
+                "most `limit` (0–500, default 200; 0 only counts); `meta.total` is the number of all matching locations " +
+                "inside, `meta.truncated` says that more lie inside than returned. POST because the area " +
                 "around a position is personal data: it is neither stored nor logged. 422 with field errors for an " +
                 "invalid geometry or values out of range.")
-            .Produces<LocationsResponse>()
+            .Produces<AreaLocationsResponse>()
             .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
             .WithResponseExample(
                 StatusCodes.Status200OK,
-                new LocationsResponse(
+                new AreaLocationsResponse(
                     [LocationsEndpoints.ExampleLocation],
-                    new LocationsMeta(1, DefaultLimit, false, [LocationsEndpoints.ExampleAttribution])));
+                    new AreaLocationsMeta(1, 1, DefaultLimit, false, [LocationsEndpoints.ExampleAttribution])));
         return endpoints;
     }
 
@@ -77,7 +85,7 @@ public static class AreaLocationsEndpoints
                 center is null || center is { Latitude: >= -90 and <= 90, Longitude: >= -180 and <= 180 },
                 "center",
                 "Needs latitude (-90 to 90) and longitude (-180 to 180).")
-            .Require(take is >= 1 and <= MaxLimit, "limit", $"Must be between 1 and {MaxLimit}.")
+            .Require(take is >= MinLimit and <= MaxLimit, "limit", $"Must be between {MinLimit} and {MaxLimit}.")
             .Require(connectors is not null, "connector", "Must be OCPI connector standards such as IEC_62196_T2, IEC_62196_T2_COMBO or CHADEMO.")
             .Require(request.MinPowerKw is null or (> 0 and <= LocationsEndpoints.MaxPowerKw), "minPowerKw", $"Must be a number above 0 and at most {LocationsEndpoints.MaxPowerKw}.")
             .Require(request.MaxPowerKw is null or (> 0 and <= LocationsEndpoints.MaxPowerKw), "maxPowerKw", $"Must be a number above 0 and at most {LocationsEndpoints.MaxPowerKw}.")
@@ -95,7 +103,7 @@ public static class AreaLocationsEndpoints
         var area = JsonSerializer.Serialize(new { type = "MultiPolygon", coordinates = polygons });
         var page = await queries.InAreaAsync(
             area, center is null ? null : new GeoPoint(center.Latitude!.Value, center.Longitude!.Value), filter, take, cancellationToken);
-        return Results.Ok(new LocationsResponse(page.Locations, new LocationsMeta(page.Locations.Count, take, page.Truncated, page.Attribution)));
+        return Results.Ok(new AreaLocationsResponse(page.Locations, new AreaLocationsMeta(page.Locations.Count, page.Total, take, page.Truncated, page.Attribution)));
     }
 
     /// <summary>The polygons of the geometry (a Polygon as the only one); null if it is no valid area.</summary>

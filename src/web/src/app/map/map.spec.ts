@@ -936,10 +936,18 @@ describe('HomePage (map)', () => {
           locationSummary({ id: 'r-out', name: 'Draußen', latitude: 49, longitude: 17, maxAvailablePowerKw: 300 }),
           locationSummary({ id: 'r-busy', name: 'Belegt', evsesAvailable: 0, maxAvailablePowerKw: null }),
         ];
-        const locationsOf = (data: LocationSummary[], truncated = false) => ({
+        const locationsOf = (data: LocationSummary[], total = data.length) => ({
           data,
-          meta: { returned: data.length, limit: 500, truncated, attribution: [] },
+          meta: { returned: data.length, total, limit: 500, truncated: total > data.length, attribution: [] },
         });
+
+        /** Answers the list of the largest area and the counts of the smaller ones (largest first). */
+        async function answerWithin(data: LocationSummary[], totals: number[]): Promise<void> {
+          const requests = http.match('/api/v1/locations/within');
+          expect(requests.map((request) => request.request.body.limit)).toEqual([500, 0, 0]);
+          requests.forEach((request, index) => request.flush(locationsOf(index === 0 ? data : [], totals[index])));
+          await settle();
+        }
 
         async function showMap(): Promise<void> {
           auth.hasPermission.and.callFake((permission) => permission === 'route:read');
@@ -974,24 +982,27 @@ describe('HomePage (map)', () => {
           expect(text(root(), '#reach-summary')).toBe('Reichweite mit dem Auto: 15 · 30 · 60 min Reichweite entfernen');
           expect(reachButton()!.disabled).toBeFalse();
 
-          // The locations inside the largest area, from the own position, with the filters of the map.
-          const within = http.expectOne('/api/v1/locations/within');
-          expect(within.request.body).toEqual({
-            geometry: areas.features[0].geometry,
-            center: { latitude: 48.21, longitude: 16.37 },
-            limit: 500,
-            ...NO_FILTERS,
-          });
+          // The locations inside the largest area and the counts of the smaller ones, from the own position, with the
+          // filters of the map.
+          const within = http.match('/api/v1/locations/within');
+          expect(within.map((request) => request.request.body)).toEqual(
+            [0, 1, 2].map((index) => ({
+              geometry: areas.features[index].geometry,
+              center: { latitude: 48.21, longitude: 16.37 },
+              limit: index === 0 ? 500 : 0,
+              ...NO_FILTERS,
+            })),
+          );
           expect(text(root(), '#reach-locations p')).toBe('Ladepunkte in Reichweite werden gesucht …');
-          within.flush(locationsOf(inReach));
+          within.forEach((request, index) => request.flush(locationsOf(index === 0 ? inReach : [], [9, 4, 2][index])));
           await settle();
 
-          expect(text(root(), '#reach-hint')).toBe('5 Standorte in Reichweite, mit den Filtern der Karte.');
+          expect(text(root(), '#reach-hint')).toBe('9 Standorte in Reichweite, mit den Filtern der Karte. Die Liste nutzt die nächsten 5.');
           const bands = Array.from(root().querySelectorAll<HTMLElement>('#reach-counts li'));
           expect(bands.map((band) => [text(band, '.band-label'), text(band, '.band-count')])).toEqual([
             ['bis 15 min', '2'],
-            ['15–30 min', '1'],
-            ['30–60 min', '1'],
+            ['15–30 min', '2'],
+            ['30–60 min', '5'],
           ]);
           const fastest = Array.from(root().querySelectorAll<HTMLButtonElement>('#reach-locations li button.open-stop'));
           expect(fastest.map((button) => text(button, '.stop-name'))).toEqual(['Draußen', 'Im Loch', 'Ladestandort', 'Nah']);
@@ -1023,7 +1034,7 @@ describe('HomePage (map)', () => {
           await clickReach();
           http.expectOne('/api/v1/routes/reach').flush({ data: areas, meta: { attribution: [] } });
           await settle();
-          http.expectOne('/api/v1/locations/within').flush({ title: 'Error' }, { status: 500, statusText: 'Error' });
+          http.match('/api/v1/locations/within').forEach((request) => request.flush({ title: 'Error' }, { status: 500, statusText: 'Error' }));
           await settle();
           expect(text(root(), '#reach-locations .error')).toBe('Die Ladepunkte in Reichweite konnten nicht geladen werden.');
 
@@ -1040,32 +1051,33 @@ describe('HomePage (map)', () => {
           await settle();
           await flushLocations();
           await flushLocations();
-          const [older, newer] = http.match('/api/v1/locations/within');
-          expect(newer.request.body.minPowerKw).toBe(150);
-          newer.flush(locationsOf([inReach[1]], true));
+          const pending = http.match('/api/v1/locations/within');
+          const [older, newer] = [pending.slice(0, 3), pending.slice(3)];
+          expect(newer.map((request) => request.request.body.minPowerKw)).toEqual([150, 150, 150]);
+          newer.forEach((request, index) => request.flush(locationsOf(index === 0 ? [inReach[1]] : [], [1, 1, 0][index])));
           await settle();
-          older.flush(locationsOf(inReach));
+          older.forEach((request, index) => request.flush(locationsOf(index === 0 ? inReach : [], [9, 4, 2][index])));
           await settle();
-          // The answer for the older filters is dropped.
-          expect(text(root(), '#reach-hint')).toBe('Die nächsten 1 Standorte in Reichweite, mit den Filtern der Karte.');
+          // The answer for the older filters is dropped; nested counts never go below 0.
+          expect(text(root(), '#reach-hint')).toBe('1 Standorte in Reichweite, mit den Filtern der Karte.');
+          expect(Array.from(root().querySelectorAll<HTMLElement>('#reach-counts .band-count')).map((count) => count.textContent)).toEqual(['0', '1', '0']);
           http.expectNone('/api/v1/routes/reach');
 
           // Without free locations.
           filters.set({ ...NO_FILTERS, minPowerKw: 300 });
           await settle();
           await flushLocations();
-          http.expectOne('/api/v1/locations/within').flush(locationsOf([inReach[4]]));
-          await settle();
+          await answerWithin([inReach[4]], [1, 1, 1]);
           expect(text(root(), '#reach-locations ol li')).toBe('Gerade kein freier Ladepunkt in Reichweite.');
 
           // Removed while loading: the answer is dropped.
           filters.set({ ...NO_FILTERS });
           await settle();
           await flushLocations();
-          const late = http.expectOne('/api/v1/locations/within');
+          const late = http.match('/api/v1/locations/within');
           root().querySelector<HTMLButtonElement>('#reach-clear')!.click();
           await settle();
-          late.flush({ title: 'Error' }, { status: 500, statusText: 'Error' });
+          late.forEach((request) => request.flush({ title: 'Error' }, { status: 500, statusText: 'Error' }));
           await settle();
           expect(root().querySelector('#reach-locations')).toBeNull();
         });
@@ -1075,8 +1087,7 @@ describe('HomePage (map)', () => {
           await clickReach();
           http.expectOne('/api/v1/routes/reach').flush({ data: areas, meta: { attribution: [] } });
           await settle();
-          http.expectOne('/api/v1/locations/within').flush(locationsOf([]));
-          await settle();
+          await answerWithin([], [0, 0, 0]);
 
           // Asked again, then removed while the new one is calculated.
           await clickReach();
@@ -1577,8 +1588,15 @@ describe('RoutesService', () => {
     const within = TestBed.inject(RoutesService).within(geometry, { latitude: 48.2, longitude: 16.3 }, { ...NO_FILTERS, minPowerKw: 50 });
     const request = http.expectOne('/api/v1/locations/within');
     expect(request.request.body).toEqual({ geometry, center: { latitude: 48.2, longitude: 16.3 }, limit: 500, ...NO_FILTERS, minPowerKw: 50 });
-    request.flush({ data: [], meta: { returned: 0, limit: 500, truncated: false, attribution: [] } });
-    expect((await within).meta.returned).toBe(0);
+    request.flush({ data: [], meta: { returned: 0, total: 3, limit: 500, truncated: false, attribution: [] } });
+    expect((await within).meta.total).toBe(3);
+
+    // Limit 0 only counts.
+    const count = TestBed.inject(RoutesService).within(geometry, { latitude: 48.2, longitude: 16.3 }, NO_FILTERS, 0);
+    const counting = http.expectOne('/api/v1/locations/within');
+    expect(counting.request.body.limit).toBe(0);
+    counting.flush({ data: [], meta: { returned: 0, total: 7, limit: 0, truncated: true, attribution: [] } });
+    expect((await count).meta.total).toBe(7);
     http.verify();
   });
 
