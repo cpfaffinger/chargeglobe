@@ -121,7 +121,10 @@ public sealed class PollScheduler(
                 }
             }
 
-            while (await NextAsync(stoppingToken))
+            // Work for at most one interval, then sync again: with points always due (a busy source and a tight
+            // budget) the cycle would otherwise never end, and changed regions or intervals would wait for a restart.
+            var syncAgainAt = timeProvider.GetUtcNow() + Interval;
+            while (timeProvider.GetUtcNow() < syncAgainAt && await NextAsync(stoppingToken))
             {
             }
         }
