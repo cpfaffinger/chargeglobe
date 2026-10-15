@@ -18,7 +18,7 @@ import { Segment, combine, statusOf, timeline } from './status';
 import { OccupancyHeatmap, StatusTimeline } from './status-charts';
 import { CardsStore } from '../preferences/cards.store';
 import { EmpPrice, EvsePricesResponse, money, priceParts } from './prices';
-import { AVAILABILITY, tokenColor } from '../map/availability';
+import { AVAILABILITY, busyText, tokenColor } from '../map/availability';
 
 /** Days of the status timeline and weeks of the occupancy matrix. */
 const TIMELINE_DAYS = 7;
@@ -75,7 +75,7 @@ type LoadState = 'loading' | 'error' | 'ready';
             <span matChipAvatar class="status-dot" [style.background]="availabilityColor(location.availability)"
               ><app-icon [name]="availabilityIcon(location.availability)"
             /></span>
-            {{ location.evsesAvailable }} von {{ location.evsesTotal }} Ladepunkten frei
+            {{ location.evsesAvailable }} von {{ location.evsesTotal }} Ladepunkten frei{{ busy(location) }}
           </mat-chip>
           @if (location.maxPowerKw !== null) {
             <mat-chip [disableRipple]="true">bis {{ location.maxPowerKw | number: '1.0-1' : 'en-US' }} kW</mat-chip>
@@ -123,6 +123,12 @@ type LoadState = 'loading' | 'error' | 'ready';
                 }
               </p>
               <p class="connectors">{{ connectors(evse) }}</p>
+              @if (evse.connectors.length > 1) {
+                <p class="connector-note">
+                  Ein Status für alle Stecker: Die Quelle meldet die Belegung je Ladepunkt. Lädt an einem Stecker ein Auto,
+                  gilt der ganze Ladepunkt als belegt.
+                </p>
+              }
               @if (prices) {
                 @switch (priceState(evse.id)) {
                   @case ('loading') {
@@ -260,6 +266,7 @@ export class LocationDetails {
   protected readonly timelineDays = TIMELINE_DAYS;
   protected readonly occupancyWeeks = OCCUPANCY_WEEKS;
   protected readonly statusOf = statusOf;
+  protected readonly busy = busyText;
   protected readonly availabilityColor = (key: keyof typeof AVAILABILITY) => tokenColor(AVAILABILITY[key].token);
   protected readonly availabilityIcon = (key: keyof typeof AVAILABILITY) => AVAILABILITY[key].icon;
 

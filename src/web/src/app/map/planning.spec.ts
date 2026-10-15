@@ -9,7 +9,8 @@ import {
   planCharging,
   validVehicle,
 } from './charging-plan';
-import { CLUSTER_PROPERTIES, clusterCounts, clusterPie, clusterRadius } from './cluster-pie';
+import { CLUSTER_PROPERTIES, clusterCounts, clusterPie, clusterRadius, pointProperties } from './cluster-pie';
+import { busyText, evseShares } from './availability';
 import { RouteLocation, locationPlace, ownPlace, pointPlace } from './routes.service';
 import { LEGEND_STORAGE_KEY, MapHints, TRUNCATED_SNOOZE_KEY, TRUNCATED_SNOOZE_MS } from './map-hints';
 
@@ -140,7 +141,20 @@ describe('cluster pies', () => {
   const counts = (values: Partial<Record<MarkerKey, number>>) => clusterCounts(values);
 
   it('sums the markers of a cluster and reads them back', () => {
-    expect(CLUSTER_PROPERTIES.OCCUPIED).toEqual(['+', ['case', ['==', ['get', 'marker'], 'OCCUPIED'], 1, 0]]);
+    // EVSEs, not locations: free ones by the power class of their location, the others by their state.
+    expect(CLUSTER_PROPERTIES.AVAILABLE_FAST).toEqual(['+', ['case', ['==', ['get', 'marker'], 'AVAILABLE_FAST'], ['get', 'free'], 0]]);
+    expect(CLUSTER_PROPERTIES.OCCUPIED).toEqual(['+', ['get', 'occupied']]);
+    expect(CLUSTER_PROPERTIES.OUT_OF_ORDER).toEqual(['+', ['get', 'faulted']]);
+    expect(CLUSTER_PROPERTIES.UNKNOWN).toEqual(['+', ['get', 'unknown']]);
+    expect(pointProperties({ evsesTotal: 5, evsesAvailable: 2, evsesOccupied: 1, evsesFaulted: 1 })).toEqual({
+      free: 2,
+      occupied: 1,
+      faulted: 1,
+      unknown: 1,
+      total: 5,
+    });
+    // A location without EVSEs still counts once.
+    expect(pointProperties({ evsesTotal: 0, evsesAvailable: 0, evsesOccupied: 0, evsesFaulted: 0 }).unknown).toBe(1);
     expect(clusterCounts({ AVAILABLE: 3, UNKNOWN: '2' })).toEqual({
       AVAILABLE: 3,
       AVAILABLE_FAST: 0,
@@ -153,7 +167,7 @@ describe('cluster pies', () => {
   });
 
   it('draws one segment per marker with the count in the middle', () => {
-    const svg = new DOMParser().parseFromString(clusterPie(counts({ AVAILABLE: 30, OCCUPIED: 10, UNKNOWN: 10 }), colors, labels), 'image/svg+xml');
+    const svg = new DOMParser().parseFromString(clusterPie(counts({ AVAILABLE: 30, OCCUPIED: 10, UNKNOWN: 10 }), colors, labels, 50), 'image/svg+xml');
 
     const paths = Array.from(svg.querySelectorAll('path'));
     expect(paths.map((path) => path.getAttribute('fill'))).toEqual([colors.status.AVAILABLE, colors.status.OCCUPIED, colors.status.UNKNOWN]);
@@ -162,11 +176,11 @@ describe('cluster pies', () => {
     expect(paths[1].getAttribute('d')).toContain(' 0 0 1 ');
     expect(svg.querySelector('text')!.textContent).toBe('50');
     expect(svg.querySelector('text')!.getAttribute('font-size')).toBe('12');
-    expect(svg.querySelector('title')!.textContent).toBe('50 Standorte: 30 frei bis 22 kW, 10 belegt, 10 Status unbekannt');
+    expect(svg.querySelector('title')!.textContent).toBe('50 Standorte, 50 Ladepunkte: 30 frei bis 22 kW, 10 belegt, 10 Status unbekannt');
   });
 
   it('draws a full circle for a cluster of one kind', () => {
-    const svg = new DOMParser().parseFromString(clusterPie(counts({ OUT_OF_ORDER: 4 }), colors, labels), 'image/svg+xml');
+    const svg = new DOMParser().parseFromString(clusterPie(counts({ OUT_OF_ORDER: 4 }), colors, labels, 2), 'image/svg+xml');
 
     expect(svg.querySelectorAll('path').length).toBe(0);
     expect(Array.from(svg.querySelectorAll('circle')).map((circle) => circle.getAttribute('fill'))).toEqual([
@@ -218,5 +232,16 @@ describe('MapHints', () => {
     hints.setLegend(false);
     expect(hints.legendVisible()).toBeFalse();
     expect(() => hints.snoozeTruncated()).not.toThrow();
+  });
+});
+
+describe('partly occupied locations', () => {
+  it('splits the EVSEs of a location by state and tells what is busy', () => {
+    const location = { evsesTotal: 6, evsesAvailable: 2, evsesOccupied: 2, evsesFaulted: 1 };
+    expect(evseShares(location)).toEqual({ free: 2, occupied: 2, faulted: 1, unknown: 1 });
+    expect(evseShares({ ...location, evsesTotal: 3 }).unknown).toBe(0);
+    expect(busyText(location)).toBe(' · 2 belegt · 1 außer Betrieb');
+    expect(busyText({ evsesOccupied: 1, evsesFaulted: 0 })).toBe(' · 1 belegt');
+    expect(busyText({ evsesOccupied: 0, evsesFaulted: 0 })).toBe('');
   });
 });

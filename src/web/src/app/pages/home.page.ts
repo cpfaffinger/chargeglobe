@@ -25,7 +25,7 @@ import { money } from '../evses/prices';
 import { CardsStore } from '../preferences/cards.store';
 import { BATTERY, CONSUMPTION, DEFAULT_ARRIVAL_SOC, DEFAULT_START_SOC, PlannedStop, SOC, Vehicle, VehicleStore, planCharging } from '../map/charging-plan';
 import { FavoriteButton } from '../favorites/favorite-button';
-import { MARKERS, MARKER_KEYS, MarkerKey, markerOf, resolveColors, tokenColor } from '../map/availability';
+import { MARKERS, MARKER_KEYS, MarkerKey, busyText, markerOf, resolveColors, tokenColor } from '../map/availability';
 import { BrowserCapabilities } from '../map/browser-capabilities';
 import { MapConfig, MapConfigService } from '../map/map-config.service';
 import { GeolocateEvent, MapEngine, MapHandle, MapTheme } from '../map/map-engine';
@@ -155,7 +155,7 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
             }
             <p class="availability">
               <span class="status-dot" [style.background]="color(marker(location))"><app-icon [name]="markers[marker(location)].icon" /></span>
-              {{ location.evsesAvailable }} von {{ location.evsesTotal }} Ladepunkten frei
+              {{ location.evsesAvailable }} von {{ location.evsesTotal }} Ladepunkten frei{{ busyParts(location) }}
               @if (location.maxPowerKw !== null) {
                 · bis {{ location.maxPowerKw | number: '1.0-1' : 'en-US' }} kW
               }
@@ -266,7 +266,7 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
                         }
                         <span class="stop-state">
                           <span class="status-dot" [style.background]="color(marker(stop))"><app-icon [name]="markers[marker(stop)].icon" /></span>
-                          {{ stop.evsesAvailable }} von {{ stop.evsesTotal }} frei
+                          {{ stop.evsesAvailable }} von {{ stop.evsesTotal }} frei{{ busyParts(stop) }}
                           @if (stop.maxAvailablePowerKw !== null) {
                             · bis {{ stop.maxAvailablePowerKw | number: '1.0-1' : 'en-US' }} kW frei
                           }
@@ -322,7 +322,7 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
                       <button type="button" class="open-stop" [attr.data-location]="location.id" (click)="openStop(location)">
                         <span class="stop-name">{{ location.name ?? 'Ladestandort' }}</span>
                         <span class="stop-state">
-                          bis {{ location.maxAvailablePowerKw | number: '1.0-1' : 'en-US' }} kW frei · {{ location.evsesAvailable }} von {{ location.evsesTotal }} frei
+                          bis {{ location.maxAvailablePowerKw | number: '1.0-1' : 'en-US' }} kW frei · {{ location.evsesAvailable }} von {{ location.evsesTotal }} frei{{ busyParts(location) }}
                           @if (bandLabel(location); as label) {
                             · {{ label }}
                           }
@@ -998,6 +998,8 @@ export class HomePage {
     this.truncatedShown.set(false);
     this.hints.snoozeTruncated();
   }
+
+  protected readonly busyParts = busyText;
 
   protected percent(value: number): number {
     return Math.round(value);

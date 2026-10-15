@@ -467,6 +467,7 @@ describe('HomePage (map)', () => {
       maxPowerKw: null,
       statusObservedAt: null,
       availability: 'OUT_OF_ORDER',
+      evsesFaulted: 3,
     });
     const attributionText = 'Datenquelle: Ladestellenverzeichnis der E-Control (ladestellen.at)';
 
@@ -1629,7 +1630,8 @@ describe('HomePage (map)', () => {
       await settle();
       expect(text(root(), '#location-card h2')).toBe('Ladestandort');
       expect(root().querySelector('#location-card .operator')).toBeNull();
-      expect(text(root(), '#location-card .availability')).toBe('0 von 4 Ladepunkten frei');
+      // Partly out of order: the card says so.
+      expect(text(root(), '#location-card .availability')).toBe('0 von 4 Ladepunkten frei · 3 außer Betrieb');
       expect(text(root(), '#location-card .status-age')).toBe('Kein aktueller Status');
 
       root().querySelector<HTMLButtonElement>('#close-card')!.click();

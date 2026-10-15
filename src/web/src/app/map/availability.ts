@@ -42,6 +42,35 @@ export function markerOf(location: { availability: Availability; maxAvailablePow
   return power >= HPC_FROM_KW ? 'AVAILABLE_HPC' : power > FAST_ABOVE_KW ? 'AVAILABLE_FAST' : 'AVAILABLE';
 }
 
+/** The EVSEs of a location by their current state; unknown are those without a current status. */
+export interface EvseShares {
+  free: number;
+  occupied: number;
+  faulted: number;
+  unknown: number;
+}
+
+export function evseShares(location: { evsesTotal: number; evsesAvailable: number; evsesOccupied: number; evsesFaulted: number }): EvseShares {
+  return {
+    free: location.evsesAvailable,
+    occupied: location.evsesOccupied,
+    faulted: location.evsesFaulted,
+    unknown: Math.max(0, location.evsesTotal - location.evsesAvailable - location.evsesOccupied - location.evsesFaulted),
+  };
+}
+
+/**
+ * What else is going on at a location besides the free EVSEs, e.g. " · 1 belegt · 1 außer Betrieb"; empty when nothing
+ * is occupied or out of order. A location with free EVSEs shows as free, this tells that it is only partly free.
+ */
+export function busyText(location: { evsesOccupied: number; evsesFaulted: number }): string {
+  const parts = [
+    ...(location.evsesOccupied > 0 ? [`${location.evsesOccupied} belegt`] : []),
+    ...(location.evsesFaulted > 0 ? [`${location.evsesFaulted} außer Betrieb`] : []),
+  ];
+  return parts.map((part) => ` · ${part}`).join('');
+}
+
 /** CSS value of a token, for templates. */
 export const tokenColor = (token: string): string => `var(${token})`;
 

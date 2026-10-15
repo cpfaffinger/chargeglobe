@@ -15,6 +15,11 @@ const HIT: SearchHit = {
   latitude: 48.2085,
   longitude: 16.3731,
   evseId: 'AT*TST*E1*1',
+  availability: 'AVAILABLE',
+  evsesTotal: 4,
+  evsesAvailable: 2,
+  evsesOccupied: 1,
+  evseStatus: 'CHARGING',
 };
 
 describe('SearchService', () => {
@@ -85,6 +90,10 @@ describe('LocationSearch', () => {
     expect(options().map((option) => text(option, '.hit-label'))).toEqual(['AT*TST*E1*1', 'Parkgarage']);
     expect(text(options()[0], '.hit-detail')).toBe('Stephansplatz 1, 1010 Wien');
     expect(options()[1].querySelector('.hit-detail')).toBeNull();
+    // An EVSE by its own status, a location by how free it is, partly occupied included.
+    expect(options().map((option) => text(option, '.hit-status'))).toEqual(['lädt', '2 von 4 frei · 1 belegt']);
+    expect(options()[0].querySelector<HTMLElement>('.hit-status .status-dot')!.style.background).toBe('var(--cg-status-occupied)');
+    expect(options()[1].querySelector<HTMLElement>('.hit-status .status-dot')!.style.background).toBe('var(--cg-status-available)');
 
     options()[0].click();
     await settle();

@@ -201,7 +201,10 @@ describe('LocationDetailPage', () => {
     status: 'SOMETHING_NEW',
     statusSince: null,
     maxPowerKw: null,
-    connectors: [{ standard: 'DOMESTIC_F', format: null, powerType: null, maxPowerKw: null }],
+    connectors: [
+      { standard: 'DOMESTIC_F', format: null, powerType: null, maxPowerKw: null },
+      { standard: 'IEC_62196_T2', format: null, powerType: null, maxPowerKw: null },
+    ],
   });
 
   function detail(evses: EvseDetail[]): LocationDetailResponse {
@@ -325,7 +328,12 @@ describe('LocationDetailPage', () => {
     expect(segments[1].title).toMatch(/^lädt: \d\d\.\d\d\. \d\d:\d\d – \d\d\.\d\d\. \d\d:\d\d$/);
     expect(text(second, 'h3')).toBe('XX*CG*E0123456789ABCDEF (ID von chargeglobe vergeben)');
     expect(text(second, '.status')).toBe('unbekannt');
-    expect(text(second, '.connectors')).toBe('DOMESTIC_F');
+    expect(text(second, '.connectors')).toBe('DOMESTIC_F, IEC_62196_T2');
+    // Several connectors share the status of their EVSE.
+    expect(first.querySelector('.connector-note')).toBeNull();
+    expect(text(second, '.connector-note')).toBe(
+      'Ein Status für alle Stecker: Die Quelle meldet die Belegung je Ladepunkt. Lädt an einem Stecker ein Auto, gilt der ganze Ladepunkt als belegt.',
+    );
     expect(text(second, '.timeline-state')).toBe('Keine Statusmeldungen in den letzten 7 Tagen.');
 
     expect(text(page(), '#utilization')).toBe(

@@ -93,6 +93,9 @@ public class LocationsApiTests(IntegrationFactory factory) : IClassFixture<Integ
         Assert.Equal(48.2085, stephansplatz.GetProperty("latitude").GetDouble(), 6);
         Assert.Equal(16.3731, stephansplatz.GetProperty("longitude").GetDouble(), 6);
         Assert.Equal("OUT_OF_ORDER", data[1].GetProperty("availability").GetString());
+        // One free and one charging at Stephansplatz; one out of order and one without status at the Ring.
+        Assert.Equal((1, 0), (stephansplatz.GetProperty("evsesOccupied").GetInt32(), stephansplatz.GetProperty("evsesFaulted").GetInt32()));
+        Assert.Equal((0, 1), (data[1].GetProperty("evsesOccupied").GetInt32(), data[1].GetProperty("evsesFaulted").GetInt32()));
         var facilities = stephansplatz.GetProperty("facilities");
         Assert.Equal(
             (true, false, false, 0, JsonValueKind.Null),
@@ -267,6 +270,8 @@ public class LocationsApiTests(IntegrationFactory factory) : IClassFixture<Integ
 
         var evses = detail.GetProperty("data").GetProperty("evses").EnumerateArray().ToList();
         Assert.Equal(["AVAILABLE", "CHARGING"], evses.Select(evse => evse.GetProperty("status").GetString()));
+        var summary = detail.GetProperty("data").GetProperty("location");
+        Assert.Equal((1, 1, 0), (summary.GetProperty("evsesAvailable").GetInt32(), summary.GetProperty("evsesOccupied").GetInt32(), summary.GetProperty("evsesFaulted").GetInt32()));
         Assert.True(evses[0].GetProperty("hasEvseId").GetBoolean());
         Assert.Equal("AT*TST*ETEST0001*1", evses[0].GetProperty("evseId").GetString());
         var connector = evses[0].GetProperty("connectors")[0];
@@ -321,11 +326,18 @@ public class LocationsApiTests(IntegrationFactory factory) : IClassFixture<Integ
         Assert.Equal(("LOCATION", "Teststation Stephansplatz", "Teststraße 1, 1010 Wien"), (
             location.GetProperty("type").GetString(), location.GetProperty("label").GetString(), location.GetProperty("detail").GetString()));
         Assert.Equal(48.2085, location.GetProperty("latitude").GetDouble(), 6);
+        // How free the location is now; a location hit has no status of its own.
+        Assert.Equal(("AVAILABLE", 2, 1, 1), (
+            location.GetProperty("availability").GetString(), location.GetProperty("evsesTotal").GetInt32(),
+            location.GetProperty("evsesAvailable").GetInt32(), location.GetProperty("evsesOccupied").GetInt32()));
+        Assert.Equal(JsonValueKind.Null, location.GetProperty("evseStatus").ValueKind);
 
         var evses = (await GetJsonAsync(client, "/api/v1/search?q=at-tst-etest0001")).GetProperty("data").EnumerateArray().ToList();
         Assert.Equal(["AT*TST*ETEST0001*1", "AT*TST*ETEST0001*2"], evses.Select(hit => hit.GetProperty("evseId").GetString()));
         Assert.All(evses, hit => Assert.Equal("EVSE", hit.GetProperty("type").GetString()));
         Assert.Equal("Teststation Stephansplatz, Teststraße 1, 1010 Wien", evses[0].GetProperty("detail").GetString());
+        Assert.Equal(["AVAILABLE", "CHARGING"], evses.Select(hit => hit.GetProperty("evseStatus").GetString()));
+        Assert.All(evses, hit => Assert.Equal(2, hit.GetProperty("evsesTotal").GetInt32()));
 
         var limited = await GetJsonAsync(client, "/api/v1/search?q=AT*TST*ETEST&limit=1");
         Assert.Equal((1, 1), (limited.GetProperty("meta").GetProperty("returned").GetInt32(), limited.GetProperty("meta").GetProperty("limit").GetInt32()));

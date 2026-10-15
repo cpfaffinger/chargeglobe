@@ -7,7 +7,7 @@ import { AuthService } from '../auth/auth.service';
 import { AppIcon } from '../design/icon';
 import { FavoriteButton } from '../favorites/favorite-button';
 import { FavoritesResponse, FavoritesService } from '../favorites/favorites.service';
-import { MARKERS, markerOf, tokenColor } from '../map/availability';
+import { MARKERS, busyText, markerOf, tokenColor } from '../map/availability';
 import { LocationSummary } from '../map/locations.service';
 
 /** The list refreshes itself in this interval, as long as the page is open. */
@@ -46,7 +46,7 @@ export const FAVORITES_REFRESH_MS = 60_000;
               </div>
               <p class="availability">
                 <span class="status-dot" [style.background]="color(location)"><app-icon [name]="icon(location)" /></span>
-                {{ location.evsesAvailable }} von {{ location.evsesTotal }} Ladepunkten frei
+                {{ location.evsesAvailable }} von {{ location.evsesTotal }} Ladepunkten frei{{ busy(location) }}
                 @if (location.maxAvailablePowerKw !== null) {
                   · frei bis {{ location.maxAvailablePowerKw | number: '1.0-1' : 'en-US' }} kW
                 } @else if (location.maxPowerKw !== null) {
@@ -81,6 +81,7 @@ export const FAVORITES_REFRESH_MS = 60_000;
   `,
 })
 export class FavoritesPage {
+  protected readonly busy = busyText;
   private readonly favorites = inject(FavoritesService);
 
   protected readonly canSeeDetails = inject(AuthService).hasPermission('evse:read');

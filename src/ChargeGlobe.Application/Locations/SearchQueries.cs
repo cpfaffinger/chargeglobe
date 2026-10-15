@@ -5,7 +5,24 @@ namespace ChargeGlobe.Application.Locations;
 /// <param name="Label">EVSE-ID or name of the location.</param>
 /// <param name="Detail">Address (and for an EVSE the name of its location).</param>
 /// <param name="EvseId">EVSE-ID with separators, for an EVSE hit.</param>
-public sealed record SearchHit(string Type, string Label, string? Detail, Guid LocationId, double Latitude, double Longitude, string? EvseId);
+/// <param name="Availability">Of the location, as in <see cref="LocationSummary.Availability"/>.</param>
+/// <param name="EvsesTotal">Active EVSEs of the location.</param>
+/// <param name="EvsesAvailable">Of these free now.</param>
+/// <param name="EvsesOccupied">Of these charging, blocked or reserved now.</param>
+/// <param name="EvseStatus">For an EVSE hit its current OCPI status (UNKNOWN if none is current); null for a location.</param>
+public sealed record SearchHit(
+    string Type,
+    string Label,
+    string? Detail,
+    Guid LocationId,
+    double Latitude,
+    double Longitude,
+    string? EvseId,
+    string Availability,
+    int EvsesTotal,
+    int EvsesAvailable,
+    int EvsesOccupied,
+    string? EvseStatus);
 
 /// <summary>Full-text search over the active locations and EVSEs (public, docs/06 "Suche").</summary>
 public interface ISearchQueries

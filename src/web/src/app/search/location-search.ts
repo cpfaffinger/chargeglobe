@@ -3,7 +3,9 @@ import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/ma
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Router } from '@angular/router';
-import { AppIcon } from '../design/icon';
+import { AppIcon, IconName } from '../design/icon';
+import { statusOf } from '../evses/status';
+import { AVAILABILITY, busyText, tokenColor } from '../map/availability';
 import { MapFocus, MIN_QUERY, SearchHit, SearchService } from './search.service';
 
 /** Waiting time after the last key stroke before the search runs. */
@@ -36,6 +38,10 @@ export const SEARCH_DELAY_MS = 250;
             @if (hit.detail) {
               <span class="hit-detail">{{ hit.detail }}</span>
             }
+            <span class="hit-status">
+              @let state = hitState(hit);
+              <span class="status-dot" [style.background]="state.color"><app-icon [name]="state.icon" /></span>{{ state.text }}
+            </span>
           </mat-option>
         }
         @if (failed()) {
@@ -48,6 +54,20 @@ export const SEARCH_DELAY_MS = 250;
   `,
 })
 export class LocationSearch {
+  /** An EVSE hit by its own status; a location by how many of its EVSEs are free, occupied or out of order. */
+  protected hitState(hit: SearchHit): { color: string; icon: IconName; text: string } {
+    if (hit.type === 'EVSE') {
+      const status = statusOf(hit.evseStatus ?? 'UNKNOWN');
+      return { color: status.color, icon: status.icon, text: status.label };
+    }
+    const availability = AVAILABILITY[hit.availability];
+    return {
+      color: tokenColor(availability.token),
+      icon: availability.icon,
+      text: `${hit.evsesAvailable} von ${hit.evsesTotal} frei${busyText({ evsesOccupied: hit.evsesOccupied, evsesFaulted: 0 })}`,
+    };
+  }
+
   private readonly search = inject(SearchService);
   private readonly focus = inject(MapFocus);
   private readonly router = inject(Router);

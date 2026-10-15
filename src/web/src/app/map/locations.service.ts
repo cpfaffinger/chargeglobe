@@ -31,6 +31,10 @@ export interface LocationSummary {
   availability: Availability;
   /** Highest power among the EVSEs that are free now; null if none is. */
   maxAvailablePowerKw: number | null;
+  /** EVSEs charging, blocked or reserved now. */
+  evsesOccupied: number;
+  /** EVSEs out of order now; the rest of evsesTotal has no current status. */
+  evsesFaulted: number;
 }
 
 export interface SourceAttribution {
