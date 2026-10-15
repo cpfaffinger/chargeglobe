@@ -25,8 +25,10 @@ import {
   RoutesService,
   byPrice,
   cheapest,
+  inArea,
   kilometres,
   routeSummary,
+  smallestArea,
   stopsSummary,
   withStop,
 } from './routes.service';
@@ -906,26 +908,38 @@ describe('HomePage (map)', () => {
 
       describe('reach', () => {
         const reachButton = () => root().querySelector<HTMLButtonElement>('#reach');
+        const square = (west: number, south: number, east: number, north: number): [number, number][] => [
+          [west, south],
+          [east, south],
+          [east, north],
+          [west, north],
+          [west, south],
+        ];
+        const area = (minutes: number, ...rings: [number, number][][]) => ({
+          type: 'Feature' as const,
+          properties: { minutes },
+          geometry: { type: 'MultiPolygon' as const, coordinates: [rings] },
+        });
+        // Nested areas; the smallest has a hole.
         const areas: ReachAreas = {
           type: 'FeatureCollection',
-          features: [60, 30, 15].map((minutes) => ({
-            type: 'Feature' as const,
-            properties: { minutes },
-            geometry: {
-              type: 'MultiPolygon' as const,
-              coordinates: [
-                [
-                  [
-                    [16.3, 48.2],
-                    [16.4, 48.2],
-                    [16.4, 48.3],
-                    [16.3, 48.2],
-                  ],
-                ],
-              ] as [number, number][][][],
-            },
-          })),
+          features: [
+            area(60, square(16.0, 48.0, 16.8, 48.6)),
+            area(30, square(16.2, 48.1, 16.5, 48.3)),
+            area(15, square(16.3, 48.15, 16.4, 48.25), square(16.33, 48.19, 16.34, 48.2)),
+          ],
         };
+        const inReach = [
+          locationSummary({ id: 'r-15', name: 'Nah', maxAvailablePowerKw: 22 }),
+          locationSummary({ id: 'r-hole', name: 'Im Loch', latitude: 48.195, longitude: 16.335, maxAvailablePowerKw: 150 }),
+          locationSummary({ id: 'r-60', name: null, latitude: 48.4, longitude: 16.6, maxAvailablePowerKw: 50 }),
+          locationSummary({ id: 'r-out', name: 'Draußen', latitude: 49, longitude: 17, maxAvailablePowerKw: 300 }),
+          locationSummary({ id: 'r-busy', name: 'Belegt', evsesAvailable: 0, maxAvailablePowerKw: null }),
+        ];
+        const locationsOf = (data: LocationSummary[], truncated = false) => ({
+          data,
+          meta: { returned: data.length, limit: 500, truncated, attribution: [] },
+        });
 
         async function showMap(): Promise<void> {
           auth.hasPermission.and.callFake((permission) => permission === 'route:read');
@@ -943,7 +957,7 @@ describe('HomePage (map)', () => {
           expect(reachButton()).toBeNull();
         });
 
-        it('shows the areas reachable from the own position and removes them', async () => {
+        it('shows the areas reachable from the own position, the locations in them and removes them', async () => {
           await showMap();
           expect(text(root(), '#reach')).toBe('Reichweite');
 
@@ -960,16 +974,108 @@ describe('HomePage (map)', () => {
           expect(text(root(), '#reach-summary')).toBe('Reichweite mit dem Auto: 15 · 30 · 60 min Reichweite entfernen');
           expect(reachButton()!.disabled).toBeFalse();
 
+          // The locations inside the largest area, from the own position, with the filters of the map.
+          const within = http.expectOne('/api/v1/locations/within');
+          expect(within.request.body).toEqual({
+            geometry: areas.features[0].geometry,
+            center: { latitude: 48.21, longitude: 16.37 },
+            limit: 500,
+            ...NO_FILTERS,
+          });
+          expect(text(root(), '#reach-locations p')).toBe('Ladepunkte in Reichweite werden gesucht …');
+          within.flush(locationsOf(inReach));
+          await settle();
+
+          expect(text(root(), '#reach-hint')).toBe('5 Standorte in Reichweite, mit den Filtern der Karte.');
+          const bands = Array.from(root().querySelectorAll<HTMLElement>('#reach-counts li'));
+          expect(bands.map((band) => [text(band, '.band-label'), text(band, '.band-count')])).toEqual([
+            ['bis 15 min', '2'],
+            ['15–30 min', '1'],
+            ['30–60 min', '1'],
+          ]);
+          const fastest = Array.from(root().querySelectorAll<HTMLButtonElement>('#reach-locations li button.open-stop'));
+          expect(fastest.map((button) => text(button, '.stop-name'))).toEqual(['Draußen', 'Im Loch', 'Ladestandort', 'Nah']);
+          expect(fastest.map((button) => text(button, '.stop-state'))).toEqual([
+            'bis 300 kW frei · 2 von 4 frei',
+            'bis 150 kW frei · 2 von 4 frei · 15–30 min',
+            'bis 50 kW frei · 2 von 4 frei · 30–60 min',
+            'bis 22 kW frei · 2 von 4 frei · bis 15 min',
+          ]);
+
+          // A location opens its card; closing it returns to the list.
+          fastest[1].click();
+          await settle();
+          expect(map.handle.flyTo).toHaveBeenCalledWith(48.195, 16.335, FOCUS_ZOOM);
+          expect(text(root(), '#location-card h2')).toBe('Im Loch');
+          root().querySelector<HTMLButtonElement>('#close-card')!.click();
+          await settle();
+          expect(root().querySelector('#reach-locations')).not.toBeNull();
+
           root().querySelector<HTMLButtonElement>('#reach-clear')!.click();
           await settle();
           expect(map.handle.showReach).toHaveBeenCalledWith(null);
           expect(root().querySelector('#reach-summary')).toBeNull();
+          expect(root().querySelector('#reach-locations')).toBeNull();
+        });
+
+        it('loads the locations again when the filters change, without a new reach, and drops older answers', async () => {
+          await showMap();
+          await clickReach();
+          http.expectOne('/api/v1/routes/reach').flush({ data: areas, meta: { attribution: [] } });
+          await settle();
+          http.expectOne('/api/v1/locations/within').flush({ title: 'Error' }, { status: 500, statusText: 'Error' });
+          await settle();
+          expect(text(root(), '#reach-locations .error')).toBe('Die Ladepunkte in Reichweite konnten nicht geladen werden.');
+
+          const filters = TestBed.inject(MapFilterStore);
+          const flushLocations = async () => {
+            for (const request of http.match((r) => r.urlWithParams.startsWith('/api/v1/locations?'))) {
+              request.flush(response());
+            }
+            await settle();
+          };
+          filters.set({ ...NO_FILTERS, minPowerKw: 50 });
+          await settle();
+          filters.set({ ...NO_FILTERS, minPowerKw: 150 });
+          await settle();
+          await flushLocations();
+          await flushLocations();
+          const [older, newer] = http.match('/api/v1/locations/within');
+          expect(newer.request.body.minPowerKw).toBe(150);
+          newer.flush(locationsOf([inReach[1]], true));
+          await settle();
+          older.flush(locationsOf(inReach));
+          await settle();
+          // The answer for the older filters is dropped.
+          expect(text(root(), '#reach-hint')).toBe('Die nächsten 1 Standorte in Reichweite, mit den Filtern der Karte.');
+          http.expectNone('/api/v1/routes/reach');
+
+          // Without free locations.
+          filters.set({ ...NO_FILTERS, minPowerKw: 300 });
+          await settle();
+          await flushLocations();
+          http.expectOne('/api/v1/locations/within').flush(locationsOf([inReach[4]]));
+          await settle();
+          expect(text(root(), '#reach-locations ol li')).toBe('Gerade kein freier Ladepunkt in Reichweite.');
+
+          // Removed while loading: the answer is dropped.
+          filters.set({ ...NO_FILTERS });
+          await settle();
+          await flushLocations();
+          const late = http.expectOne('/api/v1/locations/within');
+          root().querySelector<HTMLButtonElement>('#reach-clear')!.click();
+          await settle();
+          late.flush({ title: 'Error' }, { status: 500, statusText: 'Error' });
+          await settle();
+          expect(root().querySelector('#reach-locations')).toBeNull();
         });
 
         it('drops the answer for a reach removed meanwhile', async () => {
           await showMap();
           await clickReach();
           http.expectOne('/api/v1/routes/reach').flush({ data: areas, meta: { attribution: [] } });
+          await settle();
+          http.expectOne('/api/v1/locations/within').flush(locationsOf([]));
           await settle();
 
           // Asked again, then removed while the new one is calculated.
@@ -1461,6 +1567,41 @@ describe('RoutesService', () => {
     // A planned stop the filters hide keeps the position it was chosen at.
     expect(withStop([at('b', 2000)], at('c', 3000), along).map((s) => s.id)).toEqual(['b', 'c']);
     expect(withStop([at('b', 5000)], at('c', 3000), along).map((s) => s.id)).toEqual(['c', 'b']);
+  });
+
+  it('asks for the locations inside an area with the filters of the map', async () => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    const http = TestBed.inject(HttpTestingController);
+    const geometry = { type: 'MultiPolygon' as const, coordinates: [] as [number, number][][][] };
+
+    const within = TestBed.inject(RoutesService).within(geometry, { latitude: 48.2, longitude: 16.3 }, { ...NO_FILTERS, minPowerKw: 50 });
+    const request = http.expectOne('/api/v1/locations/within');
+    expect(request.request.body).toEqual({ geometry, center: { latitude: 48.2, longitude: 16.3 }, limit: 500, ...NO_FILTERS, minPowerKw: 50 });
+    request.flush({ data: [], meta: { returned: 0, limit: 500, truncated: false, attribution: [] } });
+    expect((await within).meta.returned).toBe(0);
+    http.verify();
+  });
+
+  it('finds the smallest area around a location, minding holes', () => {
+    const ring = (west: number, south: number, east: number, north: number): [number, number][] => [
+      [west, south],
+      [east, south],
+      [east, north],
+      [west, north],
+      [west, south],
+    ];
+    const areas: ReachAreas = {
+      type: 'FeatureCollection',
+      features: [
+        { type: 'Feature', properties: { kilometres: 50 }, geometry: { type: 'MultiPolygon', coordinates: [[ring(0, 0, 10, 10)], [ring(20, 20, 30, 30)]] } },
+        { type: 'Feature', properties: { kilometres: 20 }, geometry: { type: 'MultiPolygon', coordinates: [[ring(2, 2, 8, 8), ring(4, 4, 6, 6)]] } },
+      ],
+    };
+    expect(smallestArea({ latitude: 3, longitude: 3 }, areas)).toBe(20);
+    expect(smallestArea({ latitude: 5, longitude: 5 }, areas)).toBe(50);
+    expect(smallestArea({ latitude: 25, longitude: 25 }, areas)).toBe(50);
+    expect(smallestArea({ latitude: 15, longitude: 15 }, areas)).toBeNull();
+    expect(inArea({ latitude: 5, longitude: 5 }, areas.features[1])).toBeFalse();
   });
 
   it('asks for the areas reachable within the driving times', async () => {

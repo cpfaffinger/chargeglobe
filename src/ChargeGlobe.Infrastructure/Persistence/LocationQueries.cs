@@ -32,6 +32,9 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
     /// <summary>Stand-in line of the queries without route; the route condition is switched off for them.</summary>
     private static readonly GeoPoint[] NoRoute = [new(0, 0), new(1, 1)];
 
+    /// <summary>Stand-in area of the queries without area; the area condition is switched off for them.</summary>
+    private const string NoArea = """{"type":"MultiPolygon","coordinates":[[[[0,0],[1,0],[1,1],[0,0]]]]}""";
+
     public async Task<LocationPage> InBoundingBoxAsync(BoundingBox box, LocationFilter filter, int limit, CancellationToken cancellationToken)
     {
         var rows = await SummariesAsync(box, null, filter, limit + 1, cancellationToken);
@@ -47,6 +50,13 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
         return new RoutePage(locations, rows.Count > limit, await AttributionAsync([.. locations.Select(location => location.Id)], cancellationToken));
     }
 
+    public async Task<LocationPage> InAreaAsync(string areaGeoJson, GeoPoint? center, LocationFilter filter, int limit, CancellationToken cancellationToken)
+    {
+        var rows = await SummariesAsync(null, null, filter, limit + 1, cancellationToken, area: areaGeoJson, center: center);
+        var locations = rows.Take(limit).Select(row => row.ToSummary()).ToList();
+        return new LocationPage(locations, rows.Count > limit, await AttributionAsync([.. locations.Select(location => location.Id)], cancellationToken));
+    }
+
     public async Task<LocationPage> ByIdsAsync(IReadOnlyList<Guid> ids, CancellationToken cancellationToken)
     {
         var rows = await SummariesAsync(null, [.. ids], NoFilter, ids.Count, cancellationToken);
@@ -55,16 +65,20 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
     }
 
     /// <summary>
-    /// Active locations with the counts of their EVSEs: in the box (nearest to its centre first), with one of the ids, or
-    /// within <paramref name="corridorMeters"/> of the route (in the order of the route), matching the filter, at most
-    /// <paramref name="take"/>. The line is simplified (about 10 m) and cast to geography and measured once in the CTE;
-    /// the position on the route is the share of the line (in degrees) up to the closest point times its length in metres –
-    /// close enough to order the stops and tell the kilometre.
+    /// Active locations with the counts of their EVSEs: in the box (nearest to its centre first), with one of the ids,
+    /// within <paramref name="corridorMeters"/> of the route (in the order of the route) or inside the area (nearest to
+    /// <paramref name="center"/> or its centroid first), matching the filter, at most <paramref name="take"/>. The line is
+    /// simplified (about 10 m) and cast to geography and measured once in the CTE; the position on the route is the share
+    /// of the line (in degrees) up to the closest point times its length in metres – close enough to order the stops and
+    /// tell the kilometre. The area is likewise simplified and repaired once; its bounding box selects candidates over the
+    /// GiST index, <c>ST_Intersects</c> on geometry decides.
     /// </summary>
     private Task<List<SummaryRow>> SummariesAsync(
         BoundingBox? within, Guid[]? ids, LocationFilter filter, int take, CancellationToken cancellationToken,
-        IReadOnlyList<GeoPoint>? route = null, int corridorMeters = 0)
+        IReadOnlyList<GeoPoint>? route = null, int corridorMeters = 0, string? area = null, GeoPoint? center = null)
     {
+        var anyArea = area is null;
+        var areaJson = area ?? NoArea;
         var anyRoute = route is null;
         var line = route ?? NoRoute;
         double[] longitudes = [.. line.Select(point => point.Longitude)];
@@ -77,8 +91,9 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
         string[] connectors = [.. filter.Connectors];
         var operatorPattern = filter.Operator is null ? null : LikePattern.Contains(filter.Operator);
         Guid[] operatorIds = [.. filter.OperatorIds];
-        var centerLongitude = (box.MinLongitude + box.MaxLongitude) / 2;
-        var centerLatitude = (box.MinLatitude + box.MaxLatitude) / 2;
+        // Without an own centre the area mode orders by the distance to the centroid of the area.
+        double? centerLongitude = center?.Longitude ?? (anyArea ? (box.MinLongitude + box.MaxLongitude) / 2 : null);
+        double? centerLatitude = center?.Latitude ?? (anyArea ? (box.MinLatitude + box.MaxLatitude) / 2 : null);
         return db.Database
             .SqlQuery<SummaryRow>($"""
                 WITH route AS MATERIALIZED (
@@ -86,7 +101,13 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
                     FROM (SELECT ST_Simplify(ST_SetSRID(ST_MakeLine(ARRAY(
                         SELECT ST_MakePoint(p.x, p.y)
                         FROM unnest({longitudes}::float8[], {latitudes}::float8[]) WITH ORDINALITY AS p(x, y, n)
-                        ORDER BY p.n)), 4326), {SimplifyDegrees}) AS g) r)
+                        ORDER BY p.n)), 4326), {SimplifyDegrees}) AS g) r),
+                area AS MATERIALIZED (
+                    SELECT a.g, a.g::geography AS gg
+                    FROM (SELECT ST_MakeValid(ST_SimplifyPreserveTopology(ST_SetSRID(ST_GeomFromGeoJSON({areaJson}), 4326), {SimplifyDegrees})) AS g) a),
+                origin AS MATERIALIZED (
+                    SELECT COALESCE(ST_SetSRID(ST_MakePoint({centerLongitude}::float8, {centerLatitude}::float8), 4326),
+                                    ST_Centroid((SELECT g FROM area)))::geography AS o)
                 SELECT l.id AS "Id", l.name AS "Name", l.address AS "Address", l.postal_code AS "PostalCode", l.city AS "City",
                        l.country AS "Country", ST_Y(l.geom::geometry) AS "Latitude", ST_X(l.geom::geometry) AS "Longitude",
                        o.name AS "Operator",
@@ -110,6 +131,7 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
                   AND ({anyBox} OR l.geom && ST_MakeEnvelope({box.MinLongitude}, {box.MinLatitude}, {box.MaxLongitude}, {box.MaxLatitude}, 4326)::geography)
                   AND ({anyId} OR l.id = ANY({wanted}::uuid[]))
                   AND ({anyRoute} OR ST_DWithin(l.geom, (SELECT gg FROM route), {corridorMeters}))
+                  AND ({anyArea} OR (l.geom && (SELECT gg FROM area) AND ST_Intersects(l.geom::geometry, (SELECT g FROM area))))
                   AND ({operatorPattern}::text IS NULL OR o.name ILIKE {operatorPattern}::text)
                   AND (cardinality({operatorIds}::uuid[]) = 0 OR l.operator_id = ANY({operatorIds}::uuid[]))
                   AND (NOT {filter.GreenEnergy} OR l.green_energy)
@@ -126,7 +148,7 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
                 GROUP BY l.id, o.name
                 HAVING NOT {filter.AvailableOnly} OR count(e.id) FILTER (WHERE c.status = 'AVAILABLE' AND c.observed_at >= {fresh}) > 0
                 ORDER BY CASE WHEN {anyRoute} THEN 0 ELSE ST_LineLocatePoint((SELECT g FROM route), l.geom::geometry) END,
-                         l.geom <-> ST_SetSRID(ST_MakePoint({centerLongitude}, {centerLatitude}), 4326)::geography, l.id
+                         l.geom <-> (SELECT o FROM origin), l.id
                 LIMIT {take}
                 """)
             .ToListAsync(cancellationToken);
