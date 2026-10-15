@@ -142,6 +142,7 @@ public static class ApiSetup
         app.MapMailEndpoints();
         app.MapLocationsEndpoints();
         app.MapEvsesEndpoints();
+        app.MapLocationPricesEndpoints();
         app.MapCrawlerEndpoints();
         app.MapUsersEndpoints();
         app.MapSearchEndpoints();

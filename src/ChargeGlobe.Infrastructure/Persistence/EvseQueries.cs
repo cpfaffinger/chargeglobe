@@ -141,34 +141,100 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
     /// </summary>
     private async Task<IReadOnlyList<EmpPrice>> EmpPricesAsync(Guid id, CancellationToken cancellationToken)
     {
-        var evse = await db.Evses.AsNoTracking()
-            .Where(item => item.Id == id)
-            .Select(item => new
-            {
-                item.PowerType,
-                Dc = item.Connectors.Any(connector => connector.PowerType == PowerType.DC),
-                item.Roaming,
-                OperatorId = item.OperatorId ?? db.Locations.Where(location => location.Id == item.LocationId).Select(location => location.OperatorId).FirstOrDefault(),
-            })
-            .SingleAsync(cancellationToken);
-        var powerType = evse.PowerType ?? (evse.Dc ? PowerType.DC : null);
-        var now = timeProvider.GetUtcNow();
-        var tariffs = await db.Tariffs.AsNoTracking()
-            .Where(tariff => tariff.ValidFrom <= now && (tariff.ValidTo == null || tariff.ValidTo > now))
-            .Join(db.Emps, tariff => tariff.EmpId, emp => emp.Id, (tariff, emp) => new { Tariff = tariff, emp.Key, emp.Name })
-            .ToListAsync(cancellationToken);
-        return [.. tariffs
-            .Where(row => row.Tariff.AppliesTo(evse.OperatorId, evse.Roaming))
-            .Select(row => new EmpPrice(
-                row.Key, row.Name, row.Tariff.Id, row.Tariff.Name, row.Tariff.MonthlyFee, View($"emp:{row.Key}", row.Tariff.ComponentsFor(powerType))))
-            .OrderBy(price => price.Price.ExampleCost)
-            .ThenBy(price => price.EmpName, StringComparer.Ordinal)
-            .ThenBy(price => price.Tariff, StringComparer.Ordinal)];
+        var evse = await TariffTargets(db.Evses.Where(item => item.Id == id)).SingleAsync(cancellationToken);
+        return [.. EmpPrices(await ValidTariffsAsync(cancellationToken), evse, PriceExample.Kwh, PriceExample.Minutes)];
     }
 
-    private static PriceView View(string source, PriceComponents price) =>
+    public async Task<LocationPricesPage> LocationPricesAsync(
+        IReadOnlyList<Guid> locationIds, decimal kwh, int minutes, IReadOnlyCollection<string>? cards, CancellationToken cancellationToken)
+    {
+        var ids = locationIds.Distinct().ToList();
+        // Three batch queries for all locations: their EVSEs, the ad-hoc prices of these, the tariffs valid now.
+        var evses = await TariffTargets(db.Evses.Where(evse => ids.Contains(evse.LocationId) && evse.Lifecycle == Lifecycle.ACTIVE))
+            .ToListAsync(cancellationToken);
+        var evseIds = evses.Select(evse => evse.Id).ToList();
+        var adHoc = (await db.EvsePriceCurrent.AsNoTracking()
+                .Where(price => evseIds.Contains(price.EvseId) && price.TariffKind == TariffKind.AD_HOC)
+                .ToListAsync(cancellationToken))
+            .GroupBy(price => price.EvseId)
+            .ToDictionary(prices => prices.Key, prices => prices.MaxBy(price => price.ObservedAt)!);
+        var tariffs = (await ValidTariffsAsync(cancellationToken)).Where(row => cards is null || cards.Contains(row.Key)).ToList();
+        var byLocation = evses.ToLookup(evse => evse.LocationId);
+
+        var locations = ids.Select(id =>
+        {
+            // Ties go to the first EVSE-ID.
+            var here = byLocation[id].OrderBy(evse => evse.EvseId, StringComparer.Ordinal).ToList();
+            var cheapestAdHoc = here
+                .Where(evse => adHoc.ContainsKey(evse.Id))
+                .Select(evse => (evse.EvseId, Price: adHoc[evse.Id].Components))
+                .Select(item => new LocationAdHocPrice(item.Price.CostOf(kwh, minutes), item.Price.Currency, item.EvseId))
+                .OrderBy(price => price.Cost)
+                .FirstOrDefault();
+            var cheapestCard = here
+                .Select(evse => (evse.EvseId, Card: EmpPrices(tariffs, evse, kwh, minutes).FirstOrDefault()))
+                .Where(item => item.Card is not null)
+                .OrderBy(item => item.Card!.Price.ExampleCost)
+                .Select(item => new LocationCardPrice(
+                    item.Card!.Emp, item.Card.EmpName, item.Card.TariffId, item.Card.Tariff, item.Card.Price.ExampleCost, item.Card.Price.Currency, item.EvseId))
+                .FirstOrDefault();
+            return new LocationPrices(id, cheapestAdHoc, cheapestCard);
+        }).ToList();
+
+        var sources = adHoc.Values.Select(price => price.SourceKey).Distinct().ToList();
+        var attribution = await db.Sources
+            .Where(source => sources.Contains(source.Key))
+            .OrderBy(source => source.Key)
+            .Select(source => new SourceAttribution(source.Key, source.AttributionText, source.License))
+            .ToListAsync(cancellationToken);
+        return new LocationPricesPage(locations, attribution);
+    }
+
+    /// <summary>What decides which tariffs apply at an EVSE and with which energy price.</summary>
+    private sealed record TariffTarget(Guid Id, Guid LocationId, string EvseId, PowerType? PowerType, bool Dc, bool? Roaming, Guid? OperatorId)
+    {
+        /// <summary>The current type: DC if the EVSE or one of its connectors is DC.</summary>
+        public PowerType? CurrentType => PowerType ?? (Dc ? Domain.Charging.PowerType.DC : null);
+    }
+
+    private sealed record TariffRow(Tariff Tariff, string Key, string Name);
+
+    private IQueryable<TariffTarget> TariffTargets(IQueryable<Evse> evses) =>
+        evses.AsNoTracking().Select(item => new TariffTarget(
+            item.Id,
+            item.LocationId,
+            item.EvseIdDisplay,
+            item.PowerType,
+            item.Connectors.Any(connector => connector.PowerType == PowerType.DC),
+            item.Roaming,
+            item.OperatorId ?? db.Locations.Where(location => location.Id == item.LocationId).Select(location => location.OperatorId).FirstOrDefault()));
+
+    /// <summary>The tariffs valid now with their EMP; there are few, they are filtered in memory.</summary>
+    private async Task<List<TariffRow>> ValidTariffsAsync(CancellationToken cancellationToken)
+    {
+        var now = timeProvider.GetUtcNow();
+        return await db.Tariffs.AsNoTracking()
+            .Where(tariff => tariff.ValidFrom <= now && (tariff.ValidTo == null || tariff.ValidTo > now))
+            .Join(db.Emps, tariff => tariff.EmpId, emp => emp.Id, (tariff, emp) => new TariffRow(tariff, emp.Key, emp.Name))
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// The tariffs that apply at the EVSE (own network by operator, otherwise roaming), with the energy price for its
+    /// current type, cheapest session first.
+    /// </summary>
+    private static IEnumerable<EmpPrice> EmpPrices(IEnumerable<TariffRow> tariffs, TariffTarget evse, decimal kwh, int minutes) =>
+        tariffs
+            .Where(row => row.Tariff.AppliesTo(evse.OperatorId, evse.Roaming))
+            .Select(row => new EmpPrice(
+                row.Key, row.Name, row.Tariff.Id, row.Tariff.Name, row.Tariff.MonthlyFee, View($"emp:{row.Key}", row.Tariff.ComponentsFor(evse.CurrentType), kwh, minutes)))
+            .OrderBy(price => price.Price.ExampleCost)
+            .ThenBy(price => price.EmpName, StringComparer.Ordinal)
+            .ThenBy(price => price.Tariff, StringComparer.Ordinal);
+
+    private static PriceView View(string source, PriceComponents price, decimal kwh = PriceExample.Kwh, int minutes = PriceExample.Minutes) =>
         new(source, price.Currency, price.PricePerKwh, price.PricePerMinute, price.SessionFee, price.BlockingFeePerMinute,
-            price.BlockingAfterMinutes, price.FreeOfCharge, price.CostOf(PriceExample.Kwh, PriceExample.Minutes));
+            price.BlockingAfterMinutes, price.FreeOfCharge, price.CostOf(kwh, minutes));
 
     public async Task<IReadOnlyList<StatusInterval>> StatusHistoryAsync(
         Guid id, DateTimeOffset from, DateTimeOffset to, string? source, CancellationToken cancellationToken)

@@ -66,6 +66,7 @@
 - [ ] Status-Zweitquellen (CPO-direkt) für Latenz-/Qualitätsvergleich mit E-Control
 - [x] Ladepunkte entlang einer Route (`POST /routes/locations`, Korridor 100–5.000 m, Filter der Karte; Liste „Unterwegs laden“ mit Ringen auf der Karte, lädt bei Filteränderung neu)
 - [x] Ladestopps in die Route einplanen (bis zu 3 Zwischenziele aus „Unterwegs laden“, in Reihenfolge der Route, einzeln entfernbar)
+- [x] Preise entlang der Route (`POST /locations/prices`: günstigster Ad-hoc-Preis und günstigste eigene Karte je Standort in einem Request; in „Unterwegs laden“ mit Umschalter „günstigste zuerst“)
 - [ ] OSM-Extrakt-Aktualisierung als Worker-Job
 - [ ] Vector-Tiles, Admin-UI (Konflikte, Match-Review, Provider-Health), Vorschlags-Workflow für Agenten (`proposal:write`)
 - [ ] MCP-Server aus der OpenAPI-Beschreibung generieren (optional)

@@ -4,6 +4,7 @@ import {
   DestroyRef,
   ElementRef,
   afterNextRender,
+  computed,
   effect,
   inject,
   signal,
@@ -11,6 +12,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MatMenuModule } from '@angular/material/menu';
@@ -18,6 +20,8 @@ import { AuthService } from '../auth/auth.service';
 import { AppIcon } from '../design/icon';
 import { ThemeService, Viewport } from '../design/theme.service';
 import { LocationDetails } from '../evses/location-details';
+import { money } from '../evses/prices';
+import { CardsStore } from '../preferences/cards.store';
 import { FavoriteButton } from '../favorites/favorite-button';
 import { MARKERS, MARKER_KEYS, MarkerKey, markerOf, resolveColors, tokenColor } from '../map/availability';
 import { BrowserCapabilities } from '../map/browser-capabilities';
@@ -31,10 +35,14 @@ import { MapLink, ShareResult } from '../map/map-link';
 import { MapView, MapViewStore } from '../map/map-view.store';
 import {
   MAX_CHARGING_STOPS,
+  PRICE_SESSION_KWH,
   RouteLocation,
   RouteResponse,
   RoutesService,
+  StopPrice,
   Trip,
+  byPrice,
+  cheapest,
   kilometres,
   routeSummary,
   stopsSummary,
@@ -101,7 +109,8 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
  * configuration. The position is processed in the browser only and never sent to the API.
  */
 @Component({
-  imports: [AppIcon, DatePipe, DecimalPipe, FavoriteButton, LocationDetails, MapFilterPanel, MapOptionsPanel, MatButtonModule, MatCardModule, MatMenuModule, NgTemplateOutlet],
+  imports: [AppIcon, DatePipe, DecimalPipe, FavoriteButton, LocationDetails, MapFilterPanel, MapOptionsPanel, MatButtonModule,
+    MatButtonToggleModule, MatCardModule, MatMenuModule, NgTemplateOutlet],
   selector: 'app-home',
   host: { '[class.has-card]': 'selected() !== null || stopsState() !== null', '[class.has-filters]': 'filtersOpen() || optionsOpen()' },
   template: `
@@ -162,8 +171,18 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
               }
               @default {
                 <p class="muted" id="stops-hint">{{ stopsTruncated() ? 'Die ersten ' : '' }}{{ stops().length }} Standorte bis 1 km neben der Route, mit den Filtern der Karte.</p>
+                @if (canPrice() && stops().length > 0) {
+                  <div class="stops-order">
+                    <span id="stops-order-label">Reihenfolge:</span>
+                    <mat-button-toggle-group id="stops-order" hideSingleSelectionIndicator aria-labelledby="stops-order-label"
+                      [value]="stopsOrder()" (change)="stopsOrder.set($event.value)">
+                      <mat-button-toggle value="route">Route</mat-button-toggle>
+                      <mat-button-toggle value="price">günstigste zuerst</mat-button-toggle>
+                    </mat-button-toggle-group>
+                  </div>
+                }
                 <ol>
-                  @for (stop of stops(); track stop.id) {
+                  @for (stop of shownStops(); track stop.id) {
                     <li [class.planned]="isPlanned(stop)">
                       <button type="button" class="open-stop" [attr.data-stop]="stop.id" (click)="openStop(stop)">
                         <span class="stop-name">
@@ -179,6 +198,9 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
                             · bis {{ stop.maxAvailablePowerKw | number: '1.0-1' : 'en-US' }} kW frei
                           }
                         </span>
+                        @if (stopPrices().get(stop.id); as price) {
+                          <span class="stop-price">ab {{ money(price.cost, price.currency) }} ({{ sessionKwh }} kWh · {{ price.label }})</span>
+                        }
                       </button>
                       @if (canPlan(stop)) {
                         <button matButton type="button" class="add-stop" [disabled]="routing()" (click)="addStop(stop)">als Ladestopp</button>
@@ -316,6 +338,14 @@ export class HomePage {
   protected readonly trip = signal<Trip | null>(null);
   /** Line of the shown route, for loading its stops again when the filters change. */
   private routeLine: RouteResponse['data']['geometry'] | null = null;
+  private readonly cards = inject(CardsStore);
+  protected readonly canPrice = () => this.auth.hasPermission('price:read');
+  /** Lowest price per stop of the list (ad hoc or own card), loaded after the list. */
+  protected readonly stopPrices = signal<ReadonlyMap<string, StopPrice>>(new Map());
+  protected readonly stopsOrder = signal<'route' | 'price'>('route');
+  protected readonly shownStops = computed(() => (this.stopsOrder() === 'price' ? byPrice(this.stops(), this.stopPrices()) : this.stops()));
+  protected readonly money = money;
+  protected readonly sessionKwh = PRICE_SESSION_KWH;
   /** The newest visible area, loaded again when the filters change. */
   private box: Bbox | null = null;
   /** Query parameters of the filters of the shown locations. */
@@ -532,6 +562,7 @@ export class HomePage {
   private async loadStops(geometry: RouteResponse['data']['geometry']): Promise<void> {
     const request = ++this.routeRequest;
     this.stopsState.set('loading');
+    this.stopPrices.set(new Map());
     try {
       const response = await this.routes.along(geometry, this.filterStore.filters());
       if (request !== this.routeRequest) {
@@ -541,10 +572,35 @@ export class HomePage {
       this.stopsTruncated.set(response.meta.truncated);
       this.stopsState.set('ready');
       this.handle()?.highlightLocations(response.data);
+      if (this.canPrice() && response.data.length > 0) {
+        void this.loadPrices(request, response.data);
+      }
     } catch {
       if (request === this.routeRequest) {
         this.stopsState.set('error');
       }
+    }
+  }
+
+  /** The lowest price per stop with the own cards; an answer for an older list is dropped, a failure leaves none. */
+  private async loadPrices(request: number, stops: RouteLocation[]): Promise<void> {
+    try {
+      const response = await this.routes.prices(
+        stops.map((stop) => stop.id),
+        this.cards.cards(),
+      );
+      if (request === this.routeRequest) {
+        const prices = new Map<string, StopPrice>();
+        for (const item of response.data) {
+          const price = cheapest(item);
+          if (price) {
+            prices.set(item.locationId, price);
+          }
+        }
+        this.stopPrices.set(prices);
+      }
+    } catch {
+      // The list stays without prices.
     }
   }
 

@@ -17,7 +17,18 @@ import { HOME_VIEW_KEY, LAST_VIEW_KEY, MapView, MapViewStore } from './map-view.
 import { FILTERS_STORAGE_KEY, MapFilterStore, NO_FILTERS } from './map-filters';
 import { MapLink } from './map-link';
 import { DEFAULT_MAP_OPTIONS, MapOptionsStore, OPTIONS_STORAGE_KEY } from './map-options';
-import { RouteLocation, RoutesService, kilometres, routeSummary, stopsSummary, withStop } from './routes.service';
+import { CardsStore } from '../preferences/cards.store';
+import {
+  LocationPrices,
+  RouteLocation,
+  RoutesService,
+  byPrice,
+  cheapest,
+  kilometres,
+  routeSummary,
+  stopsSummary,
+  withStop,
+} from './routes.service';
 
 describe('MapConfigService', () => {
   it('loads the map configuration', async () => {
@@ -892,6 +903,113 @@ describe('HomePage (map)', () => {
         });
       });
 
+      describe('prices', () => {
+        const along = [
+          stop('loc-3', 3000, { name: 'Stopp A' }),
+          stop('loc-4', 5000, { name: 'Stopp B' }),
+          stop('loc-5', 7000, { name: 'Stopp C' }),
+          stop('loc-1', 12000),
+        ];
+        const price = (
+          locationId: string,
+          adHoc: number | null,
+          card: number | null = null,
+        ): LocationPrices => ({
+          locationId,
+          adHoc: adHoc === null ? null : { cost: adHoc, currency: 'EUR', evseId: 'AT*TST*E1*1' },
+          cheapestCard:
+            card === null
+              ? null
+              : { emp: 'smatrics', empName: 'SMATRICS', tariffId: 't-1', tariff: 'Basic', cost: card, currency: 'EUR', evseId: 'AT*TST*E1*1' },
+        });
+        const pricesOf = (data: LocationPrices[]) => ({ data, meta: { session: { kwh: 30, minutes: 40 }, attribution: [] } });
+        const names = () => Array.from(root().querySelectorAll<HTMLElement>('#route-stops li .open-stop')).map((button) => text(button, '.stop-name'));
+        const prices = () =>
+          Array.from(root().querySelectorAll<HTMLElement>('#route-stops li .open-stop')).map((button) => text(button, '.stop-price') ?? null);
+        const order = (value: 'route' | 'price') =>
+          root().querySelector<HTMLElement>(`#stops-order mat-button-toggle[value="${value}"] button`)!.click();
+
+        /** A route to loc-1 with the given permissions, answered up to the list along it. */
+        async function showRoute(permissions: string[], stops = along): Promise<void> {
+          auth.hasPermission.and.callFake((permission) => permissions.includes(permission));
+          await render();
+          await moveTo(vienna, response());
+          options().onSelect('loc-1');
+          await settle();
+          await clickRoute();
+          http.expectOne('/api/v1/routes').flush({ data: { distanceMeters: 1000, durationSeconds: 60, geometry: { type: 'LineString', coordinates: geometry } }, meta: { attribution: [] } });
+          await settle();
+          http.expectOne('/api/v1/routes/locations').flush({ data: stops, meta: { returned: stops.length, limit: 500, truncated: false, attribution: [] } });
+          await settle();
+        }
+
+        it('shows the lowest price of every stop with the own cards and sorts by it', async () => {
+          TestBed.inject(CardsStore).set(['smatrics']);
+          await showRoute(['route:read', 'price:read']);
+
+          const request = http.expectOne('/api/v1/locations/prices');
+          expect(request.request.method).toBe('POST');
+          expect(request.request.body).toEqual({ locationIds: ['loc-3', 'loc-4', 'loc-5', 'loc-1'], cards: ['smatrics'] });
+          expect(prices()).toEqual([null, null, null, null]);
+          request.flush(pricesOf([price('loc-3', 17.7, 13.5), price('loc-4', 9), price('loc-5', null), price('loc-1', 12, 12)]));
+          await settle();
+
+          expect(prices()).toEqual([
+            'ab 13,50 € (30 kWh · SMATRICS)',
+            'ab 9,00 € (30 kWh · ohne Vertrag)',
+            null,
+            'ab 12,00 € (30 kWh · ohne Vertrag)',
+          ]);
+          expect(text(root(), '#stops-order-label')).toBe('Reihenfolge:');
+          expect(Array.from(root().querySelectorAll<HTMLElement>('#stops-order mat-button-toggle')).map((toggle) => text(toggle, 'button'))).toEqual([
+            'Route',
+            'günstigste zuerst',
+          ]);
+
+          order('price');
+          await settle();
+          expect(names()).toEqual(['5,0 km · Stopp B', '12,0 km · Parkgarage Stephansplatz', '3,0 km · Stopp A', '7,0 km · Stopp C']);
+          order('route');
+          await settle();
+          expect(names()).toEqual(['3,0 km · Stopp A', '5,0 km · Stopp B', '7,0 km · Stopp C', '12,0 km · Parkgarage Stephansplatz']);
+        });
+
+        it('drops prices for an older list and stays without prices when they fail', async () => {
+          await showRoute(['route:read', 'price:read']);
+          const older = http.expectOne('/api/v1/locations/prices');
+          expect(older.request.body.cards).toEqual([]);
+
+          // New filters: a new list, whose prices replace the pending ones.
+          TestBed.inject(MapFilterStore).set({ ...NO_FILTERS, minPowerKw: 150 });
+          await settle();
+          for (const request of http.match((r) => r.urlWithParams.startsWith('/api/v1/locations?'))) {
+            request.flush(response());
+          }
+          http.expectOne('/api/v1/routes/locations').flush({ data: along.slice(0, 2), meta: { returned: 2, limit: 500, truncated: false, attribution: [] } });
+          await settle();
+          const newer = http.expectOne('/api/v1/locations/prices');
+          expect(newer.request.body.locationIds).toEqual(['loc-3', 'loc-4']);
+          older.flush(pricesOf([price('loc-3', 1)]));
+          await settle();
+          expect(prices()).toEqual([null, null]);
+
+          newer.flush({ title: 'Error' }, { status: 500, statusText: 'Error' });
+          await settle();
+          expect(prices()).toEqual([null, null]);
+          expect(names().length).toBe(2);
+        });
+
+        it('needs price:read and a list with stops', async () => {
+          await showRoute(['route:read']);
+          expect(root().querySelector('#stops-order')).toBeNull();
+          http.expectNone('/api/v1/locations/prices');
+
+          await showRoute(['route:read', 'price:read'], []);
+          expect(root().querySelector('#stops-order')).toBeNull();
+          http.expectNone('/api/v1/locations/prices');
+        });
+      });
+
       it('explains stops that cannot be loaded, an empty corridor and drops the answer for a removed route', async () => {
         const routeOnce = async () => {
           if (!root().querySelector('#location-card')) {
@@ -1224,6 +1342,35 @@ describe('RoutesService', () => {
     // A planned stop the filters hide keeps the position it was chosen at.
     expect(withStop([at('b', 2000)], at('c', 3000), along).map((s) => s.id)).toEqual(['b', 'c']);
     expect(withStop([at('b', 5000)], at('c', 3000), along).map((s) => s.id)).toEqual(['c', 'b']);
+  });
+
+  it('asks for the prices of locations with the own cards', async () => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    const http = TestBed.inject(HttpTestingController);
+
+    const prices = TestBed.inject(RoutesService).prices(['loc-1'], ['smatrics']);
+    const request = http.expectOne('/api/v1/locations/prices');
+    expect([request.request.method, request.request.body]).toEqual(['POST', { locationIds: ['loc-1'], cards: ['smatrics'] }]);
+    request.flush({ data: [], meta: { session: { kwh: 30, minutes: 40 }, attribution: [] } });
+    expect((await prices).meta.session.kwh).toBe(30);
+    http.verify();
+  });
+
+  it('takes the lower of ad-hoc price and card and sorts stops by it', () => {
+    const card = { emp: 'e', empName: 'Karte', tariffId: 't', tariff: 'T', currency: 'EUR', evseId: 'E' };
+    const adHoc = { currency: 'EUR', evseId: 'E' };
+    expect(cheapest({ locationId: 'a', adHoc: { ...adHoc, cost: 10 }, cheapestCard: { ...card, cost: 8 } })).toEqual({ cost: 8, currency: 'EUR', label: 'Karte' });
+    expect(cheapest({ locationId: 'a', adHoc: { ...adHoc, cost: 8 }, cheapestCard: { ...card, cost: 8 } })).toEqual({ cost: 8, currency: 'EUR', label: 'ohne Vertrag' });
+    expect(cheapest({ locationId: 'a', adHoc: null, cheapestCard: { ...card, cost: 5 } })!.label).toBe('Karte');
+    expect(cheapest({ locationId: 'a', adHoc: null, cheapestCard: null })).toBeNull();
+
+    const at = (id: string): RouteLocation => ({ ...locationSummary({ id }), distanceFromRouteMeters: 0, positionOnRouteMeters: 0 });
+    const costs = new Map([
+      ['b', { cost: 3, currency: 'EUR', label: 'x' }],
+      ['c', { cost: 3, currency: 'EUR', label: 'x' }],
+      ['d', { cost: 1, currency: 'EUR', label: 'x' }],
+    ]);
+    expect(byPrice([at('a'), at('b'), at('c'), at('d'), at('e')], costs).map((s) => s.id)).toEqual(['d', 'b', 'c', 'a', 'e']);
   });
 
   it('counts the charging stops in German', () => {

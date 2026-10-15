@@ -62,6 +62,43 @@ export function stopsSummary(count: number): string {
   return count === 0 ? '' : ` · ${count} ${count === 1 ? 'Ladestopp' : 'Ladestopps'}`;
 }
 
+/** Cheapest prices of a session at a location (POST /api/v1/locations/prices, default 30 kWh in 40 minutes). */
+export interface LocationPrices {
+  locationId: string;
+  adHoc: { cost: number; currency: string; evseId: string } | null;
+  cheapestCard: { emp: string; empName: string; tariffId: string; tariff: string; cost: number; currency: string; evseId: string } | null;
+}
+
+export interface LocationPricesResponse {
+  data: LocationPrices[];
+  meta: { session: { kwh: number; minutes: number }; attribution: { source: string; text: string; license: string }[] };
+}
+
+/** Energy of the session the prices along a route are for. */
+export const PRICE_SESSION_KWH = 30;
+
+/** The lowest price of a stop and how to pay it: a card's name or "ohne Vertrag". */
+export interface StopPrice {
+  cost: number;
+  currency: string;
+  label: string;
+}
+
+/** The lower of the ad-hoc price and the cheapest own card; ad hoc when equal; null without either. */
+export function cheapest(prices: LocationPrices): StopPrice | null {
+  const { adHoc, cheapestCard: card } = prices;
+  if (card && (!adHoc || card.cost < adHoc.cost)) {
+    return { cost: card.cost, currency: card.currency, label: card.empName };
+  }
+  return adHoc ? { cost: adHoc.cost, currency: adHoc.currency, label: 'ohne Vertrag' } : null;
+}
+
+/** The stops by their lowest price, those without a price last; equal ones keep the order of the route. */
+export function byPrice(stops: RouteLocation[], prices: ReadonlyMap<string, StopPrice>): RouteLocation[] {
+  const cost = (stop: RouteLocation) => prices.get(stop.id)?.cost ?? Number.POSITIVE_INFINITY;
+  return [...stops].sort((a, b) => (cost(a) === cost(b) ? 0 : cost(a) - cost(b)));
+}
+
 /** Routes by car (route:read); the positions go to the own API only, which neither stores nor logs them. */
 @Injectable({ providedIn: 'root' })
 export class RoutesService {
@@ -76,6 +113,11 @@ export class RoutesService {
     return firstValueFrom(
       this.http.post<RouteLocationsResponse>('/api/v1/routes/locations', { geometry, corridorMeters: CORRIDOR_METERS, limit: ROUTE_STOPS_LIMIT, ...filters }),
     );
+  }
+
+  /** The cheapest ad-hoc price and own card (EMP keys) of a session at each location (price:read). */
+  prices(locationIds: string[], cards: readonly string[]): Promise<LocationPricesResponse> {
+    return firstValueFrom(this.http.post<LocationPricesResponse>('/api/v1/locations/prices', { locationIds, cards }));
   }
 }
 
