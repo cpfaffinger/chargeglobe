@@ -36,13 +36,16 @@ export class MapLink {
     return this.document.location.hash.slice(1) || undefined;
   }
 
-  /** Shares the address of the current view (with filters): system share sheet if there is one, else the clipboard. */
-  async share(): Promise<ShareResult> {
+  /**
+   * Shares the address of the current page (on the map: the view with filters) under the title: system share sheet if
+   * there is one, else the clipboard.
+   */
+  async share(title = 'chargeglobe'): Promise<ShareResult> {
     const navigator = this.document.defaultView!.navigator;
     const url = this.document.location.href;
     if (typeof navigator.share === 'function') {
       try {
-        await navigator.share({ title: 'chargeglobe', url });
+        await navigator.share({ title, url });
         return 'shared';
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {

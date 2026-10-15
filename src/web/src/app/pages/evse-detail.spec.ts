@@ -1,3 +1,4 @@
+import { MapLink } from '../map/map-link';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
@@ -149,6 +150,30 @@ describe('EvseDetailPage', () => {
   });
 
   afterEach(() => http.verify());
+
+  it('shares the charge point with the share sheet of the system or the clipboard', async () => {
+    const share = spyOn(TestBed.inject(MapLink), 'share').and.resolveTo('copied');
+    await open(response(view()));
+    history(historyRequest(), 1);
+    http.expectOne('/api/v1/evses/e-1/occupancy?weeks=4').flush(occupancyOf(4, 0.25));
+    await settle();
+    const button = () => page().querySelector<HTMLButtonElement>('#share-evse')!;
+
+    button().click();
+    await settle();
+    expect(share).toHaveBeenCalledWith('Ladepunkt AT*VIE*E1234*1 – chargeglobe');
+    expect(text(page(), '#share-message')).toBe('Der Link zu diesem Ladepunkt ist in der Zwischenablage.');
+
+    share.and.resolveTo('failed');
+    button().click();
+    await settle();
+    expect(text(page(), '#share-message')).toBe('Der Link konnte nicht kopiert werden. Kopiere die Adresse aus der Adresszeile.');
+
+    share.and.resolveTo('shared');
+    button().click();
+    await settle();
+    expect(page().querySelector('#share-message')).toBeNull();
+  });
 
   it('shows status, technology, payment, access and the origin of the data', async () => {
     await open(response(view()));

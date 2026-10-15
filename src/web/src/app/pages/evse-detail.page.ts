@@ -21,6 +21,7 @@ import {
 import { Segment, statusOf, timeline } from '../evses/status';
 import { OccupancyHeatmap, StatusTimeline } from '../evses/status-charts';
 import { EvsePricesResponse, comparison, money, priceParts } from '../evses/prices';
+import { MapLink, ShareResult } from '../map/map-link';
 import { CardsStore } from '../preferences/cards.store';
 
 /** Ranges of the status history in days; the API allows up to 90. */
@@ -38,6 +39,13 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * times, facilities), the status history of a selectable range with the list of periods, the occupancy of 4 or 12
  * weeks, and the origin of the data (records of the sources, last confirmation of each attribute).
  */
+const SHARE_MESSAGES: Record<ShareResult, string | null> = {
+  shared: null,
+  cancelled: null,
+  copied: 'Der Link zu diesem Ladepunkt ist in der Zwischenablage.',
+  failed: 'Der Link konnte nicht kopiert werden. Kopiere die Adresse aus der Adresszeile.',
+};
+
 @Component({
   imports: [
     AppIcon,
@@ -64,7 +72,13 @@ const DAY_MS = 24 * 60 * 60 * 1000;
       @let evse = response.data;
       @let location = evse.location;
       <header class="evse-header">
-        <h1 id="evse-id">{{ evse.evseId }}</h1>
+        <div class="evse-title">
+          <h1 id="evse-id">{{ evse.evseId }}</h1>
+          <button matButton="tonal" type="button" id="share-evse" (click)="share(evse.evseId)"><app-icon name="share" />Teilen</button>
+        </div>
+        @if (shareMessage(); as message) {
+          <p id="share-message" class="lead" role="status">{{ message }}</p>
+        }
         @if (!evse.hasEvseId) {
           <p class="lead">Die Quelle meldet keine EVSE-ID; die Kennung hat chargeglobe vergeben.</p>
         }
@@ -385,6 +399,9 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 })
 export class EvseDetailPage {
   private readonly service = inject(EvsesService);
+  private readonly link = inject(MapLink);
+  /** What became of "Teilen"; null when the share sheet took it. */
+  protected readonly shareMessage = signal<string | null>(null);
   private readonly evseId = inject(ActivatedRoute).snapshot.paramMap.get('evseId')!;
   /** Numbers of the newest history and occupancy loads; older answers are dropped. */
   private historyRequest = 0;
@@ -419,6 +436,11 @@ export class EvseDetailPage {
   protected readonly attribution = computed(() => [...new Set(this.evse()?.meta.attribution.map((source) => source.text) ?? [])]);
   protected readonly authMethods = computed(() => this.evse()!.data.authMethods.map(authMethodLabel).join(', '));
   protected readonly adHoc = computed(() => this.evse()!.data.authMethods.some((method) => AD_HOC_METHODS.includes(method)));
+  /** Shares the address of this page: system share sheet (Web Share API) if there is one, else the clipboard. */
+  protected async share(evseId: string): Promise<void> {
+    this.shareMessage.set(SHARE_MESSAGES[await this.link.share(`Ladepunkt ${evseId} – chargeglobe`)]);
+  }
+
   /** View of the map page on the location (see MapLink). */
   protected readonly mapFragment = computed(() => {
     const location = this.evse()!.data.location;

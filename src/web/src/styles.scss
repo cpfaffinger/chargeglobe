@@ -977,19 +977,28 @@ app-location-details .connectors,
 }
 
 #heatmap-select {
-  overflow-x: auto;
+  flex-wrap: wrap;
   max-width: 100%;
 }
 
-// Heatmap weekday × hour; scrolls sideways on narrow screens instead of the page.
+// Heatmap weekday × hour: 24 equal columns over the full width, never wider than the page.
 #heatmap {
-  display: block;
-  max-width: 100%;
+  width: 100%;
   margin-top: 8px;
-  overflow-x: auto;
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 2px;
   font: var(--mat-sys-body-small);
+}
+
+#heatmap thead th:first-child {
+  width: 2em;
+}
+
+#heatmap thead th {
+  overflow: visible;
+  font-size: 10px;
+  white-space: nowrap;
 }
 
 #heatmap th {
@@ -998,7 +1007,6 @@ app-location-details .connectors,
 }
 
 #heatmap td {
-  min-width: 18px;
   height: 22px;
   border-radius: 4px;
 }
@@ -1375,6 +1383,27 @@ app-evse-detail .plain {
 
 app-evse-detail mat-button-toggle-group {
   margin-bottom: 12px;
+}
+
+// The origin of the data wraps long identifiers instead of scrolling sideways.
+#sources,
+#provenance {
+  display: table;
+  width: 100%;
+  overflow-x: visible;
+}
+
+#sources td,
+#provenance td {
+  overflow-wrap: anywhere;
+}
+
+.evse-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 // Simple data tables (status periods, sources); scroll sideways on narrow screens.
