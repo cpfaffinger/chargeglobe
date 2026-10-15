@@ -14,6 +14,7 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MatMenuModule } from '@angular/material/menu';
 import { AuthService } from '../auth/auth.service';
@@ -22,6 +23,7 @@ import { ThemeService, Viewport } from '../design/theme.service';
 import { LocationDetails } from '../evses/location-details';
 import { money } from '../evses/prices';
 import { CardsStore } from '../preferences/cards.store';
+import { BATTERY, CONSUMPTION, DEFAULT_ARRIVAL_SOC, DEFAULT_START_SOC, PlannedStop, SOC, Vehicle, VehicleStore, planCharging } from '../map/charging-plan';
 import { FavoriteButton } from '../favorites/favorite-button';
 import { MARKERS, MARKER_KEYS, MarkerKey, markerOf, resolveColors, tokenColor } from '../map/availability';
 import { BrowserCapabilities } from '../map/browser-capabilities';
@@ -42,8 +44,12 @@ import {
   RouteLocation,
   RouteResponse,
   RoutesService,
+  Place,
   StopPrice,
   Trip,
+  locationPlace,
+  ownPlace,
+  pointPlace,
   byPrice,
   cheapest,
   kilometres,
@@ -125,9 +131,9 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
  */
 @Component({
   imports: [AppIcon, DatePipe, DecimalPipe, FavoriteButton, LocationDetails, MapFilterPanel, MapOptionsPanel, MatButtonModule,
-    MatButtonToggleModule, MatCardModule, MatMenuModule, NgTemplateOutlet],
+    MatButtonToggleModule, MatCardModule, MatMenuModule, MatProgressSpinnerModule, NgTemplateOutlet],
   selector: 'app-home',
-  host: { '[class.has-card]': 'selected() !== null || stopsState() !== null || reachState() !== null', '[class.has-filters]': 'filtersOpen() || optionsOpen()' },
+  host: { '[class.has-card]': 'selected() !== null || shownStopsState() !== null || shownReachState() !== null', '[class.has-filters]': 'filtersOpen() || optionsOpen()' },
   template: `
     <ng-template #card>
       @if (selected(); as location) {
@@ -161,9 +167,12 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
               }
             </p>
             @if (canRoute()) {
-              <button matButton="tonal" type="button" id="route-here" [disabled]="routing() || !handle()" (click)="routeTo(location)">
-                <app-icon name="directions" />{{ routing() ? 'Route wird berechnet …' : 'Route hierher' }}
-              </button>
+              <div class="route-actions">
+                <button matButton="tonal" type="button" id="route-here" [disabled]="routing() || !handle()" (click)="routeTo(location)">
+                  <app-icon name="directions" />{{ routing() ? 'Route wird berechnet …' : 'Route hierher' }}
+                </button>
+                <button matButton type="button" id="route-from" [disabled]="routing() || !handle()" (click)="routeFrom(location)">Route von hier</button>
+              </div>
             }
             <!-- The details are a chunk of their own and load after the card is visible. -->
             @defer (on immediate) {
@@ -173,18 +182,63 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
             }
           </mat-card-content>
         </mat-card>
-      } @else if (stopsState(); as state) {
+      } @else if (shownStopsState(); as state) {
         <mat-card id="route-stops" appearance="outlined" role="region" aria-label="Unterwegs laden">
           <mat-card-content>
-            <h2>Unterwegs laden</h2>
+            <div class="card-head">
+              <h2>Unterwegs laden</h2>
+              <button matIconButton type="button" id="close-stops" aria-label="Liste schließen" title="Liste schließen" (click)="stopsHidden.set(true)">
+                <app-icon name="close" />
+              </button>
+            </div>
             @switch (state) {
               @case ('loading') {
-                <p class="muted">Ladepunkte entlang der Route werden gesucht …</p>
+                <p class="muted loading"><mat-spinner diameter="18" />Ladepunkte entlang der Route werden gesucht …</p>
               }
               @case ('error') {
                 <p class="error">Die Ladepunkte entlang der Route konnten nicht geladen werden.</p>
               }
               @default {
+                <details id="vehicle">
+                  @let car = vehicle();
+                  <summary>
+                    Fahrzeug: {{ decimal(car.consumptionKwhPer100Km, 1) }} kWh/100 km · Akku {{ decimal(car.batteryKwh, 1) }} kWh ·
+                    Start {{ car.startSoc ?? defaultStartSoc }} % · Ankunft {{ car.arrivalSoc ?? defaultArrivalSoc }} %
+                  </summary>
+                  <div class="vehicle-fields">
+                    <label>Verbrauch (kWh/100 km)
+                      <input type="number" id="vehicle-consumption" [min]="consumption.min" [max]="consumption.max" step="0.5"
+                        [value]="car.consumptionKwhPer100Km" (change)="setVehicle('consumptionKwhPer100Km', $event)" />
+                    </label>
+                    <label>Akku nutzbar (kWh)
+                      <input type="number" id="vehicle-battery" [min]="battery.min" [max]="battery.max" step="1"
+                        [value]="car.batteryKwh" (change)="setVehicle('batteryKwh', $event)" />
+                    </label>
+                    <label>Ladezustand bei Abfahrt (%)
+                      <input type="number" id="vehicle-start" [min]="soc.min" [max]="soc.max" step="1" [placeholder]="defaultStartSoc"
+                        [value]="car.startSoc ?? ''" (change)="setVehicle('startSoc', $event)" />
+                    </label>
+                    <label>Gewünschter Ladezustand bei Ankunft (%)
+                      <input type="number" id="vehicle-arrival" [min]="soc.min" [max]="soc.max" step="1" [placeholder]="defaultArrivalSoc"
+                        [value]="car.arrivalSoc ?? ''" (change)="setVehicle('arrivalSoc', $event)" />
+                    </label>
+                  </div>
+                </details>
+                @if (chargingPlan(); as plan) {
+                  <div id="charging-plan" class="map-message" [class.infeasible]="!plan.feasible">
+                    @if (!plan.feasible) {
+                      Mit diesen Werten reichen die Ladepunkte entlang der Route nicht bis zum Ziel. Prüfe Verbrauch, Akku oder die Filter der Karte.
+                    } @else if (plan.stops.length === 0) {
+                      Ohne Ladestopp erreichbar: Ankunft mit etwa {{ percent(plan.arrivalSoc) }} % (Energiebedarf {{ decimal(plan.energyKwh, 0) }} kWh).
+                    } @else {
+                      Empfohlen: {{ plan.stops.length }} {{ plan.stops.length === 1 ? 'Ladestopp' : 'Ladestopps' }}, Ankunft mit etwa
+                      {{ percent(plan.arrivalSoc) }} % (Energiebedarf {{ decimal(plan.energyKwh, 0) }} kWh).
+                      @if (canApplyPlan(plan.stops)) {
+                        <button matButton="tonal" type="button" id="apply-plan" [disabled]="routing()" (click)="applyPlan(plan.stops)">Empfehlung übernehmen</button>
+                      }
+                    }
+                  </div>
+                }
                 <p class="muted" id="stops-hint">{{ stopsTruncated() ? 'Die ersten ' : '' }}{{ stops().length }} Standorte bis 1 km neben der Route, mit den Filtern der Karte.</p>
                 @if (canPrice() && stops().length > 0) {
                   <div class="stops-order">
@@ -198,7 +252,7 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
                 }
                 <ol>
                   @for (stop of shownStops(); track stop.id) {
-                    <li [class.planned]="isPlanned(stop)">
+                    <li [class.planned]="isPlanned(stop)" [class.recommended]="recommended().has(stop.id)">
                       <button type="button" class="open-stop" [attr.data-stop]="stop.id" (click)="openStop(stop)">
                         <span class="stop-name">
                           {{ km(stop.positionOnRouteMeters) }} · {{ stop.name ?? 'Ladestandort' }}
@@ -206,6 +260,9 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
                             <span class="stop-badge">Ladestopp</span>
                           }
                         </span>
+                        @if (recommended().get(stop.id); as planned) {
+                          <span class="stop-recommended">Empfohlen: an mit {{ percent(planned.arrivalSoc) }} %, laden auf {{ percent(planned.departureSoc) }} %</span>
+                        }
                         <span class="stop-state">
                           <span class="status-dot" [style.background]="color(marker(stop))"><app-icon [name]="markers[marker(stop)].icon" /></span>
                           {{ stop.evsesAvailable }} von {{ stop.evsesTotal }} frei
@@ -229,13 +286,18 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
             }
           </mat-card-content>
         </mat-card>
-      } @else if (reachState(); as state) {
+      } @else if (shownReachState(); as state) {
         <mat-card id="reach-locations" appearance="outlined" role="region" aria-label="In Reichweite">
           <mat-card-content>
-            <h2>In Reichweite</h2>
+            <div class="card-head">
+              <h2>In Reichweite</h2>
+              <button matIconButton type="button" id="close-reach-list" aria-label="Liste schließen" title="Liste schließen" (click)="reachHidden.set(true)">
+                <app-icon name="close" />
+              </button>
+            </div>
             @switch (state) {
               @case ('loading') {
-                <p class="muted">Ladepunkte in Reichweite werden gesucht …</p>
+                <p class="muted loading"><mat-spinner diameter="18" />Ladepunkte in Reichweite werden gesucht …</p>
               }
               @case ('error') {
                 <p class="error">Die Ladepunkte in Reichweite konnten nicht geladen werden.</p>
@@ -280,14 +342,61 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
     @if (loading()) {
       <div id="map-loading" role="progressbar" aria-label="Ladepunkte werden geladen"></div>
     }
+    <ng-template #legend>
+      <ul id="legend" aria-label="Legende">
+        @for (key of markerKeys; track key) {
+          <li>
+            <span class="status-dot" [style.background]="color(key)"><app-icon [name]="markers[key].icon" /></span>{{ markers[key].label }}
+          </li>
+        }
+      </ul>
+    </ng-template>
     <div id="map-overlay">
+      @if (viewport.mobile()) {
+        <!-- On phones the legend heads the column, so notices, route and reach stack below it. -->
+        <ng-container [ngTemplateOutlet]="legend" />
+      }
       @if (notice(); as key) {
         <p id="map-notice" class="map-message" role="status">{{ notices[key] }}</p>
       }
+      @if (working(); as text) {
+        <p id="working" class="map-message" role="status"><mat-spinner diameter="18" />{{ text }}</p>
+      }
+      @if (planner(); as plan) {
+        <div id="route-planner" class="map-message" role="group" aria-label="Route planen">
+          <div class="planner-row">
+            <span class="planner-label">Start</span>
+            <span id="planner-start" class="planner-place">{{ plan.start?.name ?? ownPositionName }}</span>
+            @if (plan.start) {
+              <button matButton type="button" id="planner-own" (click)="useOwnPosition()">{{ ownPositionName }}</button>
+            }
+            <button matButton type="button" id="pick-start" [class.picking]="plan.picking === 'start'" (click)="pick('start')">Auf Karte wählen</button>
+          </div>
+          <div class="planner-row">
+            <span class="planner-label">Ziel</span>
+            <span id="planner-destination" class="planner-place">{{ plan.destination?.name ?? 'noch nicht gewählt' }}</span>
+            <button matButton type="button" id="pick-destination" [class.picking]="plan.picking === 'destination'" (click)="pick('destination')">Auf Karte wählen</button>
+          </div>
+          @if (plan.picking) {
+            <p id="planner-hint">Tippe auf die Karte oder einen Ladestandort, um {{ plan.picking === 'start' ? 'den Start' : 'das Ziel' }} festzulegen.</p>
+          }
+          <div class="planner-actions">
+            <button matButton="filled" type="button" id="planner-calculate" [disabled]="!plan.destination || routing()" (click)="calculatePlanned()">Route berechnen</button>
+            <button matButton type="button" id="planner-cancel" (click)="planner.set(null)">Abbrechen</button>
+          </div>
+        </div>
+      }
       @if (route(); as summary) {
         <div id="route-summary" class="map-message" role="status">
+          <button matIconButton type="button" id="route-edit" class="summary-edit" aria-label="Start und Ziel ändern" title="Start und Ziel ändern"
+            (click)="editRoute()">
+            <app-icon name="directions" />
+          </button>
           Route: {{ summary }}
           <button matButton type="button" id="route-clear" (click)="clearRoute()">Route entfernen</button>
+          @if (stopsHidden()) {
+            <button matButton type="button" id="show-stops" (click)="stopsHidden.set(false)">Liste zeigen</button>
+          }
           @if (trip()?.stops?.length) {
             <div class="trip-stops">
               @for (stop of trip()!.stops; track stop.id) {
@@ -304,6 +413,9 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
         <div id="reach-summary" class="map-message" role="status">
           Reichweite mit dem Auto: {{ minutes.join(' · ') }} min
           <button matButton type="button" id="reach-clear" (click)="clearReach()">Reichweite entfernen</button>
+          @if (reachHidden()) {
+            <button matButton type="button" id="show-reach-list" (click)="reachHidden.set(false)">Liste zeigen</button>
+          }
         </div>
       }
       @if (homeSaved()) {
@@ -334,7 +446,13 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
       }
     }
     <div id="map-actions">
-      <div class="home-actions">
+      @if (viewport.mobile()) {
+        <button matMiniFab type="button" id="actions-toggle" [attr.aria-expanded]="actionsOpen()"
+          [attr.aria-label]="actionsOpen() ? 'Kartenfunktionen schließen' : 'Weitere Kartenfunktionen'" (click)="actionsOpen.set(!actionsOpen())">
+          <app-icon [name]="actionsOpen() ? 'close' : 'more_vert'" />
+        </button>
+      }
+      <div class="home-actions" [hidden]="viewport.mobile() && !actionsOpen()">
         <button matMiniFab type="button" id="home" [disabled]="!handle()" title="Zur Startposition" aria-label="Zur Startposition" (click)="goHome()">
           <app-icon name="home" />
         </button>
@@ -353,22 +471,34 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
         </mat-menu>
       </div>
       @if (canRoute()) {
-        <button matFab extended type="button" id="reach" [disabled]="!handle() || reaching()" (click)="showReach()">
-          <app-icon name="explore" />{{ reaching() ? 'Reichweite wird berechnet …' : 'Reichweite' }}
+        <button matFab [extended]="!viewport.mobile()" type="button" id="reach" [disabled]="!handle() || reaching()" title="Reichweite"
+          aria-label="Reichweite" (click)="showReach()">
+          @if (reaching()) {
+            <mat-spinner diameter="20" />
+          } @else {
+            <app-icon name="explore" />
+          }
+          @if (!viewport.mobile()) {
+            {{ reaching() ? 'Reichweite wird berechnet …' : 'Reichweite' }}
+          }
         </button>
       }
-      <button matFab extended type="button" id="locate" [disabled]="!handle()" (click)="locate()">
-        <app-icon name="my_location" />{{ locating() ? 'Standort wird gesucht …' : 'Mein Standort' }}
+      <button matFab [extended]="!viewport.mobile()" type="button" id="locate" [disabled]="!handle()" title="Mein Standort" aria-label="Mein Standort"
+        (click)="locate()">
+        @if (locating()) {
+          <mat-spinner diameter="20" />
+        } @else {
+          <app-icon name="my_location" />
+        }
+        @if (!viewport.mobile()) {
+          {{ locating() ? 'Standort wird gesucht …' : 'Mein Standort' }}
+        }
       </button>
     </div>
     <div id="map-legend-bar">
-      <ul id="legend" aria-label="Legende">
-        @for (key of markerKeys; track key) {
-          <li>
-            <span class="status-dot" [style.background]="color(key)"><app-icon [name]="markers[key].icon" /></span>{{ markers[key].label }}
-          </li>
-        }
-      </ul>
+      @if (!viewport.mobile()) {
+        <ng-container [ngTemplateOutlet]="legend" />
+      }
       <button matButton="tonal" type="button" id="filter-toggle" [attr.aria-expanded]="filtersOpen()" (click)="toggleFilters()">
         <app-icon name="filter_list" />Filter
         @if (filterStore.count() > 0) {
@@ -405,11 +535,31 @@ export class HomePage {
   protected readonly km = kilometres;
   /** Answers for an earlier route are dropped. */
   private routeRequest = 0;
+  /** Start and destination being chosen (start null: the own position); null while the planner is closed. */
+  protected readonly planner = signal<{ start: Place | null; destination: Place | null; picking: 'start' | 'destination' | null } | null>(null);
+  protected readonly ownPositionName = 'Mein Standort';
   /** Start, charging stops and destination of the shown route; null while there is none. */
   protected readonly trip = signal<Trip | null>(null);
   /** Line of the shown route, for loading its stops again when the filters change. */
   private routeLine: RouteResponse['data']['geometry'] | null = null;
   private readonly cards = inject(CardsStore);
+  private readonly vehicles = inject(VehicleStore);
+  protected readonly vehicle = this.vehicles.vehicle;
+  protected readonly consumption = CONSUMPTION;
+  protected readonly battery = BATTERY;
+  protected readonly soc = SOC;
+  protected readonly defaultStartSoc = DEFAULT_START_SOC;
+  protected readonly defaultArrivalSoc = DEFAULT_ARRIVAL_SOC;
+  /** Length of the shown route as the routing engine measured it. */
+  private readonly routeMeters = signal<number | null>(null);
+  /** Recommended charging stops among the list along the route, for the car of the viewer. */
+  protected readonly chargingPlan = computed(() => {
+    const meters = this.routeMeters();
+    return meters !== null && this.stopsState() === 'ready' ? planCharging(meters, this.stops(), this.vehicle()) : null;
+  });
+  protected readonly recommended = computed(
+    () => new Map((this.chargingPlan()?.stops ?? []).map((planned) => [planned.location.id, planned])),
+  );
   protected readonly canPrice = () => this.auth.hasPermission('price:read');
   /** Lowest price per stop of the list (ad hoc or own card), loaded after the list. */
   protected readonly stopPrices = signal<ReadonlyMap<string, StopPrice>>(new Map());
@@ -417,6 +567,17 @@ export class HomePage {
   protected readonly shownStops = computed(() => (this.stopsOrder() === 'price' ? byPrice(this.stops(), this.stopPrices()) : this.stops()));
   protected readonly money = money;
   protected readonly sessionKwh = PRICE_SESSION_KWH;
+  /** The lists along the route and in reach can be closed and shown again from their summary. */
+  protected readonly stopsHidden = signal(false);
+  protected readonly reachHidden = signal(false);
+  protected readonly shownStopsState = computed(() => (this.stopsHidden() ? null : this.stopsState()));
+  protected readonly shownReachState = computed(() => (this.reachHidden() ? null : this.reachState()));
+  /** Phones: the secondary map actions are folded behind one button. */
+  protected readonly actionsOpen = signal(false);
+  /** What is being calculated right now, shown with a spinner. */
+  protected readonly working = computed(() =>
+    this.routing() ? 'Route wird berechnet …' : this.reaching() ? 'Reichweite wird berechnet …' : null,
+  );
   /** Driving times of the shown reach; null while none is shown. */
   protected readonly reach = signal<number[] | null>(null);
   protected readonly reaching = signal(false);
@@ -518,6 +679,11 @@ export class HomePage {
         });
       }
     });
+    // Only the recommended charging stops get a ring on the map.
+    effect(() => {
+      const plan = this.chargingPlan();
+      untracked(() => this.handle()?.highlightLocations(plan?.stops.map((planned) => planned.location) ?? []));
+    });
     // Other cluster options: the map combines the locations anew.
     effect(() => {
       const options = this.mapOptions.options();
@@ -585,22 +751,71 @@ export class HomePage {
    * (ADR-0007), which neither stores nor logs it.
    */
   protected async routeTo(location: LocationSummary): Promise<void> {
-    if (!(await this.positionAllowed())) {
-      return;
+    // The list of stops replaces the card of the destination.
+    if (await this.calculate(null, locationPlace(location))) {
+      this.selected.set(null);
+    }
+  }
+
+  /** The route planner with this location as start; the destination is picked on the map next. */
+  protected routeFrom(location: LocationSummary): void {
+    this.planner.set({ start: locationPlace(location), destination: null, picking: 'destination' });
+    this.selected.set(null);
+  }
+
+  /** The planner with start and destination of the shown route. */
+  protected editRoute(): void {
+    const trip = this.trip()!;
+    this.planner.set({ start: trip.start.kind === 'own' ? null : trip.start, destination: trip.destination, picking: null });
+  }
+
+  protected pick(target: 'start' | 'destination'): void {
+    this.planner.update((plan) => ({ ...plan!, picking: target }));
+  }
+
+  protected useOwnPosition(): void {
+    this.planner.update((plan) => ({ ...plan!, start: null }));
+  }
+
+  protected async calculatePlanned(): Promise<void> {
+    const plan = this.planner()!;
+    if (await this.calculate(plan.start, plan.destination!)) {
+      this.planner.set(null);
+    }
+  }
+
+  /** The picked place goes to the field the planner waits for. */
+  private place(place: Place): void {
+    this.planner.update((plan) => ({ ...plan!, [plan!.picking!]: place, picking: null }));
+  }
+
+  /** A click on the map picks a point while the planner waits for one. */
+  private clicked(latitude: number, longitude: number): void {
+    if (this.planner()?.picking) {
+      this.place(pointPlace(latitude, longitude));
+    }
+  }
+
+  /**
+   * Route from the start (null: the own position, asked for now) to the destination, without stops; true if it worked.
+   * The own position goes to the own API only (ADR-0007), which neither stores nor logs it.
+   */
+  private async calculate(start: Place | null, destination: Place): Promise<boolean> {
+    if (start === null && !(await this.positionAllowed())) {
+      return false;
     }
     this.routing.set(true);
     try {
-      let start: { latitude: number; longitude: number };
-      try {
-        start = await this.browser.currentPosition();
-      } catch (error) {
-        this.notice.set((error as GeolocationPositionError).code === 1 ? 'denied' : 'unavailable');
-        return;
+      let from = start;
+      if (from === null) {
+        try {
+          from = ownPlace(await this.browser.currentPosition());
+        } catch (error) {
+          this.notice.set((error as GeolocationPositionError).code === 1 ? 'denied' : 'unavailable');
+          return false;
+        }
       }
-      // The list of stops replaces the card of the destination.
-      if (await this.plan({ start, destination: location, stops: [] })) {
-        this.selected.set(null);
-      }
+      return await this.plan({ start: from, destination, stops: [] });
     } finally {
       this.routing.set(false);
     }
@@ -623,6 +838,7 @@ export class HomePage {
         this.handle()!.showReach(response.data);
         this.reach.set(REACH_MINUTES);
         this.reachAreas.set(response.data);
+        this.reachHidden.set(false);
         this.reachCenter = position;
         void this.loadReachLocations();
       }
@@ -683,7 +899,7 @@ export class HomePage {
   /** Neither the destination nor a planned stop, and room for one more. */
   protected canPlan(stop: RouteLocation): boolean {
     const trip = this.trip()!;
-    return stop.id !== trip.destination.id && !this.isPlanned(stop) && trip.stops.length < MAX_CHARGING_STOPS;
+    return stop.id !== trip.destination.locationId && !this.isPlanned(stop) && trip.stops.length < MAX_CHARGING_STOPS;
   }
 
   /** The route anew via this location, in the order of the current route. */
@@ -716,6 +932,8 @@ export class HomePage {
       const response = await this.routes.route(waypoints);
       this.trip.set(trip);
       this.route.set(routeSummary(response.data.distanceMeters, response.data.durationSeconds) + stopsSummary(trip.stops.length));
+      this.routeMeters.set(response.data.distanceMeters);
+      this.stopsHidden.set(false);
       this.routeLine = response.data.geometry;
       this.handle()!.showRoute(response.data.geometry.coordinates);
       void this.loadStops(response.data.geometry);
@@ -734,8 +952,34 @@ export class HomePage {
     this.route.set(null);
     this.stopsState.set(null);
     this.stops.set([]);
+    this.routeMeters.set(null);
     this.handle()?.showRoute(null);
-    this.handle()?.highlightLocations([]);
+  }
+
+  protected percent(value: number): number {
+    return Math.round(value);
+  }
+
+  /** A number in German notation with at most this many decimals. */
+  protected decimal(value: number, digits: number): string {
+    return new Intl.NumberFormat('de-DE', { maximumFractionDigits: digits }).format(value);
+  }
+
+  /** A changed value of the car; an empty field means the default. */
+  protected setVehicle(field: keyof Vehicle, event: Event): void {
+    const raw = (event.target as HTMLInputElement).value;
+    this.vehicles.set({ [field]: raw === '' ? null : Number(raw) });
+  }
+
+  /** The recommendation fits into the waypoints and is not the route already. */
+  protected canApplyPlan(stops: PlannedStop[]): boolean {
+    const planned = this.trip()!.stops.map((stop) => stop.id).join();
+    return stops.length <= MAX_CHARGING_STOPS && stops.map((stop) => stop.location.id).join() !== planned;
+  }
+
+  /** The route anew via the recommended stops. */
+  protected async applyPlan(stops: PlannedStop[]): Promise<void> {
+    await this.replan({ ...this.trip()!, stops: stops.map((stop) => stop.location) });
   }
 
   /** A stop of the list: the map flies there and opens its card; closing the card returns to the list. */
@@ -757,7 +1001,6 @@ export class HomePage {
       this.stops.set(response.data);
       this.stopsTruncated.set(response.meta.truncated);
       this.stopsState.set('ready');
-      this.handle()?.highlightLocations(response.data);
       if (this.canPrice() && response.data.length > 0) {
         void this.loadPrices(request, response.data);
       }
@@ -850,6 +1093,7 @@ export class HomePage {
         onGeolocate: (event) => this.geolocated(event),
         onViewChange: (bbox, view) => this.viewChanged(bbox, view),
         onSelect: (id) => this.select(id),
+        onClick: (latitude, longitude) => this.clicked(latitude, longitude),
       });
       if (this.destroyed) {
         handle.destroy();
@@ -864,7 +1108,15 @@ export class HomePage {
   }
 
   private select(id: string): void {
-    this.selected.set(this.locations().find((location) => location.id === id) ?? null);
+    const location = this.locations().find((item) => item.id === id) ?? null;
+    // While the planner waits for a start or destination, a location is picked instead of opened.
+    if (this.planner()?.picking) {
+      if (location) {
+        this.place(locationPlace(location));
+      }
+      return;
+    }
+    this.selected.set(location);
     if (this.selected()) {
       this.filtersOpen.set(false);
       this.optionsOpen.set(false);

@@ -36,7 +36,7 @@ Eine **offene, quellenübergreifende Datenbank aller öffentlichen E-Ladepunkte*
 ## Nicht-Ziele (vorerst)
 
 - Kein Starten/Stoppen von Ladevorgängen, keine Abrechnung, kein eigener EMP-Betrieb.
-- Keine Ladeplanung für Langstrecken (Ladestopps nach Fahrzeugmodell und Akkustand); Routenfindung selbst ist Teil der App (R3).
+- Keine Ladeplanung nach Fahrzeugmodell (Ladekurven, Temperatur, Steigung); die Karte empfiehlt Ladestopps nur aus Verbrauch, Akkukapazität und Ladezustand. Routenfindung selbst ist Teil der App (R3).
 - Keine Benachrichtigungen (Alerts bei frei werdendem Ladepunkt oder Preisänderung) im MVP.
 
 ## Begriffe

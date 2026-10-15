@@ -41,10 +41,34 @@ export const ROUTE_STOPS_LIMIT = 500;
 /** Charging stops one route may have (waypoints of POST /routes: start, stops, destination). */
 export const MAX_CHARGING_STOPS = 3;
 
-/** A planned trip: from the own position via charging stops (in the order of the route) to a location. */
+/** A start or destination of a route: the own position, a charging location or a point picked on the map. */
+export interface Place extends Position {
+  name: string;
+  kind: 'own' | 'location' | 'point';
+  /** Set for a charging location. */
+  locationId: string | null;
+}
+
+export const OWN_POSITION_NAME = 'Mein Standort';
+
+export function ownPlace(position: Position): Place {
+  return { latitude: position.latitude, longitude: position.longitude, name: OWN_POSITION_NAME, kind: 'own', locationId: null };
+}
+
+export function locationPlace(location: LocationSummary): Place {
+  return { latitude: location.latitude, longitude: location.longitude, name: location.name ?? 'Ladestandort', kind: 'location', locationId: location.id };
+}
+
+/** A point picked on the map, named by its coordinates ("Punkt 48,2100, 16,3700"). */
+export function pointPlace(latitude: number, longitude: number): Place {
+  const format = (value: number) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 4, maximumFractionDigits: 4 }).format(value);
+  return { latitude, longitude, name: `Punkt ${format(latitude)}, ${format(longitude)}`, kind: 'point', locationId: null };
+}
+
+/** A planned trip: from a start via charging stops (in the order of the route) to a destination. */
 export interface Trip {
-  start: Position;
-  destination: LocationSummary;
+  start: Place;
+  destination: Place;
   stops: RouteLocation[];
 }
 

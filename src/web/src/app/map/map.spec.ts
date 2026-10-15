@@ -17,6 +17,7 @@ import { HOME_VIEW_KEY, LAST_VIEW_KEY, MapView, MapViewStore } from './map-view.
 import { FILTERS_STORAGE_KEY, MapFilterStore, NO_FILTERS } from './map-filters';
 import { MapLink } from './map-link';
 import { DEFAULT_MAP_OPTIONS, MapOptionsStore, OPTIONS_STORAGE_KEY } from './map-options';
+import { VEHICLE_STORAGE_KEY, VehicleStore } from './charging-plan';
 import { CardsStore } from '../preferences/cards.store';
 import {
   LocationPrices,
@@ -188,6 +189,7 @@ describe('HomePage (map)', () => {
     localStorage.removeItem(HOME_VIEW_KEY);
     localStorage.removeItem(FILTERS_STORAGE_KEY);
     localStorage.removeItem(OPTIONS_STORAGE_KEY);
+    localStorage.removeItem(VEHICLE_STORAGE_KEY);
     link = jasmine.createSpyObj<MapLink>('MapLink', ['read', 'write', 'fragment', 'share']);
     link.read.and.returnValue(null);
     TestBed.configureTestingModule({
@@ -215,6 +217,7 @@ describe('HomePage (map)', () => {
     localStorage.removeItem(HOME_VIEW_KEY);
     localStorage.removeItem(FILTERS_STORAGE_KEY);
     localStorage.removeItem(OPTIONS_STORAGE_KEY);
+    localStorage.removeItem(VEHICLE_STORAGE_KEY);
   });
 
   it('creates the map in its container with style, attribution, center and zoom of the configuration', async () => {
@@ -726,7 +729,11 @@ describe('HomePage (map)', () => {
         });
         await settle();
 
-        expect(map.handle.highlightLocations).toHaveBeenCalledWith([jasmine.objectContaining({ id: 'loc-1' }), jasmine.objectContaining({ id: 'loc-2' })]);
+        // 12 km need no charging: no location gets a ring.
+        expect(map.handle.highlightLocations).not.toHaveBeenCalledWith([jasmine.objectContaining({ id: 'loc-1' }), jasmine.objectContaining({ id: 'loc-2' })]);
+        expect(map.handle.highlightLocations).toHaveBeenCalledWith([]);
+        expect(text(root(), '#charging-plan')).toBe('Ohne Ladestopp erreichbar: Ankunft mit etwa 96 % (Energiebedarf 2 kWh).');
+        expect(text(root(), '#working')).toBeUndefined();
         expect(text(root(), '#stops-hint')).toBe('Die ersten 2 Standorte bis 1 km neben der Route, mit den Filtern der Karte.');
         const stops = Array.from(root().querySelectorAll<HTMLButtonElement>('#route-stops li button.open-stop'));
         expect(stops.map((button) => text(button, '.stop-name'))).toEqual(['1,8 km · Parkgarage Stephansplatz', '12,4 km · Ladestandort']);
@@ -974,6 +981,7 @@ describe('HomePage (map)', () => {
           expect(request.request.method).toBe('POST');
           expect(request.request.body).toEqual({ position: { latitude: 48.21, longitude: 16.37 }, minutes: [15, 30, 60] });
           expect(text(root(), '#reach')).toBe('Reichweite wird berechnet …');
+          expect(text(root(), '#working')).toBe('Reichweite wird berechnet …');
           expect(reachButton()!.disabled).toBeTrue();
           request.flush({ data: areas, meta: { attribution: [] } });
           await settle();
@@ -1013,8 +1021,15 @@ describe('HomePage (map)', () => {
             'bis 22 kW frei · 2 von 4 frei · bis 15 min',
           ]);
 
+          // The list closes and opens again from the summary.
+          root().querySelector<HTMLButtonElement>('#close-reach-list')!.click();
+          await settle();
+          expect(root().querySelector('#reach-locations')).toBeNull();
+          root().querySelector<HTMLButtonElement>('#show-reach-list')!.click();
+          await settle();
+
           // A location opens its card; closing it returns to the list.
-          fastest[1].click();
+          root().querySelectorAll<HTMLButtonElement>('#reach-locations li button.open-stop')[1].click();
           await settle();
           expect(map.handle.flyTo).toHaveBeenCalledWith(48.195, 16.335, FOCUS_ZOOM);
           expect(text(root(), '#location-card h2')).toBe('Im Loch');
@@ -1246,6 +1261,213 @@ describe('HomePage (map)', () => {
         });
       });
 
+      describe('charging plan', () => {
+        // 20 kWh/100 km with 10 kWh: 2 % per km, 45 km from 100 % down to the 10 % buffer.
+        const along = [
+          stop('slow', 30_000, { name: 'Langsam', maxPowerKw: 22 }),
+          stop('hpc', 40_000, { name: 'Schnell', maxPowerKw: 150 }),
+          stop('later', 70_000, { name: 'Später', maxPowerKw: 50 }),
+          stop('loc-1', 100_000),
+        ];
+
+        async function showLongRoute(stops = along, distanceMeters = 100_000): Promise<void> {
+          TestBed.inject(VehicleStore).set({ consumptionKwhPer100Km: 20, batteryKwh: 10 });
+          await openCard();
+          await clickRoute();
+          http.expectOne('/api/v1/routes').flush({ data: { distanceMeters, durationSeconds: 3600, geometry: { type: 'LineString', coordinates: geometry } }, meta: { attribution: [] } });
+          await settle();
+          http.expectOne('/api/v1/routes/locations').flush({ data: stops, meta: { returned: stops.length, limit: 500, truncated: false, attribution: [] } });
+          await settle();
+        }
+
+        it('recommends the stops for the car, rings only them and takes them over as route', async () => {
+          await showLongRoute();
+
+          expect(text(root(), '#vehicle summary')).toBe('Fahrzeug: 20 kWh/100 km · Akku 10 kWh · Start 100 % · Ankunft 10 %');
+          expect(text(root(), '#charging-plan')).toBe('Empfohlen: 2 Ladestopps, Ankunft mit etwa 10 % (Energiebedarf 20 kWh). Empfehlung übernehmen');
+          expect(map.handle.highlightLocations).toHaveBeenCalledWith([jasmine.objectContaining({ id: 'hpc' }), jasmine.objectContaining({ id: 'later' })]);
+          const recommended = Array.from(root().querySelectorAll<HTMLElement>('#route-stops li.recommended'));
+          expect(recommended.map((item) => text(item, '.stop-recommended'))).toEqual([
+            'Empfohlen: an mit 20 %, laden auf 80 %',
+            'Empfohlen: an mit 20 %, laden auf 70 %',
+          ]);
+
+          root().querySelector<HTMLButtonElement>('#apply-plan')!.click();
+          await settle();
+          const request = http.expectOne('/api/v1/routes');
+          expect(request.request.body.waypoints.length).toBe(4);
+          expect(text(root(), '#working')).toBe('Route wird berechnet …');
+          request.flush({ data: { distanceMeters: 100_000, durationSeconds: 3700, geometry: { type: 'LineString', coordinates: geometry } }, meta: { attribution: [] } });
+          await settle();
+          http.expectOne('/api/v1/routes/locations').flush({ data: along, meta: { returned: 4, limit: 500, truncated: false, attribution: [] } });
+          await settle();
+          // The route goes via the recommendation now: nothing left to take over.
+          expect(root().querySelector('#apply-plan')).toBeNull();
+          expect(text(root(), '#route-summary')).toContain('2 Ladestopps');
+        });
+
+        it('takes the car from the form and tells when the route cannot be done', async () => {
+          await showLongRoute([stop('far', 80_000), stop('loc-1', 100_000)]);
+          expect(text(root(), '#charging-plan')).toBe(
+            'Mit diesen Werten reichen die Ladepunkte entlang der Route nicht bis zum Ziel. Prüfe Verbrauch, Akku oder die Filter der Karte.',
+          );
+
+          const input = (id: string, value: string) => {
+            const field = root().querySelector<HTMLInputElement>(id)!;
+            field.value = value;
+            field.dispatchEvent(new Event('change'));
+          };
+          input('#vehicle-battery', '60');
+          input('#vehicle-consumption', '18');
+          input('#vehicle-start', '80');
+          input('#vehicle-arrival', '20');
+          await settle();
+          expect(TestBed.inject(VehicleStore).vehicle()).toEqual({ consumptionKwhPer100Km: 18, batteryKwh: 60, startSoc: 80, arrivalSoc: 20 });
+          expect(text(root(), '#charging-plan')).toBe('Ohne Ladestopp erreichbar: Ankunft mit etwa 50 % (Energiebedarf 18 kWh).');
+          expect(text(root(), '#vehicle summary')).toBe('Fahrzeug: 18 kWh/100 km · Akku 60 kWh · Start 80 % · Ankunft 20 %');
+
+          // An empty field means the default.
+          input('#vehicle-start', '');
+          await settle();
+          expect(TestBed.inject(VehicleStore).vehicle().startSoc).toBeNull();
+        });
+
+        it('offers no takeover for more stops than a route can have', async () => {
+          TestBed.inject(VehicleStore).set({ consumptionKwhPer100Km: 20, batteryKwh: 10 });
+          const many = Array.from({ length: 20 }, (_, index) => stop(`s${index}`, (index + 1) * 10_000, { maxPowerKw: 150 }));
+          await openCard();
+          await clickRoute();
+          http.expectOne('/api/v1/routes').flush({ data: { distanceMeters: 200_000, durationSeconds: 7200, geometry: { type: 'LineString', coordinates: geometry } }, meta: { attribution: [] } });
+          await settle();
+          http.expectOne('/api/v1/routes/locations').flush({ data: many, meta: { returned: 20, limit: 500, truncated: false, attribution: [] } });
+          await settle();
+
+          expect(text(root(), '#charging-plan')).toContain('Empfohlen: 6 Ladestopps');
+          expect(root().querySelector('#apply-plan')).toBeNull();
+        });
+
+        it('recommends a single stop in the singular', async () => {
+          await showLongRoute([stop('hpc', 40_000, { maxPowerKw: 150 })], 60_000);
+          expect(text(root(), '#charging-plan')).toContain('Empfohlen: 1 Ladestopp,');
+        });
+      });
+
+      describe('lists and planner', () => {
+        const routeAnswer = (distanceMeters = 12_480) => ({
+          data: { distanceMeters, durationSeconds: 960, geometry: { type: 'LineString', coordinates: geometry } },
+          meta: { attribution: [] },
+        });
+        const listAnswer = { data: [stop('loc-2', 3000)], meta: { returned: 1, limit: 500, truncated: false, attribution: [] } };
+
+        it('closes the list along the route and shows it again', async () => {
+          await openCard();
+          await clickRoute();
+          http.expectOne('/api/v1/routes').flush(routeAnswer());
+          await settle();
+          http.expectOne('/api/v1/routes/locations').flush(listAnswer);
+          await settle();
+
+          root().querySelector<HTMLButtonElement>('#close-stops')!.click();
+          await settle();
+          expect(root().querySelector('#route-stops')).toBeNull();
+          expect(fixture.nativeElement.classList).not.toContain('has-card');
+          root().querySelector<HTMLButtonElement>('#show-stops')!.click();
+          await settle();
+          expect(root().querySelector('#route-stops')).not.toBeNull();
+          expect(root().querySelector('#show-stops')).toBeNull();
+        });
+
+        it('plans a route from a location to a point picked on the map and changes its start', async () => {
+          await openCard();
+          root().querySelector<HTMLButtonElement>('#route-from')!.click();
+          await settle();
+
+          expect(root().querySelector('#location-card')).toBeNull();
+          expect(text(root(), '#planner-start')).toBe('Parkgarage Stephansplatz');
+          expect(text(root(), '#planner-destination')).toBe('noch nicht gewählt');
+          expect(text(root(), '#planner-hint')).toBe('Tippe auf die Karte oder einen Ladestandort, um das Ziel festzulegen.');
+          expect(root().querySelector<HTMLButtonElement>('#planner-calculate')!.disabled).toBeTrue();
+
+          options().onClick(48.3, 16.5);
+          await settle();
+          expect(text(root(), '#planner-destination')).toBe('Punkt 48,3000, 16,5000');
+          expect(root().querySelector('#planner-hint')).toBeNull();
+          // Without waiting for a place, clicks on the map do nothing.
+          options().onClick(1, 2);
+          await settle();
+          expect(text(root(), '#planner-destination')).toBe('Punkt 48,3000, 16,5000');
+
+          root().querySelector<HTMLButtonElement>('#planner-calculate')!.click();
+          await settle();
+          const request = http.expectOne('/api/v1/routes');
+          expect(request.request.body).toEqual({ waypoints: [{ latitude: 48.2085, longitude: 16.3731 }, { latitude: 48.3, longitude: 16.5 }] });
+          request.flush(routeAnswer());
+          await settle();
+          http.expectOne('/api/v1/routes/locations').flush(listAnswer);
+          await settle();
+          expect(root().querySelector('#route-planner')).toBeNull();
+          // The destination is no location: every location of the list can become a stop.
+          expect(root().querySelectorAll('#route-stops .add-stop').length).toBe(1);
+
+          // Change the start: a location picked on the map, then back to the own position.
+          root().querySelector<HTMLButtonElement>('#route-edit')!.click();
+          await settle();
+          expect(text(root(), '#planner-start')).toBe('Parkgarage Stephansplatz');
+          root().querySelector<HTMLButtonElement>('#pick-start')!.click();
+          await settle();
+          expect(text(root(), '#planner-hint')).toBe('Tippe auf die Karte oder einen Ladestandort, um den Start festzulegen.');
+          options().onSelect('unknown');
+          await settle();
+          expect(root().querySelector('#location-card')).toBeNull();
+          options().onSelect('loc-2');
+          await settle();
+          expect(root().querySelector('#location-card')).toBeNull();
+          expect(text(root(), '#planner-start')).toBe('Ladestandort');
+          root().querySelector<HTMLButtonElement>('#planner-own')!.click();
+          await settle();
+          expect(text(root(), '#planner-start')).toBe('Mein Standort');
+          expect(root().querySelector('#planner-own')).toBeNull();
+
+          // The own position is asked for when calculating; a failed route keeps the planner open.
+          root().querySelector<HTMLButtonElement>('#planner-calculate')!.click();
+          await settle();
+          http.expectOne('/api/v1/routes').flush({ title: 'Error' }, { status: 500, statusText: 'Error' });
+          await settle();
+          expect(root().querySelector('#route-planner')).not.toBeNull();
+          root().querySelector<HTMLButtonElement>('#planner-cancel')!.click();
+          await settle();
+          expect(root().querySelector('#route-planner')).toBeNull();
+        });
+
+        it('keeps the own position as start when changing a route from there', async () => {
+          await openCard();
+          await clickRoute();
+          http.expectOne('/api/v1/routes').flush(routeAnswer());
+          await settle();
+          http.expectOne('/api/v1/routes/locations').flush(listAnswer);
+          await settle();
+
+          root().querySelector<HTMLButtonElement>('#route-edit')!.click();
+          await settle();
+          expect(text(root(), '#planner-start')).toBe('Mein Standort');
+          expect(text(root(), '#planner-destination')).toBe('Parkgarage Stephansplatz');
+          root().querySelector<HTMLButtonElement>('#pick-destination')!.click();
+          await settle();
+          expect(root().querySelector('#pick-destination')!.classList).toContain('picking');
+
+          // A refused position stops the calculation.
+          browser.currentPosition.and.rejectWith({ code: 1 });
+          root().querySelector<HTMLButtonElement>('#planner-calculate')!.click();
+          await settle();
+          expect(text(root(), '#map-notice')).toBe('Die Standortfreigabe wurde abgelehnt. Du kannst sie in den Website-Einstellungen deines Browsers erlauben.');
+          browser.secureContext.and.returnValue(false);
+          root().querySelector<HTMLButtonElement>('#planner-calculate')!.click();
+          await settle();
+          expect(text(root(), '#map-notice')).toBe('Der Standort ist nur über eine sichere Verbindung (HTTPS) verfügbar.');
+          http.expectNone('/api/v1/routes');
+        });
+      });
+
       it('explains stops that cannot be loaded, an empty corridor and drops the answer for a removed route', async () => {
         const routeOnce = async () => {
           if (!root().querySelector('#location-card')) {
@@ -1395,6 +1617,33 @@ describe('HomePage (map)', () => {
       expect(root().querySelector('#map-overlay #location-card')).toBeNull();
       expect(root().querySelector(':scope > #location-card')).not.toBeNull();
       expect(root().classList).toContain('has-card');
+    });
+
+    it('folds the map actions on small screens and shows reach and own position as symbols', async () => {
+      viewport.mobile.set(true);
+      auth.hasPermission.and.callFake((permission) => permission === 'route:read');
+      await render();
+      await moveTo(vienna, response());
+
+      // The legend heads the overlay column, so messages stack below it.
+      expect(root().querySelector('#map-overlay > #legend')).not.toBeNull();
+      expect(root().querySelector('#map-legend-bar #legend')).toBeNull();
+      expect(text(root(), '#locate')).toBe('');
+      expect(root().querySelector('#locate')!.getAttribute('aria-label')).toBe('Mein Standort');
+      expect(text(root(), '#reach')).toBe('');
+      const actions = () => root().querySelector<HTMLElement>('#map-actions .home-actions')!;
+      const toggle = () => root().querySelector<HTMLButtonElement>('#actions-toggle')!;
+      expect(actions().hidden).toBeTrue();
+      expect(toggle().getAttribute('aria-label')).toBe('Weitere Kartenfunktionen');
+
+      toggle().click();
+      await settle();
+      expect(actions().hidden).toBeFalse();
+      expect(toggle().getAttribute('aria-expanded')).toBe('true');
+      expect(toggle().getAttribute('aria-label')).toBe('Kartenfunktionen schließen');
+      toggle().click();
+      await settle();
+      expect(actions().hidden).toBeTrue();
     });
 
     it('marks every status of the legend and the card with a symbol', async () => {

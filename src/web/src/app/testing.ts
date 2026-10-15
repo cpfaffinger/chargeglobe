@@ -114,7 +114,10 @@ export function submit(root: Element): void {
 export const text = (root: Element, selector: string): string | undefined =>
   root.querySelector(selector)?.textContent?.replace(/\s+/g, ' ').trim();
 
-/** Viewport double: desktop by default; set mobile to switch the layout. */
-export function fakeViewport(mobile = false) {
-  return { mobile: signal(mobile) } as unknown as Viewport & { mobile: ReturnType<typeof signal<boolean>> };
+/** Viewport double: desktop by default; set mobile (phone layout) and compactNav (menu button) to switch the layout. */
+export function fakeViewport(mobile = false, compactNav = mobile) {
+  return { mobile: signal(mobile), compactNav: signal(compactNav) } as unknown as Viewport & {
+    mobile: ReturnType<typeof signal<boolean>>;
+    compactNav: ReturnType<typeof signal<boolean>>;
+  };
 }

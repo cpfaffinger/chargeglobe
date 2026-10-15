@@ -126,6 +126,7 @@ describe('App with its routes', () => {
 
     it('opens the navigation as side sheet on small screens and closes it on navigation', async () => {
       viewport.mobile.set(true);
+      viewport.compactNav.set(true);
       auth.me.set(ME);
       auth.hasPermission.and.returnValue(true);
       await navigate('/account');
@@ -173,6 +174,23 @@ describe('App with its routes', () => {
       expect(router.url).toBe('/admin/settings');
       expect(sheet.classList).not.toContain('mat-drawer-opened');
       http.expectOne('/api/v1/settings').flush([]);
+    });
+  });
+
+  describe('tablet', () => {
+    it('puts the navigation behind the menu button and keeps the search in the toolbar', async () => {
+      viewport.compactNav.set(true);
+      auth.me.set(ME);
+      await navigate('/account');
+      http.expectOne('/api/v1/health');
+
+      expect(root().querySelector('.toolbar-nav')).toBeNull();
+      expect(root().querySelector('.app-toolbar #location-search')).not.toBeNull();
+      root().querySelector<HTMLButtonElement>('#menu')!.click();
+      await fixture.whenStable();
+      const sheet = root().querySelector('mat-sidenav')!;
+      expect(Array.from(sheet.querySelectorAll('nav a')).map((link) => link.id)).toEqual(['nav-map', 'nav-favorites', 'nav-account']);
+      expect(sheet.querySelector('#location-search')).toBeNull();
     });
   });
 

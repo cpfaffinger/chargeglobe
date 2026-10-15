@@ -52,15 +52,19 @@ function readStoredMode(): ThemeMode {
   }
 }
 
-/** Below the Material "medium" window class (840 px): navigation in a side sheet, vertical stepper, bottom sheet. */
+/** Below the Material "medium" window class (840 px): search in the side sheet, vertical stepper, bottom sheet. */
 export const MOBILE_QUERY = '(max-width: 839.98px)';
+
+/**
+ * Below 1280 px the links of the toolbar (map, favorites, administration, account, logout) and the search no longer fit
+ * in one row – tablets wrapped the toolbar into two lines –, so the navigation moves into the side sheet.
+ */
+export const COMPACT_NAV_QUERY = '(max-width: 1279.98px)';
 
 @Injectable({ providedIn: 'root' })
 export class Viewport {
-  readonly mobile = toSignal(
-    inject(BreakpointObserver)
-      .observe(MOBILE_QUERY)
-      .pipe(map((state) => state.matches)),
-    { initialValue: false },
-  );
+  private readonly observer = inject(BreakpointObserver);
+  readonly mobile = toSignal(this.observer.observe(MOBILE_QUERY).pipe(map((state) => state.matches)), { initialValue: false });
+  /** Navigation behind the menu button (phones and tablets). */
+  readonly compactNav = toSignal(this.observer.observe(COMPACT_NAV_QUERY).pipe(map((state) => state.matches)), { initialValue: false });
 }

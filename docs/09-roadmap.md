@@ -68,6 +68,9 @@
 - [x] Ladestopps in die Route einplanen (bis zu 3 Zwischenziele aus „Unterwegs laden“, in Reihenfolge der Route, einzeln entfernbar)
 - [x] Reichweite mit dem Auto (`POST /routes/reach`, Isochronen nach Fahrzeit oder Strecke; Knopf „Reichweite“ zeigt 15/30/60 min als Flächen auf der Karte)
 - [x] Ladepunkte in Reichweite (`POST /locations/within` mit Polygon/MultiPolygon und den Filtern der Karte; Karte „In Reichweite“ mit Zahlen je Fahrzeit-Band und den schnellsten freien Standorten)
+- [x] Ladeplanung entlang der Route (Verbrauch, Akku, Ladezustand bei Abfahrt und Ankunft; empfohlene Ladestopps im Browser, übernehmbar als Route)
+- [x] Routenplaner mit frei wählbarem Start und Ziel (eigener Standort, Ladestandort oder Punkt auf der Karte)
+- [x] Cluster als Ringdiagramm der Marker; Navigation auf Tablets im Seitenmenü; kompakte Kartenknöpfe auf Handys
 - [x] Preise entlang der Route (`POST /locations/prices`: günstigster Ad-hoc-Preis und günstigste eigene Karte je Standort in einem Request; in „Unterwegs laden“ mit Umschalter „günstigste zuerst“)
 - [ ] OSM-Extrakt-Aktualisierung als Worker-Job
 - [ ] Vector-Tiles, Admin-UI (Konflikte, Match-Review, Provider-Health), Vorschlags-Workflow für Agenten (`proposal:write`)

@@ -343,10 +343,76 @@ app-location-details .details-state {
   margin-top: 16px;
 }
 
-#location-card .card-head {
+// The head with the close button stays at the top while the card scrolls.
+#location-card .card-head,
+#route-stops .card-head,
+#reach-locations .card-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   display: flex;
   align-items: flex-start;
   gap: 4px;
+  margin: 0 -4px;
+  padding: 4px 4px 4px;
+  background: var(--mat-card-outlined-container-color, var(--mat-sys-surface));
+}
+
+#route-stops .card-head h2,
+#reach-locations .card-head h2 {
+  flex: 1;
+  align-self: center;
+}
+
+#location-card .route-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+// Start and destination of a route, each picked on the map or the own position.
+#route-planner .planner-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+#route-planner .planner-label {
+  min-width: 3em;
+  font: var(--mat-sys-label-large);
+}
+
+#route-planner .planner-place {
+  flex: 1;
+  min-width: 8em;
+}
+
+#route-planner .picking {
+  background: var(--mat-sys-secondary-container);
+}
+
+#route-planner p {
+  margin: 4px 0;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+#route-planner .planner-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+#route-summary .summary-edit {
+  float: right;
+  margin: -8px -8px 0 0;
+}
+
+#working,
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 #location-card .card-head > div {
@@ -407,6 +473,79 @@ app-location-details .details-state {
   align-items: center;
   gap: 8px;
   margin: 4px 0 8px;
+}
+
+#route-stops li.recommended {
+  box-shadow: inset 4px 0 0 var(--mat-sys-tertiary);
+}
+
+#route-stops .stop-recommended {
+  font: var(--mat-sys-label-medium);
+  color: var(--mat-sys-tertiary);
+}
+
+// The car of the trip, folded into one line until opened.
+#vehicle {
+  margin: 4px 0 8px;
+  font: var(--mat-sys-body-small);
+}
+
+#vehicle summary {
+  cursor: pointer;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+#vehicle .vehicle-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+#vehicle label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font: var(--mat-sys-label-medium);
+}
+
+#vehicle input {
+  padding: 6px 8px;
+  border: 1px solid var(--mat-sys-outline);
+  border-radius: var(--mat-sys-corner-extra-small);
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-medium);
+}
+
+#charging-plan {
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  box-shadow: none;
+  background: color-mix(in srgb, var(--mat-sys-tertiary) 10%, transparent);
+}
+
+#charging-plan.infeasible {
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+
+#charging-plan button {
+  margin-top: 4px;
+}
+
+// Clusters as donut charts: the shares of the markers, the number in the middle.
+.cluster-pie {
+  display: block;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.cluster-pie svg {
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.35));
 }
 
 #route-stops .stop-badge {
@@ -658,6 +797,11 @@ app-location-details .details-state {
     display: none;
   }
 
+  // The secondary actions unfold above the toggle, in a column.
+  #map-actions .home-actions {
+    flex-direction: column;
+  }
+
   // The legend goes to the top (own rule below), the filter button stays bottom left.
   #map-legend-bar {
     display: contents;
@@ -680,15 +824,11 @@ app-location-details .details-state {
     border-radius: 28px 28px 0 0;
   }
 
-  // Legend as a row of chips at the top (left of the zoom buttons), notices below it.
-  // Two compact columns so all four states fit next to the map controls without scrolling.
+  // Legend at the top of the overlay column (left of the zoom buttons), notices, route and reach below it.
+  // Two compact columns so all states fit next to the map controls without scrolling.
   #legend {
-    position: absolute;
-    z-index: 1;
-    top: 12px;
-    bottom: auto;
-    left: 12px;
-    right: 60px;
+    align-self: flex-start;
+    margin: 0;
     display: grid;
     grid-template-columns: repeat(2, max-content);
     gap: 4px 12px;
@@ -701,7 +841,8 @@ app-location-details .details-state {
   }
 
   #map-overlay {
-    top: 84px;
+    top: 12px;
+    right: 60px;
   }
 
   app-home.has-card #legend,
@@ -836,19 +977,28 @@ app-location-details .connectors,
 }
 
 #heatmap-select {
-  overflow-x: auto;
+  flex-wrap: wrap;
   max-width: 100%;
 }
 
-// Heatmap weekday × hour; scrolls sideways on narrow screens instead of the page.
+// Heatmap weekday × hour: 24 equal columns over the full width, never wider than the page.
 #heatmap {
-  display: block;
-  max-width: 100%;
+  width: 100%;
   margin-top: 8px;
-  overflow-x: auto;
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 2px;
   font: var(--mat-sys-body-small);
+}
+
+#heatmap thead th:first-child {
+  width: 2em;
+}
+
+#heatmap thead th {
+  overflow: visible;
+  font-size: 10px;
+  white-space: nowrap;
 }
 
 #heatmap th {
@@ -857,7 +1007,6 @@ app-location-details .connectors,
 }
 
 #heatmap td {
-  min-width: 18px;
   height: 22px;
   border-radius: 4px;
 }
@@ -1234,6 +1383,27 @@ app-evse-detail .plain {
 
 app-evse-detail mat-button-toggle-group {
   margin-bottom: 12px;
+}
+
+// The origin of the data wraps long identifiers instead of scrolling sideways.
+#sources,
+#provenance {
+  display: table;
+  width: 100%;
+  overflow-x: visible;
+}
+
+#sources td,
+#provenance td {
+  overflow-wrap: anywhere;
+}
+
+.evse-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 // Simple data tables (status periods, sources); scroll sideways on narrow screens.

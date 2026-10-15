@@ -20,8 +20,8 @@ const THEMES: { mode: ThemeMode; label: string; icon: IconName }[] = [
 ];
 
 /**
- * Shell: Material toolbar with the navigation and the search, on small screens (Viewport.mobile) a menu button that
- * opens navigation and search as side sheet. The theme switch (light, dark, system) sits in the toolbar or in the side
+ * Shell: Material toolbar with the navigation and the search; below 1280 px (Viewport.compactNav, tablets and phones) a
+ * menu button that opens the navigation as side sheet, on phones (Viewport.mobile) together with the search. The theme switch (light, dark, system) sits in the toolbar or in the side
  * sheet. The admin pages are reached through "Administration": a drop-down with the overview and the permitted pages
  * in the toolbar, the overview with the permitted pages indented below it in the side sheet.
  */
@@ -47,7 +47,7 @@ const THEMES: { mode: ThemeMode; label: string; icon: IconName }[] = [
         <a matButton routerLink="/favorites" routerLinkActive="active" id="nav-favorites" (click)="close()">Favoriten</a>
         @if (adminPages(); as pages) {
           @if (pages.length > 0) {
-            @if (viewport.mobile()) {
+            @if (viewport.compactNav()) {
               <!-- In the side sheet the subpages are listed below the overview, there is no drop-down. -->
               <a matButton routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" id="nav-admin" (click)="close()">Administration</a>
               <div class="nav-sub" role="group" aria-label="Administration">
@@ -89,7 +89,7 @@ const THEMES: { mode: ThemeMode; label: string; icon: IconName }[] = [
           <app-location-search (chosen)="close()" />
         }
         <nav aria-label="Navigation">
-          @if (viewport.mobile()) {
+          @if (viewport.compactNav()) {
             <ng-container [ngTemplateOutlet]="links" />
           }
         </nav>
@@ -107,13 +107,13 @@ const THEMES: { mode: ThemeMode; label: string; icon: IconName }[] = [
       </mat-sidenav>
       <mat-sidenav-content class="shell-content">
         <mat-toolbar class="app-toolbar">
-          @if (viewport.mobile()) {
+          @if (viewport.compactNav()) {
             <button matIconButton type="button" id="menu" aria-label="Menü öffnen" (click)="menuOpen.set(true)">
               <app-icon name="menu" />
             </button>
           }
           <a class="brand" routerLink="/"><span class="logo"><app-icon name="bolt" /></span>chargeglobe</a>
-          @if (!viewport.mobile()) {
+          @if (!viewport.compactNav()) {
             <nav class="toolbar-nav" aria-label="Hauptnavigation">
               <ng-container [ngTemplateOutlet]="links" />
             </nav>
