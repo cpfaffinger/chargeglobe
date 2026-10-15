@@ -323,8 +323,9 @@ app-home {
   color: var(--mat-sys-on-tertiary-container);
 }
 
-// The card holds the details of the location and scrolls itself; the map behind keeps its position.
-#location-card {
+// The card holds the details of the location (or the stops along a route) and scrolls itself; the map behind keeps its position.
+#location-card,
+#route-stops {
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -370,6 +371,46 @@ app-location-details .details-state {
   align-items: center;
   gap: 12px;
   margin-top: 12px;
+}
+
+// Stops along a route: one button per location, start first.
+#route-stops h2 {
+  margin: 0 0 4px;
+  font: var(--mat-sys-title-medium);
+}
+
+#route-stops ol {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+#route-stops li button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 4px;
+  border: none;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  background: none;
+  color: inherit;
+  font: var(--mat-sys-body-medium);
+  text-align: left;
+  cursor: pointer;
+}
+
+#route-stops li button:hover,
+#route-stops li button:focus-visible {
+  background: var(--mat-sys-surface-container-high);
+}
+
+#route-stops .stop-state {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--mat-sys-on-surface-variant);
 }
 
 // Start position and own position, bottom right.
@@ -529,7 +570,8 @@ app-location-details .details-state {
   }
 
   // The info card becomes a bottom sheet with the details; the map stays visible above it.
-  #location-card {
+  #location-card,
+  #route-stops {
     position: absolute;
     left: 0;
     right: 0;

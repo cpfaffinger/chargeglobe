@@ -64,7 +64,8 @@
 - [ ] Analyse und Adapter je Anbieter nach Priorität aus [07](07-bestandsanalyse-apps-at.md) (Web-Karten zuerst)
 - [ ] Automatisches Tarif-Tracking je EMP, Preisänderungs-Feed
 - [ ] Status-Zweitquellen (CPO-direkt) für Latenz-/Qualitätsvergleich mit E-Control
-- [ ] Ladepunkte entlang einer Route (Korridorabfrage), OSM-Extrakt-Aktualisierung als Worker-Job
+- [x] Ladepunkte entlang einer Route (`POST /routes/locations`, Korridor 100–5.000 m, Filter der Karte; Liste „Unterwegs laden“ mit Ringen auf der Karte)
+- [ ] OSM-Extrakt-Aktualisierung als Worker-Job, Korridorliste bei Filteränderung neu laden
 - [ ] Vector-Tiles, Admin-UI (Konflikte, Match-Review, Provider-Health), Vorschlags-Workflow für Agenten (`proposal:write`)
 - [ ] MCP-Server aus der OpenAPI-Beschreibung generieren (optional)
 - [ ] Ganz Österreich

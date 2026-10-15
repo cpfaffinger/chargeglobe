@@ -1,3 +1,4 @@
+using ChargeGlobe.Domain;
 using ChargeGlobe.Providers.Abstractions;
 
 namespace ChargeGlobe.Application.Locations;
@@ -53,6 +54,38 @@ public sealed record LocationFacilities(bool? GreenEnergy, bool? FreeParking, bo
 
 /// <summary>Attribution of a source whose data is part of a response (table <c>source</c>).</summary>
 public sealed record SourceAttribution(string Source, string Text, string License);
+
+/// <summary>A location along a route: the summary of the map plus where it lies relative to the route.</summary>
+/// <param name="DistanceFromRouteMeters">Shortest distance to the line of the route.</param>
+/// <param name="PositionOnRouteMeters">Distance from the start along the line to the point closest to the location.</param>
+public sealed record RouteLocation(
+    Guid Id,
+    string? Name,
+    string? Address,
+    string? PostalCode,
+    string? City,
+    string Country,
+    double Latitude,
+    double Longitude,
+    string? Operator,
+    int EvsesTotal,
+    int EvsesAvailable,
+    decimal? MaxPowerKw,
+    DateTimeOffset? StatusObservedAt,
+    string Availability,
+    LocationFacilities Facilities,
+    decimal? MaxAvailablePowerKw,
+    double DistanceFromRouteMeters,
+    double PositionOnRouteMeters)
+{
+    public static RouteLocation From(LocationSummary location, double distance, double position) =>
+        new(location.Id, location.Name, location.Address, location.PostalCode, location.City, location.Country, location.Latitude,
+            location.Longitude, location.Operator, location.EvsesTotal, location.EvsesAvailable, location.MaxPowerKw,
+            location.StatusObservedAt, location.Availability, location.Facilities, location.MaxAvailablePowerKw, distance, position);
+}
+
+/// <param name="Truncated">More locations lie in the corridor than were returned.</param>
+public sealed record RoutePage(IReadOnlyList<RouteLocation> Locations, bool Truncated, IReadOnlyList<SourceAttribution> Attribution);
 
 /// <param name="Truncated">More locations lie in the box than were returned.</param>
 public sealed record LocationPage(IReadOnlyList<LocationSummary> Locations, bool Truncated, IReadOnlyList<SourceAttribution> Attribution);
@@ -113,6 +146,12 @@ public interface ILocationQueries
 {
     /// <summary>Active locations in the box that match the filter, nearest to its centre first, at most <paramref name="limit"/>.</summary>
     Task<LocationPage> InBoundingBoxAsync(BoundingBox box, LocationFilter filter, int limit, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Active locations within <paramref name="corridorMeters"/> of the line through <paramref name="route"/> that match the
+    /// filter, in the order of the route (start first), at most <paramref name="limit"/>.
+    /// </summary>
+    Task<RoutePage> AlongRouteAsync(IReadOnlyList<GeoPoint> route, int corridorMeters, LocationFilter filter, int limit, CancellationToken cancellationToken);
 
     /// <summary>The active locations among <paramref name="ids"/> (e.g. favorites), aggregated like <see cref="InBoundingBoxAsync"/>.</summary>
     Task<LocationPage> ByIdsAsync(IReadOnlyList<Guid> ids, CancellationToken cancellationToken);

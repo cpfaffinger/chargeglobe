@@ -1,5 +1,6 @@
 using ChargeGlobe.Application.Locations;
 using ChargeGlobe.Application.Settings;
+using ChargeGlobe.Domain;
 using ChargeGlobe.Domain.Charging;
 using ChargeGlobe.Domain.Provenance;
 using ChargeGlobe.Providers.Abstractions;
@@ -9,7 +10,8 @@ namespace ChargeGlobe.Infrastructure.Persistence;
 
 /// <summary>
 /// Map read model on PostGIS: bounding box via the GiST index on <c>location.geom</c>, nearest to the
-/// centre of the box first, aggregated with the current status of the active EVSEs.
+/// centre of the box first, or a corridor along a route in the order of the route; aggregated with the
+/// current status of the active EVSEs.
 /// </summary>
 public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProvider timeProvider) : ILocationQueries
 {
@@ -21,11 +23,22 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
 
     private static readonly LocationFilter NoFilter = new([], null, null, null, [], false, false, false, false, false);
 
+    /// <summary>Stand-in line of the queries without route; the route condition is switched off for them.</summary>
+    private static readonly GeoPoint[] NoRoute = [new(0, 0), new(1, 1)];
+
     public async Task<LocationPage> InBoundingBoxAsync(BoundingBox box, LocationFilter filter, int limit, CancellationToken cancellationToken)
     {
         var rows = await SummariesAsync(box, null, filter, limit + 1, cancellationToken);
         var locations = rows.Take(limit).Select(row => row.ToSummary()).ToList();
         return new LocationPage(locations, rows.Count > limit, await AttributionAsync([.. locations.Select(location => location.Id)], cancellationToken));
+    }
+
+    public async Task<RoutePage> AlongRouteAsync(
+        IReadOnlyList<GeoPoint> route, int corridorMeters, LocationFilter filter, int limit, CancellationToken cancellationToken)
+    {
+        var rows = await SummariesAsync(null, null, filter, limit + 1, cancellationToken, route, corridorMeters);
+        var locations = rows.Take(limit).Select(row => RouteLocation.From(row.ToSummary(), row.DistanceFromRoute!.Value, row.PositionOnRoute!.Value)).ToList();
+        return new RoutePage(locations, rows.Count > limit, await AttributionAsync([.. locations.Select(location => location.Id)], cancellationToken));
     }
 
     public async Task<LocationPage> ByIdsAsync(IReadOnlyList<Guid> ids, CancellationToken cancellationToken)
@@ -36,11 +49,19 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
     }
 
     /// <summary>
-    /// Active locations with the counts of their EVSEs: in the box (nearest to its centre first) or with one of the ids,
-    /// matching the filter, at most <paramref name="take"/>.
+    /// Active locations with the counts of their EVSEs: in the box (nearest to its centre first), with one of the ids, or
+    /// within <paramref name="corridorMeters"/> of the route (in the order of the route), matching the filter, at most
+    /// <paramref name="take"/>. The position on the route is the share of the line (in degrees) up to the closest point
+    /// times its length in metres – close enough to order the stops and tell the kilometre.
     /// </summary>
-    private Task<List<SummaryRow>> SummariesAsync(BoundingBox? within, Guid[]? ids, LocationFilter filter, int take, CancellationToken cancellationToken)
+    private Task<List<SummaryRow>> SummariesAsync(
+        BoundingBox? within, Guid[]? ids, LocationFilter filter, int take, CancellationToken cancellationToken,
+        IReadOnlyList<GeoPoint>? route = null, int corridorMeters = 0)
     {
+        var anyRoute = route is null;
+        var line = route ?? NoRoute;
+        double[] longitudes = [.. line.Select(point => point.Longitude)];
+        double[] latitudes = [.. line.Select(point => point.Latitude)];
         var box = within ?? new BoundingBox(-180, -90, 180, 90);
         var anyBox = within is null;
         var anyId = ids is null;
@@ -53,6 +74,11 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
         var centerLatitude = (box.MinLatitude + box.MaxLatitude) / 2;
         return db.Database
             .SqlQuery<SummaryRow>($"""
+                WITH route AS MATERIALIZED (
+                    SELECT ST_SetSRID(ST_MakeLine(ARRAY(
+                        SELECT ST_MakePoint(p.x, p.y)
+                        FROM unnest({longitudes}::float8[], {latitudes}::float8[]) WITH ORDINALITY AS p(x, y, n)
+                        ORDER BY p.n)), 4326) AS g)
                 SELECT l.id AS "Id", l.name AS "Name", l.address AS "Address", l.postal_code AS "PostalCode", l.city AS "City",
                        l.country AS "Country", ST_Y(l.geom::geometry) AS "Latitude", ST_X(l.geom::geometry) AS "Longitude",
                        o.name AS "Operator",
@@ -64,7 +90,10 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
                        max(e.max_power_kw) FILTER (WHERE c.status = 'AVAILABLE' AND c.observed_at >= {fresh}) AS "MaxAvailablePowerKw",
                        max(c.observed_at) AS "StatusObservedAt",
                        l.green_energy AS "GreenEnergy", l.free_parking AS "FreeParking", l.roofed_parking AS "RoofedParking",
-                       l.barrier_free_parking_spaces AS "BarrierFreeParkingSpaces", l.price_url AS "PriceUrl"
+                       l.barrier_free_parking_spaces AS "BarrierFreeParkingSpaces", l.price_url AS "PriceUrl",
+                       CASE WHEN {anyRoute} THEN NULL ELSE ST_Distance(l.geom, (SELECT g FROM route)::geography) END AS "DistanceFromRoute",
+                       CASE WHEN {anyRoute} THEN NULL
+                            ELSE ST_LineLocatePoint((SELECT g FROM route), l.geom::geometry) * ST_Length((SELECT g FROM route)::geography) END AS "PositionOnRoute"
                 FROM location l
                 LEFT JOIN operator o ON o.id = l.operator_id
                 LEFT JOIN evse e ON e.location_id = l.id AND e.lifecycle = 'ACTIVE'
@@ -72,6 +101,7 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
                 WHERE l.lifecycle = 'ACTIVE'
                   AND ({anyBox} OR l.geom && ST_MakeEnvelope({box.MinLongitude}, {box.MinLatitude}, {box.MaxLongitude}, {box.MaxLatitude}, 4326)::geography)
                   AND ({anyId} OR l.id = ANY({wanted}::uuid[]))
+                  AND ({anyRoute} OR ST_DWithin(l.geom, (SELECT g FROM route)::geography, {corridorMeters}))
                   AND ({operatorPattern}::text IS NULL OR o.name ILIKE {operatorPattern}::text)
                   AND (cardinality({operatorIds}::uuid[]) = 0 OR l.operator_id = ANY({operatorIds}::uuid[]))
                   AND (NOT {filter.GreenEnergy} OR l.green_energy)
@@ -87,7 +117,8 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
                                 SELECT 1 FROM connector fc WHERE fc.evse_id = fe.id AND fc.standard = ANY({connectors}::text[])))))
                 GROUP BY l.id, o.name
                 HAVING NOT {filter.AvailableOnly} OR count(e.id) FILTER (WHERE c.status = 'AVAILABLE' AND c.observed_at >= {fresh}) > 0
-                ORDER BY l.geom <-> ST_SetSRID(ST_MakePoint({centerLongitude}, {centerLatitude}), 4326)::geography, l.id
+                ORDER BY CASE WHEN {anyRoute} THEN 0 ELSE ST_LineLocatePoint((SELECT g FROM route), l.geom::geometry) END,
+                         l.geom <-> ST_SetSRID(ST_MakePoint({centerLongitude}, {centerLatitude}), 4326)::geography, l.id
                 LIMIT {take}
                 """)
             .ToListAsync(cancellationToken);
@@ -216,6 +247,10 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
         public int? BarrierFreeParkingSpaces { get; set; }
 
         public string? PriceUrl { get; set; }
+
+        public double? DistanceFromRoute { get; set; }
+
+        public double? PositionOnRoute { get; set; }
 
         public LocationSummary ToSummary() =>
             new(Id, Name, Address, PostalCode, City, Country, Latitude, Longitude, Operator, EvsesTotal, EvsesAvailable, MaxPowerKw,

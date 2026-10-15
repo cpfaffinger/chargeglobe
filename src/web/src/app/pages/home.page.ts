@@ -29,7 +29,7 @@ import { MapOptionsStore } from '../map/map-options';
 import { MapFilterStore, filterParams } from '../map/map-filters';
 import { MapLink, ShareResult } from '../map/map-link';
 import { MapView, MapViewStore } from '../map/map-view.store';
-import { RoutesService, routeSummary } from '../map/routes.service';
+import { RouteLocation, RouteResponse, RoutesService, kilometres, routeSummary } from '../map/routes.service';
 import { Bbox, LocationSummary, LocationsService } from '../map/locations.service';
 import { MapFocus } from '../search/search.service';
 
@@ -93,7 +93,7 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
 @Component({
   imports: [AppIcon, DatePipe, DecimalPipe, FavoriteButton, LocationDetails, MapFilterPanel, MapOptionsPanel, MatButtonModule, MatCardModule, MatMenuModule, NgTemplateOutlet],
   selector: 'app-home',
-  host: { '[class.has-card]': 'selected() !== null', '[class.has-filters]': 'filtersOpen() || optionsOpen()' },
+  host: { '[class.has-card]': 'selected() !== null || stopsState() !== null', '[class.has-filters]': 'filtersOpen() || optionsOpen()' },
   template: `
     <ng-template #card>
       @if (selected(); as location) {
@@ -136,6 +136,41 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
               <app-location-details [locationId]="location.id" />
             } @placeholder {
               <p class="details-state">Ladepunkte werden geladen …</p>
+            }
+          </mat-card-content>
+        </mat-card>
+      } @else if (stopsState(); as state) {
+        <mat-card id="route-stops" appearance="outlined" role="region" aria-label="Unterwegs laden">
+          <mat-card-content>
+            <h2>Unterwegs laden</h2>
+            @switch (state) {
+              @case ('loading') {
+                <p class="muted">Ladepunkte entlang der Route werden gesucht …</p>
+              }
+              @case ('error') {
+                <p class="error">Die Ladepunkte entlang der Route konnten nicht geladen werden.</p>
+              }
+              @default {
+                <p class="muted" id="stops-hint">{{ stopsTruncated() ? 'Die ersten ' : '' }}{{ stops().length }} Standorte bis 1 km neben der Route, mit den Filtern der Karte.</p>
+                <ol>
+                  @for (stop of stops(); track stop.id) {
+                    <li>
+                      <button type="button" [attr.data-stop]="stop.id" (click)="openStop(stop)">
+                        <span class="stop-name">{{ km(stop.positionOnRouteMeters) }} · {{ stop.name ?? 'Ladestandort' }}</span>
+                        <span class="stop-state">
+                          <span class="status-dot" [style.background]="color(marker(stop))"><app-icon [name]="markers[marker(stop)].icon" /></span>
+                          {{ stop.evsesAvailable }} von {{ stop.evsesTotal }} frei
+                          @if (stop.maxAvailablePowerKw !== null) {
+                            · bis {{ stop.maxAvailablePowerKw | number: '1.0-1' : 'en-US' }} kW frei
+                          }
+                        </span>
+                      </button>
+                    </li>
+                  } @empty {
+                    <li class="muted">Keine Ladepunkte entlang der Route.</li>
+                  }
+                </ol>
+              }
             }
           </mat-card-content>
         </mat-card>
@@ -242,6 +277,13 @@ export class HomePage {
   protected readonly routing = signal(false);
   /** Length and time of the shown route. */
   protected readonly route = signal<string | null>(null);
+  /** Stops along the shown route; null while there is no route. */
+  protected readonly stopsState = signal<'loading' | 'error' | 'ready' | null>(null);
+  protected readonly stops = signal<RouteLocation[]>([]);
+  protected readonly stopsTruncated = signal(false);
+  protected readonly km = kilometres;
+  /** Answers for an earlier route are dropped. */
+  private routeRequest = 0;
   /** The newest visible area, loaded again when the filters change. */
   private box: Bbox | null = null;
   /** Query parameters of the filters of the shown locations. */
@@ -374,6 +416,9 @@ export class HomePage {
       const response = await this.routes.route([start, { latitude: location.latitude, longitude: location.longitude }]);
       this.route.set(routeSummary(response.data.distanceMeters, response.data.durationSeconds));
       this.handle()!.showRoute(response.data.geometry.coordinates);
+      // The list of stops replaces the card of the destination.
+      this.selected.set(null);
+      void this.loadStops(response.data.geometry);
     } catch (error) {
       const status = error instanceof HttpErrorResponse ? error.status : 0;
       this.notice.set(status === 503 ? 'route-unavailable' : status === 422 ? 'route-none' : 'route-failed');
@@ -383,8 +428,38 @@ export class HomePage {
   }
 
   protected clearRoute(): void {
+    this.routeRequest++;
     this.route.set(null);
+    this.stopsState.set(null);
+    this.stops.set([]);
     this.handle()?.showRoute(null);
+    this.handle()?.highlightLocations([]);
+  }
+
+  /** A stop of the list: the map flies there and opens its card; closing the card returns to the list. */
+  protected openStop(stop: RouteLocation): void {
+    this.handle()!.flyTo(stop.latitude, stop.longitude, FOCUS_ZOOM);
+    this.selected.set(stop);
+  }
+
+  /** The locations along the route with the filters of the map, highlighted on the map. */
+  private async loadStops(geometry: RouteResponse['data']['geometry']): Promise<void> {
+    const request = ++this.routeRequest;
+    this.stopsState.set('loading');
+    try {
+      const response = await this.routes.along(geometry, this.filterStore.filters());
+      if (request !== this.routeRequest) {
+        return;
+      }
+      this.stops.set(response.data);
+      this.stopsTruncated.set(response.meta.truncated);
+      this.stopsState.set('ready');
+      this.handle()?.highlightLocations(response.data);
+    } catch {
+      if (request === this.routeRequest) {
+        this.stopsState.set('error');
+      }
+    }
   }
 
   /** Back to the start position of the user, else to the default view of the configuration. */

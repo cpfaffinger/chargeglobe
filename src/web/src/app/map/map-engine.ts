@@ -61,6 +61,8 @@ export interface MapHandle {
   flyTo(latitude: number, longitude: number, zoom: number): void;
   /** Draws a route ([longitude, latitude] positions) below the markers and fits the view to it; null removes it. */
   showRoute(coordinates: [number, number][] | null): void;
+  /** Rings in the colour of the route below these locations (the stops along a route); an empty list removes them. */
+  highlightLocations(locations: LocationSummary[]): void;
   destroy(): void;
 }
 
@@ -129,6 +131,16 @@ export class MapLibreEngine extends MapEngine {
     });
     let pending: LocationSummary[] = [];
     let route: [number, number][] = [];
+    let stops: LocationSummary[] = [];
+    const stopsSource = 'route-stops';
+    const stopsData = (): FeatureCollection => ({
+      type: 'FeatureCollection',
+      features: stops.map((location) => ({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [location.longitude, location.latitude] },
+        properties: { id: location.id },
+      })),
+    });
     const routeSource = 'route';
     const routeData = (): FeatureCollection => ({
       type: 'FeatureCollection',
@@ -153,6 +165,13 @@ export class MapLibreEngine extends MapEngine {
         source: routeSource,
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: { 'line-color': theme.route, 'line-width': 5, 'line-opacity': 0.85 },
+      });
+      map.addSource(stopsSource, { type: 'geojson', data: stopsData() });
+      map.addLayer({
+        id: 'route-stops',
+        type: 'circle',
+        source: stopsSource,
+        paint: { 'circle-radius': 20, 'circle-color': 'transparent', 'circle-stroke-width': 4, 'circle-stroke-color': theme.route },
       });
       map.addSource(source, { type: 'geojson', data: toGeoJson(pending), ...clusterOptions(cluster) });
       map.addLayer({
@@ -232,6 +251,12 @@ export class MapLibreEngine extends MapEngine {
           const bounds = new maplibre.LngLatBounds(route[0], route[0]);
           route.forEach((position) => bounds.extend(position));
           map.fitBounds(bounds, { padding: 60, maxZoom: 15 });
+        }
+      },
+      highlightLocations: (locations) => {
+        stops = locations;
+        if (loaded) {
+          (map.getSource(stopsSource) as GeoJSONSource).setData(stopsData());
         }
       },
       destroy: () => map.remove(),
