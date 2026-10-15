@@ -327,6 +327,8 @@ app-home {
 #location-card,
 #route-stops,
 #reach-locations {
+  // The layers inside a card stay inside it.
+  isolation: isolate;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -349,7 +351,8 @@ app-location-details .details-state {
 #reach-locations .card-head {
   position: sticky;
   top: 0;
-  z-index: 1;
+  // Above the buttons of the card (Material buttons stack their ripple and focus layers), which scroll below it.
+  z-index: 10;
   display: flex;
   align-items: flex-start;
   gap: 4px;
@@ -738,6 +741,45 @@ app-location-details .details-state {
   margin-top: 12px;
 }
 
+// The legend can be folded into a "Legende" button (MapHints); its close button sits on its corner.
+.legend-box {
+  position: relative;
+}
+
+#legend-hide {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--mat-sys-surface-container-highest);
+  color: var(--mat-sys-on-surface);
+  box-shadow: var(--cg-overlay-shadow);
+  cursor: pointer;
+}
+
+#legend-hide .app-icon {
+  width: 16px;
+  height: 16px;
+}
+
+#legend-show {
+  box-shadow: var(--cg-overlay-shadow);
+}
+
+#truncated.dismissible {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 4px;
+}
+
 #legend {
   display: flex;
   flex-wrap: wrap;
@@ -831,8 +873,12 @@ app-location-details .details-state {
 
   // Legend at the top of the overlay column (left of the zoom buttons), notices, route and reach below it.
   // Two compact columns so all states fit next to the map controls without scrolling.
-  #legend {
+  .legend-box,
+  #legend-show {
     align-self: flex-start;
+  }
+
+  #legend {
     margin: 0;
     display: grid;
     grid-template-columns: repeat(2, max-content);
@@ -850,7 +896,8 @@ app-location-details .details-state {
     right: 60px;
   }
 
-  app-home.has-card #legend,
+  app-home.has-card .legend-box,
+  app-home.has-card #legend-show,
   app-home.has-card #filter-toggle,
   app-home.has-filters #filter-toggle,
   app-home.has-card #data-attribution {

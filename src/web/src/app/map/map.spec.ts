@@ -18,6 +18,7 @@ import { FILTERS_STORAGE_KEY, MapFilterStore, NO_FILTERS } from './map-filters';
 import { MapLink } from './map-link';
 import { DEFAULT_MAP_OPTIONS, MapOptionsStore, OPTIONS_STORAGE_KEY } from './map-options';
 import { VEHICLE_STORAGE_KEY, VehicleStore } from './charging-plan';
+import { LEGEND_STORAGE_KEY, TRUNCATED_NOTICE_MS, TRUNCATED_SNOOZE_KEY } from './map-hints';
 import { CardsStore } from '../preferences/cards.store';
 import {
   LocationPrices,
@@ -142,6 +143,8 @@ describe('HomePage (map)', () => {
   let viewport: ReturnType<typeof fakeViewport>;
   let evses: jasmine.SpyObj<EvsesService>;
   let link: jasmine.SpyObj<MapLink>;
+  /** How long the notice about a truncated map shows. */
+  let noticeMs = 6000;
 
   const root = () => fixture.nativeElement as HTMLElement;
   /** View reported with every move in the specs. */
@@ -190,6 +193,9 @@ describe('HomePage (map)', () => {
     localStorage.removeItem(FILTERS_STORAGE_KEY);
     localStorage.removeItem(OPTIONS_STORAGE_KEY);
     localStorage.removeItem(VEHICLE_STORAGE_KEY);
+    localStorage.removeItem(LEGEND_STORAGE_KEY);
+    localStorage.removeItem(TRUNCATED_SNOOZE_KEY);
+    noticeMs = 6000;
     link = jasmine.createSpyObj<MapLink>('MapLink', ['read', 'write', 'fragment', 'share']);
     link.read.and.returnValue(null);
     TestBed.configureTestingModule({
@@ -203,6 +209,8 @@ describe('HomePage (map)', () => {
         { provide: Viewport, useValue: viewport },
         { provide: MapEngine, useValue: map.engine },
         { provide: BrowserCapabilities, useValue: browser },
+        // Read when the page first injects it, so a spec can shorten it before rendering.
+        { provide: TRUNCATED_NOTICE_MS, useFactory: () => noticeMs },
       ],
     });
     // Deterministic colours: the system of the test browser may prefer dark mode.
@@ -218,6 +226,8 @@ describe('HomePage (map)', () => {
     localStorage.removeItem(FILTERS_STORAGE_KEY);
     localStorage.removeItem(OPTIONS_STORAGE_KEY);
     localStorage.removeItem(VEHICLE_STORAGE_KEY);
+    localStorage.removeItem(LEGEND_STORAGE_KEY);
+    localStorage.removeItem(TRUNCATED_SNOOZE_KEY);
   });
 
   it('creates the map in its container with style, attribution, center and zoom of the configuration', async () => {
@@ -515,7 +525,65 @@ describe('HomePage (map)', () => {
         '/api/v1/locations?bbox=-180.00000,-90.00000,180.00000,90.00000&limit=2000',
       );
 
-      expect(text(root(), '#truncated')).toContain('nur die nächsten 2000 Standorte');
+      expect(text(root(), '#truncated')).toBe('Nur die nächsten 2000 Standorte – zoome hinein.');
+    });
+
+    it('hides the notice about a truncated map after a few seconds', async () => {
+      noticeMs = 20;
+      await render();
+      await moveTo(vienna, response({ truncated: true }));
+      expect(root().querySelector('#truncated')).not.toBeNull();
+
+      await new Promise((resolve) => setTimeout(resolve, 60));
+      await settle();
+      expect(root().querySelector('#truncated')).toBeNull();
+    });
+
+    it('snoozes the notice about a truncated map for a day once it is closed', async () => {
+      // A box apart from Vienna: loading it does not cover Vienna, so Vienna loads again afterwards.
+      const elsewhere: Bbox = { west: 10, south: 47, east: 11, north: 48 };
+      const elsewhereUrl = '/api/v1/locations?bbox=10.00000,47.00000,11.00000,48.00000&limit=2000';
+      await render();
+      await moveTo(vienna, response({ truncated: true }));
+
+      root().querySelector<HTMLButtonElement>('#truncated-close')!.click();
+      await settle();
+      expect(root().querySelector('#truncated')).toBeNull();
+      expect(Number(localStorage.getItem(TRUNCATED_SNOOZE_KEY))).toBeGreaterThan(Date.now() + 23 * 60 * 60 * 1000);
+
+      // Truncated again while snoozed: no notice.
+      await moveTo(elsewhere, response(), elsewhereUrl);
+      await moveTo(vienna, response({ truncated: true }));
+      expect(root().querySelector('#truncated')).toBeNull();
+
+      // After the snooze it comes back.
+      localStorage.setItem(TRUNCATED_SNOOZE_KEY, '1');
+      await moveTo(elsewhere, response(), elsewhereUrl);
+      await moveTo(vienna, response({ truncated: true }));
+      expect(root().querySelector('#truncated')).not.toBeNull();
+    });
+
+    it('folds the legend into a button and remembers it', async () => {
+      await render();
+      expect(root().querySelectorAll('#legend li').length).toBe(6);
+
+      root().querySelector<HTMLButtonElement>('#legend-hide')!.click();
+      await settle();
+      expect(root().querySelector('#legend')).toBeNull();
+      expect(text(root(), '#legend-show')).toBe('Legende');
+      expect(localStorage.getItem(LEGEND_STORAGE_KEY)).toBe('0');
+
+      root().querySelector<HTMLButtonElement>('#legend-show')!.click();
+      await settle();
+      expect(root().querySelector('#legend')).not.toBeNull();
+      expect(localStorage.getItem(LEGEND_STORAGE_KEY)).toBe('1');
+    });
+
+    it('starts with the legend folded when it was folded before', async () => {
+      localStorage.setItem(LEGEND_STORAGE_KEY, '0');
+      await render();
+      expect(root().querySelector('#legend')).toBeNull();
+      expect(root().querySelector('#legend-show')).not.toBeNull();
     });
 
     it('shows a notice when loading fails and clears it with the next successful load', async () => {
@@ -1626,7 +1694,7 @@ describe('HomePage (map)', () => {
       await moveTo(vienna, response());
 
       // The legend heads the overlay column, so messages stack below it.
-      expect(root().querySelector('#map-overlay > #legend')).not.toBeNull();
+      expect(root().querySelector('#map-overlay > .legend-box > #legend')).not.toBeNull();
       expect(root().querySelector('#map-legend-bar #legend')).toBeNull();
       expect(text(root(), '#locate')).toBe('');
       expect(root().querySelector('#locate')!.getAttribute('aria-label')).toBe('Mein Standort');
