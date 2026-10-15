@@ -90,6 +90,9 @@ public sealed record RoutePage(IReadOnlyList<RouteLocation> Locations, bool Trun
 /// <param name="Truncated">More locations lie in the box than were returned.</param>
 public sealed record LocationPage(IReadOnlyList<LocationSummary> Locations, bool Truncated, IReadOnlyList<SourceAttribution> Attribution);
 
+/// <param name="Total">All matching locations in the area, also those beyond the limit.</param>
+public sealed record AreaPage(IReadOnlyList<LocationSummary> Locations, int Total, bool Truncated, IReadOnlyList<SourceAttribution> Attribution);
+
 public sealed record ConnectorDetail(string Standard, string? Format, string? PowerType, decimal? MaxPowerKw);
 
 /// <param name="EvseId">EVSE-ID with separators; for a surrogate the chargeglobe ID <c>XX*CG*E…</c>.</param>
@@ -157,7 +160,7 @@ public interface ILocationQueries
     /// Active locations inside the area (GeoJSON MultiPolygon, e.g. a reach) that match the filter, nearest to
     /// <paramref name="center"/> first (null: the centroid of the area), at most <paramref name="limit"/>.
     /// </summary>
-    Task<LocationPage> InAreaAsync(string areaGeoJson, GeoPoint? center, LocationFilter filter, int limit, CancellationToken cancellationToken);
+    Task<AreaPage> InAreaAsync(string areaGeoJson, GeoPoint? center, LocationFilter filter, int limit, CancellationToken cancellationToken);
 
     /// <summary>The active locations among <paramref name="ids"/> (e.g. favorites), aggregated like <see cref="InBoundingBoxAsync"/>.</summary>
     Task<LocationPage> ByIdsAsync(IReadOnlyList<Guid> ids, CancellationToken cancellationToken);

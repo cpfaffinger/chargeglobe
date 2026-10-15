@@ -241,7 +241,12 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
                 <p class="error">Die Ladepunkte in Reichweite konnten nicht geladen werden.</p>
               }
               @default {
-                <p class="muted" id="reach-hint">{{ reachTruncated() ? 'Die nächsten ' : '' }}{{ reachLocations().length }} Standorte in Reichweite, mit den Filtern der Karte.</p>
+                <p class="muted" id="reach-hint">
+                  {{ reachTotals().get(reachLargest()) ?? 0 }} Standorte in Reichweite, mit den Filtern der Karte.
+                  @if (reachTruncated()) {
+                    Die Liste nutzt die nächsten {{ reachLocations().length }}.
+                  }
+                </p>
                 <ul id="reach-counts">
                   @for (band of reachBands(); track band.minutes) {
                     <li [attr.data-minutes]="band.minutes"><span class="band-count">{{ band.count }}</span><span class="band-label">{{ band.label }}</span></li>
@@ -423,6 +428,9 @@ export class HomePage {
   protected readonly reachState = signal<'loading' | 'error' | 'ready' | null>(null);
   protected readonly reachLocations = signal<LocationSummary[]>([]);
   protected readonly reachTruncated = signal(false);
+  /** All matching locations per area (by its minutes), also beyond the list. */
+  protected readonly reachTotals = signal<ReadonlyMap<number, number>>(new Map());
+  protected readonly reachLargest = () => REACH_MINUTES[REACH_MINUTES.length - 1];
   /** Answers for older filters or a removed reach are dropped. */
   private reachListRequest = 0;
   /** Per location the driving time of the smallest area that contains it. */
@@ -430,13 +438,17 @@ export class HomePage {
     const areas = this.reachAreas();
     return new Map(this.reachLocations().map((location) => [location.id, areas ? smallestArea(location, areas) : null]));
   });
-  /** The locations per band of driving time: up to 15, 15–30, 30–60 minutes. */
+  /**
+   * The locations per band of driving time (up to 15, 15–30, 30–60 minutes): the totals of the nested areas minus the one
+   * inside. Counted by the API, because the list of a large area ends at its limit.
+   */
   protected readonly reachBands = computed(() => {
-    const minutes = [...this.reachMinutes().values()];
+    const totals = this.reachTotals();
+    const total = (minutes: number) => totals.get(minutes) ?? 0;
     return REACH_MINUTES.map((limit, index) => ({
       minutes: limit,
       label: bandLabel(REACH_MINUTES, index),
-      count: minutes.filter((value) => value === limit).length,
+      count: Math.max(0, total(limit) - (index === 0 ? 0 : total(REACH_MINUTES[index - 1]))),
     }));
   });
   /** The free locations with the most power free, at most ten. */
@@ -641,15 +653,20 @@ export class HomePage {
     return minutes ? bandLabel(REACH_MINUTES, REACH_MINUTES.indexOf(minutes)) : null;
   }
 
-  /** The locations inside the largest area with the filters of the map. */
+  /** The locations inside the largest area and the counts of the smaller ones, with the filters of the map. */
   private async loadReachLocations(): Promise<void> {
     const request = ++this.reachListRequest;
+    const areas = this.reachAreas()!;
+    const filters = this.filterStore.filters();
     this.reachState.set('loading');
     try {
-      const response = await this.routes.within(this.reachAreas()!.features[0].geometry, this.reachCenter!, this.filterStore.filters());
+      const responses = await Promise.all(
+        areas.features.map((feature, index) => this.routes.within(feature.geometry, this.reachCenter!, filters, index === 0 ? undefined : 0)),
+      );
       if (request === this.reachListRequest) {
-        this.reachLocations.set(response.data);
-        this.reachTruncated.set(response.meta.truncated);
+        this.reachLocations.set(responses[0].data);
+        this.reachTruncated.set(responses[0].meta.truncated);
+        this.reachTotals.set(new Map(areas.features.map((feature, index) => [feature.properties.minutes!, responses[index].meta.total])));
         this.reachState.set('ready');
       }
     } catch {

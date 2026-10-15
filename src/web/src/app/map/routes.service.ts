@@ -121,6 +121,12 @@ export interface ReachResponse {
 /** Locations inside an area (POST /api/v1/locations/within) asked for: a reach of an hour holds hundreds. */
 export const REACH_LOCATIONS_LIMIT = 500;
 
+/** Response of POST /api/v1/locations/within; meta.total counts all matches, also beyond the limit. */
+export interface AreaLocationsResponse {
+  data: LocationSummary[];
+  meta: LocationsResponse['meta'] & { total: number };
+}
+
 /** Whether the point lies inside the ring (ray casting; [longitude, latitude]). */
 function inRing(longitude: number, latitude: number, ring: [number, number][]): boolean {
   let inside = false;
@@ -164,11 +170,14 @@ export class RoutesService {
     );
   }
 
-  /** The locations inside the area that match the filters of the map, nearest to the centre first. */
-  within(geometry: ReachAreas['features'][number]['geometry'], center: Position, filters: MapFilters): Promise<LocationsResponse> {
-    return firstValueFrom(
-      this.http.post<LocationsResponse>('/api/v1/locations/within', { geometry, center, limit: REACH_LOCATIONS_LIMIT, ...filters }),
-    );
+  /** The locations inside the area that match the filters of the map, nearest to the centre first; limit 0 only counts. */
+  within(
+    geometry: ReachAreas['features'][number]['geometry'],
+    center: Position,
+    filters: MapFilters,
+    limit = REACH_LOCATIONS_LIMIT,
+  ): Promise<AreaLocationsResponse> {
+    return firstValueFrom(this.http.post<AreaLocationsResponse>('/api/v1/locations/within', { geometry, center, limit, ...filters }));
   }
 
   /** The areas reachable by car from the position within each of the driving times. */

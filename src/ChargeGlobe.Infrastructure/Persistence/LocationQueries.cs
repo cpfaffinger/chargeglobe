@@ -50,11 +50,12 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
         return new RoutePage(locations, rows.Count > limit, await AttributionAsync([.. locations.Select(location => location.Id)], cancellationToken));
     }
 
-    public async Task<LocationPage> InAreaAsync(string areaGeoJson, GeoPoint? center, LocationFilter filter, int limit, CancellationToken cancellationToken)
+    public async Task<AreaPage> InAreaAsync(string areaGeoJson, GeoPoint? center, LocationFilter filter, int limit, CancellationToken cancellationToken)
     {
         var rows = await SummariesAsync(null, null, filter, limit + 1, cancellationToken, area: areaGeoJson, center: center);
         var locations = rows.Take(limit).Select(row => row.ToSummary()).ToList();
-        return new LocationPage(locations, rows.Count > limit, await AttributionAsync([.. locations.Select(location => location.Id)], cancellationToken));
+        return new AreaPage(
+            locations, rows.FirstOrDefault()?.Total ?? 0, rows.Count > limit, await AttributionAsync([.. locations.Select(location => location.Id)], cancellationToken));
     }
 
     public async Task<LocationPage> ByIdsAsync(IReadOnlyList<Guid> ids, CancellationToken cancellationToken)
@@ -120,6 +121,7 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
                        max(c.observed_at) AS "StatusObservedAt",
                        l.green_energy AS "GreenEnergy", l.free_parking AS "FreeParking", l.roofed_parking AS "RoofedParking",
                        l.barrier_free_parking_spaces AS "BarrierFreeParkingSpaces", l.price_url AS "PriceUrl",
+                       (count(*) OVER ())::int AS "Total",
                        CASE WHEN {anyRoute} THEN NULL ELSE ST_Distance(l.geom, (SELECT gg FROM route)) END AS "DistanceFromRoute",
                        CASE WHEN {anyRoute} THEN NULL
                             ELSE ST_LineLocatePoint((SELECT g FROM route), l.geom::geometry) * (SELECT len FROM route) END AS "PositionOnRoute"
@@ -237,6 +239,9 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
     private sealed class SummaryRow
     {
         public Guid Id { get; set; }
+
+        /// <summary>All matching locations before the limit (window count over the groups).</summary>
+        public int Total { get; set; }
 
         public string? Name { get; set; }
 
