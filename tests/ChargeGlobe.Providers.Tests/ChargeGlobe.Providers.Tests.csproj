@@ -22,6 +22,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\ChargeGlobe.Providers.Abstractions\ChargeGlobe.Providers.Abstractions.csproj" />
     <ProjectReference Include="..\..\src\ChargeGlobe.Providers.EControl\ChargeGlobe.Providers.EControl.csproj" />
+    <ProjectReference Include="..\..\src\ChargeGlobe.Providers.OpenChargeMap\ChargeGlobe.Providers.OpenChargeMap.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -13,6 +13,9 @@ public enum SourceTier
     PUBLIC_WEB,
     APP_BACKEND,
     PARTNER,
+
+    /// <summary>Data collected by a community and reviewed there, e.g. Open Charge Map.</summary>
+    COMMUNITY,
 }
 
 /// <summary>Kind of canonical entity a source record points to.</summary>
@@ -32,8 +35,11 @@ public enum MatchMethod
     /// <summary>Same EVSE-ID after normalization.</summary>
     EVSE_ID_NORMALIZED,
 
-    /// <summary>Same operator, close by, same connectors and number of EVSEs.</summary>
-    GEO_OPERATOR_HEURISTIC,
+    /// <summary>Same operator, at most 50 m away, a similar number of EVSEs.</summary>
+    GEO_OPERATOR,
+
+    /// <summary>The only location of another source within 25 m; confidence below 1.</summary>
+    GEO_ONLY,
 
     /// <summary>Confirmed by a maintainer.</summary>
     MANUAL,

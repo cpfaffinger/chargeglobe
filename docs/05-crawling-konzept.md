@@ -4,7 +4,7 @@
 
 | Tier | Art | Beispiele (AT) | Liefert | Risiko |
 |---|---|---|---|---|
-| **0 – Amtlich / Open Data** | Verzeichnisse mit Meldepflicht, nationale Zugangspunkte, Open-Data-Portale | E-Control Ladestellenverzeichnis, NAP (AFIR-Daten, DATEX II), data.gv.at, OpenChargeMap, OpenStreetMap | Inventar-Backbone, EVSE-IDs, Ad-hoc-Preise, teils Status | sehr gering; Lizenz beachten |
+| **0 – Amtlich / Open Data** | Verzeichnisse mit Meldepflicht, nationale Zugangspunkte, Open-Data-Portale, Community-Register (`SourceTier` `OFFICIAL`, `OPEN_DATA`, `COMMUNITY`) | E-Control Ladestellenverzeichnis, NAP (AFIR-Daten, DATEX II), data.gv.at, OpenChargeMap (angebunden, Inventar), OpenStreetMap | Inventar-Backbone, EVSE-IDs, Ad-hoc-Preise, teils Status | sehr gering; Lizenz beachten |
 | **1 – Öffentliche Web-Karten** | Browser-Karten der CPOs/EMPs; XHR-Endpunkte sind ohne App-Analyse sichtbar | Betreiber-Websites („Ladestationen finden“), Tesla-Standortkarte, Electroverse-Webkarte | Status je Ladepunkt (oft), Preise (teils) | gering–mittel: ToS, Rate-Limits, Format-Änderungen |
 | **2 – App-Backends** | Endpunkte, die nur die Mobile-App nutzt | EMP-Apps mit Tarifanzeige, CPO-Apps mit Live-Status | Status, EMP-Tarife je Ladepunkt | mittel: Auth/Signaturen, Pinning, ToS |
 | **3 – Partner-Feeds** | Vertraglich/auf Anfrage: OCPI oder OICP-Zugang | CPOs, die Daten teilen (AFIR verpflichtet zur Weitergabe an den NAP, nicht an uns – aber viele geben OCPI-Zugang auf Anfrage) | alles, sauber, mit Push | keines; Aufwand im Partnering |

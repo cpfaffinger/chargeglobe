@@ -1,6 +1,7 @@
 using ChargeGlobe.Application.Mail;
 using ChargeGlobe.Providers.Abstractions;
 using ChargeGlobe.Providers.EControl;
+using ChargeGlobe.Providers.OpenChargeMap;
 
 namespace ChargeGlobe.Jobs;
 
@@ -99,6 +100,7 @@ public static class JobServices
             services.AddSingleton<IProviderSettings, ConfigProviderSettings>();
             services.AddSingleton<IProviderRequestBudget, ClusterRequestBudget>();
             services.AddEControlProvider();
+            services.AddOpenChargeMapProvider();
             services.AddSingleton<PollJobRunner>();
             services.AddHostedService<ProviderHealthService>();
             services.AddHostedService<PollScheduler>();

@@ -65,6 +65,11 @@ const pages: Routes = [
         canActivate: [requirePermission('jobs:read')],
       },
       {
+        path: 'conflicts',
+        loadComponent: () => import('./pages/admin-conflicts.page').then((page) => page.AdminConflictsPage),
+        canActivate: [requirePermission('conflict:resolve')],
+      },
+      {
         path: 'mail',
         loadComponent: () => import('./pages/admin-mail.page').then((page) => page.AdminMailPage),
         canActivate: [requirePermission('settings:manage')],

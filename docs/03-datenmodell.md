@@ -40,7 +40,7 @@ Operator (CPO) ─┬─ 1..n ─ Location ─ 1..n ─ ChargingStation? ─ 1..
 | Tabelle | Spalten | Zweck |
 |---|---|---|
 | `source` | `key` (PK: `econtrol`, `ocm`, `osm`, `evn`, `oeamtc`, …), `display_name`, `tier` (`OFFICIAL`, `OPEN_DATA`, `PUBLIC_WEB`, `APP_BACKEND`, `PARTNER`), `license`, `attribution_text`, `capabilities text[]` (Namen der Provider-Capabilities) | Registry der Quellen; die Felder kommen aus dem Descriptor des Adapters. Ob ein Provider aktiv ist, steht im Config-Service (`enabled`, Scope `provider:<key>`), nicht hier |
-| `source_record` | PK `source_key` + `external_id` + `entity_type` (`LOCATION`/`EVSE`/`CONNECTOR`), `entity_id`, `match_method` (`EVSE_ID_EXACT`, `EVSE_ID_NORMALIZED`, `GEO_OPERATOR_HEURISTIC`, `MANUAL`, `CREATED` = Datensatz hat die Entität angelegt), `match_confidence` (0–1), `first_seen`, `last_seen`, `last_snapshot_id` | Quell-ID ↔ kanonische Entität (n:1) |
+| `source_record` | PK `source_key` + `external_id` + `entity_type` (`LOCATION`/`EVSE`/`CONNECTOR`), `entity_id`, `match_method` (`EVSE_ID_EXACT`, `EVSE_ID_NORMALIZED`, `GEO_OPERATOR`, `GEO_ONLY`, `MANUAL`, `CREATED` = Datensatz hat die Entität angelegt), `match_confidence` (0–1), `first_seen`, `last_seen`, `last_snapshot_id` | Quell-ID ↔ kanonische Entität (n:1) |
 | `attribute_origin` | PK `entity_type` + `entity_id` + `attribute` (`geom`, `max_power_kw`, `name`, …), `source_key`, `observed_at`, `value_hash` (SHA-256) | welches Attribut stammt woher |
 | `raw_snapshot` | `id` (bigint), `source_key`, `job_id`, `fetched_at`, `request_fingerprint` (z. B. `location:<externe Id>`), `content_hash` (SHA-256 des Payloads), `payload jsonb`, `http_status` | Replay; eindeutig je `source_key` + `content_hash` (ein erneut gesehener Datensatz aktualisiert nur `fetched_at`/`job_id`); Retention `ingest.snapshot_retention_days` (30) |
 | `source_conflict` | `id`, `entity_type`, `entity_id`, `attribute`, `values jsonb` (je Quelle), `detected_at`, `resolved_at`, `resolution` | Review-Queue im Admin (Index auf offene Konflikte) |
@@ -114,32 +114,31 @@ Vorgesehen: Tarifelemente nach OCPI (Zeitfenster, Tag/Nacht, Leistungsklassen) s
 
 ### Matching-Kaskade für einen Quell-Datensatz
 
-Umgesetzt im `IngestProcessor` sind die Schritte 1, 2 und 5: EVSE-ID (gleiche Schreibweise → `EVSE_ID_EXACT`; ein Standort, dessen EVSE schon bekannt ist → `EVSE_ID_NORMALIZED`; gleiche normalisierte Form, andere Separatoren → `source_conflict` statt Merge), gelernter `source_record` (jede weitere Lieferung derselben Quell-Id), sonst neue Entität (`CREATED`, ohne EVSE-ID als Surrogat; liefert die Quelle später eine noch freie EVSE-ID, ersetzt sie das Surrogat, eine vergebene erzeugt einen Konflikt). Ein `source_record`, dessen Entität gelöscht wurde, wird neu zugeordnet. Die Geo-Heuristiken (3, 4) kommen mit der zweiten Quelle. Standorte ohne Ländercode werden übersprungen (nicht geraten).
+Umgesetzt im `IngestProcessor` (Reihenfolge der Prüfung: gelernter Datensatz, dann 1, 3, 4, 5). Ein `source_record`, dessen Entität gelöscht wurde, wird neu zugeordnet. Standorte ohne Ländercode werden übersprungen (nicht geraten).
 
+| Schritt | Methode | `match_method` | Confidence |
+|---|---|---|---|
+| 1 | Eine EVSE-ID des Datensatzes ist bekannt: der Standort dieses EVSE (`EVSE_ID_NORMALIZED`), das EVSE selbst bei gleicher Schreibweise (`EVSE_ID_EXACT`). Gleiche normalisierte Form mit anderen Separatoren → `source_conflict` (`evse_id`) statt Merge | `EVSE_ID_EXACT`, `EVSE_ID_NORMALIZED` | 1.0 |
+| 2 | Die Quell-Id ist schon in `source_record` gemappt (jede weitere Lieferung) | unverändert | gelernt |
+| 3 | Standort einer anderen Quelle ≤ 50 m mit demselben Betreiber und ähnlicher Zahl an EVSEs (höchstens doppelt so viele auf einer Seite, unbekannt zählt als passend). Betreiber gleich: gleicher dreistelliger Operator-Code, sonst gleiche Namen nach Entfernen von Rechtsformen und Satzzeichen (alle Wörter des kürzeren Namens im längeren oder gleiches erstes Wort, `OperatorNames.Same`) | `GEO_OPERATOR` | 0.9 |
+| 4 | Der einzige Standort einer anderen Quelle ≤ 25 m, der keinen anderen Betreiber hat (eine Seite ohne Betreiber reicht) | `GEO_ONLY` | 0.6 |
+| 5 | kein Match | `CREATED` | 1.0 – neuer Standort; EVSEs ohne EVSE-ID als `SURROGATE`, eine später gelieferte freie EVSE-ID ersetzt das Surrogat, eine vergebene erzeugt einen Konflikt |
 
-| Schritt | Methode | Confidence |
-|---|---|---|
-| 1 | EVSE-ID vorhanden und normalisiert gleich | 1.0 |
-| 2 | Quelle hat keine EVSE-ID, aber eine eigene Station-ID, die schon in `source_record` gemappt ist | 1.0 (gelernt) |
-| 3 | Heuristik: gleicher Operator + Distanz ≤ 40 m + gleiche Steckerkombination/Leistungsklasse + gleiche Anzahl Ladepunkte am Standort | 0.8 – Auto-Merge, aber markiert |
-| 4 | Heuristik: Distanz ≤ 40 m + gleiche Anzahl Ladepunkte, Operator unbekannt | 0.5 – nur Vorschlag, landet in Review-Queue |
-| 5 | kein Match | neues EVSE mit `identity_kind=SURROGATE`; sobald später eine Quelle mit EVSE-ID auf dieselbe Station matcht (Schritt 3), wird die Surrogat-ID durch die echte ersetzt und `source_record` nachgezogen |
+Regeln der Geo-Schritte (3, 4): Kandidaten sind nur aktive Standorte, die die liefernde Quelle noch nicht kennt (eine Quelle liefert denselben Standort nicht unter zwei Ids) und die in derselben Nachricht nicht schon einem anderen Datensatz der Quelle zugeordnet wurden. Passen mehrere Kandidaten, entsteht ein `source_conflict` mit `attribute = identity`, `entity_id` = nächster Kandidat und `values` = `{"source", "externalId", "candidates": [Standort-Ids]}`; der Datensatz wird nicht übernommen, bis jemand entscheidet. Derselbe offene Konflikt wird nicht doppelt angelegt. An einem per Geo-Schritt zugeordneten Standort legt ein Datensatz keine EVSEs ohne EVSE-ID an, solange andere Quellen dort aktive EVSEs haben – sie würden dieselben Ladepunkte doppelt zählen; EVSEs mit EVSE-ID laufen durch Schritt 1.
 
 Besonderheit **Tesla Supercharger**: Tesla vergibt EVSE-IDs im Roaming (sichtbar in EMP-Apps und im amtlichen Verzeichnis), zeigt sie in der eigenen App aber nicht. Hier ist Schritt 3 (Operator `Tesla` + Geo + Stallanzahl) der Regelfall; die Station-Ebene der Tesla-Quelle wird dann über die amtliche Quelle auf einzelne EVSEs verteilt. Wenn eine Quelle nur Standort-Status liefert („3 von 8 frei“), wird das als `location_status_observation` gespeichert und **nicht** auf einzelne EVSEs geraten.
 
-### Quellen-Präzedenz je Attribut (Default, konfigurierbar)
+### Quellen-Präzedenz je Attribut
 
-Umgesetzt ist die Vorstufe: Ein Attribut (`name`, `address`, `postal_code`, `city`, `geom`, `operator_id`, `access`, `opening_times`, `green_energy`, `free_parking`, `roofed_parking`, `barrier_free_parking_spaces`, `price_url` am Standort; `location_id`, `operator_id`, `max_power_kw`, `power_type`, `physical_reference`, `connectors`, `auth_methods`, `roaming` am EVSE) gehört der Quelle, die es zuerst gesetzt hat (`attribute_origin`); nur sie ändert es. Bleiben alle Werte gleich, wird die Entität bestätigt (`last_confirmed_at`), sonst nur gesehen (`last_seen`). Die folgende Tabelle ist das Ziel, sobald eine zweite Quelle angebunden ist:
+Jedes Attribut (`name`, `address`, `postal_code`, `city`, `geom`, `operator_id`, `access`, `opening_times`, `green_energy`, `free_parking`, `roofed_parking`, `barrier_free_parking_spaces`, `price_url` am Standort; `location_id`, `operator_id`, `max_power_kw`, `power_type`, `physical_reference`, `connectors`, `auth_methods`, `roaming` am EVSE) hat in `attribute_origin` eine besitzende Quelle. Sie ändert es bei jedem neuen Wert; eine andere Quelle übernimmt es nur, wenn ihr Tier für die Attributgruppe stärker ist und sie einen Wert liefert (`AttributePrecedence`); bei gleichem Rang bleibt der erste Besitzer. Bleiben alle Werte gleich, wird die Entität bestätigt (`last_confirmed_at`), sonst nur gesehen (`last_seen`). Die Tiers aus der Tabelle `source` stehen für die Arten von Quellen: `PARTNER` = CPO direkt, `OFFICIAL` = amtliches Verzeichnis/NAP, `APP_BACKEND`/`PUBLIC_WEB` = Apps und Web-Karten von EMPs, `COMMUNITY` = Open Charge Map, `OPEN_DATA` = OpenStreetMap; eine Quelle ohne Eintrag in `source` hat den niedrigsten Rang.
 
-
-| Attribut | Reihenfolge |
+| Attributgruppe | Reihenfolge (stärkste zuerst) |
 |---|---|
-| Koordinaten | CPO-Quelle > amtliches Verzeichnis > OSM > OCM > EMP-Apps |
-| Name/Adresse | amtliches Verzeichnis > CPO > EMP > OCM > OSM |
-| Stecker/Leistung | CPO > amtliches Verzeichnis > EMP > OCM > OSM |
-| Status | CPO > EMP (Roaming) > Aggregator |
-| Ad-hoc-Preis | amtliches Verzeichnis/NAP > CPO-App > EMP-App |
-| EMP-Tarif | jeweilige EMP-App > Tarifaggregatoren > manuelle Pflege |
+| Koordinaten (`geom`) | CPO > amtliches Verzeichnis > OSM > OCM > EMP-Apps/Web |
+| Stecker/Leistung (`max_power_kw`, `power_type`, `connectors`) | CPO > amtliches Verzeichnis > EMP-Apps/Web > OCM > OSM |
+| alle übrigen (Name, Adresse, Betreiber, Zugang, Ausstattung, Zahlung …) | amtliches Verzeichnis > CPO > EMP-Apps/Web > OCM > OSM |
+
+Vorgesehen für weitere Datenarten: Status CPO > EMP (Roaming) > Aggregator; Ad-hoc-Preis amtliches Verzeichnis/NAP > CPO-App > EMP-App; EMP-Tarif jeweilige EMP-App > Tarifaggregatoren > manuelle Pflege.
 
 ## Schema (Auszug aus den Migrationen `ChargingDomain`, `OccupancyHourly` und `EvseAuthAndFacilities`)
 

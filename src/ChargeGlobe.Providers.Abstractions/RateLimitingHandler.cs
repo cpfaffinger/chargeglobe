@@ -1,7 +1,5 @@
 using System.Threading.RateLimiting;
-using ChargeGlobe.Providers.Abstractions;
-
-namespace ChargeGlobe.Providers.EControl;
+namespace ChargeGlobe.Providers.Abstractions;
 
 /// <summary>
 /// Enforces the request budget of a provider in its adapter (docs/04, rule 6): every request takes a
@@ -33,3 +31,6 @@ public sealed class RateLimitingHandler(RateLimiter limiter) : DelegatingHandler
         return await base.SendAsync(request, cancellationToken);
     }
 }
+
+/// <summary>Handler without effect, for hosts without a shared request budget.</summary>
+public sealed class PassThroughHandler : DelegatingHandler;

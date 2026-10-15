@@ -7,6 +7,7 @@ COPY src/ChargeGlobe.Application/ChargeGlobe.Application.csproj src/ChargeGlobe.
 COPY src/ChargeGlobe.Infrastructure/ChargeGlobe.Infrastructure.csproj src/ChargeGlobe.Infrastructure/
 COPY src/ChargeGlobe.Providers.Abstractions/ChargeGlobe.Providers.Abstractions.csproj src/ChargeGlobe.Providers.Abstractions/
 COPY src/ChargeGlobe.Providers.EControl/ChargeGlobe.Providers.EControl.csproj src/ChargeGlobe.Providers.EControl/
+COPY src/ChargeGlobe.Providers.OpenChargeMap/ChargeGlobe.Providers.OpenChargeMap.csproj src/ChargeGlobe.Providers.OpenChargeMap/
 COPY src/ChargeGlobe.Jobs/ChargeGlobe.Jobs.csproj src/ChargeGlobe.Jobs/
 RUN dotnet restore src/ChargeGlobe.Jobs/ChargeGlobe.Jobs.csproj
 COPY src/ChargeGlobe.Domain/ src/ChargeGlobe.Domain/
@@ -14,6 +15,7 @@ COPY src/ChargeGlobe.Application/ src/ChargeGlobe.Application/
 COPY src/ChargeGlobe.Infrastructure/ src/ChargeGlobe.Infrastructure/
 COPY src/ChargeGlobe.Providers.Abstractions/ src/ChargeGlobe.Providers.Abstractions/
 COPY src/ChargeGlobe.Providers.EControl/ src/ChargeGlobe.Providers.EControl/
+COPY src/ChargeGlobe.Providers.OpenChargeMap/ src/ChargeGlobe.Providers.OpenChargeMap/
 COPY src/ChargeGlobe.Jobs/ src/ChargeGlobe.Jobs/
 RUN dotnet publish src/ChargeGlobe.Jobs/ChargeGlobe.Jobs.csproj -c Release -o /app --no-restore
 

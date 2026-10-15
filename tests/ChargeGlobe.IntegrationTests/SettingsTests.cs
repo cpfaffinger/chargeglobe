@@ -164,7 +164,7 @@ public class SettingsTests(IntegrationFactory factory)
             var referer = await (await PutAsync(admin, SettingsCatalog.ProviderReferer, "example.org", scope)).ReadJsonAsync();
 
             var apiKey = await (await admin.GetAsync($"/api/v1/settings/{SettingsCatalog.ProviderApiKey}")).ReadJsonAsync();
-            Assert.Equal([scope], apiKey.GetProperty("scopes").EnumerateArray().Select(value => value.GetString()));
+            Assert.Equal([scope, "provider:ocm"], apiKey.GetProperty("scopes").EnumerateArray().Select(value => value.GetString()));
             Assert.Equal("********", apiKey.GetProperty("stored")[0].GetProperty("value").GetString());
             Assert.Equal(scope, referer.GetProperty("stored")[0].GetProperty("scope").GetString());
             Assert.Equal("integration-provider-key", Config.Get<string?>(SettingsCatalog.ProviderApiKey, scope));

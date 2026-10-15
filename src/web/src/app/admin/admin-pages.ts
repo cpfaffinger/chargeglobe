@@ -34,6 +34,13 @@ export const ADMIN_PAGES: AdminPageLink[] = [
     description: 'Abrufe der Datenquellen live: Budget, Pausen, Abfragepunkte und letzte Läufe.',
   },
   {
+    path: 'conflicts',
+    label: 'Konflikte',
+    permission: 'conflict:resolve',
+    category: 'Betrieb',
+    description: 'Widersprüche zwischen Datenquellen, etwa Datensätze, die zu mehreren Standorten passen.',
+  },
+  {
     path: 'mail',
     label: 'E-Mail',
     permission: 'settings:manage',

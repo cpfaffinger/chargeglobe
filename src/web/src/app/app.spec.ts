@@ -143,6 +143,7 @@ describe('App with its routes', () => {
         'nav-admin-users',
         'nav-admin-roles',
         'nav-admin-crawler',
+        'nav-admin-conflicts',
         'nav-admin-mail',
         'nav-admin-settings',
         'nav-admin-tariffs',
@@ -269,6 +270,24 @@ describe('App with its routes', () => {
       expect(text(root(), 'h1')).toBe('E-Mail-Versand');
       expect(root().querySelector('#admin-tab-mail')).not.toBeNull();
       http.expectOne('/api/v1/mail/outbox?page=1&pageSize=25').flush({ data: [], meta: { total: 0, page: 1, pageSize: 25 } });
+    });
+
+    it('opens /admin/conflicts only with conflict:resolve and shows the link only then', async () => {
+      auth.me.set(ME);
+      auth.hasPermission.and.callFake((permission) => permission === 'settings:read');
+
+      await navigate('/admin/conflicts');
+
+      expect(router.url).toBe('/');
+      http.expectOne('/api/v1/map/config');
+
+      auth.hasPermission.and.callFake((permission) => permission === 'conflict:resolve');
+      await navigate('/admin/conflicts');
+
+      expect(router.url).toBe('/admin/conflicts');
+      expect(text(root(), 'h1')).toBe('Konflikte');
+      expect(root().querySelector('#admin-tab-conflicts')).not.toBeNull();
+      http.expectOne('/api/v1/conflicts?limit=200').flush({ data: [], meta: { returned: 0, limit: 200, open: 0 } });
     });
 
     it('opens /admin/tariffs only with tariff:write and shows the link only then', async () => {

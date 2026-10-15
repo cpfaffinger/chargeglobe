@@ -59,7 +59,7 @@ public static class SettingsCatalog
     /// Keys of the source adapters (<c>ProviderDescriptor.Key</c>). A new adapter adds its key here, so
     /// that its settings can be edited; a test checks this list against the registered adapters.
     /// </summary>
-    public static IReadOnlyList<string> ProviderKeys { get; } = ["econtrol"];
+    public static IReadOnlyList<string> ProviderKeys { get; } = ["econtrol", "ocm"];
 
     public static IReadOnlyList<SettingDefinition> All { get; } =
     [
