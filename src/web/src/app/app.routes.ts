@@ -31,6 +31,11 @@ const pages: Routes = [
     canActivate: [requirePermission()],
   },
   {
+    path: 'stats',
+    loadComponent: () => import('./pages/stats.page').then((page) => page.StatsPage),
+    canActivate: [requirePermission('evse:read')],
+  },
+  {
     path: 'evses/:evseId',
     loadComponent: () => import('./pages/evse-detail.page').then((page) => page.EvseDetailPage),
     canActivate: [requirePermission('evse:read')],

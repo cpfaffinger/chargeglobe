@@ -12,6 +12,7 @@ using ChargeGlobe.Api.Routing;
 using ChargeGlobe.Api.Search;
 using ChargeGlobe.Api.Settings;
 using ChargeGlobe.Api.Setup;
+using ChargeGlobe.Api.Stats;
 using ChargeGlobe.Api.Tariffs;
 using ChargeGlobe.Application.Identity;
 using ChargeGlobe.Application.Routing;
@@ -47,6 +48,7 @@ public static class ApiSetup
     {
         services.AddOpenApi(options => options.AddChargeGlobeContract());
         services.AddProblemDetails();
+        services.AddMemoryCache();
         // Hosted services start in registration order. The migration goes first, ahead of the
         // key ring warm-up of Data Protection and the settings refresh, which both need its tables.
         services.Insert(0, ServiceDescriptor.Singleton<IHostedService, DatabaseInitializationService>());
@@ -144,6 +146,7 @@ public static class ApiSetup
         app.MapEvsesEndpoints();
         app.MapLocationPricesEndpoints();
         app.MapAreaLocationsEndpoints();
+        app.MapStatsEndpoints();
         app.MapCrawlerEndpoints();
         app.MapUsersEndpoints();
         app.MapSearchEndpoints();

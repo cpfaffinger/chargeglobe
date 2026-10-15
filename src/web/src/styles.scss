@@ -1070,6 +1070,129 @@ app-location-details .connectors,
   border-radius: 4px;
 }
 
+// ---- Statistics ------------------------------------------------------------------------------------------------------
+
+app-stats .stats-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+app-stats .stats-region {
+  width: min(260px, 100%);
+}
+
+app-stats .stats-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+
+app-stats .tile {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px;
+  border-radius: var(--mat-sys-corner-medium);
+  background: var(--mat-sys-surface-container);
+}
+
+app-stats .tile-value {
+  font: var(--mat-sys-headline-small);
+}
+
+app-stats .tile-label {
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-label-large);
+}
+
+app-stats .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  gap: 12px;
+}
+
+app-stats h2 {
+  margin: 0 0 8px;
+  font: var(--mat-sys-title-medium);
+}
+
+// Horizontal bars: label, bar, value; the label shortens instead of widening the page.
+app-stats .bars {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+app-stats .bars li {
+  display: grid;
+  grid-template-columns: minmax(0, 9em) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font: var(--mat-sys-body-medium);
+}
+
+app-stats .bar-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+app-stats .bar-track {
+  height: 10px;
+  border-radius: 5px;
+  background: var(--mat-sys-surface-container-high);
+  overflow: hidden;
+}
+
+app-stats .bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 5px;
+  background: var(--mat-sys-primary);
+}
+
+app-stats .bar-value {
+  min-width: 3.5em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+app-stats .status-bar {
+  display: flex;
+  height: 16px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--mat-sys-surface-container-high);
+}
+
+app-stats .status-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+  font: var(--mat-sys-body-medium);
+}
+
+app-stats .swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 50%;
+}
+
+app-stats .loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 // ---- Setup wizard and settings ---------------------------------------------------------------------------------------
 
 app-setup .mat-stepper-horizontal,

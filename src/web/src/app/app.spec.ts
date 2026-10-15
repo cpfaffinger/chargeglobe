@@ -142,6 +142,7 @@ describe('App with its routes', () => {
       expect(Array.from(sheet.querySelectorAll('nav a')).map((link) => link.id)).toEqual([
         'nav-map',
         'nav-favorites',
+        'nav-stats',
         'nav-admin',
         'nav-admin-users',
         'nav-admin-roles',
@@ -382,6 +383,10 @@ describe('App with its routes', () => {
       await navigate('/favorites');
       expect(text(root(), 'h1')).toBe('Favoriten');
       http.expectOne('/api/v1/me/favorites').flush({ data: [], meta: { returned: 0, max: 200, attribution: [] } });
+
+      await navigate('/stats');
+      expect(text(root(), 'h1')).toBe('Statistik');
+      http.expectOne('/api/v1/stats').flush({ title: 'Error' }, { status: 500, statusText: 'Error' });
 
       await navigate('/evses/AT*TST*E1*1');
       http.expectOne('/api/v1/evses/AT*TST*E1*1').flush({ title: 'Not found' }, { status: 404, statusText: 'Not Found' });
