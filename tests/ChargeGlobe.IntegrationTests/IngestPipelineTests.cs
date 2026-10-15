@@ -203,6 +203,11 @@ public class IngestPipelineTests(IntegrationFactory factory) : IClassFixture<Int
         Assert.Contains($"AT*{code}*ETEST0002DC1", conflict.Values);
         Assert.False(await factory.WithDbAsync(db => db.SourceRecords.AnyAsync(r => r.ExternalId == $"{code}-dc1-other")));
 
+        // The next run of the source repeats the record; the open conflict is not recorded again.
+        await EnqueueAsync(Locations([withIds with { ObservedAt = T0.AddHours(1.5) }]));
+        await DrainAsync();
+        Assert.Equal(1, await factory.WithDbAsync(db => db.SourceConflicts.CountAsync(c => c.EntityId == dc.Id)));
+
         // A surrogate of another location may not take an EVSE-ID that is already in use.
         var other = ring with
         {

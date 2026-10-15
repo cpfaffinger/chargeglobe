@@ -475,8 +475,7 @@ public sealed class IngestProcessor(AppDbContext db)
             ["externalId"] = externalId,
             ["candidates"] = candidates.Select(candidate => candidate.Id).Order().ToList(),
         });
-        if (db.SourceConflicts.Local.Any(conflict => conflict.Values == values)
-            || db.SourceConflicts.Any(conflict => conflict.ResolvedAt == null && conflict.Attribute == "identity" && conflict.Values == values))
+        if (OpenConflictExists("identity", values))
         {
             return;
         }
@@ -484,6 +483,11 @@ public sealed class IngestProcessor(AppDbContext db)
         db.SourceConflicts.Add(SourceConflict.Create(EntityType.LOCATION, candidates[0].Id, "identity", values, at));
         _conflicts++;
     }
+
+    /// <summary>Whether the same conflict is open already (in this message or stored); every run of a source repeats it.</summary>
+    private bool OpenConflictExists(string attribute, string values) =>
+        db.SourceConflicts.Local.Any(conflict => conflict.ResolvedAt == null && conflict.Attribute == attribute && conflict.Values == values)
+        || db.SourceConflicts.Any(conflict => conflict.ResolvedAt == null && conflict.Attribute == attribute && conflict.Values == values);
 
     private Task<bool> OtherSourcesHaveEvsesAsync(string sourceKey, Guid locationId, CancellationToken cancellationToken) =>
         db.Evses.AnyAsync(
@@ -575,12 +579,13 @@ public sealed class IngestProcessor(AppDbContext db)
 
     private void Conflict(Guid evseId, string stored, string delivered, string sourceKey, DateTimeOffset at)
     {
-        db.SourceConflicts.Add(SourceConflict.Create(
-            EntityType.EVSE,
-            evseId,
-            "evse_id",
-            JsonSerializer.Serialize(new Dictionary<string, string> { ["stored"] = stored, [sourceKey] = delivered }),
-            at));
+        var values = JsonSerializer.Serialize(new Dictionary<string, string> { ["stored"] = stored, [sourceKey] = delivered });
+        if (OpenConflictExists("evse_id", values))
+        {
+            return;
+        }
+
+        db.SourceConflicts.Add(SourceConflict.Create(EntityType.EVSE, evseId, "evse_id", values, at));
         _conflicts++;
     }
 
