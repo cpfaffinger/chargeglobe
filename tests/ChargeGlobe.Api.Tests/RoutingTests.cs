@@ -91,6 +91,62 @@ public class RoutingTests
     }
 
     [Fact]
+    public async Task Reach_areas_come_as_polygons_the_largest_first()
+    {
+        // Valhalla answers with the contours as GeoJSON; a contour may also be a MultiPolygon.
+        var (engine, handler) = Engine(() => Json(HttpStatusCode.OK, """
+            {"type":"FeatureCollection","features":[
+              {"type":"Feature","properties":{"contour":15.0,"metric":"time"},
+               "geometry":{"type":"Polygon","coordinates":[[[16.3,48.2],[16.4,48.2],[16.4,48.3],[16.3,48.2]]]}},
+              {"type":"Feature","properties":{"contour":30.0,"metric":"time"},
+               "geometry":{"type":"MultiPolygon","coordinates":[
+                 [[[16.0,48.0],[16.8,48.0],[16.8,48.6],[16.0,48.0]],[[16.2,48.1],[16.3,48.1],[16.3,48.2],[16.2,48.1]]],
+                 [[[15.0,47.0],[15.1,47.0],[15.1,47.1],[15.0,47.0]]]]}}]}
+            """));
+
+        var result = await engine.ReachAsync(new GeoPoint(48.196, 16.338), ReachMetric.Minutes, [15, 30], CancellationToken.None);
+
+        Assert.Equal(RouteOutcome.Found, result.Outcome);
+        var areas = result.Areas!;
+        Assert.Equal([30, 15], areas.Select(area => area.Value));
+        var large = areas[0].Polygons;
+        Assert.Equal((2, 2, 1), (large.Count, large[0].Count, large[1].Count));
+        Assert.Equal(new GeoPoint(48.0, 16.0), large[0][0][0]);
+        Assert.Equal(new GeoPoint(48.1, 16.2), large[0][1][0]);
+        Assert.Equal([new GeoPoint(48.2, 16.3), new GeoPoint(48.2, 16.4), new GeoPoint(48.3, 16.4), new GeoPoint(48.2, 16.3)], Assert.Single(Assert.Single(areas[1].Polygons)));
+
+        Assert.Equal(new Uri("http://routing:8002/isochrone"), handler.Uri);
+        var body = JsonDocument.Parse(handler.Body!).RootElement;
+        Assert.Equal(("auto", true, 0.5, 150d), (body.GetProperty("costing").GetString(), body.GetProperty("polygons").GetBoolean(), body.GetProperty("denoise").GetDouble(), body.GetProperty("generalize").GetDouble()));
+        Assert.Equal((48.196, 16.338), (body.GetProperty("locations")[0].GetProperty("lat").GetDouble(), body.GetProperty("locations")[0].GetProperty("lon").GetDouble()));
+        Assert.Equal("""[{"time":15},{"time":30}]""", body.GetProperty("contours").GetRawText());
+    }
+
+    [Fact]
+    public async Task Reach_by_distance_asks_for_kilometres_and_shares_the_failures_of_routes()
+    {
+        var (engine, handler) = Engine(() => Json(HttpStatusCode.OK, """
+            {"type":"FeatureCollection","features":[{"type":"Feature","properties":{"contour":50.0,"metric":"distance"},
+              "geometry":{"type":"Polygon","coordinates":[[[16.3,48.2],[16.4,48.2],[16.4,48.3],[16.3,48.2]]]}}]}
+            """));
+
+        var result = await engine.ReachAsync(new GeoPoint(48.196, 16.338), ReachMetric.Kilometres, [50], CancellationToken.None);
+
+        Assert.Equal(50, Assert.Single(result.Areas!).Value);
+        Assert.Equal("""[{"distance":50}]""", JsonDocument.Parse(handler.Body!).RootElement.GetProperty("contours").GetRawText());
+
+        var limit = await Engine(() => Json(HttpStatusCode.BadRequest, """{"error_code":166,"error":"Exceeded max distance: 200","status_code":400}"""))
+            .Engine.ReachAsync(new GeoPoint(48.196, 16.338), ReachMetric.Kilometres, [250], CancellationToken.None);
+        Assert.Equal(new ReachResult(RouteOutcome.NoRoute, null), limit);
+        var down = await Engine(() => Json(HttpStatusCode.BadGateway, "{}"))
+            .Engine.ReachAsync(new GeoPoint(48.196, 16.338), ReachMetric.Minutes, [15], CancellationToken.None);
+        Assert.Equal(new ReachResult(RouteOutcome.Unavailable, null), down);
+        var unreachable = await Engine(() => throw new HttpRequestException("Connection refused"))
+            .Engine.ReachAsync(new GeoPoint(48.196, 16.338), ReachMetric.Minutes, [15], CancellationToken.None);
+        Assert.Equal(RouteOutcome.Unavailable, unreachable.Outcome);
+    }
+
+    [Fact]
     public async Task The_api_talks_to_the_routing_service_of_the_compose_network()
     {
         await using var factory = new ApiFactory();

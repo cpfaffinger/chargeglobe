@@ -36,6 +36,7 @@ import { MapView, MapViewStore } from '../map/map-view.store';
 import {
   MAX_CHARGING_STOPS,
   PRICE_SESSION_KWH,
+  REACH_MINUTES,
   RouteLocation,
   RouteResponse,
   RoutesService,
@@ -73,7 +74,9 @@ export type MapNotice =
   | 'not-ready'
   | 'route-unavailable'
   | 'route-none'
-  | 'route-failed';
+  | 'route-failed'
+  | 'reach-none'
+  | 'reach-failed';
 
 const NOTICES: Record<MapNotice, string> = {
   config: 'Die Kartenkonfiguration konnte nicht geladen werden. Bitte lade die Seite später neu.',
@@ -88,6 +91,8 @@ const NOTICES: Record<MapNotice, string> = {
   'route-unavailable': 'Die Routenberechnung ist gerade nicht verfügbar. Bitte versuche es später.',
   'route-none': 'Zu diesem Ladestandort wurde keine Straßenverbindung gefunden.',
   'route-failed': 'Die Route konnte nicht berechnet werden. Bitte versuche es erneut.',
+  'reach-none': 'In der Nähe deines Standorts wurde keine Straße gefunden.',
+  'reach-failed': 'Die Reichweite konnte nicht berechnet werden. Bitte versuche es erneut.',
 };
 
 const SHARE_MESSAGES: Record<ShareResult, string | null> = {
@@ -240,6 +245,12 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
           }
         </div>
       }
+      @if (reach(); as minutes) {
+        <div id="reach-summary" class="map-message" role="status">
+          Reichweite mit dem Auto: {{ minutes.join(' · ') }} min
+          <button matButton type="button" id="reach-clear" (click)="clearReach()">Reichweite entfernen</button>
+        </div>
+      }
       @if (homeSaved()) {
         <p id="home-saved" class="map-message" role="status">Dieser Ausschnitt ist jetzt deine Startposition.</p>
       }
@@ -286,6 +297,11 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
           <button mat-menu-item type="button" id="reset-home" [disabled]="!views.home()" (click)="views.resetHome()">Startposition zurücksetzen</button>
         </mat-menu>
       </div>
+      @if (canRoute()) {
+        <button matFab extended type="button" id="reach" [disabled]="!handle() || reaching()" (click)="showReach()">
+          <app-icon name="explore" />{{ reaching() ? 'Reichweite wird berechnet …' : 'Reichweite' }}
+        </button>
+      }
       <button matFab extended type="button" id="locate" [disabled]="!handle()" (click)="locate()">
         <app-icon name="my_location" />{{ locating() ? 'Standort wird gesucht …' : 'Mein Standort' }}
       </button>
@@ -346,6 +362,11 @@ export class HomePage {
   protected readonly shownStops = computed(() => (this.stopsOrder() === 'price' ? byPrice(this.stops(), this.stopPrices()) : this.stops()));
   protected readonly money = money;
   protected readonly sessionKwh = PRICE_SESSION_KWH;
+  /** Driving times of the shown reach; null while none is shown. */
+  protected readonly reach = signal<number[] | null>(null);
+  protected readonly reaching = signal(false);
+  /** Answers for a reach that was removed meanwhile are dropped. */
+  private reachRequest = 0;
   /** The newest visible area, loaded again when the filters change. */
   private box: Bbox | null = null;
   /** Query parameters of the filters of the shown locations. */
@@ -488,6 +509,40 @@ export class HomePage {
     } finally {
       this.routing.set(false);
     }
+  }
+
+  /**
+   * Areas reachable by car within 15, 30 and 60 minutes from the own position. Like a route, the position goes to the own
+   * API only (ADR-0007), which neither stores nor logs it.
+   */
+  protected async showReach(): Promise<void> {
+    if (!(await this.positionAllowed())) {
+      return;
+    }
+    const request = ++this.reachRequest;
+    this.reaching.set(true);
+    try {
+      const position = await this.browser.currentPosition();
+      const response = await this.routes.reach(position, REACH_MINUTES);
+      if (request === this.reachRequest) {
+        this.handle()!.showReach(response.data);
+        this.reach.set(REACH_MINUTES);
+      }
+    } catch (error) {
+      if (error instanceof HttpErrorResponse) {
+        this.notice.set(error.status === 503 ? 'route-unavailable' : error.status === 422 ? 'reach-none' : 'reach-failed');
+      } else {
+        this.notice.set((error as GeolocationPositionError).code === 1 ? 'denied' : 'unavailable');
+      }
+    } finally {
+      this.reaching.set(false);
+    }
+  }
+
+  protected clearReach(): void {
+    this.reachRequest++;
+    this.reach.set(null);
+    this.handle()?.showReach(null);
   }
 
   protected isPlanned(stop: RouteLocation): boolean {
