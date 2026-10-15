@@ -37,6 +37,8 @@ import {
   MAX_CHARGING_STOPS,
   PRICE_SESSION_KWH,
   REACH_MINUTES,
+  ReachAreas,
+  smallestArea,
   RouteLocation,
   RouteResponse,
   RoutesService,
@@ -51,6 +53,14 @@ import {
 } from '../map/routes.service';
 import { Bbox, LocationSummary, LocationsService } from '../map/locations.service';
 import { MapFocus } from '../search/search.service';
+
+/** Free locations listed in reach. */
+export const FASTEST_FREE = 10;
+
+/** "bis 15 min", "15–30 min", … for the band ending at the value with this index. */
+function bandLabel(values: number[], index: number): string {
+  return index === 0 ? `bis ${values[0]} min` : `${values[index - 1]}–${values[index]} min`;
+}
 
 /** Zoom of the map on a search hit: streets and single locations visible. */
 export const FOCUS_ZOOM = 16;
@@ -117,7 +127,7 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
   imports: [AppIcon, DatePipe, DecimalPipe, FavoriteButton, LocationDetails, MapFilterPanel, MapOptionsPanel, MatButtonModule,
     MatButtonToggleModule, MatCardModule, MatMenuModule, NgTemplateOutlet],
   selector: 'app-home',
-  host: { '[class.has-card]': 'selected() !== null || stopsState() !== null', '[class.has-filters]': 'filtersOpen() || optionsOpen()' },
+  host: { '[class.has-card]': 'selected() !== null || stopsState() !== null || reachState() !== null', '[class.has-filters]': 'filtersOpen() || optionsOpen()' },
   template: `
     <ng-template #card>
       @if (selected(); as location) {
@@ -213,6 +223,46 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
                     </li>
                   } @empty {
                     <li class="muted">Keine Ladepunkte entlang der Route.</li>
+                  }
+                </ol>
+              }
+            }
+          </mat-card-content>
+        </mat-card>
+      } @else if (reachState(); as state) {
+        <mat-card id="reach-locations" appearance="outlined" role="region" aria-label="In Reichweite">
+          <mat-card-content>
+            <h2>In Reichweite</h2>
+            @switch (state) {
+              @case ('loading') {
+                <p class="muted">Ladepunkte in Reichweite werden gesucht …</p>
+              }
+              @case ('error') {
+                <p class="error">Die Ladepunkte in Reichweite konnten nicht geladen werden.</p>
+              }
+              @default {
+                <p class="muted" id="reach-hint">{{ reachTruncated() ? 'Die nächsten ' : '' }}{{ reachLocations().length }} Standorte in Reichweite, mit den Filtern der Karte.</p>
+                <ul id="reach-counts">
+                  @for (band of reachBands(); track band.minutes) {
+                    <li [attr.data-minutes]="band.minutes"><span class="band-count">{{ band.count }}</span><span class="band-label">{{ band.label }}</span></li>
+                  }
+                </ul>
+                <h3>Schnellste freie Ladepunkte</h3>
+                <ol>
+                  @for (location of fastestFree(); track location.id) {
+                    <li>
+                      <button type="button" class="open-stop" [attr.data-location]="location.id" (click)="openStop(location)">
+                        <span class="stop-name">{{ location.name ?? 'Ladestandort' }}</span>
+                        <span class="stop-state">
+                          bis {{ location.maxAvailablePowerKw | number: '1.0-1' : 'en-US' }} kW frei · {{ location.evsesAvailable }} von {{ location.evsesTotal }} frei
+                          @if (bandLabel(location); as label) {
+                            · {{ label }}
+                          }
+                        </span>
+                      </button>
+                    </li>
+                  } @empty {
+                    <li class="muted">Gerade kein freier Ladepunkt in Reichweite.</li>
                   }
                 </ol>
               }
@@ -367,6 +417,35 @@ export class HomePage {
   protected readonly reaching = signal(false);
   /** Answers for a reach that was removed meanwhile are dropped. */
   private reachRequest = 0;
+  /** The areas of the shown reach and where it starts, for loading its locations again when the filters change. */
+  private readonly reachAreas = signal<ReachAreas | null>(null);
+  private reachCenter: { latitude: number; longitude: number } | null = null;
+  protected readonly reachState = signal<'loading' | 'error' | 'ready' | null>(null);
+  protected readonly reachLocations = signal<LocationSummary[]>([]);
+  protected readonly reachTruncated = signal(false);
+  /** Answers for older filters or a removed reach are dropped. */
+  private reachListRequest = 0;
+  /** Per location the driving time of the smallest area that contains it. */
+  private readonly reachMinutes = computed(() => {
+    const areas = this.reachAreas();
+    return new Map(this.reachLocations().map((location) => [location.id, areas ? smallestArea(location, areas) : null]));
+  });
+  /** The locations per band of driving time: up to 15, 15–30, 30–60 minutes. */
+  protected readonly reachBands = computed(() => {
+    const minutes = [...this.reachMinutes().values()];
+    return REACH_MINUTES.map((limit, index) => ({
+      minutes: limit,
+      label: bandLabel(REACH_MINUTES, index),
+      count: minutes.filter((value) => value === limit).length,
+    }));
+  });
+  /** The free locations with the most power free, at most ten. */
+  protected readonly fastestFree = computed(() =>
+    this.reachLocations()
+      .filter((location) => location.maxAvailablePowerKw !== null)
+      .sort((a, b) => b.maxAvailablePowerKw! - a.maxAvailablePowerKw!)
+      .slice(0, FASTEST_FREE),
+  );
   /** The newest visible area, loaded again when the filters change. */
   private box: Bbox | null = null;
   /** Query parameters of the filters of the shown locations. */
@@ -444,6 +523,10 @@ export class HomePage {
           // The stops along a shown route follow the filters, without a new route.
           if (this.routeLine) {
             void this.loadStops(this.routeLine);
+          }
+          // Likewise the locations in a shown reach, without a new reach.
+          if (untracked(this.reachAreas)) {
+            void this.loadReachLocations();
           }
         }
         this.filterKey = key;
@@ -527,6 +610,9 @@ export class HomePage {
       if (request === this.reachRequest) {
         this.handle()!.showReach(response.data);
         this.reach.set(REACH_MINUTES);
+        this.reachAreas.set(response.data);
+        this.reachCenter = position;
+        void this.loadReachLocations();
       }
     } catch (error) {
       if (error instanceof HttpErrorResponse) {
@@ -541,8 +627,36 @@ export class HomePage {
 
   protected clearReach(): void {
     this.reachRequest++;
+    this.reachListRequest++;
     this.reach.set(null);
+    this.reachAreas.set(null);
+    this.reachCenter = null;
+    this.reachState.set(null);
+    this.reachLocations.set([]);
     this.handle()?.showReach(null);
+  }
+
+  protected bandLabel(location: LocationSummary): string | null {
+    const minutes = this.reachMinutes().get(location.id);
+    return minutes ? bandLabel(REACH_MINUTES, REACH_MINUTES.indexOf(minutes)) : null;
+  }
+
+  /** The locations inside the largest area with the filters of the map. */
+  private async loadReachLocations(): Promise<void> {
+    const request = ++this.reachListRequest;
+    this.reachState.set('loading');
+    try {
+      const response = await this.routes.within(this.reachAreas()!.features[0].geometry, this.reachCenter!, this.filterStore.filters());
+      if (request === this.reachListRequest) {
+        this.reachLocations.set(response.data);
+        this.reachTruncated.set(response.meta.truncated);
+        this.reachState.set('ready');
+      }
+    } catch {
+      if (request === this.reachListRequest) {
+        this.reachState.set('error');
+      }
+    }
   }
 
   protected isPlanned(stop: RouteLocation): boolean {
@@ -608,7 +722,7 @@ export class HomePage {
   }
 
   /** A stop of the list: the map flies there and opens its card; closing the card returns to the list. */
-  protected openStop(stop: RouteLocation): void {
+  protected openStop(stop: LocationSummary): void {
     this.handle()!.flyTo(stop.latitude, stop.longitude, FOCUS_ZOOM);
     this.selected.set(stop);
   }

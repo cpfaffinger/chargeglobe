@@ -118,6 +118,36 @@ export interface ReachResponse {
   meta: { attribution: { source: string; text: string; license: string }[] };
 }
 
+/** Locations inside an area (POST /api/v1/locations/within) asked for: a reach of an hour holds hundreds. */
+export const REACH_LOCATIONS_LIMIT = 500;
+
+/** Whether the point lies inside the ring (ray casting; [longitude, latitude]). */
+function inRing(longitude: number, latitude: number, ring: [number, number][]): boolean {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [x1, y1] = ring[i];
+    const [x2, y2] = ring[j];
+    if (y1 > latitude !== y2 > latitude && longitude < ((x2 - x1) * (latitude - y1)) / (y2 - y1) + x1) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+/** Whether the location lies inside the area: in an outer ring and in none of its holes. */
+export function inArea(location: { latitude: number; longitude: number }, area: ReachAreas['features'][number]): boolean {
+  return area.geometry.coordinates.some(
+    ([outer, ...holes]) =>
+      inRing(location.longitude, location.latitude, outer) && !holes.some((hole) => inRing(location.longitude, location.latitude, hole)),
+  );
+}
+
+/** The value (e.g. minutes) of the smallest area that contains the location; null outside all. */
+export function smallestArea(location: { latitude: number; longitude: number }, areas: ReachAreas): number | null {
+  const area = [...areas.features].reverse().find((feature) => inArea(location, feature));
+  return area ? (area.properties.minutes ?? area.properties.kilometres)! : null;
+}
+
 /** Routes by car (route:read); the positions go to the own API only, which neither stores nor logs them. */
 @Injectable({ providedIn: 'root' })
 export class RoutesService {
@@ -131,6 +161,13 @@ export class RoutesService {
   along(geometry: RouteResponse['data']['geometry'], filters: MapFilters): Promise<RouteLocationsResponse> {
     return firstValueFrom(
       this.http.post<RouteLocationsResponse>('/api/v1/routes/locations', { geometry, corridorMeters: CORRIDOR_METERS, limit: ROUTE_STOPS_LIMIT, ...filters }),
+    );
+  }
+
+  /** The locations inside the area that match the filters of the map, nearest to the centre first. */
+  within(geometry: ReachAreas['features'][number]['geometry'], center: Position, filters: MapFilters): Promise<LocationsResponse> {
+    return firstValueFrom(
+      this.http.post<LocationsResponse>('/api/v1/locations/within', { geometry, center, limit: REACH_LOCATIONS_LIMIT, ...filters }),
     );
   }
 

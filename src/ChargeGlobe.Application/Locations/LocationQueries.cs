@@ -153,6 +153,12 @@ public interface ILocationQueries
     /// </summary>
     Task<RoutePage> AlongRouteAsync(IReadOnlyList<GeoPoint> route, int corridorMeters, LocationFilter filter, int limit, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Active locations inside the area (GeoJSON MultiPolygon, e.g. a reach) that match the filter, nearest to
+    /// <paramref name="center"/> first (null: the centroid of the area), at most <paramref name="limit"/>.
+    /// </summary>
+    Task<LocationPage> InAreaAsync(string areaGeoJson, GeoPoint? center, LocationFilter filter, int limit, CancellationToken cancellationToken);
+
     /// <summary>The active locations among <paramref name="ids"/> (e.g. favorites), aggregated like <see cref="InBoundingBoxAsync"/>.</summary>
     Task<LocationPage> ByIdsAsync(IReadOnlyList<Guid> ids, CancellationToken cancellationToken);
 

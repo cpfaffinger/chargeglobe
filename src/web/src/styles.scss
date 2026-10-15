@@ -325,7 +325,8 @@ app-home {
 
 // The card holds the details of the location (or the stops along a route) and scrolls itself; the map behind keeps its position.
 #location-card,
-#route-stops {
+#route-stops,
+#reach-locations {
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -374,18 +375,18 @@ app-location-details .details-state {
 }
 
 // Stops along a route: one button per location, start first.
-#route-stops h2 {
+:is(#route-stops, #reach-locations) h2 {
   margin: 0 0 4px;
   font: var(--mat-sys-title-medium);
 }
 
-#route-stops ol {
+:is(#route-stops, #reach-locations) ol {
   list-style: none;
   margin: 8px 0 0;
   padding: 0;
 }
 
-#route-stops li {
+:is(#route-stops, #reach-locations) li {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -413,7 +414,7 @@ app-location-details .details-state {
   font: var(--mat-sys-label-medium);
 }
 
-#route-stops li button.open-stop {
+:is(#route-stops, #reach-locations) li button.open-stop {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -430,15 +431,48 @@ app-location-details .details-state {
   cursor: pointer;
 }
 
-#route-stops li button.open-stop:hover,
-#route-stops li button.open-stop:focus-visible {
+:is(#route-stops, #reach-locations) li button.open-stop:hover,
+:is(#route-stops, #reach-locations) li button.open-stop:focus-visible {
   background: var(--mat-sys-surface-container-high);
 }
 
-#route-stops .stop-state {
+:is(#route-stops, #reach-locations) .stop-state {
   display: flex;
   align-items: center;
   gap: 6px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// Locations in reach: counts per area, then the fastest free ones.
+#reach-locations h3 {
+  margin: 12px 0 0;
+  font: var(--mat-sys-title-small);
+}
+
+#reach-counts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  text-align: center;
+}
+
+#reach-counts li {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 4px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--mat-sys-tertiary) 12%, transparent);
+}
+
+#reach-counts .band-count {
+  font: var(--mat-sys-title-large);
+}
+
+#reach-counts .band-label {
+  font: var(--mat-sys-label-medium);
   color: var(--mat-sys-on-surface-variant);
 }
 
@@ -608,7 +642,8 @@ app-location-details .details-state {
 
   // The info card becomes a bottom sheet with the details; the map stays visible above it.
   #location-card,
-  #route-stops {
+  #route-stops,
+  #reach-locations {
     position: absolute;
     left: 0;
     right: 0;

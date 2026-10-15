@@ -117,6 +117,7 @@ curl -k https://localhost:5005/api/v1/map/config    # Kartenkonfiguration aus de
 curl -k "https://localhost:5005/api/v1/locations?bbox=16.2,48.1,16.6,48.3&limit=50"   # Standorte in Wien mit meta.attribution (anonym)
 curl -k "https://localhost:5005/api/v1/locations?bbox=16.2,48.1,16.6,48.3&minPowerKw=150&connector=IEC_62196_T2_COMBO&availableOnly=true"   # mit Filtern; ungültiger connector → 422
 curl -k "https://localhost:5005/api/v1/operators?q=wien&limit=5"   # Betreiber nach Zahl der Standorte (anonym)
+curl -k -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"geometry":{"type":"Polygon","coordinates":[[[16.35,48.2],[16.38,48.2],[16.38,48.22],[16.35,48.22],[16.35,48.2]]]},"minPowerKw":50}' https://localhost:5005/api/v1/locations/within   # Standorte in einer Fläche (z. B. Feature von routes/reach), nächste zum Schwerpunkt zuerst (route:read)
 curl -kI https://localhost:5005/maplibre/maplibre-gl-worker.mjs   # 200, Content-Type text/javascript (Worker der Karte)
 curl -k "https://localhost:5005/api/v1/evses/AT*TST*E1*1"   # ohne Token: 401 Problem Details (evse:read nötig)
 TOKEN=$(curl -sk -H 'Content-Type: application/json' -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}" https://localhost:5005/api/v1/auth/login | sed 's/.*"accessToken":"\([^"]*\)".*/\1/')
