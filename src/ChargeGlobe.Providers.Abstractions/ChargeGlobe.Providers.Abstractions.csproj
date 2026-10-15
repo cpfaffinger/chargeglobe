@@ -4,6 +4,11 @@
     <ProjectReference Include="..\ChargeGlobe.Domain\ChargeGlobe.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Token bucket of RateLimitingHandler, shared by all adapters (docs/04, rule 6). -->
+    <PackageReference Include="System.Threading.RateLimiting" Version="10.0.0" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

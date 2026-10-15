@@ -16,11 +16,22 @@ public sealed record IngestResult(int Locations, int Evses, int Statuses, int Un
 /// <summary>
 /// Merges one ingest message into the canonical model (docs/03): identity resolution, attribute
 /// origin, source records and status time series. Runs inside the transaction of the queue; it saves,
-/// but never commits. Implemented matching steps: EVSE-ID (exact or normalized), learned source
-/// record, new entity (surrogate without EVSE-ID). The geo heuristics follow with a second source.
+/// but never commits. Matching cascade: learned source record, EVSE-ID (exact or normalized), same
+/// operator within <see cref="OperatorRadiusMeters"/>, the only location within <see cref="GeoOnlyRadiusMeters"/>,
+/// new entity (surrogate without EVSE-ID). The geo steps only consider locations this source does not
+/// know yet; several candidates become a <see cref="SourceConflict"/> instead of a merge.
 /// </summary>
 public sealed class IngestProcessor(AppDbContext db)
 {
+    public const int OperatorRadiusMeters = 50;
+    public const int GeoOnlyRadiusMeters = 25;
+
+    /// <summary>Confidence of a match by operator and distance.</summary>
+    public const double GeoOperatorConfidence = 0.9;
+
+    /// <summary>Confidence of a match by distance alone.</summary>
+    public const double GeoOnlyConfidence = 0.6;
+
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     {
         Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() },
@@ -32,6 +43,7 @@ public sealed class IngestProcessor(AppDbContext db)
     private int _unknownEvses;
     private int _conflicts;
     private int _skipped;
+    private Dictionary<string, SourceTier> _tiers = [];
 
     public async Task<IngestResult> ProcessAsync(string sourceKey, IngestBatch batch, CancellationToken cancellationToken)
     {
@@ -106,6 +118,8 @@ public sealed class IngestProcessor(AppDbContext db)
             .OfType<string>()
             .Distinct()];
         await db.Operators.Where(item => item.OperatorId != null && operatorCodes.Contains(item.OperatorId)).LoadAsync(cancellationToken);
+        // The tiers decide which source may take an attribute over (docs/03, precedence).
+        _tiers = await db.Sources.AsNoTracking().ToDictionaryAsync(source => source.Key, source => source.Tier, cancellationToken);
     }
 
     /// <summary>
@@ -148,6 +162,7 @@ public sealed class IngestProcessor(AppDbContext db)
 
         var record = await db.SourceRecords.FindAsync([sourceKey, snapshot.ExternalId, EntityType.LOCATION], cancellationToken);
         var location = record is null ? null : await db.Locations.FindAsync([record.EntityId], cancellationToken);
+        var method = record?.MatchMethod ?? MatchMethod.CREATED;
         if (record is null || location is null)
         {
             // Matching step 1: an EVSE of the record is already known by its EVSE-ID.
@@ -161,20 +176,38 @@ public sealed class IngestProcessor(AppDbContext db)
                     .Select(evse => (Guid?)evse.LocationId)
                     .FirstOrDefaultAsync(cancellationToken);
             location = knownLocation is { } id ? await db.Locations.FindAsync([id], cancellationToken) : null;
+            method = knownLocation is null ? MatchMethod.CREATED : MatchMethod.EVSE_ID_NORMALIZED;
+            var confidence = 1d;
+            if (location is null)
+            {
+                // Matching steps 3 and 4: a location of another source close by.
+                var (match, ambiguous) = await GeoMatchAsync(sourceKey, snapshot, at, cancellationToken);
+                if (ambiguous)
+                {
+                    _skipped++;
+                    return;
+                }
+
+                if (match is { } geo)
+                {
+                    location = await db.Locations.FindAsync([geo.Id], cancellationToken);
+                    (method, confidence) = (geo.Method, geo.Confidence);
+                }
+            }
+
             if (location is null)
             {
                 location = Location.Create(snapshot.Coordinates, country, at);
                 db.Locations.Add(location);
             }
 
-            var method = knownLocation is null ? MatchMethod.CREATED : MatchMethod.EVSE_ID_NORMALIZED;
             if (record is null)
             {
-                db.SourceRecords.Add(SourceRecord.Create(sourceKey, snapshot.ExternalId, EntityType.LOCATION, location.Id, method, 1, at, item.SnapshotId));
+                db.SourceRecords.Add(SourceRecord.Create(sourceKey, snapshot.ExternalId, EntityType.LOCATION, location.Id, method, confidence, at, item.SnapshotId));
             }
             else
             {
-                record.Rematch(location.Id, method, 1, at, item.SnapshotId);
+                record.Rematch(location.Id, method, confidence, at, item.SnapshotId);
             }
         }
         else
@@ -185,7 +218,7 @@ public sealed class IngestProcessor(AppDbContext db)
         // The operator belongs to the country of its EVSE-ID prefix, which may differ from the address (CH*ECU in Austria).
         var operatorCountry = snapshot.OperatorCountry is { } given && IsCountryCode(given) ? given : country;
         var operatorId = await ResolveOperatorAsync(snapshot, operatorCountry, cancellationToken);
-        var attributes = new AttributeWriter(db, sourceKey, EntityType.LOCATION, location.Id, at);
+        var attributes = new AttributeWriter(db, sourceKey, EntityType.LOCATION, location.Id, at, _tiers);
         await attributes.SetAsync("name", snapshot.Name, value => location.Name = value, cancellationToken);
         await attributes.SetAsync("address", snapshot.Address.Street, value => location.Address = value, cancellationToken);
         await attributes.SetAsync("postal_code", snapshot.Address.PostalCode, value => location.PostalCode = value, cancellationToken);
@@ -215,8 +248,18 @@ public sealed class IngestProcessor(AppDbContext db)
         Touch(location, attributes.Changed, at);
         _locations++;
 
+        // At a location found by distance, charge points without EVSE-ID would duplicate those of the other sources.
+        var othersHaveEvses = method is MatchMethod.GEO_OPERATOR or MatchMethod.GEO_ONLY
+            && await OtherSourcesHaveEvsesAsync(sourceKey, location.Id, cancellationToken);
         foreach (var evseSnapshot in snapshot.Evses)
         {
+            if (othersHaveEvses
+                && !EvseId.TryParse(evseSnapshot.EvseId, out _)
+                && await db.SourceRecords.FindAsync([sourceKey, evseSnapshot.ExternalId, EntityType.EVSE], cancellationToken) is null)
+            {
+                continue;
+            }
+
             if (await MergeEvseAsync(sourceKey, location.Id, operatorId, evseSnapshot, item.SnapshotId, at, cancellationToken) is not { } evse)
             {
                 continue;
@@ -309,7 +352,7 @@ public sealed class IngestProcessor(AppDbContext db)
             }
         }
 
-        var attributes = new AttributeWriter(db, sourceKey, EntityType.EVSE, evse.Id, at);
+        var attributes = new AttributeWriter(db, sourceKey, EntityType.EVSE, evse.Id, at, _tiers);
         await attributes.SetAsync("location_id", locationId.ToString(), _ => evse.LocationId = locationId, cancellationToken);
         await attributes.SetAsync("operator_id", operatorId?.ToString(), _ => evse.OperatorId = operatorId, cancellationToken);
         await attributes.SetAsync(
@@ -363,11 +406,97 @@ public sealed class IngestProcessor(AppDbContext db)
         evse.RemoveConnectorsFrom(connectors.Count + 1);
     }
 
+    /// <summary>
+    /// Matching steps 3 and 4 (docs/03): locations within <see cref="OperatorRadiusMeters"/> that this source does not
+    /// know yet; one with the same operator and a similar number of EVSEs, otherwise the only one within
+    /// <see cref="GeoOnlyRadiusMeters"/> that has no other operator. Several candidates are recorded as conflict.
+    /// </summary>
+    private async Task<(GeoMatch? Match, bool Ambiguous)> GeoMatchAsync(
+        string sourceKey, ProviderLocationSnapshot snapshot, DateTimeOffset at, CancellationToken cancellationToken)
+    {
+        var (latitude, longitude) = (snapshot.Coordinates.Latitude, snapshot.Coordinates.Longitude);
+        var rows = await db.Database.SqlQuery<GeoCandidate>($"""
+            SELECT l.id AS "Id",
+                   ST_Distance(l.geom, ST_SetSRID(ST_MakePoint({longitude}, {latitude}), 4326)::geography) AS "Distance",
+                   o.operator_id AS "OperatorCode",
+                   o.name AS "OperatorName",
+                   (SELECT count(*) FROM evse e WHERE e.location_id = l.id AND e.lifecycle = 'ACTIVE')::int AS "Evses"
+            FROM location l
+            LEFT JOIN operator o ON o.id = l.operator_id
+            WHERE l.lifecycle = 'ACTIVE'
+              AND ST_DWithin(l.geom, ST_SetSRID(ST_MakePoint({longitude}, {latitude}), 4326)::geography, {OperatorRadiusMeters})
+              AND NOT EXISTS (SELECT 1 FROM source_record r
+                              WHERE r.entity_type = 'LOCATION' AND r.entity_id = l.id AND r.source_key = {sourceKey})
+            ORDER BY 2
+            """).ToListAsync(cancellationToken);
+        // Locations this message has already given to another record of the source are taken.
+        var taken = db.SourceRecords.Local
+            .Where(item => item.SourceKey == sourceKey && item.EntityType == EntityType.LOCATION)
+            .Select(item => item.EntityId)
+            .ToHashSet();
+        var candidates = rows.Where(row => !taken.Contains(row.Id)).ToList();
+        var sameOperator = candidates.Where(row => SameOperator(snapshot, row) == true && SimilarCount(snapshot.Evses.Count, row.Evses)).ToList();
+        var near = candidates.Where(row => row.Distance <= GeoOnlyRadiusMeters && SameOperator(snapshot, row) != false).ToList();
+        var (found, method, confidence) = sameOperator.Count > 0
+            ? (sameOperator, MatchMethod.GEO_OPERATOR, GeoOperatorConfidence)
+            : (near, MatchMethod.GEO_ONLY, GeoOnlyConfidence);
+        if (found.Count == 1)
+        {
+            return (new GeoMatch(found[0].Id, method, confidence), false);
+        }
+
+        if (found.Count > 1)
+        {
+            AmbiguousConflict(sourceKey, snapshot.ExternalId, found, at);
+            return (null, true);
+        }
+
+        return (null, false);
+    }
+
+    /// <summary>True or false if both sides name an operator (code or name), null if one of them does not.</summary>
+    private static bool? SameOperator(ProviderLocationSnapshot snapshot, GeoCandidate candidate) =>
+        snapshot.OperatorId is { } code && candidate.OperatorCode is { } other
+            ? string.Equals(code, other, StringComparison.OrdinalIgnoreCase) || OperatorNames.Same(snapshot.OperatorName, candidate.OperatorName)
+            : snapshot.OperatorName is null || candidate.OperatorName is null
+                ? null
+                : OperatorNames.Same(snapshot.OperatorName, candidate.OperatorName);
+
+    /// <summary>Unknown counts match; otherwise at most twice as many on one side (sources count EVSEs differently).</summary>
+    private static bool SimilarCount(int delivered, int known) =>
+        delivered == 0 || known == 0 || Math.Min(delivered, known) * 2 >= Math.Max(delivered, known);
+
+    /// <summary>A record that fits several locations; the same open conflict is not recorded twice.</summary>
+    private void AmbiguousConflict(string sourceKey, string externalId, List<GeoCandidate> candidates, DateTimeOffset at)
+    {
+        var values = JsonSerializer.Serialize(new Dictionary<string, object>
+        {
+            ["source"] = sourceKey,
+            ["externalId"] = externalId,
+            ["candidates"] = candidates.Select(candidate => candidate.Id).Order().ToList(),
+        });
+        if (db.SourceConflicts.Local.Any(conflict => conflict.Values == values)
+            || db.SourceConflicts.Any(conflict => conflict.ResolvedAt == null && conflict.Attribute == "identity" && conflict.Values == values))
+        {
+            return;
+        }
+
+        db.SourceConflicts.Add(SourceConflict.Create(EntityType.LOCATION, candidates[0].Id, "identity", values, at));
+        _conflicts++;
+    }
+
+    private Task<bool> OtherSourcesHaveEvsesAsync(string sourceKey, Guid locationId, CancellationToken cancellationToken) =>
+        db.Evses.AnyAsync(
+            evse => evse.LocationId == locationId
+                && evse.Lifecycle == Lifecycle.ACTIVE
+                && !db.SourceRecords.Any(record => record.EntityType == EntityType.EVSE && record.EntityId == evse.Id && record.SourceKey == sourceKey),
+            cancellationToken);
+
     private async Task<Guid?> ResolveOperatorAsync(ProviderLocationSnapshot snapshot, string country, CancellationToken cancellationToken)
     {
         if (snapshot.OperatorId is not { Length: 3 } code || !code.All(char.IsAsciiLetterOrDigit))
         {
-            return null;
+            return await OperatorByNameAsync(snapshot.OperatorName, country, cancellationToken);
         }
 
         code = code.ToUpperInvariant();
@@ -376,6 +505,26 @@ public sealed class IngestProcessor(AppDbContext db)
         if (existing is null)
         {
             existing = Operator.Create(string.IsNullOrWhiteSpace(snapshot.OperatorName) ? code : snapshot.OperatorName, country, code);
+            db.Operators.Add(existing);
+        }
+
+        return existing.Id;
+    }
+
+    /// <summary>An operator without operator ID, known by its name in the country (sources without EVSE-IDs).</summary>
+    private async Task<Guid?> OperatorByNameAsync(string? name, string country, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return null;
+        }
+
+        name = name.Trim();
+        var existing = db.Operators.Local.FirstOrDefault(item => item.Country == country && item.OperatorId == null && item.Name == name)
+            ?? await db.Operators.FirstOrDefaultAsync(item => item.Country == country && item.OperatorId == null && item.Name == name, cancellationToken);
+        if (existing is null)
+        {
+            existing = Operator.Create(name, country);
             db.Operators.Add(existing);
         }
 
@@ -463,11 +612,29 @@ public sealed class IngestProcessor(AppDbContext db)
 
     private sealed record StatusReading(Guid EvseId, EvseStatus Status, string Raw, DateTimeOffset ObservedAt, DateTimeOffset? SourceReportedAt);
 
+    private sealed record GeoMatch(Guid Id, MatchMethod Method, double Confidence);
+
+    /// <summary>One row of the geo candidate query; property names are the column aliases.</summary>
+    private sealed class GeoCandidate
+    {
+        public Guid Id { get; set; }
+
+        public double Distance { get; set; }
+
+        public string? OperatorCode { get; set; }
+
+        public string? OperatorName { get; set; }
+
+        public int Evses { get; set; }
+    }
+
     /// <summary>
-    /// Writes an attribute only if this source owns it (or nobody does yet) and its value changed. Until
-    /// the precedence table of docs/03 is configurable, the first source to set an attribute owns it.
+    /// Writes an attribute if nobody owns it yet, if this source owns it and the value changed, or if this source ranks
+    /// above the owner for the attribute (<see cref="AttributePrecedence"/>) and delivers a value; equal ranks keep the
+    /// first owner.
     /// </summary>
-    private sealed class AttributeWriter(AppDbContext db, string sourceKey, EntityType entityType, Guid entityId, DateTimeOffset at)
+    private sealed class AttributeWriter(
+        AppDbContext db, string sourceKey, EntityType entityType, Guid entityId, DateTimeOffset at, IReadOnlyDictionary<string, SourceTier> tiers)
     {
         public bool Changed { get; private set; }
 
@@ -481,12 +648,14 @@ public sealed class IngestProcessor(AppDbContext db)
                 apply(value);
                 Changed = true;
             }
-            else if (origin.SourceKey == sourceKey && !origin.Matches(value))
+            else if (origin.SourceKey == sourceKey ? !origin.Matches(value) : value is not null && Ranks(sourceKey) > Ranks(origin.SourceKey))
             {
                 origin.Update(sourceKey, value, at);
                 apply(value);
                 Changed = true;
             }
+
+            int Ranks(string key) => AttributePrecedence.Rank(tiers.TryGetValue(key, out var tier) ? tier : null, attribute);
         }
     }
 }

@@ -1,0 +1,694 @@
+{
+  "locations": [
+    {
+      "externalId": "101",
+      "name": "Parkhaus Stephansplatz",
+      "address": {
+        "street": "Teststraße 1",
+        "postalCode": "1010",
+        "city": "Wien",
+        "country": "AT"
+      },
+      "coordinates": {
+        "latitude": 48.20865,
+        "longitude": 16.37325
+      },
+      "operatorName": "Test Operator",
+      "operatorId": null,
+      "access": "PUBLIC",
+      "openingTimes": null,
+      "evses": [
+        {
+          "externalId": "101#5001#1",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 22,
+              "maxVoltage": 400,
+              "maxAmperage": 32,
+              "rawType": "25"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": null,
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "101#5001#2",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 22,
+              "maxVoltage": 400,
+              "maxAmperage": 32,
+              "rawType": "25"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": null,
+          "roaming": null,
+          "adHocPrice": null
+        }
+      ],
+      "observedAt": "2026-10-15T08:00:00+00:00",
+      "raw": {
+        "DataProvider": {
+          "WebsiteURL": "http://openchargemap.org",
+          "IsOpenDataLicensed": true,
+          "IsApprovedImport": true,
+          "License": "Licensed under Creative Commons Attribution 4.0 International (CC BY 4.0)",
+          "ID": 1,
+          "Title": "Open Charge Map Contributors"
+        },
+        "OperatorInfo": {
+          "WebsiteURL": "https://test-operator.example",
+          "IsPrivateIndividual": false,
+          "IsRestrictedEdit": false,
+          "ID": 9001,
+          "Title": "Test Operator"
+        },
+        "UsageType": {
+          "IsPayAtLocation": false,
+          "IsMembershipRequired": true,
+          "IsAccessKeyRequired": false,
+          "ID": 4,
+          "Title": "Public - Membership Required"
+        },
+        "StatusType": {
+          "IsOperational": true,
+          "IsUserSelectable": true,
+          "ID": 50,
+          "Title": "Operational"
+        },
+        "SubmissionStatus": {
+          "IsLive": true,
+          "ID": 200,
+          "Title": "Submission Published"
+        },
+        "IsRecentlyVerified": true,
+        "DateLastVerified": "2026-09-01T10:00:00Z",
+        "ID": 101,
+        "UUID": "0F3C1D2E-0000-4000-8000-000000000101",
+        "DataProviderID": 1,
+        "OperatorID": 9001,
+        "UsageTypeID": 4,
+        "UsageCost": "laut App des Betreibers",
+        "AddressInfo": {
+          "ID": 101,
+          "Title": "Parkhaus Stephansplatz",
+          "AddressLine1": "Teststraße 1",
+          "Town": "Wien",
+          "Postcode": "1010",
+          "CountryID": 19,
+          "Country": {
+            "ISOCode": "AT",
+            "ContinentCode": "EU",
+            "ID": 19,
+            "Title": "Austria"
+          },
+          "Latitude": 48.20865,
+          "Longitude": 16.37325,
+          "DistanceUnit": 0
+        },
+        "Connections": [
+          {
+            "ID": 5001,
+            "ConnectionTypeID": 25,
+            "ConnectionType": {
+              "FormalName": "IEC 62196-2 Type 2",
+              "ID": 25,
+              "Title": "Type 2 (Socket Only)"
+            },
+            "StatusTypeID": 50,
+            "LevelID": 2,
+            "Amps": 32,
+            "Voltage": 400,
+            "PowerKW": 22.0,
+            "CurrentTypeID": 20,
+            "Quantity": 2
+          }
+        ],
+        "NumberOfPoints": 2,
+        "StatusTypeID": 50,
+        "DateLastStatusUpdate": "2026-09-01T10:00:00Z",
+        "DataQualityLevel": 1,
+        "DateCreated": "2024-03-01T08:00:00Z",
+        "SubmissionStatusTypeID": 200
+      },
+      "operatorCountry": null,
+      "facilities": null
+    },
+    {
+      "externalId": "102",
+      "name": "Ladepark am Ring",
+      "address": {
+        "street": "Testring 2",
+        "postalCode": "1010",
+        "city": "Wien",
+        "country": "AT"
+      },
+      "coordinates": {
+        "latitude": 48.21022,
+        "longitude": 16.36092
+      },
+      "operatorName": null,
+      "operatorId": null,
+      "access": "PUBLIC",
+      "openingTimes": null,
+      "evses": [
+        {
+          "externalId": "102#5002",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 150,
+          "powerType": "DC",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2_COMBO",
+              "format": "CABLE",
+              "powerType": "DC",
+              "maxPowerKw": 150,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "33"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": null,
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "102#5003",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 11,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 11,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "25"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": null,
+          "roaming": null,
+          "adHocPrice": null
+        }
+      ],
+      "observedAt": "2026-10-15T08:00:00+00:00",
+      "raw": {
+        "DataProvider": {
+          "ID": 1,
+          "Title": "Open Charge Map Contributors"
+        },
+        "OperatorInfo": {
+          "IsPrivateIndividual": false,
+          "ID": 1,
+          "Title": "(Unknown Operator)"
+        },
+        "UsageType": {
+          "ID": 1,
+          "Title": "Public"
+        },
+        "StatusType": {
+          "IsOperational": true,
+          "ID": 50,
+          "Title": "Operational"
+        },
+        "ID": 102,
+        "UUID": "0F3C1D2E-0000-4000-8000-000000000102",
+        "DataProviderID": 1,
+        "OperatorID": 1,
+        "UsageTypeID": 1,
+        "AddressInfo": {
+          "ID": 102,
+          "Title": "Ladepark am Ring",
+          "AddressLine1": "Testring 2",
+          "Town": "Wien",
+          "Postcode": "1010",
+          "CountryID": 19,
+          "Country": {
+            "ISOCode": "AT",
+            "ID": 19,
+            "Title": "Austria"
+          },
+          "Latitude": 48.21022,
+          "Longitude": 16.36092,
+          "DistanceUnit": 0
+        },
+        "Connections": [
+          {
+            "ID": 5002,
+            "ConnectionTypeID": 33,
+            "StatusTypeID": 50,
+            "PowerKW": 150.0,
+            "CurrentTypeID": 30,
+            "Quantity": 1
+          },
+          {
+            "ID": 5003,
+            "ConnectionTypeID": 25,
+            "StatusTypeID": 50,
+            "PowerKW": 11.0,
+            "CurrentTypeID": 20
+          }
+        ],
+        "NumberOfPoints": 2,
+        "StatusTypeID": 50,
+        "DateCreated": "2024-05-01T08:00:00Z",
+        "SubmissionStatusTypeID": 200
+      },
+      "operatorCountry": null,
+      "facilities": null
+    },
+    {
+      "externalId": "103",
+      "name": "Schnelllader Ring",
+      "address": {
+        "street": "Testring 4",
+        "postalCode": "1010",
+        "city": "Wien",
+        "country": "AT"
+      },
+      "coordinates": {
+        "latitude": 48.2104,
+        "longitude": 16.3612
+      },
+      "operatorName": "Test Operator",
+      "operatorId": "TST",
+      "access": "PUBLIC",
+      "openingTimes": null,
+      "evses": [
+        {
+          "externalId": "103#5004",
+          "evseId": "AT*TST*ETEST0002*DC1",
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 50,
+          "powerType": "DC",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2_COMBO",
+              "format": "CABLE",
+              "powerType": "DC",
+              "maxPowerKw": 50,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "33"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": null,
+          "roaming": null,
+          "adHocPrice": null
+        }
+      ],
+      "observedAt": "2026-10-15T08:00:00+00:00",
+      "raw": {
+        "DataProvider": {
+          "ID": 1,
+          "Title": "Open Charge Map Contributors"
+        },
+        "OperatorInfo": {
+          "ID": 9001,
+          "Title": "Test Operator"
+        },
+        "UsageType": {
+          "ID": 5,
+          "Title": "Public - Pay At Location"
+        },
+        "StatusType": {
+          "IsOperational": true,
+          "ID": 50,
+          "Title": "Operational"
+        },
+        "ID": 103,
+        "UUID": "0F3C1D2E-0000-4000-8000-000000000103",
+        "DataProviderID": 1,
+        "OperatorID": 9001,
+        "UsageTypeID": 5,
+        "AddressInfo": {
+          "ID": 103,
+          "Title": "Schnelllader Ring",
+          "AddressLine1": "Testring 4",
+          "Town": "Wien",
+          "Postcode": "1010",
+          "CountryID": 19,
+          "Country": {
+            "ISOCode": "AT",
+            "ID": 19,
+            "Title": "Austria"
+          },
+          "Latitude": 48.2104,
+          "Longitude": 16.3612,
+          "DistanceUnit": 0
+        },
+        "Connections": [
+          {
+            "ID": 5004,
+            "ConnectionTypeID": 33,
+            "Reference": "AT*TST*ETEST0002*DC1",
+            "StatusTypeID": 50,
+            "PowerKW": 50.0,
+            "CurrentTypeID": 30,
+            "Quantity": 1
+          }
+        ],
+        "NumberOfPoints": 1,
+        "StatusTypeID": 50,
+        "DateCreated": "2025-01-10T08:00:00Z",
+        "SubmissionStatusTypeID": 200
+      },
+      "operatorCountry": "AT",
+      "facilities": null
+    },
+    {
+      "externalId": "104",
+      "name": "Hotel Musterhof",
+      "address": {
+        "street": "Mustergasse 7",
+        "postalCode": "1150",
+        "city": "Wien",
+        "country": "AT"
+      },
+      "coordinates": {
+        "latitude": 48.19,
+        "longitude": 16.3
+      },
+      "operatorName": "Hotel Musterhof",
+      "operatorId": null,
+      "access": "RESTRICTED",
+      "openingTimes": null,
+      "evses": [
+        {
+          "externalId": "104#5005#1",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 11,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "CABLE",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 11,
+              "maxVoltage": 400,
+              "maxAmperage": 16,
+              "rawType": "1036"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": null,
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "104#5005#2",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 11,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "CABLE",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 11,
+              "maxVoltage": 400,
+              "maxAmperage": 16,
+              "rawType": "1036"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": null,
+          "roaming": null,
+          "adHocPrice": null
+        }
+      ],
+      "observedAt": "2026-10-15T08:00:00+00:00",
+      "raw": {
+        "DataProvider": {
+          "ID": 1,
+          "Title": "Open Charge Map Contributors"
+        },
+        "OperatorInfo": {
+          "IsPrivateIndividual": false,
+          "ID": 9002,
+          "Title": "Hotel Musterhof"
+        },
+        "UsageType": {
+          "ID": 6,
+          "Title": "Private - For Staff, Visitors or Customers"
+        },
+        "StatusType": {
+          "IsOperational": true,
+          "ID": 50,
+          "Title": "Operational"
+        },
+        "ID": 104,
+        "UUID": "0F3C1D2E-0000-4000-8000-000000000104",
+        "DataProviderID": 1,
+        "OperatorID": 9002,
+        "UsageTypeID": 6,
+        "AddressInfo": {
+          "ID": 104,
+          "Title": "Hotel Musterhof",
+          "AddressLine1": "Mustergasse 7",
+          "Town": "Wien",
+          "Postcode": "1150",
+          "CountryID": 19,
+          "Country": {
+            "ISOCode": "AT",
+            "ID": 19,
+            "Title": "Austria"
+          },
+          "Latitude": 48.19,
+          "Longitude": 16.3,
+          "DistanceUnit": 0
+        },
+        "Connections": [
+          {
+            "ID": 5005,
+            "ConnectionTypeID": 1036,
+            "StatusTypeID": 50,
+            "Amps": 16,
+            "Voltage": 400,
+            "PowerKW": 11.0,
+            "CurrentTypeID": 20,
+            "Quantity": 2
+          }
+        ],
+        "NumberOfPoints": 2,
+        "StatusTypeID": 50,
+        "DateCreated": "2025-06-01T08:00:00Z",
+        "SubmissionStatusTypeID": 200
+      },
+      "operatorCountry": null,
+      "facilities": null
+    },
+    {
+      "externalId": "107",
+      "name": "Testmarkt Donaustadt",
+      "address": {
+        "street": "Testweg 9",
+        "postalCode": "1220",
+        "city": "Wien",
+        "country": "AT"
+      },
+      "coordinates": {
+        "latitude": 48.23,
+        "longitude": 16.4
+      },
+      "operatorName": "SMATRICS Netz",
+      "operatorId": null,
+      "access": "PUBLIC",
+      "openingTimes": null,
+      "evses": [
+        {
+          "externalId": "107#5007",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 50,
+          "powerType": "DC",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2_COMBO",
+              "format": "CABLE",
+              "powerType": "DC",
+              "maxPowerKw": 50,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "33"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": null,
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "107#5008",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 50,
+          "powerType": "DC",
+          "connectors": [
+            {
+              "standard": "CHADEMO",
+              "format": "CABLE",
+              "powerType": "DC",
+              "maxPowerKw": 50,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "2"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": null,
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "107#5010",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": null,
+          "powerType": null,
+          "connectors": [
+            {
+              "standard": "UNKNOWN",
+              "format": null,
+              "powerType": null,
+              "maxPowerKw": null,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "1099"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": null,
+          "roaming": null,
+          "adHocPrice": null
+        }
+      ],
+      "observedAt": "2026-10-15T08:00:00+00:00",
+      "raw": {
+        "DataProvider": {
+          "ID": 1,
+          "Title": "Open Charge Map Contributors"
+        },
+        "OperatorInfo": {
+          "ID": 3253,
+          "Title": "SMATRICS Netz"
+        },
+        "UsageType": {
+          "ID": 4,
+          "Title": "Public - Membership Required"
+        },
+        "StatusType": {
+          "IsOperational": true,
+          "ID": 50,
+          "Title": "Operational"
+        },
+        "ID": 107,
+        "UUID": "0F3C1D2E-0000-4000-8000-000000000107",
+        "DataProviderID": 1,
+        "OperatorID": 3253,
+        "UsageTypeID": 4,
+        "AddressInfo": {
+          "ID": 107,
+          "Title": "Testmarkt Donaustadt",
+          "AddressLine1": "Testweg 9",
+          "Town": "Wien",
+          "Postcode": "1220",
+          "CountryID": 19,
+          "Country": {
+            "ISOCode": "AT",
+            "ID": 19,
+            "Title": "Austria"
+          },
+          "Latitude": 48.23,
+          "Longitude": 16.4,
+          "DistanceUnit": 0
+        },
+        "Connections": [
+          {
+            "ID": 5007,
+            "ConnectionTypeID": 33,
+            "StatusTypeID": 50,
+            "PowerKW": 50.0,
+            "CurrentTypeID": 30,
+            "Quantity": 1
+          },
+          {
+            "ID": 5008,
+            "ConnectionTypeID": 2,
+            "StatusTypeID": 50,
+            "PowerKW": 50.0,
+            "CurrentTypeID": 30,
+            "Quantity": 1
+          },
+          {
+            "ID": 5009,
+            "ConnectionTypeID": 1040,
+            "StatusTypeID": 200,
+            "PowerKW": 30.0,
+            "CurrentTypeID": 30,
+            "Quantity": 1
+          },
+          {
+            "ID": 5010,
+            "ConnectionTypeID": 1099,
+            "StatusTypeID": 0,
+            "PowerKW": 0,
+            "Quantity": 1
+          }
+        ],
+        "NumberOfPoints": 2,
+        "StatusTypeID": 50,
+        "DateCreated": "2025-09-01T08:00:00Z",
+        "SubmissionStatusTypeID": 200
+      },
+      "operatorCountry": null,
+      "facilities": null
+    }
+  ]
+}

@@ -60,7 +60,8 @@ chargeglobe/
 │  ├─ ChargeGlobe.Infrastructure/# EF Core + Npgsql (AppDbContext, Migrationen, PostGIS/TimescaleDB), ASP.NET Core Identity, Identity-Services, Mail-Outbox + SMTP (MailKit), Config-Service
 │  ├─ ChargeGlobe.Providers.Abstractions/  # Provider-Vertrag (ACL): Descriptor, Quell-Interfaces, Ingest-Modell, Status-Mapping
 │  ├─ ChargeGlobe.Providers.EControl/  # Adapter E-Control-Ladestellenverzeichnis (offizielle API mit Key)
-│  ├─ ChargeGlobe.Providers.*/   # (geplant) weitere Adapter (OpenChargeMap, Osm, Evn, …)
+│  ├─ ChargeGlobe.Providers.OpenChargeMap/  # Adapter Open Charge Map (Inventar, CC BY 4.0, API-Key)
+│  ├─ ChargeGlobe.Providers.*/   # (geplant) weitere Adapter (Osm, Evn, …)
 │  ├─ ChargeGlobe.Api/           # ASP.NET Core Minimal API (Karte, EVSE-Detail/Historie/Belegung, Konto, Einstellungen, Mail), OpenAPI 3.1, Auth (JWT + API-Keys), Permission-Prüfung, Rate Limiting
 │  ├─ ChargeGlobe.Jobs/          # ein Host für beide Rollen (--role crawler|worker), Image chargeglobe-jobs, skalierbar
 │  │                             #   crawler: Source-Abgleich, Health-Probe, Lease-Scheduler + Abrufe → raw_snapshot, ingest_queue

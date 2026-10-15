@@ -16,17 +16,19 @@
 - [ ] Lizenz festlegen (siehe unten), `CONTRIBUTING.md`, Code of Conduct
 - [x] API-Key für das E-Control-Ladestellenverzeichnis (an eine Domain gebunden, derzeit Platzhalter; Key nur im Config-Service)
 - [ ] Nutzungsbedingungen der E-Control-API archivieren, Weiterverbreitung schriftlich klären, Go-Live-Meldung
-- [ ] OpenChargeMap-API-Key beantragen
+- [ ] OpenChargeMap-API-Key beantragen und unter `/admin/settings` (`provider.api_key`, Scope `provider:ocm`) eintragen, dann `provider.enabled` einschalten
 
 ### Phase 1 – MVP Ost-Österreich (Wien, NÖ, OÖ, Bgld)
 - [x] Domain + Datenmodell + Migration `ChargingDomain` (PostGIS-Geometrie mit GiST, Hypertables mit Kompression/Retention, Region-Trigger)
 - [x] `Providers.Abstractions` (Descriptor, Capabilities, Quell-Interfaces, Ingest-Modell, Status-Mapping)
-- [x] Ingest-Pipeline: Lease-Scheduler (`poll_plan`), clusterweites Request-Budget (`provider_rate_budget`), `raw_snapshot`, `ingest_queue`, Merge mit Matching-Schritten 1/2/5, Status-Intervalle, Retention unter `job_lease`
+- [x] Ingest-Pipeline: Lease-Scheduler (`poll_plan`), clusterweites Request-Budget (`provider_rate_budget`), `raw_snapshot`, `ingest_queue`, Merge mit Matching-Kaskade, Status-Intervalle, Retention unter `job_lease`
 - [x] Continuous Aggregate `evse_occupancy_hourly` (stündlich je EVSE, Real-Time-Aggregation, Refresh-Policy)
 - [x] Region-Seed: die neun Bundesländer aus OSM-Grenzen (`regions-at.geojson`, ODbL, Skript `scripts/regions/build-regions-at.sh`), Import beim API-Start, `location.region_code` wird neu berechnet; `RegionBounds` aus den Polygonen abgeleitet
-- [ ] Matching-Heuristiken (Geo + Operator), Quellen-Präzedenz je Attribut, adaptive Intervalle
+- [x] Matching-Heuristiken (Betreiber + 50 m → `GEO_OPERATOR`, eindeutig ≤ 25 m → `GEO_ONLY`, mehrdeutig → Konflikt `identity`), Quellen-Präzedenz je Attribut nach Tier, Konfliktliste `GET /conflicts` und `/admin/conflicts`
+- [ ] Konflikte im Admin-UI entscheiden (`POST /conflicts/{id}/resolve`), adaptive Intervalle
 - [x] Adapter **E-Control** (Inventar und Ad-hoc-Preis seitenweise aus dem Register `GET /search/stations` – ganz Österreich in 17 Requests, ein Inventar-Plan für alle Regionen –, Live-Status über `GET /search` je Abfragepunkt, Health-Probe im Crawler, Provider-Einstellungen je Quelle im Config-Service) – Tier 0. Die DATEX-II-Publikationen der Quelle sind live geprüft, der Status-Snapshot ist aber Stunden alt und wird nicht genutzt ([Endpunkt-Notiz](endpunkte/econtrol.md))
-- [ ] Adapter **OpenStreetMap** (Overpass) und **OpenChargeMap** als Ergänzung/Plausibilisierung
+- [x] Adapter **OpenChargeMap** (Inventar je Region, CC BY 4.0, ohne Status) – Tier 0 ([Endpunkt-Notiz](endpunkte/ocm.md))
+- [ ] Adapter **OpenStreetMap** (Overpass) als Ergänzung/Plausibilisierung
 - [x] Passive Statusabfrage: Stundenbudget je Quelle clusterweit, Abfragepunkte aus den bekannten Standorten mit Priorität nach Aktivität (5/15/60 min, nachts ×3), Abruf bei Bedarf beim Öffnen eines Standorts, linear wachsende Pause nach Fehlern und Sperre bei abgelehntem Key, Lauf-Protokoll `crawler_run`, strukturierte Crawler-Logs, Live-Ansicht `/admin/crawler` ([05](05-crawling-konzept.md))
 - [ ] Metriken (OpenTelemetry → Prometheus/Grafana): Requests, Fehlerquote, Datenfrische je Quelle
 - [x] API v1: `GET /evses/{evseId}` (EVSE-ID in jeder Schreibweise oder UUID), Statushistorie, Belegung (`evse:read`)

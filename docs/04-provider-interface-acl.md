@@ -24,7 +24,7 @@ public interface IProvider { ProviderDescriptor Descriptor { get; } }
 public sealed record ProviderDescriptor(
     string Key,                       // "econtrol", "ocm", "osm", "evn", ...; Settings-Scope provider:<key>
     string DisplayName,
-    SourceTier Tier,                  // OFFICIAL, OPEN_DATA, PUBLIC_WEB, APP_BACKEND, PARTNER
+    SourceTier Tier,                  // OFFICIAL, OPEN_DATA, PUBLIC_WEB, APP_BACKEND, PARTNER, COMMUNITY
     ProviderCapabilities Capabilities,
     string License,                   // z. B. "CC BY 4.0", "ODbL", "ToS – nur Anzeige"
     string AttributionText,
@@ -165,5 +165,6 @@ Der Adapter liest sie über `IProviderSettings` (Implementierung `ConfigProvider
 2. Projekt `ChargeGlobe.Providers.<Key>` anlegen, Raw-DTOs aus 2–3 echten Antworten ableiten.
 3. Descriptor + Mapper + Status-Mapping-Tabelle; Stecker- und Zahlungsarten ebenfalls als JSON-Tabelle. Bietet die Quelle Wertelisten an, liegen sie als Fixture bei und ein Test prüft, dass jeder Wert eine Abbildung hat.
 4. Fixtures + Replay-Test, Health-Probe. Liefert ein Request alles (`BulkAll`), bekommt das Inventar einen gemeinsamen Plan für alle Regionen statt einen je Region.
-5. Lokal gegen Region laufen lassen, `source_conflict`-Queue prüfen (typisch: Koordinaten-Offsets, Stecker-Freitext).
+5. Gegen eine Region laufen lassen (auf dem Live-Host erst nach dem Server-Test), `/admin/conflicts` prüfen (typisch: Koordinaten-Offsets, mehrdeutige Zuordnungen, Stecker-Freitext); der Tier im Descriptor entscheidet über die Präzedenz der Attribute ([03](03-datenmodell.md#quellen-präzedenz-je-attribut)).
 6. Konfiguration + Attribution-Text in `source`-Tabelle; Eintrag in `docs/07` aktualisieren.
+7. Key in `SettingsCatalog.ProviderKeys` ergänzen (Einstellungen unter `provider:<key>`, Zeile in `/admin/crawler`), `services.Add<Quelle>Provider()` in `AddJobs`, Projekt in die Dockerfiles von Jobs und Tests und in `ChargeGlobe.sln`.

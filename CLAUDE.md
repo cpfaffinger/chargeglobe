@@ -132,7 +132,10 @@ curl -k -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/roles   
 curl -k -X PUT -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/me/favorites/<Standort-UUID>   # Favorit merken (204, idempotent); DELETE entfernt
 curl -k -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/me/favorites   # Favoriten mit aktuellem Status; UI: /favorites
 curl -k -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/me/preferences   # Startposition, Filter, Kartenoptionen des Kontos (updatedAt null = noch keine)
-curl -k -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/admin/crawler/status   # Budget, Pause, Abfragepunkte, Pläne, Queue (jobs:read); UI: /admin/crawler
+curl -k -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/admin/crawler/status   # Budget, Pause, Abfragepunkte, Pläne, Queue je Quelle (econtrol, ocm) (jobs:read); UI: /admin/crawler
+curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/conflicts?limit=20"   # offene Konflikte zwischen Quellen (conflict:resolve); UI: /admin/conflicts
+docker compose exec db psql -U chargeglobe -d chargeglobe -c "select source_key, entity_type, count(*) from source_record group by 1,2 order by 1,2"   # Datensätze je Quelle (econtrol, ocm)
+docker compose exec db psql -U chargeglobe -d chargeglobe -c "select match_method, count(*), round(avg(match_confidence)::numeric,2) from source_record where source_key='ocm' group by 1"   # EVSE_ID_*, GEO_OPERATOR, GEO_ONLY, CREATED
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select template_key, status, attempts, last_error from email_outbox"
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select hypertable_name from timescaledb_information.hypertables where hypertable_schema = 'public'"   # evse_status_observation, location_status_observation
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select view_name, materialized_only from timescaledb_information.continuous_aggregates"   # evse_occupancy_hourly, f (Real-Time-Aggregation)
@@ -172,4 +175,4 @@ Vor einem neuen lokalen Coverage-Lauf alte Ergebnisse löschen (`tests/*/TestRes
 
 ## Nächste Schritte (Stand jetzt)
 
-Siehe `docs/09-roadmap.md`: reale Ladekarten-Tarife pflegen, eigene Karten in den Einstellungen, zweite Datenquelle (NAP/AFIR oder OpenChargeMap), Mail-Absender auf `chargeglobe.net`; außerdem Lizenz festlegen und die E-Control-Nutzungsbedingungen archivieren. API-Keys von Quellen werden nur im Admin-UI eingetragen (`provider.api_key`, Scope `provider:<key>`), nie in Dateien.
+Siehe `docs/09-roadmap.md`: reale Ladekarten-Tarife pflegen, eigene Karten in den Einstellungen, OpenChargeMap-Key eintragen und den ersten Lauf auswerten, Konflikte im Admin-UI entscheiden, Mail-Absender auf `chargeglobe.net`; außerdem Lizenz festlegen und die E-Control-Nutzungsbedingungen archivieren. API-Keys von Quellen werden nur im Admin-UI eingetragen (`provider.api_key`, Scope `provider:<key>`), nie in Dateien.

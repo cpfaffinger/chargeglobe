@@ -1,0 +1,12 @@
+{
+  "0": "UNKNOWN",
+  "10": "AVAILABLE",
+  "20": "CHARGING",
+  "30": "INOPERATIVE",
+  "50": "UNKNOWN",
+  "75": "UNKNOWN",
+  "100": "OUTOFORDER",
+  "150": "PLANNED",
+  "200": "REMOVED",
+  "210": "REMOVED"
+}

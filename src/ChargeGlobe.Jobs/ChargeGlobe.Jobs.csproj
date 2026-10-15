@@ -14,5 +14,6 @@
     <ProjectReference Include="..\ChargeGlobe.Infrastructure\ChargeGlobe.Infrastructure.csproj" />
     <ProjectReference Include="..\ChargeGlobe.Providers.Abstractions\ChargeGlobe.Providers.Abstractions.csproj" />
     <ProjectReference Include="..\ChargeGlobe.Providers.EControl\ChargeGlobe.Providers.EControl.csproj" />
+    <ProjectReference Include="..\ChargeGlobe.Providers.OpenChargeMap\ChargeGlobe.Providers.OpenChargeMap.csproj" />
   </ItemGroup>
 </Project>

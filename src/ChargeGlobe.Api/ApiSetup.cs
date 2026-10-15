@@ -150,6 +150,7 @@ public static class ApiSetup
         app.MapPreferencesEndpoints();
         app.MapTariffsEndpoints();
         app.MapRoutesEndpoints();
+        app.MapConflictsEndpoints();
         return app;
     }
 }

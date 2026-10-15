@@ -1,0 +1,191 @@
+[
+  {
+    "DataProvider": { "WebsiteURL": "http://openchargemap.org", "IsOpenDataLicensed": true, "IsApprovedImport": true, "License": "Licensed under Creative Commons Attribution 4.0 International (CC BY 4.0)", "ID": 1, "Title": "Open Charge Map Contributors" },
+    "OperatorInfo": { "WebsiteURL": "https://test-operator.example", "PhonePrimaryContact": "+43 1 5550100", "ContactEmail": "service@test-operator.example", "FaultReportEmail": "stoerung@test-operator.example", "IsPrivateIndividual": false, "IsRestrictedEdit": false, "ID": 9001, "Title": "Test Operator" },
+    "UsageType": { "IsPayAtLocation": false, "IsMembershipRequired": true, "IsAccessKeyRequired": false, "ID": 4, "Title": "Public - Membership Required" },
+    "StatusType": { "IsOperational": true, "IsUserSelectable": true, "ID": 50, "Title": "Operational" },
+    "SubmissionStatus": { "IsLive": true, "ID": 200, "Title": "Submission Published" },
+    "UserComments": [ { "ID": 1, "ChargePointID": 101, "CommentTypeID": 10, "Comment": "Funktioniert", "UserName": "Max Mustermann", "DateCreated": "2026-09-01T10:00:00Z" } ],
+    "IsRecentlyVerified": true,
+    "DateLastVerified": "2026-09-01T10:00:00Z",
+    "ID": 101,
+    "UUID": "0F3C1D2E-0000-4000-8000-000000000101",
+    "DataProviderID": 1,
+    "OperatorID": 9001,
+    "UsageTypeID": 4,
+    "UsageCost": "laut App des Betreibers",
+    "AddressInfo": {
+      "ID": 101,
+      "Title": "Parkhaus Stephansplatz",
+      "AddressLine1": "Teststraße 1",
+      "Town": "Wien",
+      "Postcode": "1010",
+      "CountryID": 19,
+      "Country": { "ISOCode": "AT", "ContinentCode": "EU", "ID": 19, "Title": "Austria" },
+      "Latitude": 48.20865,
+      "Longitude": 16.37325,
+      "ContactTelephone1": "+43 1 5550199",
+      "DistanceUnit": 0
+    },
+    "Connections": [
+      { "ID": 5001, "ConnectionTypeID": 25, "ConnectionType": { "FormalName": "IEC 62196-2 Type 2", "ID": 25, "Title": "Type 2 (Socket Only)" }, "StatusTypeID": 50, "LevelID": 2, "Amps": 32, "Voltage": 400, "PowerKW": 22.0, "CurrentTypeID": 20, "Quantity": 2 }
+    ],
+    "NumberOfPoints": 2,
+    "StatusTypeID": 50,
+    "DateLastStatusUpdate": "2026-09-01T10:00:00Z",
+    "DataQualityLevel": 1,
+    "DateCreated": "2024-03-01T08:00:00Z",
+    "SubmissionStatusTypeID": 200
+  },
+  {
+    "DataProvider": { "ID": 1, "Title": "Open Charge Map Contributors" },
+    "OperatorInfo": { "IsPrivateIndividual": false, "ID": 1, "Title": "(Unknown Operator)" },
+    "UsageType": { "ID": 1, "Title": "Public" },
+    "StatusType": { "IsOperational": true, "ID": 50, "Title": "Operational" },
+    "ID": 102,
+    "UUID": "0F3C1D2E-0000-4000-8000-000000000102",
+    "DataProviderID": 1,
+    "OperatorID": 1,
+    "UsageTypeID": 1,
+    "AddressInfo": {
+      "ID": 102,
+      "Title": "Ladepark am Ring",
+      "AddressLine1": "Testring 2",
+      "Town": "Wien",
+      "Postcode": "1010",
+      "CountryID": 19,
+      "Country": { "ISOCode": "AT", "ID": 19, "Title": "Austria" },
+      "Latitude": 48.21022,
+      "Longitude": 16.36092,
+      "ContactEmail": "betreiber@ladepark.example",
+      "DistanceUnit": 0
+    },
+    "Connections": [
+      { "ID": 5002, "ConnectionTypeID": 33, "StatusTypeID": 50, "PowerKW": 150.0, "CurrentTypeID": 30, "Quantity": 1 },
+      { "ID": 5003, "ConnectionTypeID": 25, "StatusTypeID": 50, "PowerKW": 11.0, "CurrentTypeID": 20 }
+    ],
+    "NumberOfPoints": 2,
+    "StatusTypeID": 50,
+    "DateCreated": "2024-05-01T08:00:00Z",
+    "SubmissionStatusTypeID": 200
+  },
+  {
+    "DataProvider": { "ID": 1, "Title": "Open Charge Map Contributors" },
+    "OperatorInfo": { "ID": 9001, "Title": "Test Operator" },
+    "UsageType": { "ID": 5, "Title": "Public - Pay At Location" },
+    "StatusType": { "IsOperational": true, "ID": 50, "Title": "Operational" },
+    "ID": 103,
+    "UUID": "0F3C1D2E-0000-4000-8000-000000000103",
+    "DataProviderID": 1,
+    "OperatorID": 9001,
+    "UsageTypeID": 5,
+    "AddressInfo": {
+      "ID": 103,
+      "Title": "Schnelllader Ring",
+      "AddressLine1": "Testring 4",
+      "Town": "Wien",
+      "Postcode": "1010",
+      "CountryID": 19,
+      "Country": { "ISOCode": "AT", "ID": 19, "Title": "Austria" },
+      "Latitude": 48.2104,
+      "Longitude": 16.3612,
+      "DistanceUnit": 0
+    },
+    "Connections": [
+      { "ID": 5004, "ConnectionTypeID": 33, "Reference": "AT*TST*ETEST0002*DC1", "StatusTypeID": 50, "PowerKW": 50.0, "CurrentTypeID": 30, "Quantity": 1 }
+    ],
+    "NumberOfPoints": 1,
+    "StatusTypeID": 50,
+    "DateCreated": "2025-01-10T08:00:00Z",
+    "SubmissionStatusTypeID": 200
+  },
+  {
+    "DataProvider": { "ID": 1, "Title": "Open Charge Map Contributors" },
+    "OperatorInfo": { "IsPrivateIndividual": false, "ID": 9002, "Title": "Hotel Musterhof" },
+    "UsageType": { "ID": 6, "Title": "Private - For Staff, Visitors or Customers" },
+    "StatusType": { "IsOperational": true, "ID": 50, "Title": "Operational" },
+    "ID": 104,
+    "UUID": "0F3C1D2E-0000-4000-8000-000000000104",
+    "DataProviderID": 1,
+    "OperatorID": 9002,
+    "UsageTypeID": 6,
+    "AddressInfo": {
+      "ID": 104,
+      "Title": "Hotel Musterhof",
+      "AddressLine1": "Mustergasse 7",
+      "Town": "Wien",
+      "Postcode": "1150",
+      "CountryID": 19,
+      "Country": { "ISOCode": "AT", "ID": 19, "Title": "Austria" },
+      "Latitude": 48.19,
+      "Longitude": 16.3,
+      "DistanceUnit": 0
+    },
+    "Connections": [
+      { "ID": 5005, "ConnectionTypeID": 1036, "StatusTypeID": 50, "Amps": 16, "Voltage": 400, "PowerKW": 11.0, "CurrentTypeID": 20, "Quantity": 2 }
+    ],
+    "NumberOfPoints": 2,
+    "StatusTypeID": 50,
+    "DateCreated": "2025-06-01T08:00:00Z",
+    "SubmissionStatusTypeID": 200
+  },
+  {
+    "DataProvider": { "ID": 1, "Title": "Open Charge Map Contributors" },
+    "OperatorInfo": { "ID": 9003, "Title": "Schnell-Laden Test" },
+    "UsageType": { "ID": 1, "Title": "Public" },
+    "StatusType": { "IsOperational": false, "ID": 200, "Title": "Removed (Decommissioned)" },
+    "ID": 105,
+    "UUID": "0F3C1D2E-0000-4000-8000-000000000105",
+    "DataProviderID": 1,
+    "OperatorID": 9003,
+    "UsageTypeID": 1,
+    "AddressInfo": { "ID": 105, "Title": "Abgebaut", "Town": "Wien", "Country": { "ISOCode": "AT", "ID": 19 }, "Latitude": 48.22, "Longitude": 16.39, "DistanceUnit": 0 },
+    "Connections": [ { "ID": 5006, "ConnectionTypeID": 25, "PowerKW": 22.0, "CurrentTypeID": 20, "Quantity": 1 } ],
+    "StatusTypeID": 200,
+    "SubmissionStatusTypeID": 200
+  },
+  {
+    "DataProvider": { "ID": 1, "Title": "Open Charge Map Contributors" },
+    "ID": 106,
+    "UUID": "0F3C1D2E-0000-4000-8000-000000000106",
+    "DataProviderID": 1,
+    "UsageTypeID": 0,
+    "AddressInfo": { "ID": 106, "Title": "Ohne Position", "Town": "Wien", "Country": { "ISOCode": "AT", "ID": 19 }, "Latitude": 0.0, "Longitude": 0.0, "DistanceUnit": 0 },
+    "Connections": [],
+    "StatusTypeID": 0,
+    "SubmissionStatusTypeID": 200
+  },
+  {
+    "DataProvider": { "ID": 1, "Title": "Open Charge Map Contributors" },
+    "OperatorInfo": { "ID": 3253, "Title": "SMATRICS Netz" },
+    "UsageType": { "ID": 4, "Title": "Public - Membership Required" },
+    "StatusType": { "IsOperational": true, "ID": 50, "Title": "Operational" },
+    "ID": 107,
+    "UUID": "0F3C1D2E-0000-4000-8000-000000000107",
+    "DataProviderID": 1,
+    "OperatorID": 3253,
+    "UsageTypeID": 4,
+    "AddressInfo": {
+      "ID": 107,
+      "Title": "Testmarkt Donaustadt",
+      "AddressLine1": "Testweg 9",
+      "Town": "Wien",
+      "Postcode": "1220",
+      "CountryID": 19,
+      "Country": { "ISOCode": "AT", "ID": 19, "Title": "Austria" },
+      "Latitude": 48.23,
+      "Longitude": 16.4,
+      "DistanceUnit": 0
+    },
+    "Connections": [
+      { "ID": 5007, "ConnectionTypeID": 33, "StatusTypeID": 50, "PowerKW": 50.0, "CurrentTypeID": 30, "Quantity": 1 },
+      { "ID": 5008, "ConnectionTypeID": 2, "StatusTypeID": 50, "PowerKW": 50.0, "CurrentTypeID": 30, "Quantity": 1 },
+      { "ID": 5009, "ConnectionTypeID": 1040, "StatusTypeID": 200, "PowerKW": 30.0, "CurrentTypeID": 30, "Quantity": 1 },
+      { "ID": 5010, "ConnectionTypeID": 1099, "StatusTypeID": 0, "PowerKW": 0, "Quantity": 1 }
+    ],
+    "NumberOfPoints": 2,
+    "StatusTypeID": 50,
+    "DateCreated": "2025-09-01T08:00:00Z",
+    "SubmissionStatusTypeID": 200
+  }
+]

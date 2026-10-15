@@ -79,7 +79,9 @@ Der Vertrag, den jeder Quell-Adapter erfüllt (ausführlich in [04](04-provider-
 ### `ChargeGlobe.Providers.<Quelle>`
 Ein Projekt je Quelle. Enthält: HTTP-Client (typed `HttpClient`), Roh-DTOs der Quelle, Mapper auf das Ingest-Modell mit Mapping-Tabellen als JSON, `ProviderDescriptor` mit Capabilities, Standard-Pollintervallen und Rate-Limit (erzwungen im Adapter über einen Token-Bucket-`DelegatingHandler` mit `Retry-After`-Behandlung), aufgezeichnete, sanitisierte Fixtures unter `fixtures/<key>/` für Replay-Tests. Registrierung per `services.Add<Quelle>Provider()` als `IProvider`, `IInventorySource`, `IStatusSource`, `IPriceSource`, `IProviderHealth`; Key, Referer und an/aus liest der Adapter über `IProviderSettings` aus dem Config-Service (Scope `provider:<key>`).
 - Vorhanden: **`ChargeGlobe.Providers.EControl`** – offizielle E-Control-API: Inventar und Ad-hoc-Preise seitenweise aus dem Register (`GET /search/stations`, ganz Österreich in 17 Requests, ein gemeinsamer Plan für alle Regionen), Live-Status über `GET /search` je Abfragepunkt (`NearestToPoint`); Status-, Stecker- und Zahlungsarten-Mapping als JSON-Tabellen, geprüft gegen die Wertelisten der Quelle; Kontaktfelder natürlicher Personen werden verworfen. Details: [Endpunkt-Notiz](endpunkte/econtrol.md).
-- Vorgesehen: `OpenChargeMap`, `Osm`, `Evn`, `OeamtcEpower`, `Tesla`, …; ein `IProviderRegistry` mit dem Lease-Scheduler.
+- Vorhanden: **`ChargeGlobe.Providers.OpenChargeMap`** – Open Charge Map (`GET /v3/poi` mit `X-API-Key`), nur Inventar: je Region ein Plan `INVENTORY_FULL`, seitenweise nach ID (`greaterthanid`, 1.000 je Seite), nur offene Community-Daten (`opendata=true`, CC BY 4.0), täglich; Stecker-, Status- und Nutzungsarten als JSON-Tabellen; Kontaktdaten und Nutzerkommentare werden verworfen; kein Status, keine Preise. Details: [Endpunkt-Notiz](endpunkte/ocm.md).
+- Gemeinsam in `Providers.Abstractions`: `RateLimitingHandler` (Token-Bucket je Adapter) und `PassThroughHandler`.
+- Vorgesehen: `Osm`, `Evn`, `OeamtcEpower`, `Tesla`, …; ein `IProviderRegistry` mit dem Lease-Scheduler.
 
 ### `ChargeGlobe.Application`
 Use Cases und die Ingest-Pipeline:
@@ -88,7 +90,7 @@ Use Cases und die Ingest-Pipeline:
 2. **Identity Resolution** (`IEvseMatcher`): Zuordnung eines Quell-Datensatzes zu einem kanonischen EVSE (Details in [03](03-datenmodell.md#identity-resolution)).
 3. **Merge** (`IAttributeMerger`): Attribut-weise Zusammenführung nach Quellen-Präzedenz, mit Aufzeichnung der Herkunft je Attribut (`attribute_origin`).
 4. **Change Detection**: Nur Änderungen erzeugen Status-Intervalle/Events; jede Beobachtung landet trotzdem in der Observation-Hypertable (für Frische-Metriken).
-5. **Conflict Queue**: Unlösbare Zuordnungen (zwei Quellen behaupten verschiedene Koordinaten > 150 m, unterschiedliche Steckerzahl, …) landen in `source_conflict` zur manuellen Prüfung im Admin-UI.
+5. **Conflict Queue**: Unlösbare Zuordnungen landen in `source_conflict` und stehen unter `/admin/conflicts` (`GET /conflicts`, `IConflictQueries`): ein Datensatz, der zu mehreren Standorten in der Nähe passt (`identity`), und zwei Schreibweisen einer EVSE-ID (`evse_id`). Vorgesehen: Entscheiden im Admin-UI (`POST /conflicts/{id}/resolve`) und weitere Arten (Koordinaten > 150 m auseinander, unterschiedliche Steckerzahl).
 
 ### Identity & Access (in Domain, Application, Infrastructure, Api)
 - **Domain** (`Identity/`): `Permissions` ist der statische Katalog (Key nach dem Muster `<ressource>:<aktion>` plus englische Beschreibung): `evse:read`, `price:read`, `route:read`, `tariff:write`, `conflict:resolve`, `provider:manage`, `user:read`, `user:manage`, `role:manage`, `apikey:manage`, `export:read`, `settings:read`, `settings:manage`, `jobs:read`, `audit:read`, `proposal:write`. `DefaultRoles` enthält die Standardrollen mit ihrem Default-Bündel. Eine hier ergänzte Permission ist automatisch in `GET /permissions`, OpenAPI und Datenbank bekannt.
@@ -173,6 +175,7 @@ ASP.NET Core Minimal APIs, Versionierung `/api/v1`, OpenAPI 3.1 (eingebaute Gene
   |---|---|---|---|
   | Benutzer | `/admin/users` | Konten mit Suche nach E-Mail-Adresse (300 ms Verzögerung), Status, Rollen und Anlagedatum als `mat-table` mit `mat-paginator` (25 je Seite); mit `user:manage` Rollen per Mehrfachauswahl, „Freischalten“, „Sperren“/„Entsperren“ (nicht das eigene Konto) und „Bestätigungsmail“. Eine abgelehnte Änderung lädt die Liste neu und zeigt den Grund | `user:read` (Ändern `user:manage`) |
   | Benutzer | `/admin/roles` | Matrix Permission × Rolle mit Checkboxen, Speichern je Rolle, neue Rolle, Löschen leerer eigener Rollen; `Admin` ist fest | `user:read` (Ändern `role:manage`) |
+  | Betrieb | `/admin/conflicts` | offene Konflikte zwischen Quellen (umschaltbar auf gelöste) mit Datum, betroffenem Standort oder EVSE als Link, Art („Zuordnung mehrdeutig“, „EVSE-ID-Schreibweise“) und Werten in Kurzform | `conflict:resolve` |
   | Betrieb | `/admin/crawler` | Live-Zustand der Crawler (Budget, Pause, Abfragepunkte, Pläne, Läufe) | `jobs:read` |
   | Betrieb | `/admin/mail` | Testmail und Postausgang als `mat-table` mit `mat-paginator` | `settings:manage` |
   | Konfiguration | `/admin/settings` | Config-Service inkl. Datenquelle und SMTP, je Schlüsselgruppe ein `mat-expansion-panel` (Datenquellen, E-Mail, Karte, Anmeldung, Ingest, Weitere) mit Suche über Key, Scope und Beschreibung; Bool-Werte als `mat-slide-toggle`, „gespeichert“ als `MatSnackBar` | `settings:read` (Speichern `settings:manage`) |

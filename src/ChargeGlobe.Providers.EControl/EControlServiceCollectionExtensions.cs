@@ -41,6 +41,3 @@ public static class EControlServiceCollectionExtensions
         return services;
     }
 }
-
-/// <summary>Handler without effect, for hosts without a shared request budget.</summary>
-internal sealed class PassThroughHandler : DelegatingHandler;
