@@ -27,9 +27,8 @@ public class StatsTests(IntegrationFactory factory) : IClassFixture<IntegrationF
         var fixture = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "fixtures", "econtrol", "search-wien.expected.json"))).RootElement;
         var now = DateTimeOffset.UtcNow;
         var locations = JsonSerializer.Deserialize<List<ProviderLocationSnapshot>>(fixture.GetProperty("locations").GetRawText(), IngestBatch.Json)!;
-        // Fresh statuses, but the charging EVSE reported a day ago.
         var statuses = JsonSerializer.Deserialize<List<ProviderEvseStatus>>(fixture.GetProperty("statuses").GetRawText(), IngestBatch.Json)!
-            .Select(status => status with { ObservedAt = status.EvseId == "AT*TST*ETEST0001*2" ? now.AddDays(-1) : now })
+            .Select(status => status with { ObservedAt = now })
             .ToList();
         await factory.WithScopeAsync(async services =>
         {
@@ -47,6 +46,13 @@ public class StatsTests(IntegrationFactory factory) : IClassFixture<IntegrationF
         });
         var errors = await factory.WithDbAsync(db => db.IngestQueue.Where(message => message.Error != null).Select(message => message.Error).ToListAsync());
         Assert.True(errors.Count == 0, string.Join(" | ", errors));
+
+        // The charging EVSE last reported a day ago.
+        await factory.WithDbAsync(async db =>
+        {
+            var charging = await db.Evses.Where(evse => evse.EvseIdDisplay == "AT*TST*ETEST0001*2").Select(evse => evse.Id).SingleAsync();
+            return await db.Database.ExecuteSqlInterpolatedAsync($"UPDATE evse_status_current SET observed_at = {now.AddDays(-1)} WHERE evse_id = {charging}");
+        });
     }
 
     public Task DisposeAsync() => Task.CompletedTask;

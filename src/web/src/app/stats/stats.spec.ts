@@ -90,10 +90,13 @@ describe('StatsPage', () => {
     await settle();
 
     expect(page().querySelector('#stats-loading')).toBeNull();
-    expect(text(page(), '#tile-locations')).toBe('5.840 Standorte');
-    expect(text(page(), '#tile-evses')).toBe('13.210 Ladepunkte');
-    expect(text(page(), '#tile-connectors')).toBe('19.880 Stecker');
-    expect(text(page(), '#tile-available')).toBe('6.000 gerade frei');
+    const tile = (id: string) => `${text(page(), `#${id} .tile-value`)} ${text(page(), `#${id} .tile-label`)}`;
+    expect(['tile-locations', 'tile-evses', 'tile-connectors', 'tile-available'].map(tile)).toEqual([
+      '5.840 Standorte',
+      '13.210 Ladepunkte',
+      '19.880 Stecker',
+      '6.000 gerade frei',
+    ]);
 
     const rows = (id: string) =>
       Array.from(page().querySelectorAll<HTMLElement>(`#${id} .bars li`)).map((row) => [text(row, '.bar-label'), text(row, '.bar-value')]);
