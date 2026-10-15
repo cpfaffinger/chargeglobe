@@ -352,5 +352,11 @@ public class SecondSourceTests(IntegrationFactory factory) : IClassFixture<Integ
         Assert.Equal("Kept as stored.", kept.GetProperty("data").GetProperty("resolution").GetString());
         Assert.Empty(kept.GetProperty("data").GetProperty("candidates").EnumerateArray());
         Assert.False(await factory.WithDbAsync(db => db.MatchDecisions.AnyAsync(item => item.ConflictId == evseConflict.Id)));
+
+        // The remaining active candidate can be chosen; the source had no record for the site yet.
+        var remaining = (await RecordAsync("checks-site", "checks-site-2")).EntityId;
+        Assert.Equal(HttpStatusCode.OK, (await ResolveAsync(admin, identity.Id, new { action = "merge", targetId = remaining })).StatusCode);
+        var record = await RecordAsync("ocm", "checks-site");
+        Assert.Equal((remaining, MatchMethod.MANUAL), (record.EntityId, record.MatchMethod));
     }
 }
