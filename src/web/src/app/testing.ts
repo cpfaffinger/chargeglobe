@@ -51,7 +51,7 @@ export const MAP_CONFIG: MapConfig = {
 
 /** MapEngine double: WebGL is not reliably available in the headless test browser. */
 export function fakeMapEngine() {
-  const handle = jasmine.createSpyObj<MapHandle>('MapHandle', ['locate', 'destroy', 'showLocations', 'setTheme', 'setCluster', 'flyTo', 'showRoute', 'highlightLocations']);
+  const handle = jasmine.createSpyObj<MapHandle>('MapHandle', ['locate', 'destroy', 'showLocations', 'setTheme', 'setCluster', 'flyTo', 'showRoute', 'highlightLocations', 'showReach']);
   handle.locate.and.returnValue(true);
   const engine = jasmine.createSpyObj<MapEngine>('MapEngine', ['create', 'prepare']);
   engine.create.and.resolveTo(handle);

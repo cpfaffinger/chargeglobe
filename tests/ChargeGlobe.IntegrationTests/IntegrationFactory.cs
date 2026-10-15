@@ -235,4 +235,15 @@ public sealed class FakeRoutingEngine : IRoutingEngine
         Waypoints = waypoints;
         return Task.FromResult(Next);
     }
+
+    public ReachResult NextReach { get; set; } = new(RouteOutcome.Unavailable, null);
+
+    /// <summary>Position, metric and values of the last reach.</summary>
+    public (ChargeGlobe.Domain.GeoPoint Position, ReachMetric Metric, IReadOnlyList<int> Values)? Reach { get; private set; }
+
+    public Task<ReachResult> ReachAsync(ChargeGlobe.Domain.GeoPoint position, ReachMetric metric, IReadOnlyList<int> values, CancellationToken cancellationToken)
+    {
+        Reach = (position, metric, values);
+        return Task.FromResult(NextReach);
+    }
 }

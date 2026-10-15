@@ -20,6 +20,7 @@ import { DEFAULT_MAP_OPTIONS, MapOptionsStore, OPTIONS_STORAGE_KEY } from './map
 import { CardsStore } from '../preferences/cards.store';
 import {
   LocationPrices,
+  ReachAreas,
   RouteLocation,
   RoutesService,
   byPrice,
@@ -903,6 +904,124 @@ describe('HomePage (map)', () => {
         });
       });
 
+      describe('reach', () => {
+        const reachButton = () => root().querySelector<HTMLButtonElement>('#reach');
+        const areas: ReachAreas = {
+          type: 'FeatureCollection',
+          features: [60, 30, 15].map((minutes) => ({
+            type: 'Feature' as const,
+            properties: { minutes },
+            geometry: {
+              type: 'MultiPolygon' as const,
+              coordinates: [
+                [
+                  [
+                    [16.3, 48.2],
+                    [16.4, 48.2],
+                    [16.4, 48.3],
+                    [16.3, 48.2],
+                  ],
+                ],
+              ] as [number, number][][][],
+            },
+          })),
+        };
+
+        async function showMap(): Promise<void> {
+          auth.hasPermission.and.callFake((permission) => permission === 'route:read');
+          await render();
+          await moveTo(vienna, response());
+        }
+
+        async function clickReach(): Promise<void> {
+          reachButton()!.click();
+          await settle();
+        }
+
+        it('needs route:read', async () => {
+          await render();
+          expect(reachButton()).toBeNull();
+        });
+
+        it('shows the areas reachable from the own position and removes them', async () => {
+          await showMap();
+          expect(text(root(), '#reach')).toBe('Reichweite');
+
+          await clickReach();
+          const request = http.expectOne('/api/v1/routes/reach');
+          expect(request.request.method).toBe('POST');
+          expect(request.request.body).toEqual({ position: { latitude: 48.21, longitude: 16.37 }, minutes: [15, 30, 60] });
+          expect(text(root(), '#reach')).toBe('Reichweite wird berechnet …');
+          expect(reachButton()!.disabled).toBeTrue();
+          request.flush({ data: areas, meta: { attribution: [] } });
+          await settle();
+
+          expect(map.handle.showReach).toHaveBeenCalledWith(areas);
+          expect(text(root(), '#reach-summary')).toBe('Reichweite mit dem Auto: 15 · 30 · 60 min Reichweite entfernen');
+          expect(reachButton()!.disabled).toBeFalse();
+
+          root().querySelector<HTMLButtonElement>('#reach-clear')!.click();
+          await settle();
+          expect(map.handle.showReach).toHaveBeenCalledWith(null);
+          expect(root().querySelector('#reach-summary')).toBeNull();
+        });
+
+        it('drops the answer for a reach removed meanwhile', async () => {
+          await showMap();
+          await clickReach();
+          http.expectOne('/api/v1/routes/reach').flush({ data: areas, meta: { attribution: [] } });
+          await settle();
+
+          // Asked again, then removed while the new one is calculated.
+          await clickReach();
+          const late = http.expectOne('/api/v1/routes/reach');
+          root().querySelector<HTMLButtonElement>('#reach-clear')!.click();
+          await settle();
+          late.flush({ data: areas, meta: { attribution: [] } });
+          await settle();
+
+          expect(map.handle.showReach.calls.allArgs()).toEqual([[areas], [null]]);
+          expect(root().querySelector('#reach-summary')).toBeNull();
+        });
+
+        for (const [status, notice] of [
+          [503, 'Die Routenberechnung ist gerade nicht verfügbar. Bitte versuche es später.'],
+          [422, 'In der Nähe deines Standorts wurde keine Straße gefunden.'],
+          [500, 'Die Reichweite konnte nicht berechnet werden. Bitte versuche es erneut.'],
+        ] as const) {
+          it(`explains an answer ${status} of the API`, async () => {
+            await showMap();
+            await clickReach();
+
+            http.expectOne('/api/v1/routes/reach').flush({ title: 'Error' }, { status, statusText: 'Error' });
+            await settle();
+
+            expect(text(root(), '#map-notice')).toBe(notice);
+            expect(map.handle.showReach).not.toHaveBeenCalled();
+            expect(reachButton()!.disabled).toBeFalse();
+          });
+        }
+
+        it('explains a refused or failed position and sends nothing', async () => {
+          await showMap();
+
+          browser.currentPosition.and.rejectWith({ code: 1 });
+          await clickReach();
+          expect(text(root(), '#map-notice')).toBe('Die Standortfreigabe wurde abgelehnt. Du kannst sie in den Website-Einstellungen deines Browsers erlauben.');
+
+          browser.currentPosition.and.rejectWith({ code: 2 });
+          await clickReach();
+          expect(text(root(), '#map-notice')).toBe('Dein Standort konnte nicht ermittelt werden. Bitte versuche es erneut.');
+
+          browser.secureContext.and.returnValue(false);
+          browser.currentPosition.calls.reset();
+          await clickReach();
+          expect(text(root(), '#map-notice')).toBe('Der Standort ist nur über eine sichere Verbindung (HTTPS) verfügbar.');
+          expect(browser.currentPosition).not.toHaveBeenCalled();
+          http.expectNone('/api/v1/routes/reach');
+        });
+      });
+
       describe('prices', () => {
         const along = [
           stop('loc-3', 3000, { name: 'Stopp A' }),
@@ -1342,6 +1461,18 @@ describe('RoutesService', () => {
     // A planned stop the filters hide keeps the position it was chosen at.
     expect(withStop([at('b', 2000)], at('c', 3000), along).map((s) => s.id)).toEqual(['b', 'c']);
     expect(withStop([at('b', 5000)], at('c', 3000), along).map((s) => s.id)).toEqual(['c', 'b']);
+  });
+
+  it('asks for the areas reachable within the driving times', async () => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    const http = TestBed.inject(HttpTestingController);
+
+    const reach = TestBed.inject(RoutesService).reach({ latitude: 48.2, longitude: 16.3 }, [15, 30]);
+    const request = http.expectOne('/api/v1/routes/reach');
+    expect([request.request.method, request.request.body]).toEqual(['POST', { position: { latitude: 48.2, longitude: 16.3 }, minutes: [15, 30] }]);
+    request.flush({ data: { type: 'FeatureCollection', features: [] }, meta: { attribution: [] } });
+    expect((await reach).data.features).toEqual([]);
+    http.verify();
   });
 
   it('asks for the prices of locations with the own cards', async () => {

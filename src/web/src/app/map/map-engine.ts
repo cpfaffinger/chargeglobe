@@ -7,6 +7,7 @@ import { MARKERS, MARKER_KEYS, MarkerKey, markerOf } from './availability';
 import { Bbox, LocationSummary } from './locations.service';
 import { MapOptions } from './map-options';
 import { MapView } from './map-view.store';
+import type { ReachAreas } from './routes.service';
 
 /** Base map style and marker colours of the current colour scheme, resolved from the theme tokens. */
 export interface MapTheme {
@@ -63,6 +64,11 @@ export interface MapHandle {
   showRoute(coordinates: [number, number][] | null): void;
   /** Rings in the colour of the route below these locations (the stops along a route); an empty list removes them. */
   highlightLocations(locations: LocationSummary[]): void;
+  /**
+   * Draws areas reachable by car (largest first) as translucent layers below route and markers and fits the view to the
+   * largest; null removes them.
+   */
+  showReach(areas: ReachAreas | null): void;
   destroy(): void;
 }
 
@@ -146,6 +152,8 @@ export class MapLibreEngine extends MapEngine {
       type: 'FeatureCollection',
       features: route.length > 1 ? [{ type: 'Feature', geometry: { type: 'LineString', coordinates: route }, properties: {} }] : [],
     });
+    const reachSource = 'reach';
+    let reach: ReachAreas = { type: 'FeatureCollection', features: [] };
     let loaded = false;
     const emitView = () => {
       const bounds = map.getBounds();
@@ -158,6 +166,10 @@ export class MapLibreEngine extends MapEngine {
     // Every style load (the first one and each theme change) starts without the app's source, images and layers.
     map.on('style.load', () => {
       addMarkerImages(map, theme);
+      // The smaller areas lie on the larger ones, so the shade grows towards the start.
+      map.addSource(reachSource, { type: 'geojson', data: reach });
+      map.addLayer({ id: 'reach-fill', type: 'fill', source: reachSource, paint: { 'fill-color': theme.route, 'fill-opacity': 0.12 } });
+      map.addLayer({ id: 'reach-line', type: 'line', source: reachSource, paint: { 'line-color': theme.route, 'line-width': 1.5, 'line-opacity': 0.8 } });
       map.addSource(routeSource, { type: 'geojson', data: routeData() });
       map.addLayer({
         id: 'route-line',
@@ -257,6 +269,18 @@ export class MapLibreEngine extends MapEngine {
         stops = locations;
         if (loaded) {
           (map.getSource(stopsSource) as GeoJSONSource).setData(stopsData());
+        }
+      },
+      showReach: (areas) => {
+        reach = areas ?? { type: 'FeatureCollection', features: [] };
+        if (loaded) {
+          (map.getSource(reachSource) as GeoJSONSource).setData(reach);
+        }
+        const outer = reach.features[0]?.geometry.coordinates.flatMap((polygon) => polygon[0]) ?? [];
+        if (outer.length > 0) {
+          const bounds = new maplibre.LngLatBounds(outer[0], outer[0]);
+          outer.forEach((position) => bounds.extend(position));
+          map.fitBounds(bounds, { padding: 40 });
         }
       },
       destroy: () => map.remove(),

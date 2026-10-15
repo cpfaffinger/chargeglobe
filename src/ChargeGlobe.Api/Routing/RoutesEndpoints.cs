@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using ChargeGlobe.Api.Auth;
 using ChargeGlobe.Api.Locations;
 using ChargeGlobe.Api.OpenApi;
@@ -41,6 +42,26 @@ public sealed record RouteLocationsRequest(
 
 public sealed record RouteLocationsResponse(IReadOnlyList<RouteLocation> Data, LocationsMeta Meta);
 
+/// <param name="Position">Where the trip starts.</param>
+/// <param name="Minutes">Driving times, 1–4 values of 5–120, ascending; or <paramref name="Kilometres"/>.</param>
+/// <param name="Kilometres">Driving distances, 1–4 values of 5–200, ascending; or <paramref name="Minutes"/>.</param>
+public sealed record ReachRequest(Waypoint? Position, IReadOnlyList<int>? Minutes, IReadOnlyList<int>? Kilometres);
+
+/// <summary>The value of an area: exactly one of both is set.</summary>
+public sealed record ReachProperties(
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? Minutes,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? Kilometres);
+
+/// <summary>GeoJSON MultiPolygon: polygons of rings of positions [longitude, latitude], outer ring first.</summary>
+public sealed record MultiPolygon(string Type, IReadOnlyList<IReadOnlyList<IReadOnlyList<double[]>>> Coordinates);
+
+public sealed record ReachFeature(string Type, ReachProperties Properties, MultiPolygon Geometry);
+
+/// <summary>GeoJSON FeatureCollection, the largest area first.</summary>
+public sealed record ReachAreas(string Type, IReadOnlyList<ReachFeature> Features);
+
+public sealed record ReachResponse(ReachAreas Data, AttributionMeta Meta);
+
 /// <summary>Routes by car on OpenStreetMap data (docs/06, "Routing"; docs/adr/0007).</summary>
 public static class RoutesEndpoints
 {
@@ -52,6 +73,13 @@ public static class RoutesEndpoints
     public const int DefaultRouteLimit = 200;
     public const int MaxRouteLimit = 500;
     public const int MaxOperators = 100;
+    public const int MaxReachValues = 4;
+    public const int MinReachMinutes = 5;
+    public const int MaxReachMinutes = 120;
+    public const int MinReachKilometres = 5;
+
+    /// <summary>Largest distance contour of the engine (Valhalla <c>service_limits.isochrone.max_distance_contour</c>).</summary>
+    public const int MaxReachKilometres = 200;
 
     public static readonly SourceAttribution OsmAttribution = new(
         "osm", "© OpenStreetMap contributors", "Open Database License (ODbL) 1.0, https://www.openstreetmap.org/copyright");
@@ -81,6 +109,42 @@ public static class RoutesEndpoints
                     new RouteData(
                         12_480, 960,
                         new LineString("LineString", [[16.3738, 48.2082], [16.3801, 48.2035], [16.4204, 48.1867]])),
+                    new AttributionMeta([OsmAttribution])));
+
+        endpoints.MapPost("/api/v1/routes/reach", CalculateReachAsync)
+            .WithTags("Routing")
+            .RequirePermission(Permissions.RouteRead)
+            .WithName("calculateReach")
+            .WithSummary("Calculate the areas reachable by car from a position")
+            .WithDescription(
+                "Calculates isochrones: the areas reachable by car from `position` (`latitude` −90…90, `longitude` −180…180) " +
+                "within each of `minutes` (driving time without traffic, 1–4 values of 5–120, strictly ascending) or each of " +
+                "`kilometres` (driving distance, 1–4 values of 5–200, strictly ascending) – exactly one of both. Returns " +
+                "`data` as GeoJSON FeatureCollection with one Feature per value, the largest first: `properties` has " +
+                "`minutes` or `kilometres`, `geometry` is a MultiPolygon (polygons of rings of [longitude, latitude], outer " +
+                "ring first) smoothed to about 150 m, small islands removed. Each area contains the smaller ones; draw the " +
+                "largest first. `meta.attribution` names OpenStreetMap (ODbL). POST because the position is personal data: " +
+                "it is neither stored nor logged. Larger values take longer (120 minutes: several seconds). 422 with field " +
+                "errors for invalid values or when the engine finds no road near the position; 503 while the routing " +
+                "engine is not available.")
+            .Produces<ReachResponse>()
+            .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
+            .WithResponseExample(
+                StatusCodes.Status200OK,
+                new ReachResponse(
+                    new ReachAreas(
+                        "FeatureCollection",
+                        [
+                            new ReachFeature(
+                                "Feature",
+                                new ReachProperties(30, null),
+                                new MultiPolygon("MultiPolygon", [[[[16.10, 48.30], [16.62, 48.32], [16.66, 48.05], [16.08, 48.02], [16.10, 48.30]]]])),
+                            new ReachFeature(
+                                "Feature",
+                                new ReachProperties(15, null),
+                                new MultiPolygon("MultiPolygon", [[[[16.25, 48.24], [16.45, 48.25], [16.46, 48.14], [16.24, 48.13], [16.25, 48.24]]]])),
+                        ]),
                     new AttributionMeta([OsmAttribution])));
 
         endpoints.MapPost("/api/v1/routes/locations", ListLocationsAlongRouteAsync)
@@ -142,6 +206,62 @@ public static class RoutesEndpoints
         return Results.Ok(new RouteLocationsResponse(page.Locations, new LocationsMeta(page.Locations.Count, take, page.Truncated, page.Attribution)));
     }
 
+    private static async Task<IResult> CalculateReachAsync(ReachRequest request, IRoutingEngine engine, CancellationToken cancellationToken)
+    {
+        var position = request.Position;
+        var byTime = request.Minutes is { Count: > 0 };
+        var values = (byTime ? request.Minutes : request.Kilometres) ?? [];
+        var field = byTime ? "minutes" : "kilometres";
+        var (min, max) = byTime ? (MinReachMinutes, MaxReachMinutes) : (MinReachKilometres, MaxReachKilometres);
+        var invalid = new Validation()
+            .Require(
+                position is { Latitude: >= -90 and <= 90, Longitude: >= -180 and <= 180 },
+                "position",
+                "Needs latitude (-90 to 90) and longitude (-180 to 180).")
+            .Require(
+                !(byTime && request.Kilometres is { Count: > 0 }),
+                "kilometres",
+                "Give either minutes or kilometres, not both.")
+            .Require(
+                values.Count is >= 1 and <= MaxReachValues
+                    && values.All(value => value >= min && value <= max)
+                    && values.Zip(values.Skip(1)).All(pair => pair.First < pair.Second),
+                field,
+                $"Give 1 to {MaxReachValues} values between {min} and {max}, strictly ascending.")
+            .ToResult();
+        if (invalid is not null)
+        {
+            return invalid;
+        }
+
+        var result = await engine.ReachAsync(
+            new GeoPoint(position!.Latitude!.Value, position.Longitude!.Value),
+            byTime ? ReachMetric.Minutes : ReachMetric.Kilometres,
+            values,
+            cancellationToken);
+        return result.Outcome switch
+        {
+            RouteOutcome.NoRoute => new Validation().Require(false, "position", "No road was found near the position.").ToResult()!,
+            RouteOutcome.Unavailable => Unavailable(),
+            _ => Results.Ok(new ReachResponse(
+                new ReachAreas(
+                    "FeatureCollection",
+                    [.. result.Areas!.Select(area => new ReachFeature(
+                        "Feature",
+                        byTime ? new ReachProperties(area.Value, null) : new ReachProperties(null, area.Value),
+                        new MultiPolygon(
+                            "MultiPolygon",
+                            [.. area.Polygons.Select(polygon => (IReadOnlyList<IReadOnlyList<double[]>>)[.. polygon.Select(ring => (IReadOnlyList<double[]>)[.. ring.Select(point => new[] { point.Longitude, point.Latitude })])])])))]),
+                new AttributionMeta([OsmAttribution]))),
+        };
+    }
+
+    private static IResult Unavailable() =>
+        Results.Problem(
+            statusCode: StatusCodes.Status503ServiceUnavailable,
+            title: "Service unavailable",
+            detail: "The routing engine is not available right now. Retry later.");
+
     private static async Task<IResult> CalculateRouteAsync(RouteRequest request, IRoutingEngine engine, CancellationToken cancellationToken)
     {
         var waypoints = request.Waypoints ?? [];
@@ -161,10 +281,7 @@ public static class RoutesEndpoints
         return result.Outcome switch
         {
             RouteOutcome.NoRoute => new Validation().Require(false, "waypoints", "No road connection was found between the waypoints.").ToResult()!,
-            RouteOutcome.Unavailable => Results.Problem(
-                statusCode: StatusCodes.Status503ServiceUnavailable,
-                title: "Service unavailable",
-                detail: "The routing engine is not available right now. Retry later."),
+            RouteOutcome.Unavailable => Unavailable(),
             _ => Results.Ok(new RouteResponse(
                 new RouteData(
                     Math.Round(result.Route!.DistanceMeters),

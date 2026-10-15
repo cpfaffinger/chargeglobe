@@ -90,6 +90,7 @@ UPDATE_FIXTURES=1 dotnet test tests/ChargeGlobe.Providers.Tests
 ./scripts/routing/build-tiles.sh /tmp/routing     # danach: rsync -a /tmp/routing/ <host>:<installation>/data/routing/ ; dort COMPOSE_PROFILES=routing in .env und docker compose up -d
 curl -k -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"waypoints":[{"latitude":48.196,"longitude":16.338},{"latitude":48.306,"longitude":14.287}]}' https://localhost:5005/api/v1/routes   # 200 mit distanceMeters/durationSeconds/geometry; 503 ohne routing-Service (route:read)
 curl -k -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"geometry":{"type":"LineString","coordinates":[[16.35,48.21],[16.39,48.2085]]},"corridorMeters":1000,"minPowerKw":50}' https://localhost:5005/api/v1/routes/locations   # Ladepunkte entlang der Linie, ab Start sortiert (route:read)
+curl -k -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"position":{"latitude":48.196,"longitude":16.338},"minutes":[15,30,60]}' https://localhost:5005/api/v1/routes/reach   # Reichweite als GeoJSON-MultiPolygone, größte zuerst; oder "kilometres":[50] (route:read)
 
 # Region-Polygone aus OpenStreetMap neu erzeugen (Overpass + Wegwerf-Container mit PostGIS; braucht curl und Docker, z. B. auf srv-dev2)
 ./scripts/regions/build-regions-at.sh       # schreibt src/ChargeGlobe.Infrastructure/Persistence/Seed/regions-at.geojson; die API übernimmt Änderungen beim nächsten Start

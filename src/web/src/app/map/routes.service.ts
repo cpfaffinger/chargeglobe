@@ -99,6 +99,25 @@ export function byPrice(stops: RouteLocation[], prices: ReadonlyMap<string, Stop
   return [...stops].sort((a, b) => (cost(a) === cost(b) ? 0 : cost(a) - cost(b)));
 }
 
+/** Driving times of the reach shown on the map. */
+export const REACH_MINUTES = [15, 30, 60];
+
+/** Areas reachable by car (POST /api/v1/routes/reach): GeoJSON, the largest first. */
+export interface ReachAreas {
+  type: 'FeatureCollection';
+  features: {
+    type: 'Feature';
+    properties: { minutes?: number; kilometres?: number };
+    /** Polygons of rings of [longitude, latitude] positions. */
+    geometry: { type: 'MultiPolygon'; coordinates: [number, number][][][] };
+  }[];
+}
+
+export interface ReachResponse {
+  data: ReachAreas;
+  meta: { attribution: { source: string; text: string; license: string }[] };
+}
+
 /** Routes by car (route:read); the positions go to the own API only, which neither stores nor logs them. */
 @Injectable({ providedIn: 'root' })
 export class RoutesService {
@@ -113,6 +132,11 @@ export class RoutesService {
     return firstValueFrom(
       this.http.post<RouteLocationsResponse>('/api/v1/routes/locations', { geometry, corridorMeters: CORRIDOR_METERS, limit: ROUTE_STOPS_LIMIT, ...filters }),
     );
+  }
+
+  /** The areas reachable by car from the position within each of the driving times. */
+  reach(position: Position, minutes: number[]): Promise<ReachResponse> {
+    return firstValueFrom(this.http.post<ReachResponse>('/api/v1/routes/reach', { position, minutes }));
   }
 
   /** The cheapest ad-hoc price and own card (EMP keys) of a session at each location (price:read). */
