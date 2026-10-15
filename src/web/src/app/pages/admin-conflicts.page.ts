@@ -77,7 +77,7 @@ const DONE: Record<ConflictAction, string> = {
                       <li [attr.data-candidate]="candidate.locationId">
                         <a [routerLink]="['/locations', candidate.locationId]">{{ candidate.label ?? 'nicht mehr vorhanden' }}</a>
                         @if (candidate.distanceMeters !== null) {
-                          <span class="muted">{{ candidate.distanceMeters | number: '1.0-0' }} m</span>
+                          <span class="muted distance">{{ candidate.distanceMeters | number: '1.0-0' }} m</span>
                         }
                         @if (!conflict.resolvedAt && candidate.label) {
                           <button matButton="tonal" type="button" class="merge" [disabled]="busy()" (click)="resolve(conflict, 'merge', candidate.locationId)">

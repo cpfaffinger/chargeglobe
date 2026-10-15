@@ -261,6 +261,14 @@ public class SecondSourceTests(IntegrationFactory factory) : IClassFixture<Integ
         Assert.All(candidates, candidate => Assert.InRange(candidate.GetProperty("distanceMeters").GetDouble(), 1, 5));
         Assert.StartsWith("Teststation Stephansplatz", candidates[0].GetProperty("label").GetString(), StringComparison.Ordinal);
 
+        // The record may have been given to another location before (e.g. created by an earlier run): it moves over.
+        var earlier = (await RecordAsync("merge-site", "merge-site-1")).EntityId;
+        await factory.WithDbAsync(db =>
+        {
+            db.SourceRecords.Add(SourceRecord.Create("ocm", "merge-site", EntityType.LOCATION, earlier, MatchMethod.CREATED, 1, T0));
+            return db.SaveChangesAsync();
+        });
+
         var response = await ResolveAsync(admin, conflict.Id, new { action = "merge", targetId = target, note = "Gleiche Garage." });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);

@@ -129,8 +129,8 @@ describe('AdminConflictsPage', () => {
     await render();
 
     const candidate = (id: string) => root().querySelector<HTMLElement>(`[data-candidate="${id}"]`)!;
-    expect(text(candidate('loc-1'), 'span')).toBe('18 m');
-    expect(candidate('loc-2').querySelector('span')).toBeNull();
+    expect(text(candidate('loc-1'), '.distance')).toBe('18 m');
+    expect(candidate('loc-2').querySelector('.distance')).toBeNull();
     // A candidate that no longer exists cannot be chosen.
     expect(text(candidate('loc-3'), 'a')).toBe('nicht mehr vorhanden');
     expect(candidate('loc-3').querySelector('button')).toBeNull();
