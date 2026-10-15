@@ -4,7 +4,7 @@ import type { FeatureCollection, Point } from 'geojson';
 import type { GeoJSONSource, Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { ICONS } from '../design/icon';
 import { MARKERS, MARKER_KEYS, MarkerKey, markerOf } from './availability';
-import { CLUSTER_PROPERTIES, clusterCounts, clusterPie } from './cluster-pie';
+import { CLUSTER_PROPERTIES, clusterCounts, clusterPie, pointProperties } from './cluster-pie';
 import { Bbox, LocationSummary } from './locations.service';
 import { MapOptions } from './map-options';
 import { MapView } from './map-view.store';
@@ -135,7 +135,7 @@ export class MapLibreEngine extends MapEngine {
       features: locations.map((location) => ({
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [location.longitude, location.latitude] },
-        properties: { id: location.id, marker: markerOf(location) },
+        properties: { id: location.id, marker: markerOf(location), ...pointProperties(location) },
       })),
     });
     let pending: LocationSummary[] = [];
@@ -205,7 +205,16 @@ export class MapLibreEngine extends MapEngine {
           'icon-image': ['concat', 'status-', ['get', 'marker']],
           'icon-allow-overlap': true,
           'icon-ignore-placement': true,
+          // From zoom 13 a location with several EVSEs tells how many are free ("1/4"), so a partly occupied one shows.
+          'text-field': ['step', ['zoom'], '', 13, ['case', ['>', ['get', 'total'], 1], ['concat', ['to-string', ['get', 'free']], '/', ['to-string', ['get', 'total']]], '']],
+          'text-font': ['Noto Sans Bold'],
+          'text-size': 11,
+          'text-anchor': 'left',
+          'text-offset': [1.1, -0.9],
+          'text-allow-overlap': true,
+          'text-ignore-placement': true,
         },
+        paint: { 'text-color': theme.onCluster, 'text-halo-color': theme.ring, 'text-halo-width': 1.5 },
       });
       if (!loaded) {
         loaded = true;
@@ -253,6 +262,7 @@ export class MapLibreEngine extends MapEngine {
             clusterCounts(properties),
             { status: theme.status, center: theme.cluster, onCenter: theme.onCluster, ring: theme.ring },
             labels,
+            Number(properties['point_count']),
           );
           element.setAttribute('aria-label', element.querySelector('title')?.textContent ?? '');
           element.addEventListener('click', async (event) => {

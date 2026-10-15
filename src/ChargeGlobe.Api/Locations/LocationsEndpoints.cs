@@ -49,7 +49,9 @@ public static class LocationsEndpoints
         DateTimeOffset.Parse("2026-10-14T08:15:00Z", CultureInfo.InvariantCulture),
         Availability.Available,
         new LocationFacilities(true, false, true, 2, "https://www.wienenergie.at/privat/produkte/e-mobilitaet/"),
-        22m);
+        22m,
+        1,
+        0);
 
     public static IEndpointRouteBuilder MapLocationsEndpoints(this IEndpointRouteBuilder endpoints)
     {

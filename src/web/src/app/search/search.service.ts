@@ -11,6 +11,13 @@ export interface SearchHit {
   latitude: number;
   longitude: number;
   evseId: string | null;
+  /** How free the location is now (as in GET /locations). */
+  availability: 'AVAILABLE' | 'OCCUPIED' | 'OUT_OF_ORDER' | 'UNKNOWN';
+  evsesTotal: number;
+  evsesAvailable: number;
+  evsesOccupied: number;
+  /** For an EVSE hit its current OCPI status. */
+  evseStatus: string | null;
 }
 
 /** Shortest query the API answers. */

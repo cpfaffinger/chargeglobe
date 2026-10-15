@@ -1,12 +1,27 @@
-import { MARKER_KEYS, MarkerKey } from './availability';
+import { MARKER_KEYS, MarkerKey, evseShares } from './availability';
+
+/** The marker keys of free EVSEs: the power classes of the free locations. */
+const FREE_KEYS: MarkerKey[] = ['AVAILABLE', 'AVAILABLE_FAST', 'AVAILABLE_HPC'];
 
 /**
- * Properties a GeoJSON cluster sums up per marker (MapLibre clusterProperties): for every key the number of locations
- * in the cluster with that marker.
+ * Properties a GeoJSON cluster sums up (MapLibre clusterProperties), counting EVSEs, not locations: the free EVSEs of a
+ * location go to the power class of its marker, the occupied, out of order and unknown ones to their own keys. Each
+ * point carries free, occupied, faulted and unknown (pointProperties()).
  */
 export const CLUSTER_PROPERTIES = Object.fromEntries(
-  MARKER_KEYS.map((key) => [key, ['+', ['case', ['==', ['get', 'marker'], key], 1, 0]]]),
+  MARKER_KEYS.map((key) => [
+    key,
+    FREE_KEYS.includes(key)
+      ? ['+', ['case', ['==', ['get', 'marker'], key], ['get', 'free'], 0]]
+      : ['+', ['get', key === 'OCCUPIED' ? 'occupied' : key === 'OUT_OF_ORDER' ? 'faulted' : 'unknown']],
+  ]),
 ) as Record<MarkerKey, unknown>;
+
+/** The counts a map point carries for its cluster; a location without EVSEs counts as one unknown. */
+export function pointProperties(location: { evsesTotal: number; evsesAvailable: number; evsesOccupied: number; evsesFaulted: number }) {
+  const shares = evseShares(location);
+  return { ...shares, unknown: shares.unknown + (location.evsesTotal === 0 ? 1 : 0), total: location.evsesTotal };
+}
 
 /** The counts per marker of a cluster from its properties; missing ones count 0. */
 export function clusterCounts(properties: Record<string, unknown>): Record<MarkerKey, number> {
@@ -34,12 +49,12 @@ const point = (radius: number, size: number, turn: number): string => {
 
 /**
  * A cluster as donut chart (SVG): one segment per marker in the order of the legend, clockwise from the top, sized by
- * its share; in the middle a disc with the number of locations. The title lists the counts for screen readers and
- * tooltips.
+ * its share of the EVSEs; in the middle a disc with the number of locations. The title lists the counts for screen
+ * readers and tooltips.
  */
-export function clusterPie(counts: Record<MarkerKey, number>, colors: PieColors, labels: Record<MarkerKey, string>): string {
+export function clusterPie(counts: Record<MarkerKey, number>, colors: PieColors, labels: Record<MarkerKey, string>, locations: number): string {
   const total = MARKER_KEYS.reduce((sum, key) => sum + counts[key], 0);
-  const outer = clusterRadius(total);
+  const outer = clusterRadius(locations);
   const size = outer * 2 + 4;
   const inner = Math.round(outer * 0.55);
   const center = size / 2;
@@ -58,11 +73,11 @@ export function clusterPie(counts: Record<MarkerKey, number>, colors: PieColors,
   const title = parts.map((key) => `${counts[key]} ${labels[key]}`).join(', ');
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" role="img">` +
-    `<title>${total} Standorte: ${title}</title>` +
+    `<title>${locations} Standorte, ${total} Ladepunkte: ${title}</title>` +
     `<circle cx="${center}" cy="${center}" r="${outer + 1.5}" fill="${colors.ring}"/>` +
     segments.join('') +
     `<circle cx="${center}" cy="${center}" r="${inner}" fill="${colors.center}"/>` +
-    `<text x="${center}" y="${center}" text-anchor="middle" dominant-baseline="central" font-size="${outer < 20 ? 11 : 12}" font-weight="700" fill="${colors.onCenter}">${total}</text>` +
+    `<text x="${center}" y="${center}" text-anchor="middle" dominant-baseline="central" font-size="${outer < 20 ? 11 : 12}" font-weight="700" fill="${colors.onCenter}">${locations}</text>` +
     `</svg>`
   );
 }

@@ -15,9 +15,9 @@ namespace ChargeGlobe.Infrastructure.Persistence;
 /// </summary>
 public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProvider timeProvider) : ILocationQueries
 {
-    private static readonly string[] OccupiedStatuses = [nameof(EvseStatus.CHARGING), nameof(EvseStatus.BLOCKED), nameof(EvseStatus.RESERVED)];
+    private static readonly string[] OccupiedStatuses = Availability.OccupiedStatuses;
 
-    private static readonly string[] FaultedStatuses = [nameof(EvseStatus.OUTOFORDER), nameof(EvseStatus.INOPERATIVE)];
+    private static readonly string[] FaultedStatuses = Availability.FaultedStatuses;
 
     private static readonly string[] AdHocMethods = [.. AuthMethods.AdHoc.Select(method => method.ToString())];
 
@@ -213,7 +213,9 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
                 details.Count(evse => OccupiedStatuses.Contains(evse.Status)),
                 details.Count(evse => FaultedStatuses.Contains(evse.Status))),
             new LocationFacilities(location.GreenEnergy, location.FreeParking, location.RoofedParking, location.BarrierFreeParkingSpaces, location.PriceUrl),
-            details.Where(evse => evse.Status == nameof(EvseStatus.AVAILABLE)).Max(evse => evse.MaxPowerKw));
+            details.Where(evse => evse.Status == nameof(EvseStatus.AVAILABLE)).Max(evse => evse.MaxPowerKw),
+            details.Count(evse => OccupiedStatuses.Contains(evse.Status)),
+            details.Count(evse => FaultedStatuses.Contains(evse.Status)));
         return new LocationDetail(summary, details, await AttributionAsync([id], cancellationToken));
     }
 
@@ -290,6 +292,7 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
         public LocationSummary ToSummary() =>
             new(Id, Name, Address, PostalCode, City, Country, Latitude, Longitude, Operator, EvsesTotal, EvsesAvailable, MaxPowerKw,
                 StatusObservedAt, Availability.Of(EvsesAvailable, EvsesOccupied, EvsesFaulted),
-                new LocationFacilities(GreenEnergy, FreeParking, RoofedParking, BarrierFreeParkingSpaces, PriceUrl), MaxAvailablePowerKw);
+                new LocationFacilities(GreenEnergy, FreeParking, RoofedParking, BarrierFreeParkingSpaces, PriceUrl), MaxAvailablePowerKw,
+                EvsesOccupied, EvsesFaulted);
     }
 }

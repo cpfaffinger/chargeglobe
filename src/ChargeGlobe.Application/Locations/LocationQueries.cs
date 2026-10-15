@@ -18,6 +18,12 @@ public static class Availability
     /// <summary>No EVSE has a status younger than <c>map.status_max_age_minutes</c>.</summary>
     public const string Unknown = "UNKNOWN";
 
+    /// <summary>OCPI statuses that count as occupied: charging, blocked, reserved.</summary>
+    public static readonly string[] OccupiedStatuses = ["CHARGING", "BLOCKED", "RESERVED"];
+
+    /// <summary>OCPI statuses that count as out of order.</summary>
+    public static readonly string[] FaultedStatuses = ["OUTOFORDER", "INOPERATIVE"];
+
     public static string Of(int available, int occupied, int outOfOrder) =>
         available > 0 ? Available : occupied > 0 ? Occupied : outOfOrder > 0 ? OutOfOrder : Unknown;
 }
@@ -27,6 +33,8 @@ public static class Availability
 /// <param name="Availability">One of the <see cref="Locations.Availability"/> values.</param>
 /// <param name="Facilities">Amenities and price page; each value null if no source knows it.</param>
 /// <param name="MaxAvailablePowerKw">Highest power among the EVSEs that are AVAILABLE now; null if none is.</param>
+/// <param name="EvsesOccupied">EVSEs charging, blocked or reserved now.</param>
+/// <param name="EvsesFaulted">EVSEs out of order or inoperative now; the rest of <paramref name="EvsesTotal"/> has no current status.</param>
 public sealed record LocationSummary(
     Guid Id,
     string? Name,
@@ -43,7 +51,9 @@ public sealed record LocationSummary(
     DateTimeOffset? StatusObservedAt,
     string Availability,
     LocationFacilities Facilities,
-    decimal? MaxAvailablePowerKw);
+    decimal? MaxAvailablePowerKw,
+    int EvsesOccupied,
+    int EvsesFaulted);
 
 /// <param name="GreenEnergy">The operator states 100 % renewable energy.</param>
 /// <param name="FreeParking">Parking is free of charge while charging.</param>

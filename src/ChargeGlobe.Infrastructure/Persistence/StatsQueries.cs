@@ -18,9 +18,9 @@ public sealed class StatsQueries(AppDbContext db, IAppConfig config, TimeProvide
 
     public const int TopOperatorCount = 10;
 
-    private static readonly string[] OccupiedStatuses = [nameof(EvseStatus.CHARGING), nameof(EvseStatus.BLOCKED), nameof(EvseStatus.RESERVED)];
+    private static readonly string[] OccupiedStatuses = Availability.OccupiedStatuses;
 
-    private static readonly string[] FaultedStatuses = [nameof(EvseStatus.OUTOFORDER), nameof(EvseStatus.INOPERATIVE)];
+    private static readonly string[] FaultedStatuses = Availability.FaultedStatuses;
 
     public Task<bool> RegionExistsAsync(string code, CancellationToken cancellationToken) =>
         db.Regions.AnyAsync(region => region.Code == code, cancellationToken);

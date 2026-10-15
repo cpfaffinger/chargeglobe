@@ -28,7 +28,9 @@ public static class SearchEndpoints
                 "with `q` in any notation (`AT*VIE*E1234`, `AT-VIE-E1234`, `atviee1234`), then locations whose name, street, " +
                 "postal code and city contain every word of `q` (case-insensitive), the most similar first; at most `limit` " +
                 "hits (1–50, default 10). Each hit has `type` (EVSE or LOCATION), `label`, `detail` (address), `locationId` " +
-                "for `getLocation` and the coordinates to center the map. 422 for a missing or too short `q` or a limit out " +
+                "for `getLocation` and the coordinates to center the map, and how free its location is now: `availability` " +
+                "(as in `listLocations`), `evsesTotal`, `evsesAvailable`, `evsesOccupied`; an EVSE hit also has `evseStatus` " +
+                "(its current OCPI status, UNKNOWN if none is current). 422 for a missing or too short `q` or a limit out " +
                 "of range. Public, no credentials needed.")
             .Produces<SearchResponse>()
             .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
@@ -43,6 +45,11 @@ public static class SearchEndpoints
                             Guid.Parse("01990a3e-5b1d-7d42-8c3a-6e9f1a2b3c4e"),
                             48.2085,
                             16.3731,
+                            null,
+                            "AVAILABLE",
+                            4,
+                            2,
+                            1,
                             null),
                     ],
                     new SearchMeta(1, DefaultLimit)));
