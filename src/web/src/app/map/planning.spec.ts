@@ -11,6 +11,7 @@ import {
 } from './charging-plan';
 import { CLUSTER_PROPERTIES, clusterCounts, clusterPie, clusterRadius } from './cluster-pie';
 import { RouteLocation, locationPlace, ownPlace, pointPlace } from './routes.service';
+import { LEGEND_STORAGE_KEY, MapHints, TRUNCATED_SNOOZE_KEY, TRUNCATED_SNOOZE_MS } from './map-hints';
 
 const at = (id: string, km: number, overrides: Partial<RouteLocation> = {}): RouteLocation => ({
   ...locationSummary({ id, maxPowerKw: 22, evsesAvailable: 1 }),
@@ -189,5 +190,33 @@ describe('places of a route', () => {
     });
     expect(locationPlace(locationSummary({ name: null })).name).toBe('Ladestandort');
     expect(pointPlace(48.21, 16.37)).toEqual({ latitude: 48.21, longitude: 16.37, name: 'Punkt 48,2100, 16,3700', kind: 'point', locationId: null });
+  });
+});
+
+describe('MapHints', () => {
+  afterEach(() => {
+    localStorage.removeItem(LEGEND_STORAGE_KEY);
+    localStorage.removeItem(TRUNCATED_SNOOZE_KEY);
+  });
+
+  it('snoozes the truncated notice for a day', () => {
+    const hints = TestBed.inject(MapHints);
+    expect(hints.truncatedSnoozed(1000)).toBeFalse();
+    hints.snoozeTruncated(1000);
+    expect(localStorage.getItem(TRUNCATED_SNOOZE_KEY)).toBe(String(1000 + TRUNCATED_SNOOZE_MS));
+    expect(hints.truncatedSnoozed(1000 + TRUNCATED_SNOOZE_MS - 1)).toBeTrue();
+    expect(hints.truncatedSnoozed(1000 + TRUNCATED_SNOOZE_MS)).toBeFalse();
+  });
+
+  it('works without storage', () => {
+    spyOn(Storage.prototype, 'getItem').and.throwError('blocked');
+    spyOn(Storage.prototype, 'setItem').and.throwError('blocked');
+    const hints = TestBed.inject(MapHints);
+
+    expect(hints.legendVisible()).toBeTrue();
+    expect(hints.truncatedSnoozed()).toBeFalse();
+    hints.setLegend(false);
+    expect(hints.legendVisible()).toBeFalse();
+    expect(() => hints.snoozeTruncated()).not.toThrow();
   });
 });

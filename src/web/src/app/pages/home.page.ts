@@ -33,6 +33,7 @@ import { MapFilterPanel } from '../map/map-filter-panel';
 import { MapOptionsPanel } from '../map/map-options-panel';
 import { MapOptionsStore } from '../map/map-options';
 import { MapFilterStore, filterParams } from '../map/map-filters';
+import { MapHints, TRUNCATED_NOTICE_MS } from '../map/map-hints';
 import { MapLink, ShareResult } from '../map/map-link';
 import { MapView, MapViewStore } from '../map/map-view.store';
 import {
@@ -343,13 +344,22 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
       <div id="map-loading" role="progressbar" aria-label="Ladepunkte werden geladen"></div>
     }
     <ng-template #legend>
-      <ul id="legend" aria-label="Legende">
-        @for (key of markerKeys; track key) {
-          <li>
-            <span class="status-dot" [style.background]="color(key)"><app-icon [name]="markers[key].icon" /></span>{{ markers[key].label }}
-          </li>
-        }
-      </ul>
+      @if (hints.legendVisible()) {
+        <div class="legend-box">
+          <ul id="legend" aria-label="Legende">
+            @for (key of markerKeys; track key) {
+              <li>
+                <span class="status-dot" [style.background]="color(key)"><app-icon [name]="markers[key].icon" /></span>{{ markers[key].label }}
+              </li>
+            }
+          </ul>
+          <button type="button" id="legend-hide" aria-label="Legende ausblenden" title="Legende ausblenden" (click)="hints.setLegend(false)">
+            <app-icon name="close" />
+          </button>
+        </div>
+      } @else {
+        <button matButton="tonal" type="button" id="legend-show" (click)="hints.setLegend(true)"><app-icon name="help" />Legende</button>
+      }
     </ng-template>
     <div id="map-overlay">
       @if (viewport.mobile()) {
@@ -424,8 +434,13 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
       @if (shareMessage(); as message) {
         <p id="share-message" class="map-message" role="status">{{ message }}</p>
       }
-      @if (truncated()) {
-        <p id="truncated" class="map-message" role="status">Es werden nur die nächsten {{ limit }} Standorte gezeigt – zoome hinein, um alle zu sehen.</p>
+      @if (truncatedShown()) {
+        <p id="truncated" class="map-message dismissible" role="status">
+          Nur die nächsten {{ limit }} Standorte – zoome hinein.
+          <button matIconButton type="button" id="truncated-close" aria-label="Hinweis ausblenden" title="Hinweis ausblenden" (click)="dismissTruncated()">
+            <app-icon name="close" />
+          </button>
+        </p>
       }
       @if (!viewport.mobile()) {
         <ng-container [ngTemplateOutlet]="card" />
@@ -650,6 +665,11 @@ export class HomePage {
   protected readonly locations = signal<LocationSummary[]>([]);
   protected readonly attribution = signal<string[]>([]);
   protected readonly truncated = signal(false);
+  protected readonly hints = inject(MapHints);
+  private readonly truncatedNoticeMs = inject(TRUNCATED_NOTICE_MS);
+  /** The notice about a truncated map: shown for a few seconds when the map becomes truncated, unless snoozed. */
+  protected readonly truncatedShown = signal(false);
+  private truncatedTimer: ReturnType<typeof setTimeout> | undefined;
   protected readonly selected = signal<LocationSummary | null>(null);
   protected readonly markers = MARKERS;
   protected readonly markerKeys = MARKER_KEYS;
@@ -710,7 +730,20 @@ export class HomePage {
         this.filterKey = key;
       });
     });
+    // A truncated map is told briefly; closing the notice snoozes it (MapHints).
+    effect(() => {
+      const truncated = this.truncated();
+      untracked(() => {
+        clearTimeout(this.truncatedTimer);
+        const show = truncated && !this.hints.truncatedSnoozed();
+        this.truncatedShown.set(show);
+        if (show) {
+          this.truncatedTimer = setTimeout(() => this.truncatedShown.set(false), this.truncatedNoticeMs);
+        }
+      });
+    });
     inject(DestroyRef).onDestroy(() => {
+      clearTimeout(this.truncatedTimer);
       this.destroyed = true;
       this.handle()?.destroy();
     });
@@ -954,6 +987,12 @@ export class HomePage {
     this.stops.set([]);
     this.routeMeters.set(null);
     this.handle()?.showRoute(null);
+  }
+
+  protected dismissTruncated(): void {
+    clearTimeout(this.truncatedTimer);
+    this.truncatedShown.set(false);
+    this.hints.snoozeTruncated();
   }
 
   protected percent(value: number): number {
