@@ -23,6 +23,12 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
 
     private static readonly LocationFilter NoFilter = new([], null, null, null, [], false, false, false, false, false);
 
+    /// <summary>
+    /// Tolerance of the simplified route line, about 10 m: a route of Valhalla has a point every few metres, and casting
+    /// thousands of them for every candidate made a route through Austria take seconds (docs/02, Routing).
+    /// </summary>
+    private const double SimplifyDegrees = 0.0001;
+
     /// <summary>Stand-in line of the queries without route; the route condition is switched off for them.</summary>
     private static readonly GeoPoint[] NoRoute = [new(0, 0), new(1, 1)];
 
@@ -51,8 +57,9 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
     /// <summary>
     /// Active locations with the counts of their EVSEs: in the box (nearest to its centre first), with one of the ids, or
     /// within <paramref name="corridorMeters"/> of the route (in the order of the route), matching the filter, at most
-    /// <paramref name="take"/>. The position on the route is the share of the line (in degrees) up to the closest point
-    /// times its length in metres – close enough to order the stops and tell the kilometre.
+    /// <paramref name="take"/>. The line is simplified (about 10 m) and cast to geography and measured once in the CTE;
+    /// the position on the route is the share of the line (in degrees) up to the closest point times its length in metres –
+    /// close enough to order the stops and tell the kilometre.
     /// </summary>
     private Task<List<SummaryRow>> SummariesAsync(
         BoundingBox? within, Guid[]? ids, LocationFilter filter, int take, CancellationToken cancellationToken,
@@ -75,10 +82,11 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
         return db.Database
             .SqlQuery<SummaryRow>($"""
                 WITH route AS MATERIALIZED (
-                    SELECT ST_SetSRID(ST_MakeLine(ARRAY(
+                    SELECT r.g, r.g::geography AS gg, ST_Length(r.g::geography) AS len
+                    FROM (SELECT ST_Simplify(ST_SetSRID(ST_MakeLine(ARRAY(
                         SELECT ST_MakePoint(p.x, p.y)
                         FROM unnest({longitudes}::float8[], {latitudes}::float8[]) WITH ORDINALITY AS p(x, y, n)
-                        ORDER BY p.n)), 4326) AS g)
+                        ORDER BY p.n)), 4326), {SimplifyDegrees}) AS g) r)
                 SELECT l.id AS "Id", l.name AS "Name", l.address AS "Address", l.postal_code AS "PostalCode", l.city AS "City",
                        l.country AS "Country", ST_Y(l.geom::geometry) AS "Latitude", ST_X(l.geom::geometry) AS "Longitude",
                        o.name AS "Operator",
@@ -91,9 +99,9 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
                        max(c.observed_at) AS "StatusObservedAt",
                        l.green_energy AS "GreenEnergy", l.free_parking AS "FreeParking", l.roofed_parking AS "RoofedParking",
                        l.barrier_free_parking_spaces AS "BarrierFreeParkingSpaces", l.price_url AS "PriceUrl",
-                       CASE WHEN {anyRoute} THEN NULL ELSE ST_Distance(l.geom, (SELECT g FROM route)::geography) END AS "DistanceFromRoute",
+                       CASE WHEN {anyRoute} THEN NULL ELSE ST_Distance(l.geom, (SELECT gg FROM route)) END AS "DistanceFromRoute",
                        CASE WHEN {anyRoute} THEN NULL
-                            ELSE ST_LineLocatePoint((SELECT g FROM route), l.geom::geometry) * ST_Length((SELECT g FROM route)::geography) END AS "PositionOnRoute"
+                            ELSE ST_LineLocatePoint((SELECT g FROM route), l.geom::geometry) * (SELECT len FROM route) END AS "PositionOnRoute"
                 FROM location l
                 LEFT JOIN operator o ON o.id = l.operator_id
                 LEFT JOIN evse e ON e.location_id = l.id AND e.lifecycle = 'ACTIVE'
@@ -101,7 +109,7 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
                 WHERE l.lifecycle = 'ACTIVE'
                   AND ({anyBox} OR l.geom && ST_MakeEnvelope({box.MinLongitude}, {box.MinLatitude}, {box.MaxLongitude}, {box.MaxLatitude}, 4326)::geography)
                   AND ({anyId} OR l.id = ANY({wanted}::uuid[]))
-                  AND ({anyRoute} OR ST_DWithin(l.geom, (SELECT g FROM route)::geography, {corridorMeters}))
+                  AND ({anyRoute} OR ST_DWithin(l.geom, (SELECT gg FROM route), {corridorMeters}))
                   AND ({operatorPattern}::text IS NULL OR o.name ILIKE {operatorPattern}::text)
                   AND (cardinality({operatorIds}::uuid[]) = 0 OR l.operator_id = ANY({operatorIds}::uuid[]))
                   AND (NOT {filter.GreenEnergy} OR l.green_energy)

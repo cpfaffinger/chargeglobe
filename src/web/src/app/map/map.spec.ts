@@ -705,7 +705,7 @@ describe('HomePage (map)', () => {
         expect(root().querySelector('#location-card')).toBeNull();
         expect(text(root(), '#route-stops p')).toBe('Ladepunkte entlang der Route werden gesucht …');
         const along = http.expectOne('/api/v1/routes/locations');
-        expect(along.request.body).toEqual({ geometry: { type: 'LineString', coordinates: geometry }, corridorMeters: 1000, ...NO_FILTERS });
+        expect(along.request.body).toEqual({ geometry: { type: 'LineString', coordinates: geometry }, corridorMeters: 1000, limit: 500, ...NO_FILTERS });
         along.flush({
           data: [stop('loc-1', 1840), stop('loc-2', 12400, { name: null, evsesAvailable: 0, maxAvailablePowerKw: null })],
           meta: { returned: 2, limit: 200, truncated: true, attribution: [] },
@@ -1052,7 +1052,7 @@ describe('RoutesService', () => {
 
     const along = TestBed.inject(RoutesService).along(geometry, { ...NO_FILTERS, minPowerKw: 50, availableOnly: true });
     const request = http.expectOne('/api/v1/routes/locations');
-    expect(request.request.body).toEqual({ geometry, corridorMeters: 1000, ...NO_FILTERS, minPowerKw: 50, availableOnly: true });
+    expect(request.request.body).toEqual({ geometry, corridorMeters: 1000, limit: 500, ...NO_FILTERS, minPowerKw: 50, availableOnly: true });
     request.flush({ data: [], meta: { returned: 0, limit: 200, truncated: false, attribution: [] } });
     expect((await along).meta.returned).toBe(0);
     http.verify();
