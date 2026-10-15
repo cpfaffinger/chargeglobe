@@ -41,7 +41,7 @@ export function clusterPie(counts: Record<MarkerKey, number>, colors: PieColors,
   const total = MARKER_KEYS.reduce((sum, key) => sum + counts[key], 0);
   const outer = clusterRadius(total);
   const size = outer * 2 + 4;
-  const inner = Math.round(outer * 0.62);
+  const inner = Math.round(outer * 0.55);
   const center = size / 2;
   const parts = MARKER_KEYS.filter((key) => counts[key] > 0);
   let start = 0;

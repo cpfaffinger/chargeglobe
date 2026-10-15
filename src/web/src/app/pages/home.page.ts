@@ -1240,14 +1240,22 @@ export class HomePage {
   /** Style and marker colours for the map renderer, resolved from the theme tokens of the current mode. */
   private mapTheme(dark: boolean): MapTheme {
     const tokens = MARKER_KEYS.map((key) => MARKERS[key].token);
-    const colors = resolveColors([...tokens, '--cg-on-status', '--mat-sys-surface', '--mat-sys-primary', '--mat-sys-on-primary', '--mat-sys-tertiary']);
+    const colors = resolveColors([
+      ...tokens,
+      '--cg-on-status',
+      '--mat-sys-surface',
+      '--mat-sys-surface-container-highest',
+      '--mat-sys-on-surface',
+      '--mat-sys-tertiary',
+    ]);
     return {
       styleUrl: dark ? this.config!.styleUrlDark : this.config!.styleUrl,
       status: Object.fromEntries(MARKER_KEYS.map((key) => [key, colors[MARKERS[key].token]])) as MapTheme['status'],
       onStatus: colors['--cg-on-status'],
       ring: colors['--mat-sys-surface'],
-      cluster: colors['--mat-sys-primary'],
-      onCluster: colors['--mat-sys-on-primary'],
+      // Neutral grey in the middle of the cluster donuts, so the status colours of the ring stand out.
+      cluster: colors['--mat-sys-surface-container-highest'],
+      onCluster: colors['--mat-sys-on-surface'],
       route: colors['--mat-sys-tertiary'],
     };
   }

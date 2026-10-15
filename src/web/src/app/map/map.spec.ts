@@ -143,6 +143,8 @@ describe('HomePage (map)', () => {
   let viewport: ReturnType<typeof fakeViewport>;
   let evses: jasmine.SpyObj<EvsesService>;
   let link: jasmine.SpyObj<MapLink>;
+  /** How long the notice about a truncated map shows. */
+  let noticeMs = 6000;
 
   const root = () => fixture.nativeElement as HTMLElement;
   /** View reported with every move in the specs. */
@@ -193,6 +195,7 @@ describe('HomePage (map)', () => {
     localStorage.removeItem(VEHICLE_STORAGE_KEY);
     localStorage.removeItem(LEGEND_STORAGE_KEY);
     localStorage.removeItem(TRUNCATED_SNOOZE_KEY);
+    noticeMs = 6000;
     link = jasmine.createSpyObj<MapLink>('MapLink', ['read', 'write', 'fragment', 'share']);
     link.read.and.returnValue(null);
     TestBed.configureTestingModule({
@@ -206,6 +209,8 @@ describe('HomePage (map)', () => {
         { provide: Viewport, useValue: viewport },
         { provide: MapEngine, useValue: map.engine },
         { provide: BrowserCapabilities, useValue: browser },
+        // Read when the page first injects it, so a spec can shorten it before rendering.
+        { provide: TRUNCATED_NOTICE_MS, useFactory: () => noticeMs },
       ],
     });
     // Deterministic colours: the system of the test browser may prefer dark mode.
@@ -524,7 +529,7 @@ describe('HomePage (map)', () => {
     });
 
     it('hides the notice about a truncated map after a few seconds', async () => {
-      TestBed.overrideProvider(TRUNCATED_NOTICE_MS, { useValue: 20 });
+      noticeMs = 20;
       await render();
       await moveTo(vienna, response({ truncated: true }));
       expect(root().querySelector('#truncated')).not.toBeNull();
