@@ -142,7 +142,10 @@ public class SecondSourceTests(IntegrationFactory factory) : IClassFixture<Integ
 
         Assert.Equal(locations, await factory.WithDbAsync(db => db.Locations.CountAsync()));
         Assert.False(await factory.WithDbAsync(db => db.SourceRecords.AnyAsync(record => record.SourceKey == "ocm" && record.ExternalId == "between")));
-        var conflict = Assert.Single(await factory.WithDbAsync(db => db.SourceConflicts.Where(item => item.Attribute == "identity").ToListAsync()));
+        // Other tests of the class add conflicts of their own.
+        var conflict = Assert.Single(
+            (await factory.WithDbAsync(db => db.SourceConflicts.Where(item => item.Attribute == "identity").ToListAsync()))
+                .Where(item => JsonDocument.Parse(item.Values).RootElement.GetProperty("externalId").GetString() == "between"));
         var values = JsonDocument.Parse(conflict.Values).RootElement;
         Assert.Equal(("ocm", "between", 2), (values.GetProperty("source").GetString(), values.GetProperty("externalId").GetString(), values.GetProperty("candidates").GetArrayLength()));
         Assert.Equal(1, await factory.WithDbAsync(db => db.SourceRecords.CountAsync(record => record.SourceKey == "ocm" && record.ExternalId == "101")));

@@ -202,16 +202,16 @@
           "evseId": null,
           "physicalReference": null,
           "stationExternalId": null,
-          "maxPowerKw": 11,
-          "powerType": "AC_3_PHASE",
+          "maxPowerKw": 7.4,
+          "powerType": "AC_1_PHASE",
           "connectors": [
             {
               "standard": "IEC_62196_T2",
               "format": "SOCKET",
-              "powerType": "AC_3_PHASE",
-              "maxPowerKw": 11,
-              "maxVoltage": null,
-              "maxAmperage": null,
+              "powerType": "AC_1_PHASE",
+              "maxPowerKw": 7.4,
+              "maxVoltage": 230,
+              "maxAmperage": 32,
               "rawType": "25"
             }
           ],
@@ -276,8 +276,10 @@
             "ID": 5003,
             "ConnectionTypeID": 25,
             "StatusTypeID": 50,
-            "PowerKW": 11.0,
-            "CurrentTypeID": 20
+            "Amps": 32,
+            "Voltage": 230,
+            "PowerKW": 7.4,
+            "CurrentTypeID": 10
           }
         ],
         "NumberOfPoints": 2,
