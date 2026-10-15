@@ -45,6 +45,9 @@ const THEMES: { mode: ThemeMode; label: string; icon: IconName }[] = [
       @if (auth.me(); as me) {
         <a matButton routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" id="nav-map" (click)="close()">Karte</a>
         <a matButton routerLink="/favorites" routerLinkActive="active" id="nav-favorites" (click)="close()">Favoriten</a>
+        @if (auth.hasPermission('evse:read')) {
+          <a matButton routerLink="/stats" routerLinkActive="active" id="nav-stats" (click)="close()">Statistik</a>
+        }
         @if (adminPages(); as pages) {
           @if (pages.length > 0) {
             @if (viewport.compactNav()) {

@@ -10,6 +10,7 @@ using ChargeGlobe.Application.Mail;
 using ChargeGlobe.Application.Preferences;
 using ChargeGlobe.Application.Settings;
 using ChargeGlobe.Application.Sources;
+using ChargeGlobe.Application.Stats;
 using ChargeGlobe.Application.Tariffs;
 using ChargeGlobe.Infrastructure.Health;
 using ChargeGlobe.Infrastructure.Identity;
@@ -48,6 +49,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<AuditLog>();
         services.AddScoped<ISourceRegistry, SourceRegistry>();
         services.AddScoped<ILocationQueries, LocationQueries>();
+        services.AddScoped<IStatsQueries, StatsQueries>();
         services.AddScoped<IEvseQueries, EvseQueries>();
         services.AddScoped<ISearchQueries, SearchQueries>();
         services.AddScoped<IOperatorQueries, OperatorQueries>();
