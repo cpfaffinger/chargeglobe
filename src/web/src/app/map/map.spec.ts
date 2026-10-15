@@ -1029,7 +1029,7 @@ describe('HomePage (map)', () => {
           await settle();
 
           // A location opens its card; closing it returns to the list.
-          fastest[1].click();
+          root().querySelectorAll<HTMLButtonElement>('#reach-locations li button.open-stop')[1].click();
           await settle();
           expect(map.handle.flyTo).toHaveBeenCalledWith(48.195, 16.335, FOCUS_ZOOM);
           expect(text(root(), '#location-card h2')).toBe('Im Loch');
