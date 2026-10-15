@@ -327,6 +327,8 @@ app-home {
 #location-card,
 #route-stops,
 #reach-locations {
+  // The layers inside a card stay inside it.
+  isolation: isolate;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -349,7 +351,8 @@ app-location-details .details-state {
 #reach-locations .card-head {
   position: sticky;
   top: 0;
-  z-index: 1;
+  // Above the buttons of the card (Material buttons stack their ripple and focus layers), which scroll below it.
+  z-index: 10;
   display: flex;
   align-items: flex-start;
   gap: 4px;
