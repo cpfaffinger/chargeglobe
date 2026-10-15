@@ -341,14 +341,17 @@ describe('account pages', () => {
       expect(cards.cards()).toEqual(['smatrics']);
     });
 
-    it('says when no EMP exists yet or the list cannot be loaded', async () => {
+    it('says when no EMP exists yet', async () => {
       auth.hasPermission.and.callFake((permission) => permission === 'price:read');
       await open('/account');
       http.expectOne('/api/v1/health').flush({ status: 'ok', db: 'ok' });
       http.expectOne('/api/v1/emps').flush({ data: [] });
       await settle();
       expect(text(page(), '#own-cards li')).toBe('Noch keine Ladekarten-Anbieter erfasst.');
+    });
 
+    it('says when the list of EMPs cannot be loaded', async () => {
+      auth.hasPermission.and.callFake((permission) => permission === 'price:read');
       await open('/account');
       http.expectOne('/api/v1/health').flush({ status: 'ok', db: 'ok' });
       http.expectOne('/api/v1/emps').flush({ title: 'Error', detail: 'Database down.' }, { status: 503, statusText: 'Error' });
