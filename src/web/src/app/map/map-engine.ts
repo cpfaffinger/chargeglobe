@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
 // Type-only imports are erased by the compiler; the library itself is still loaded on demand.
 import type { FeatureCollection, Point } from 'geojson';
-import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
+import type { GeoJSONSource, Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { ICONS } from '../design/icon';
 import { MARKERS, MARKER_KEYS, MarkerKey, markerOf } from './availability';
+import { CLUSTER_PROPERTIES, clusterCounts, clusterPie } from './cluster-pie';
 import { Bbox, LocationSummary } from './locations.service';
 import { MapOptions } from './map-options';
 import { MapView } from './map-view.store';
@@ -40,6 +41,8 @@ export interface MapViewOptions {
   onViewChange: (bbox: Bbox, view: MapView) => void;
   /** A location marker was clicked. */
   onSelect: (locationId: string) => void;
+  /** The map itself was clicked, not a marker or cluster (e.g. to pick a start or destination). */
+  onClick: (latitude: number, longitude: number) => void;
 }
 
 export type GeolocateEvent =
@@ -185,27 +188,14 @@ export class MapLibreEngine extends MapEngine {
         source: stopsSource,
         paint: { 'circle-radius': 20, 'circle-color': 'transparent', 'circle-stroke-width': 4, 'circle-stroke-color': theme.route },
       });
-      map.addSource(source, { type: 'geojson', data: toGeoJson(pending), ...clusterOptions(cluster) });
-      map.addLayer({
-        id: 'location-clusters',
-        type: 'circle',
-        source,
-        filter: ['has', 'point_count'],
-        paint: {
-          'circle-color': theme.cluster,
-          'circle-radius': ['step', ['get', 'point_count'], 16, 50, 20, 200, 26],
-          'circle-stroke-width': 3,
-          'circle-stroke-color': theme.ring,
-        },
+      // Clusters sum up their locations per marker; they are drawn as HTML donut charts (updateClusters), not as a layer.
+      map.addSource(source, {
+        type: 'geojson',
+        data: toGeoJson(pending),
+        ...clusterOptions(cluster),
+        clusterProperties: CLUSTER_PROPERTIES as Record<string, never>,
       });
-      map.addLayer({
-        id: 'location-cluster-count',
-        type: 'symbol',
-        source,
-        filter: ['has', 'point_count'],
-        layout: { 'text-field': ['get', 'point_count_abbreviated'], 'text-font': ['Noto Sans Bold'], 'text-size': 13 },
-        paint: { 'text-color': theme.onCluster },
-      });
+      clearClusters();
       map.addLayer({
         id: 'location-points',
         type: 'symbol',
@@ -223,28 +213,80 @@ export class MapLibreEngine extends MapEngine {
       }
     });
     map.on('moveend', () => loaded && emitView());
-    map.on('click', 'location-clusters', async (event) => {
-      const feature = event.features![0];
-      const zoom = await (map.getSource(source) as GeoJSONSource).getClusterExpansionZoom(feature.properties['cluster_id']);
-      map.easeTo({ center: (feature.geometry as Point).coordinates as [number, number], zoom });
-    });
     map.on('click', 'location-points', (event) => options.onSelect(event.features![0].properties['id']));
-    for (const layer of ['location-clusters', 'location-points']) {
-      map.on('mouseenter', layer, () => (map.getCanvas().style.cursor = 'pointer'));
-      map.on('mouseleave', layer, () => (map.getCanvas().style.cursor = ''));
+    map.on('click', (event) => {
+      if (map.queryRenderedFeatures(event.point, { layers: ['location-points'] }).length === 0) {
+        options.onClick(event.lngLat.lat, event.lngLat.lng);
+      }
+    });
+    map.on('mouseenter', 'location-points', () => (map.getCanvas().style.cursor = 'pointer'));
+    map.on('mouseleave', 'location-points', () => (map.getCanvas().style.cursor = ''));
+
+    // Donut charts of the clusters as HTML markers: built once per cluster id and kept while the data stay the same,
+    // added and removed as clusters come into and leave the rendered tiles.
+    const labels = Object.fromEntries(MARKER_KEYS.map((key) => [key, MARKERS[key].label])) as Record<MarkerKey, string>;
+    let clusterCache = new Map<number, Marker>();
+    let shownClusters = new Map<number, Marker>();
+    function clearClusters(): void {
+      shownClusters.forEach((marker) => marker.remove());
+      shownClusters = new Map();
+      clusterCache = new Map();
     }
+    const updateClusters = () => {
+      if (!loaded || !map.getSource(source) || !map.isSourceLoaded(source)) {
+        return;
+      }
+      const next = new Map<number, Marker>();
+      for (const feature of map.querySourceFeatures(source)) {
+        const properties = feature.properties;
+        const id = properties['cluster_id'] as number | undefined;
+        if (!properties['cluster'] || id === undefined || next.has(id)) {
+          continue;
+        }
+        let marker = clusterCache.get(id);
+        if (!marker) {
+          const coordinates = (feature.geometry as Point).coordinates as [number, number];
+          const element = document.createElement('button');
+          element.type = 'button';
+          element.className = 'cluster-pie';
+          element.innerHTML = clusterPie(
+            clusterCounts(properties),
+            { status: theme.status, center: theme.cluster, onCenter: theme.onCluster, ring: theme.ring },
+            labels,
+          );
+          element.setAttribute('aria-label', element.querySelector('title')?.textContent ?? '');
+          element.addEventListener('click', async (event) => {
+            event.stopPropagation();
+            const zoom = await (map.getSource(source) as GeoJSONSource).getClusterExpansionZoom(id);
+            map.easeTo({ center: coordinates, zoom });
+          });
+          marker = new maplibre.Marker({ element }).setLngLat(coordinates);
+          clusterCache.set(id, marker);
+        }
+        next.set(id, marker);
+        if (!shownClusters.has(id)) {
+          marker.addTo(map);
+        }
+      }
+      shownClusters.forEach((marker, id) => !next.has(id) && marker.remove());
+      shownClusters = next;
+    };
+    map.on('render', updateClusters);
 
     return {
       locate: () => geolocate.trigger(),
       showLocations: (locations) => {
         pending = locations;
         if (loaded) {
+          // New data: cluster ids are reused with other contents, so the donuts are built anew.
+          clearClusters();
           (map.getSource(source) as GeoJSONSource).setData(toGeoJson(locations));
         }
       },
       setCluster: (next) => {
         cluster = next;
         if (loaded) {
+          clearClusters();
           void (map.getSource(source) as GeoJSONSource).setClusterOptions(clusterOptions(next));
         }
       },

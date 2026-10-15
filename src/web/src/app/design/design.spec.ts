@@ -4,7 +4,7 @@ import { of } from 'rxjs';
 import { AVAILABILITY, resolveColors, tokenColor } from '../map/availability';
 import { AppIcon, ICONS } from './icon';
 import { GermanPaginatorIntl } from './paginator-intl';
-import { MOBILE_QUERY, THEME_STORAGE_KEY, ThemeService, Viewport } from './theme.service';
+import { COMPACT_NAV_QUERY, MOBILE_QUERY, THEME_STORAGE_KEY, ThemeService, Viewport } from './theme.service';
 
 describe('ThemeService', () => {
   let systemDark: (matches: boolean) => void;
@@ -76,11 +76,13 @@ describe('ThemeService', () => {
 describe('Viewport', () => {
   it('reports small screens from the breakpoint observer', () => {
     const observer = jasmine.createSpyObj<BreakpointObserver>('BreakpointObserver', ['observe']);
-    observer.observe.and.returnValue(of({ matches: true, breakpoints: {} }));
+    observer.observe.and.callFake((query) => of({ matches: query === COMPACT_NAV_QUERY, breakpoints: {} }));
     TestBed.configureTestingModule({ providers: [{ provide: BreakpointObserver, useValue: observer }] });
 
-    expect(TestBed.inject(Viewport).mobile()).toBeTrue();
-    expect(observer.observe).toHaveBeenCalledOnceWith(MOBILE_QUERY);
+    // A tablet: menu button, but no phone layout.
+    const viewport = TestBed.inject(Viewport);
+    expect([viewport.mobile(), viewport.compactNav()]).toEqual([false, true]);
+    expect(observer.observe.calls.allArgs()).toEqual([[MOBILE_QUERY], [COMPACT_NAV_QUERY]]);
   });
 });
 
