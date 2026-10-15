@@ -357,8 +357,6 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
             <app-icon name="close" />
           </button>
         </div>
-      } @else {
-        <button matButton="tonal" type="button" id="legend-show" (click)="hints.setLegend(true)"><app-icon name="help" />Legende</button>
       }
     </ng-template>
     <div id="map-overlay">
@@ -513,6 +511,12 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
     <div id="map-legend-bar">
       @if (!viewport.mobile()) {
         <ng-container [ngTemplateOutlet]="legend" />
+      }
+      @if (!hints.legendVisible()) {
+        <!-- The folded legend: a small symbol next to the filter button. -->
+        <button matMiniFab type="button" id="legend-show" aria-label="Legende einblenden" title="Legende einblenden" (click)="hints.setLegend(true)">
+          <app-icon name="info" />
+        </button>
       }
       <button matButton="tonal" type="button" id="filter-toggle" [attr.aria-expanded]="filtersOpen()" (click)="toggleFilters()">
         <app-icon name="filter_list" />Filter

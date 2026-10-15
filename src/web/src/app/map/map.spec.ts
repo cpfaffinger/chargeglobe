@@ -570,7 +570,9 @@ describe('HomePage (map)', () => {
       root().querySelector<HTMLButtonElement>('#legend-hide')!.click();
       await settle();
       expect(root().querySelector('#legend')).toBeNull();
-      expect(text(root(), '#legend-show')).toBe('Legende');
+      // Folded into a small symbol next to the filter button.
+      expect(root().querySelector('#map-legend-bar > #legend-show')!.getAttribute('aria-label')).toBe('Legende einblenden');
+      expect(text(root(), '#legend-show')).toBe('');
       expect(localStorage.getItem(LEGEND_STORAGE_KEY)).toBe('0');
 
       root().querySelector<HTMLButtonElement>('#legend-show')!.click();
