@@ -276,6 +276,34 @@ public class IngestJobsTests
     }
 
     [Fact]
+    public async Task While_points_stay_due_the_scheduler_syncs_the_plans_every_interval()
+    {
+        var source = new FakeSource();
+        var harness = Create(source);
+        var time = new FakeTimeProvider(T0);
+        var syncsAtFetch = new List<int>();
+        // Every point takes longer than an interval.
+        source.OnStatusFetch = () =>
+        {
+            syncsAtFetch.Add(harness.Plans.Synced.Count);
+            time.Advance(PollScheduler.Interval + TimeSpan.FromSeconds(1));
+        };
+        harness.Tiles.Due.Enqueue(Tile());
+        harness.Tiles.Due.Enqueue(Tile());
+        var scheduler = new PollScheduler(
+            harness.Services.GetRequiredService<IServiceScopeFactory>(), [source], new EnabledSettings("fake"),
+            new StubConfig(new() { [(SettingsCatalog.ProviderRegions, "provider:fake")] = "AT-9" }), harness.Runner,
+            new JobOptions(JobRole.Crawler, "crawler-1"), time, new ListLogger<PollScheduler>());
+
+        await scheduler.StartAsync(CancellationToken.None);
+        await WaitUntilAsync(() => harness.Tiles.Completed.Count == 2, "both points run");
+        await scheduler.StopAsync(CancellationToken.None);
+
+        // The second point ran only after the plans were synced again.
+        Assert.Equal([1, 2], syncsAtFetch);
+    }
+
+    [Fact]
     public async Task Without_enabled_providers_the_scheduler_does_not_touch_the_database()
     {
         var harness = Create(new FakeSource());
@@ -414,6 +442,9 @@ public class IngestJobsTests
 
         public List<StatusQuery> StatusQueries { get; } = [];
 
+        /// <summary>Called on every status fetch, e.g. to let time pass.</summary>
+        public Action? OnStatusFetch { get; set; }
+
         public ProviderDescriptor Descriptor => EControlProvider.DescriptorValue with { Key = Key, Capabilities = Capabilities };
 
         public async IAsyncEnumerable<ProviderLocationSnapshot> FetchInventoryAsync(
@@ -431,6 +462,7 @@ public class IngestJobsTests
             StatusQuery query, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             StatusQueries.Add(query);
+            OnStatusFetch?.Invoke();
             await SendAsync(cancellationToken);
             foreach (var status in Statuses)
             {
