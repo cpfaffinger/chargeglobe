@@ -1,6 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { LocationSummary, LocationsResponse } from './locations.service';
+import { MapFilters } from './map-filters';
 
 export interface Position {
   latitude: number;
@@ -18,6 +20,21 @@ export interface RouteResponse {
   meta: { attribution: { source: string; text: string; license: string }[] };
 }
 
+/** A location along a route (POST /api/v1/routes/locations). */
+export interface RouteLocation extends LocationSummary {
+  distanceFromRouteMeters: number;
+  /** Distance from the start along the route. */
+  positionOnRouteMeters: number;
+}
+
+export interface RouteLocationsResponse {
+  data: RouteLocation[];
+  meta: LocationsResponse['meta'];
+}
+
+/** Largest distance of a stop from the route. */
+export const CORRIDOR_METERS = 1000;
+
 /** Routes by car (route:read); the positions go to the own API only, which neither stores nor logs them. */
 @Injectable({ providedIn: 'root' })
 export class RoutesService {
@@ -25,6 +42,13 @@ export class RoutesService {
 
   route(waypoints: Position[]): Promise<RouteResponse> {
     return firstValueFrom(this.http.post<RouteResponse>('/api/v1/routes', { waypoints }));
+  }
+
+  /** The locations along the route that match the filters of the map, start first. */
+  along(geometry: RouteResponse['data']['geometry'], filters: MapFilters): Promise<RouteLocationsResponse> {
+    return firstValueFrom(
+      this.http.post<RouteLocationsResponse>('/api/v1/routes/locations', { geometry, corridorMeters: CORRIDOR_METERS, ...filters }),
+    );
   }
 }
 
@@ -34,4 +58,9 @@ export function routeSummary(distanceMeters: number, durationSeconds: number): s
   const minutes = Math.max(1, Math.round(durationSeconds / 60));
   const time = minutes < 60 ? `${minutes} min` : `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')} min`;
   return `${km} km · ${time}`;
+}
+
+/** "12,3 km" from the start of the route. */
+export function kilometres(meters: number): string {
+  return `${new Intl.NumberFormat('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(meters / 1000)} km`;
 }

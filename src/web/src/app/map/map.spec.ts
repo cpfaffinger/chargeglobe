@@ -12,12 +12,12 @@ import { BrowserCapabilities } from './browser-capabilities';
 import { MapConfigService } from './map-config.service';
 import { GeolocateEvent, MapEngine, MapViewOptions } from './map-engine';
 import { MARKERS, markerOf } from './availability';
-import { Bbox, LocationsResponse, LocationsService } from './locations.service';
+import { Bbox, LocationSummary, LocationsResponse, LocationsService } from './locations.service';
 import { HOME_VIEW_KEY, LAST_VIEW_KEY, MapView, MapViewStore } from './map-view.store';
 import { FILTERS_STORAGE_KEY, MapFilterStore, NO_FILTERS } from './map-filters';
 import { MapLink } from './map-link';
 import { DEFAULT_MAP_OPTIONS, MapOptionsStore, OPTIONS_STORAGE_KEY } from './map-options';
-import { RoutesService, routeSummary } from './routes.service';
+import { RouteLocation, RoutesService, kilometres, routeSummary } from './routes.service';
 
 describe('MapConfigService', () => {
   it('loads the map configuration', async () => {
@@ -649,6 +649,11 @@ describe('HomePage (map)', () => {
 
     describe('routes', () => {
       const routeButton = () => root().querySelector<HTMLButtonElement>('#route-here');
+      const stop = (id: string, positionOnRouteMeters: number, overrides: Partial<LocationSummary> = {}): RouteLocation => ({
+        ...locationSummary({ id, ...overrides }),
+        distanceFromRouteMeters: 120,
+        positionOnRouteMeters,
+      });
       const geometry: [number, number][] = [
         [16.37, 48.21],
         [16.3731, 48.2085],
@@ -696,12 +701,74 @@ describe('HomePage (map)', () => {
 
         expect(map.handle.showRoute).toHaveBeenCalledWith(geometry);
         expect(text(root(), '#route-summary')).toBe('Route: 12 km · 16 min Route entfernen');
-        expect(text(root(), '#route-here')).toBe('Route hierher');
+        // The card of the destination gives way to the stops along the route.
+        expect(root().querySelector('#location-card')).toBeNull();
+        expect(text(root(), '#route-stops p')).toBe('Ladepunkte entlang der Route werden gesucht …');
+        const along = http.expectOne('/api/v1/routes/locations');
+        expect(along.request.body).toEqual({ geometry: { type: 'LineString', coordinates: geometry }, corridorMeters: 1000, ...NO_FILTERS });
+        along.flush({
+          data: [stop('loc-1', 1840), stop('loc-2', 12400, { name: null, evsesAvailable: 0, maxAvailablePowerKw: null })],
+          meta: { returned: 2, limit: 200, truncated: true, attribution: [] },
+        });
+        await settle();
+
+        expect(map.handle.highlightLocations).toHaveBeenCalledWith([jasmine.objectContaining({ id: 'loc-1' }), jasmine.objectContaining({ id: 'loc-2' })]);
+        expect(text(root(), '#stops-hint')).toBe('Die ersten 2 Standorte bis 1 km neben der Route, mit den Filtern der Karte.');
+        const stops = Array.from(root().querySelectorAll<HTMLButtonElement>('#route-stops li button'));
+        expect(stops.map((button) => text(button, '.stop-name'))).toEqual(['1,8 km · Parkgarage Stephansplatz', '12,4 km · Ladestandort']);
+        expect(stops.map((button) => text(button, '.stop-state'))).toEqual(['2 von 4 frei · bis 22 kW frei', '0 von 4 frei']);
+
+        // A stop opens its card; closing it returns to the list.
+        stops[1].click();
+        await settle();
+        expect(map.handle.flyTo).toHaveBeenCalledWith(48.2085, 16.3731, FOCUS_ZOOM);
+        expect(text(root(), '#location-card h2')).toBe('Ladestandort');
+        root().querySelector<HTMLButtonElement>('#close-card')!.click();
+        await settle();
+        expect(root().querySelector('#route-stops')).not.toBeNull();
 
         root().querySelector<HTMLButtonElement>('#route-clear')!.click();
         await settle();
         expect(map.handle.showRoute).toHaveBeenCalledWith(null);
+        expect(map.handle.highlightLocations).toHaveBeenCalledWith([]);
         expect(root().querySelector('#route-summary')).toBeNull();
+        expect(root().querySelector('#route-stops')).toBeNull();
+      });
+
+      it('explains stops that cannot be loaded, an empty corridor and drops the answer for a removed route', async () => {
+        const routeOnce = async () => {
+          if (!root().querySelector('#location-card')) {
+            options().onSelect('loc-1');
+            await settle();
+          }
+          await clickRoute();
+          http.expectOne('/api/v1/routes').flush({ data: { distanceMeters: 1000, durationSeconds: 60, geometry: { type: 'LineString', coordinates: geometry } }, meta: { attribution: [] } });
+          await settle();
+          return http.expectOne('/api/v1/routes/locations');
+        };
+        await openCard();
+
+        (await routeOnce()).flush({ title: 'Error' }, { status: 500, statusText: 'Error' });
+        await settle();
+        expect(text(root(), '#route-stops .error')).toBe('Die Ladepunkte entlang der Route konnten nicht geladen werden.');
+
+        (await routeOnce()).flush({ data: [], meta: { returned: 0, limit: 200, truncated: false, attribution: [] } });
+        await settle();
+        expect(text(root(), '#stops-hint')).toBe('0 Standorte bis 1 km neben der Route, mit den Filtern der Karte.');
+        expect(text(root(), '#route-stops li')).toBe('Keine Ladepunkte entlang der Route.');
+
+        // Removed while loading: neither the answer nor an error shows up.
+        const late = await routeOnce();
+        root().querySelector<HTMLButtonElement>('#route-clear')!.click();
+        await settle();
+        late.flush({ data: [stop('loc-1', 100)], meta: { returned: 1, limit: 200, truncated: false, attribution: [] } });
+        await settle();
+        const failed = await routeOnce();
+        root().querySelector<HTMLButtonElement>('#route-clear')!.click();
+        await settle();
+        failed.flush({ title: 'Error' }, { status: 500, statusText: 'Error' });
+        await settle();
+        expect(root().querySelector('#route-stops')).toBeNull();
       });
 
       for (const [status, notice] of [
@@ -976,6 +1043,24 @@ describe('RoutesService', () => {
     request.flush({ data: { distanceMeters: 1, durationSeconds: 1, geometry: { type: 'LineString', coordinates: [] } }, meta: { attribution: [] } });
     expect((await route).data.distanceMeters).toBe(1);
     http.verify();
+  });
+
+  it('asks for the locations along a route with the filters of the map', async () => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    const http = TestBed.inject(HttpTestingController);
+    const geometry = { type: 'LineString' as const, coordinates: [[16.3, 48.2], [16.4, 48.2]] as [number, number][] };
+
+    const along = TestBed.inject(RoutesService).along(geometry, { ...NO_FILTERS, minPowerKw: 50, availableOnly: true });
+    const request = http.expectOne('/api/v1/routes/locations');
+    expect(request.request.body).toEqual({ geometry, corridorMeters: 1000, ...NO_FILTERS, minPowerKw: 50, availableOnly: true });
+    request.flush({ data: [], meta: { returned: 0, limit: 200, truncated: false, attribution: [] } });
+    expect((await along).meta.returned).toBe(0);
+    http.verify();
+  });
+
+  it('tells the kilometre of a stop in German', () => {
+    expect(kilometres(1840)).toBe('1,8 km');
+    expect(kilometres(152_000)).toBe('152,0 km');
   });
 
   it('summarizes length and driving time in German', () => {
