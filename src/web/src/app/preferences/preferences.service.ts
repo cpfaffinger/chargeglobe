@@ -5,6 +5,7 @@ import { AuthService } from '../auth/auth.service';
 import { MapFilterStore, MapFilters, NO_FILTERS } from '../map/map-filters';
 import { DEFAULT_MAP_OPTIONS, MapOptions, MapOptionsStore } from '../map/map-options';
 import { MapView, MapViewStore } from '../map/map-view.store';
+import { CardsStore } from './cards.store';
 
 /** Changes are written back after this pause, so a slider or several clicks cause one request. */
 export const PREFERENCES_DEBOUNCE_MS = 1000;
@@ -14,6 +15,8 @@ export interface PreferencesDocument {
   home: MapView | null;
   filters: Partial<MapFilters> | null;
   mapOptions: MapOptions | null;
+  /** EMP keys of the user's charging cards and apps; missing or null: none. */
+  cards?: string[] | null;
 }
 
 export interface PreferencesResponse {
@@ -29,8 +32,9 @@ function toFilters(filters: Partial<MapFilters> | null): MapFilters {
 }
 
 /**
- * Keeps start position, filters and map options of a signed-in user in the account (docs/06, "Einstellungen"), so they
- * follow the user across devices; anonymous visitors keep them in the browser only. After the login the account's
+ * Keeps start position, filters, map options and own charging cards of a signed-in user in the account (docs/06,
+ * "Einstellungen"), so they follow the user across devices; anonymous visitors keep the map values in the browser only
+ * and have no cards. After the login the account's
  * values replace the browser's, or, if the account has none yet, the browser's are uploaded. Every later change is
  * written back after a short pause. Filters of a shared link win over the account's and are not written to it unless
  * the user changes them. The last view stays per device.
@@ -41,6 +45,7 @@ export class PreferencesService {
   private readonly views = inject(MapViewStore);
   private readonly filters = inject(MapFilterStore);
   private readonly options = inject(MapOptionsStore);
+  private readonly cards = inject(CardsStore);
   /** Number of the current login; answers for an earlier one are dropped. */
   private session = 0;
   /** True once the account's values are known; changes before are not written. */
@@ -53,6 +58,7 @@ export class PreferencesService {
     home: this.views.home(),
     filters: this.filters.filters(),
     mapOptions: this.options.options(),
+    cards: this.cards.cards(),
   }));
 
   constructor() {
@@ -91,6 +97,8 @@ export class PreferencesService {
     this.ready = false;
     this.synced = null;
     clearTimeout(this.timer);
+    // The cards belong to the account that signed out.
+    this.cards.set([]);
   }
 
   private apply(document: PreferencesDocument): void {
@@ -103,6 +111,7 @@ export class PreferencesService {
       this.filters.apply(toFilters(document.filters));
     }
     this.options.set(document.mapOptions ?? DEFAULT_MAP_OPTIONS);
+    this.cards.set(document.cards ?? []);
     this.synced = JSON.stringify(this.document());
   }
 

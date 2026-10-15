@@ -1156,6 +1156,17 @@ app-evse-detail mat-button-toggle-group {
   color: var(--mat-sys-primary);
 }
 
+// An own card of the user in the price comparison.
+.own-badge {
+  margin-left: 8px;
+  font: var(--mat-sys-label-medium);
+  color: var(--mat-sys-tertiary);
+}
+
+.data-table tr.own td:first-child {
+  box-shadow: inset 3px 0 0 var(--mat-sys-tertiary);
+}
+
 // ---- Favorites ------------------------------------------------------------------------------------------------------
 
 .favorite-toggle.saved {

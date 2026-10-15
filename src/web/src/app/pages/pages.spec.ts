@@ -1,3 +1,4 @@
+import { CardsStore } from '../preferences/cards.store';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Component } from '@angular/core';
@@ -312,6 +313,47 @@ describe('account pages', () => {
       expect(text(form, '#password-changed')).toBe('Dein Passwort ist geändert. Auf anderen Geräten bist du abgemeldet.');
       expect(form.querySelector('.error')).toBeNull();
       expect(form.querySelector<HTMLInputElement>('input[formControlName=newPassword]')!.value).toBe('');
+    });
+
+    it('lets users with price:read choose their own charging cards', async () => {
+      auth.hasPermission.and.callFake((permission) => permission === 'price:read');
+      await open('/account');
+      http.expectOne('/api/v1/health').flush({ status: 'ok', db: 'ok' });
+      expect(text(page(), '#own-cards li')).toBe('Anbieter werden geladen …');
+      http.expectOne('/api/v1/emps').flush({
+        data: [
+          { key: 'smatrics', name: 'SMATRICS', website: null, tariffs: 1 },
+          { key: 'oeamtc', name: 'ÖAMTC ePower', website: null, tariffs: 1 },
+        ],
+      });
+      await settle();
+      const cards = TestBed.inject(CardsStore);
+      cards.set(['oeamtc']);
+      await settle();
+
+      const box = (key: string) => page().querySelector<HTMLInputElement>(`mat-checkbox[data-card="${key}"] input`)!;
+      expect([box('smatrics').checked, box('oeamtc').checked]).toEqual([false, true]);
+      box('smatrics').click();
+      await settle();
+      expect(cards.cards()).toEqual(['oeamtc', 'smatrics']);
+      box('oeamtc').click();
+      await settle();
+      expect(cards.cards()).toEqual(['smatrics']);
+    });
+
+    it('says when no EMP exists yet or the list cannot be loaded', async () => {
+      auth.hasPermission.and.callFake((permission) => permission === 'price:read');
+      await open('/account');
+      http.expectOne('/api/v1/health').flush({ status: 'ok', db: 'ok' });
+      http.expectOne('/api/v1/emps').flush({ data: [] });
+      await settle();
+      expect(text(page(), '#own-cards li')).toBe('Noch keine Ladekarten-Anbieter erfasst.');
+
+      await open('/account');
+      http.expectOne('/api/v1/health').flush({ status: 'ok', db: 'ok' });
+      http.expectOne('/api/v1/emps').flush({ title: 'Error', detail: 'Database down.' }, { status: 503, statusText: 'Error' });
+      await settle();
+      expect(text(page(), '#own-cards .error')).toBe('Database down.');
     });
 
     it('shows "API: unavailable" when the health request fails', async () => {

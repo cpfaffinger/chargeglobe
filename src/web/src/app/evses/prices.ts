@@ -51,16 +51,24 @@ export interface PriceRow {
   monthlyFee: number | null;
   /** Lowest cost of the example among the rows. */
   cheapest: boolean;
+  /** A card the user has (own cards in the account). */
+  own: boolean;
 }
 
 /** Ad-hoc price and cards by the cost of the example; empty without cards (nothing to compare). */
-export function comparison(data: EvsePricesResponse['data']): PriceRow[] {
+export function comparison(data: EvsePricesResponse['data'], cards: readonly string[] = []): PriceRow[] {
   if (data.emps.length === 0) {
     return [];
   }
   const rows = [
-    ...(data.current ? [{ key: 'ad-hoc', label: 'Ad-hoc (ohne Vertrag)', price: data.current.price, monthlyFee: null }] : []),
-    ...data.emps.map((emp) => ({ key: emp.tariffId, label: `${emp.empName} · ${emp.tariff}`, price: emp.price, monthlyFee: emp.monthlyFee })),
+    ...(data.current ? [{ key: 'ad-hoc', label: 'Ad-hoc (ohne Vertrag)', price: data.current.price, monthlyFee: null, own: false }] : []),
+    ...data.emps.map((emp) => ({
+      key: emp.tariffId,
+      label: `${emp.empName} · ${emp.tariff}`,
+      price: emp.price,
+      monthlyFee: emp.monthlyFee,
+      own: cards.includes(emp.emp),
+    })),
   ].sort((left, right) => left.price.exampleCost - right.price.exampleCost);
   return rows.map((row) => ({ ...row, cheapest: row.price.exampleCost === rows[0].price.exampleCost }));
 }

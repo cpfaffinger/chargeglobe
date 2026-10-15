@@ -5,6 +5,7 @@ using ChargeGlobe.Api.Auth;
 using ChargeGlobe.Api.Locations;
 using ChargeGlobe.Api.OpenApi;
 using ChargeGlobe.Application.Preferences;
+using ChargeGlobe.Application.Tariffs;
 
 namespace ChargeGlobe.Api.Account;
 
@@ -29,7 +30,9 @@ public sealed record MapOptionPreferences(int? ClusterRadius, int? ClusterMaxZoo
 /// <param name="Home">Null: no start position (the map uses the default of the configuration).</param>
 /// <param name="Filters">Null: no filters.</param>
 /// <param name="MapOptions">Null: the defaults.</param>
-public sealed record PreferencesDocument(HomePreference? Home, FilterPreferences? Filters, MapOptionPreferences? MapOptions)
+/// <param name="Cards">Keys of the EMPs (<c>listEmps</c>) whose charging cards or apps the user has; null: none chosen.</param>
+public sealed record PreferencesDocument(
+    HomePreference? Home, FilterPreferences? Filters, MapOptionPreferences? MapOptions, IReadOnlyList<string>? Cards = null)
 {
     public static readonly PreferencesDocument Empty = new(null, null, null);
 }
@@ -43,13 +46,15 @@ public sealed record PreferencesResponse(PreferencesDocument Data, PreferencesMe
 public static class PreferencesEndpoints
 {
     public const int MaxOperators = 100;
+    public const int MaxCards = 20;
 
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
     private static readonly PreferencesDocument Example = new(
         new HomePreference(48.2082, 16.3738, 12),
         new FilterPreferences(["IEC_62196_T2_COMBO"], 50, null, [], true, false, false, false, false),
-        new MapOptionPreferences(60, 14));
+        new MapOptionPreferences(60, 14),
+        ["smatrics", "oeamtc"]);
 
     public static IEndpointRouteBuilder MapPreferencesEndpoints(this IEndpointRouteBuilder endpoints)
     {
@@ -62,7 +67,9 @@ public static class PreferencesEndpoints
                 "Returns the preferences that follow the account across devices: `home` (start position of the map: " +
                 "`latitude`, `longitude`, `zoom`; null = default view), `filters` (the map filters with the names of the " +
                 "`listLocations` query parameters; null = none) and `mapOptions` (`clusterRadius` in pixels, 0 = never " +
-                "combine; `clusterMaxZoom`, the highest zoom level at which locations are combined; null = defaults). " +
+                "combine; `clusterMaxZoom`, the highest zoom level at which locations are combined; null = defaults) and " +
+                "`cards` (keys of the EMPs from `listEmps` whose charging cards or apps the user has; the price comparison of " +
+                "`getEvsePrices` can highlight them; null = none). " +
                 "`meta.updatedAt` is null while the account has not stored preferences yet; the web app then uploads the " +
                 "values of the browser. Requires an account or API key, no specific permission.")
             .Produces<PreferencesResponse>()
@@ -77,8 +84,9 @@ public static class PreferencesEndpoints
                 "Replaces the whole document (fields as in `getPreferences`); idempotent. Rules: `home` with all three " +
                 "values (latitude −90…90, longitude −180…180, zoom 0…24); `filters.connector` OCPI connector standards (as in " +
                 "`listLocations`, stored in upper case); `minPowerKw`/`maxPowerKw` above 0, at most 1000, min not above " +
-                "max; at most 100 `operatorId`; `mapOptions` with both values (`clusterRadius` 0…120, `clusterMaxZoom` 5…18). " +
-                "200 with the stored document; 422 with field errors such as `home.zoom` or `filters.connector`. A change " +
+                "max; at most 100 `operatorId`; `mapOptions` with both values (`clusterRadius` 0…120, `clusterMaxZoom` 5…18); " +
+                "at most 20 `cards`, each the key of an existing EMP (duplicates are dropped). " +
+                "200 with the stored document; 422 with field errors such as `home.zoom`, `filters.connector` or `cards`. A change " +
                 "is recorded in the audit log. Requires an account or API key, no specific permission.")
             .Produces<PreferencesResponse>()
             .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
@@ -98,12 +106,21 @@ public static class PreferencesEndpoints
     }
 
     private static async Task<IResult> PutPreferencesAsync(
-        PreferencesDocument request, ClaimsPrincipal principal, IUserPreferences store, CancellationToken cancellationToken)
+        PreferencesDocument request, ClaimsPrincipal principal, IUserPreferences store, ITariffCatalog catalog, CancellationToken cancellationToken)
     {
         var (document, invalid) = Validate(request);
         if (invalid is not null)
         {
             return invalid;
+        }
+
+        if (document.Cards is { Count: > 0 } cards)
+        {
+            var known = (await catalog.EmpsAsync(cancellationToken)).Select(emp => emp.Key).ToHashSet();
+            if (new Validation().Require(cards.All(known.Contains), "cards", "Must be keys of EMPs from listEmps.").ToResult() is { } unknown)
+            {
+                return unknown;
+            }
         }
 
         var actor = principal.GetActor();
@@ -134,6 +151,7 @@ public static class PreferencesEndpoints
                 .Require(filters.OperatorId is not { Count: > MaxOperators }, "filters.operatorId", $"At most {MaxOperators} operators.");
         }
 
+        validation.Require(request.Cards is not { Count: > MaxCards }, "cards", $"At most {MaxCards} cards.");
         if (request.MapOptions is { } options)
         {
             validation
@@ -141,6 +159,12 @@ public static class PreferencesEndpoints
                 .Require(options.ClusterMaxZoom is >= 5 and <= 18, "mapOptions.clusterMaxZoom", "Must be between 5 and 18.");
         }
 
-        return (request with { Filters = request.Filters is null ? null : request.Filters with { Connector = connectors } }, validation.ToResult());
+        return (
+            request with
+            {
+                Filters = request.Filters is null ? null : request.Filters with { Connector = connectors },
+                Cards = request.Cards is null ? null : [.. request.Cards.Distinct()],
+            },
+            validation.ToResult());
     }
 }

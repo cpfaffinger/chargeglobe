@@ -7,6 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { AuthService } from '../auth/auth.service';
 import { describeError } from '../auth/problem';
+import { OwnCards } from '../preferences/own-cards';
 
 interface HealthResponse {
   status: string;
@@ -14,11 +15,11 @@ interface HealthResponse {
 }
 
 /**
- * Account of the signed-in user (guarded in app.routes.ts): identity, "Passwort ändern" (the other sessions end) and the
- * state of API and database.
+ * Account of the signed-in user (guarded in app.routes.ts): identity, own charging cards (with price:read), "Passwort
+ * ändern" (the other sessions end) and the state of API and database.
  */
 @Component({
-  imports: [MatButtonModule, MatCardModule, MatFormFieldModule, MatInputModule, ReactiveFormsModule],
+  imports: [MatButtonModule, MatCardModule, MatFormFieldModule, MatInputModule, OwnCards, ReactiveFormsModule],
   selector: 'app-account',
   template: `
     <h1>Mein Konto</h1>
@@ -34,6 +35,15 @@ interface HealthResponse {
         </dl>
       </mat-card-content>
     </mat-card>
+    @if (auth.hasPermission('price:read')) {
+      <mat-card appearance="outlined" id="own-cards">
+        <mat-card-content>
+          <h2>Meine Ladekarten</h2>
+          <p class="muted">Diese Karten und Apps hebt der Preisvergleich an jedem Ladepunkt hervor. Die Auswahl gilt für dein Konto.</p>
+          <app-own-cards />
+        </mat-card-content>
+      </mat-card>
+    }
     <mat-card appearance="outlined" id="password-change">
       <mat-card-content>
         <h2>Passwort ändern</h2>

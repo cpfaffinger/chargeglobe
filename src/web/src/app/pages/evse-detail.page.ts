@@ -21,6 +21,7 @@ import {
 import { Segment, statusOf, timeline } from '../evses/status';
 import { OccupancyHeatmap, StatusTimeline } from '../evses/status-charts';
 import { EvsePricesResponse, comparison, money, priceParts } from '../evses/prices';
+import { CardsStore } from '../preferences/cards.store';
 
 /** Ranges of the status history in days; the API allows up to 90. */
 export const HISTORY_DAYS = [1, 7, 30];
@@ -197,7 +198,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
                   } @else {
                     <p id="price-current">Für diesen Ladepunkt ist kein Ad-hoc-Preis bekannt.</p>
                   }
-                  @let rows = compare(pricing);
+                  @let rows = compare(pricing, cards.cards());
                   @if (rows.length > 0) {
                     <h3 id="comparison-title">Vergleich mit Ladekarten</h3>
                     <table id="price-comparison" class="data-table" aria-labelledby="comparison-title">
@@ -209,11 +210,14 @@ const DAY_MS = 24 * 60 * 60 * 1000;
                       </thead>
                       <tbody>
                         @for (row of rows; track row.key) {
-                          <tr [class.cheapest]="row.cheapest">
+                          <tr [class.cheapest]="row.cheapest" [class.own]="row.own">
                             <td>
                               {{ row.label }}
                               @if (row.cheapest) {
                                 <span class="cheapest-badge">günstigste</span>
+                              }
+                              @if (row.own) {
+                                <span class="own-badge">deine Karte</span>
                               }
                             </td>
                             <td>{{ parts(row.price).join(' · ') }}</td>
@@ -397,6 +401,7 @@ export class EvseDetailPage {
   protected readonly parts = priceParts;
   protected readonly money = money;
   protected readonly compare = comparison;
+  protected readonly cards = inject(CardsStore);
   /** The ad-hoc price needs price:read. */
   protected readonly prices = inject(AuthService).hasPermission('price:read');
   protected readonly priceData = signal<EvsePricesResponse | null>(null);
