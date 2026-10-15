@@ -770,7 +770,7 @@ app-location-details .details-state {
 }
 
 #legend-show {
-  box-shadow: var(--cg-overlay-shadow);
+  flex: none;
 }
 
 #truncated.dismissible {
@@ -873,9 +873,16 @@ app-location-details .details-state {
 
   // Legend at the top of the overlay column (left of the zoom buttons), notices, route and reach below it.
   // Two compact columns so all states fit next to the map controls without scrolling.
-  .legend-box,
-  #legend-show {
+  .legend-box {
     align-self: flex-start;
+  }
+
+  // Folded legend on phones: the symbol sits right above the filter button.
+  #legend-show {
+    position: absolute;
+    left: 12px;
+    bottom: 96px;
+    z-index: 1;
   }
 
   #legend {
