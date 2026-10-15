@@ -35,6 +35,9 @@ export interface RouteLocationsResponse {
 /** Largest distance of a stop from the route. */
 export const CORRIDOR_METERS = 1000;
 
+/** Stops asked for; a long route through a city has hundreds of locations near it. */
+export const ROUTE_STOPS_LIMIT = 500;
+
 /** Routes by car (route:read); the positions go to the own API only, which neither stores nor logs them. */
 @Injectable({ providedIn: 'root' })
 export class RoutesService {
@@ -47,7 +50,7 @@ export class RoutesService {
   /** The locations along the route that match the filters of the map, start first. */
   along(geometry: RouteResponse['data']['geometry'], filters: MapFilters): Promise<RouteLocationsResponse> {
     return firstValueFrom(
-      this.http.post<RouteLocationsResponse>('/api/v1/routes/locations', { geometry, corridorMeters: CORRIDOR_METERS, ...filters }),
+      this.http.post<RouteLocationsResponse>('/api/v1/routes/locations', { geometry, corridorMeters: CORRIDOR_METERS, limit: ROUTE_STOPS_LIMIT, ...filters }),
     );
   }
 }
