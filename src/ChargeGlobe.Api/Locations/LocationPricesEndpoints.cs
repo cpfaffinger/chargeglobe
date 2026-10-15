@@ -23,7 +23,7 @@ public sealed record LocationPricesResponse(IReadOnlyList<LocationPrices> Data, 
 public static class LocationPricesEndpoints
 {
     public const int MaxLocations = 500;
-    public const decimal MaxEnergyKwh = 200;
+    public const int MaxEnergyKwh = 200;
     public const int MaxDurationMinutes = 600;
     public const int MaxCards = 20;
 

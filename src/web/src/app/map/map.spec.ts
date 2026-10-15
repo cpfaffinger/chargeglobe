@@ -960,7 +960,11 @@ describe('HomePage (map)', () => {
             null,
             'ab 12,00 € (30 kWh · ohne Vertrag)',
           ]);
-          expect(text(root(), '.stops-order')).toBe('Reihenfolge: Route günstigste zuerst');
+          expect(text(root(), '#stops-order-label')).toBe('Reihenfolge:');
+          expect(Array.from(root().querySelectorAll<HTMLElement>('#stops-order mat-button-toggle')).map((toggle) => text(toggle, 'button'))).toEqual([
+            'Route',
+            'günstigste zuerst',
+          ]);
 
           order('price');
           await settle();
