@@ -396,6 +396,18 @@ app-location-details .details-state {
   background: color-mix(in srgb, var(--mat-sys-tertiary) 10%, transparent);
 }
 
+#route-stops .stop-price {
+  font: var(--mat-sys-label-medium);
+  color: var(--mat-sys-primary);
+}
+
+#route-stops .stops-order {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 8px;
+}
+
 #route-stops .stop-badge {
   color: var(--mat-sys-tertiary);
   font: var(--mat-sys-label-medium);

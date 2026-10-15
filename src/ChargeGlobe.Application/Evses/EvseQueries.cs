@@ -118,6 +118,22 @@ public sealed record EmpPrice(string Emp, string EmpName, Guid TariffId, string 
 /// <param name="Emps">Prices of the EMP tariffs that apply at the EVSE, cheapest example first.</param>
 public sealed record EvsePrices(CurrentPrice? Current, IReadOnlyList<PricePeriod> History, IReadOnlyList<EmpPrice> Emps);
 
+/// <summary>The lowest ad-hoc cost of a session at a location: the EVSE where it costs least.</summary>
+/// <param name="EvseId">EVSE-ID of that EVSE.</param>
+public sealed record LocationAdHocPrice(decimal Cost, string Currency, string EvseId);
+
+/// <summary>The charging card (EMP tariff valid now) with the lowest cost of a session at a location.</summary>
+/// <param name="Emp">Key of the EMP.</param>
+/// <param name="EvseId">EVSE-ID of the EVSE where it costs least.</param>
+public sealed record LocationCardPrice(string Emp, string EmpName, Guid TariffId, string Tariff, decimal Cost, string Currency, string EvseId);
+
+/// <summary>The cheapest prices of a session at a location; null where none is known.</summary>
+public sealed record LocationPrices(Guid LocationId, LocationAdHocPrice? AdHoc, LocationCardPrice? CheapestCard);
+
+/// <param name="Locations">One entry per requested location, in the order of the request.</param>
+/// <param name="Attribution">The sources of the ad-hoc prices.</param>
+public sealed record LocationPricesPage(IReadOnlyList<LocationPrices> Locations, IReadOnlyList<SourceAttribution> Attribution);
+
 /// <summary>Read model of the EVSE detail endpoints (permission <c>evse:read</c>, docs/06 "Ladepunkte").</summary>
 public interface IEvseQueries
 {
@@ -140,6 +156,14 @@ public interface IEvseQueries
     /// and the prices of the EMP tariffs valid now that apply at the EVSE.
     /// </summary>
     Task<EvsePrices> PricesAsync(Guid id, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The cheapest ad-hoc price and the cheapest charging card of a session with <paramref name="kwh"/> charged in
+    /// <paramref name="minutes"/> at each of the locations, over their active EVSEs; the cards limited to the EMPs with the
+    /// keys <paramref name="cards"/> (null: all). Same rules as <see cref="PricesAsync"/>.
+    /// </summary>
+    Task<LocationPricesPage> LocationPricesAsync(
+        IReadOnlyList<Guid> locationIds, decimal kwh, int minutes, IReadOnlyCollection<string>? cards, CancellationToken cancellationToken);
 
     /// <summary>The sources with a record for the EVSE, from the table <c>source</c>.</summary>
     Task<IReadOnlyList<SourceAttribution>> AttributionAsync(Guid id, CancellationToken cancellationToken);
