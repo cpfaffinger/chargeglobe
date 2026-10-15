@@ -1634,6 +1634,8 @@ describe('HomePage (map)', () => {
       const actions = () => root().querySelector<HTMLElement>('#map-actions .home-actions')!;
       const toggle = () => root().querySelector<HTMLButtonElement>('#actions-toggle')!;
       expect(actions().hidden).toBeTrue();
+      // The stylesheet must not show it anyway.
+      expect(getComputedStyle(actions()).display).toBe('none');
       expect(toggle().getAttribute('aria-label')).toBe('Weitere Kartenfunktionen');
 
       toggle().click();

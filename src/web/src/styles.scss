@@ -640,6 +640,11 @@ app-location-details .details-state {
   gap: 8px;
 }
 
+// Folded on phones: the hidden attribute must win over the flex display above.
+#map-actions .home-actions[hidden] {
+  display: none;
+}
+
 // Legend and filter button, bottom left.
 #map-legend-bar {
   position: absolute;
