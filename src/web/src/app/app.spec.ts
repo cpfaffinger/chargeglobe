@@ -384,6 +384,9 @@ describe('App with its routes', () => {
       expect(text(root(), 'h1')).toBe('Favoriten');
       http.expectOne('/api/v1/me/favorites').flush({ data: [], meta: { returned: 0, max: 200, attribution: [] } });
 
+      await navigate('/help/begriffe');
+      expect(text(root(), 'h1')).toBe('Begriffe');
+
       await navigate('/stats');
       expect(text(root(), 'h1')).toBe('Statistik');
       http.expectOne('/api/v1/stats').flush({ title: 'Error' }, { status: 500, statusText: 'Error' });

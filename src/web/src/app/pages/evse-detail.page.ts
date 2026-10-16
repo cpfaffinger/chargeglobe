@@ -124,7 +124,7 @@ const SHARE_MESSAGES: Record<ShareResult, string | null> = {
               <dd>{{ evse.maxPowerKw === null ? '–' : (evse.maxPowerKw | number: '1.0-2' : 'en-US') + ' kW' }}</dd>
               <dt>Stromart</dt>
               <dd>{{ powerTypeLabel(evse.powerType) }}</dd>
-              <dt>Stecker</dt>
+              <dt>Anschlüsse</dt>
               <dd>
                 <ul class="plain">
                   @for (connector of evse.connectors; track $index) {

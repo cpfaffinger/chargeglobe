@@ -280,6 +280,8 @@ public class LocationsApiTests(IntegrationFactory factory) : IClassFixture<Integ
         Assert.Equal(JsonValueKind.Null, evses[1].GetProperty("connectors")[0].GetProperty("format").ValueKind);
         Assert.Equal(["RFID_READER", "APP"], evses[0].GetProperty("authMethods").EnumerateArray().Select(item => item.GetString()));
         Assert.Equal(["APP"], evses[1].GetProperty("authMethods").EnumerateArray().Select(item => item.GetString()));
+        // Both EVSEs of the four-part EVSE-IDs AT*TST*ETEST0001*1 and *2 belong to the station AT*TST*ETEST0001.
+        Assert.All(evses, evse => Assert.Equal("AT*TST*ETEST0001", evse.GetProperty("chargingStation").GetString()));
         Assert.True(evses[0].GetProperty("roaming").GetBoolean());
         Assert.True(detail.GetProperty("data").GetProperty("location").GetProperty("facilities").GetProperty("greenEnergy").GetBoolean());
         Assert.Equal("Test Operator GmbH", detail.GetProperty("data").GetProperty("location").GetProperty("operator").GetString());

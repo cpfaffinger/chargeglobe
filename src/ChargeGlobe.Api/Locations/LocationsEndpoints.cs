@@ -107,7 +107,10 @@ public static class LocationsEndpoints
                 "included; null and status UNKNOWN if older than `map.status_max_age_minutes`), maximum power, current type, connectors, " +
                 "`authMethods` (how a session is started and paid: RFID_READER, APP, QR_CODE, WEBSITE, CHARGING_CONTRACT, " +
                 "CREDIT_CARD_PAYABLE, DEBIT_CARD_PAYABLE, CONTACTLESS_CARD_SUPPORT, CHIP_CARD_SUPPORT, PED_TERMINAL, CASH; " +
-                "empty if unknown) and `roaming` (charging cards of other providers accepted; null if unknown). " +
+                "empty if unknown), `roaming` (charging cards of other providers accepted; null if unknown) and " +
+                "`chargingStation` (label of the charging station – pillar or wallbox – the EVSE belongs to as far as a source " +
+                "names it, e.g. AT*VIE*E1234 for the EVSEs AT*VIE*E1234*1 and *2; null if unknown). An EVSE charges one vehicle " +
+                "at a time; several connectors of one EVSE are alternatives. " +
                 "The location carries `facilities`, `parkId` and `parkLocations` as in `listLocations`; `park` lists the " +
                 "other locations of its charging park with their counts, nearest first (empty if it stands alone), so a " +
                 "client can show the whole park. Opening a location asks the crawler for a fresh " +
@@ -133,7 +136,8 @@ public static class LocationsEndpoints
                                 "AC_3_PHASE",
                                 [new ConnectorDetail("IEC_62196_T2", "SOCKET", "AC_3_PHASE", 22m)],
                                 ["RFID_READER", "APP", "CREDIT_CARD_PAYABLE"],
-                                true),
+                                true,
+                                "AT*VIE*E1234"),
                         ],
                         [
                             ExampleLocation with

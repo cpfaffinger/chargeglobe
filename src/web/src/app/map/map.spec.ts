@@ -1679,6 +1679,7 @@ describe('HomePage (map)', () => {
               statusSince: null,
               statusObservedAt: null,
               statusSource: null,
+              chargingStation: null,
               maxPowerKw: 22,
               powerType: 'AC_3_PHASE',
               connectors: [{ standard: 'IEC_62196_T2', format: 'SOCKET', powerType: 'AC_3_PHASE', maxPowerKw: 22 }],
@@ -1780,6 +1781,8 @@ describe('HomePage (map)', () => {
         'Status unbekannt',
       ]);
       expect(root().querySelectorAll('#legend app-icon').length).toBe(6);
+      // The glossary explains location, station, EVSE and connector.
+      expect(root().querySelector('#legend-help')!.getAttribute('href')).toBe('/help/begriffe');
       expect(root().querySelector<HTMLElement>('#location-card .status-dot')!.style.background).toBe('var(--cg-status-available)');
     });
 
