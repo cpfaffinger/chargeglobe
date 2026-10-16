@@ -28,7 +28,8 @@ export interface EvseDetail {
 }
 
 export interface LocationDetailResponse {
-  data: { location: LocationSummary; evses: EvseDetail[] };
+  /** park: the other locations of its charging park, nearest first; empty if it stands alone. */
+  data: { location: LocationSummary; evses: EvseDetail[]; park: LocationSummary[] };
   meta: { attribution: SourceAttribution[] };
 }
 

@@ -35,6 +35,10 @@ export interface LocationSummary {
   evsesOccupied: number;
   /** EVSEs out of order now; the rest of evsesTotal has no current status. */
   evsesFaulted: number;
+  /** Charging park of locations of one operator next to each other; null if the location stands alone. */
+  parkId: string | null;
+  /** Locations in its park, itself included; 1 if alone. */
+  parkLocations: number;
 }
 
 export interface SourceAttribution {

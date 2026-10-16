@@ -49,6 +49,8 @@ public static class SettingsCatalog
     public const string IngestQueueRetentionDays = "ingest.queue_retention_days";
     public const string IngestSnapshotRetentionDays = "ingest.snapshot_retention_days";
 
+    public const string LocationParkRadiusMeters = "location.park_radius_meters";
+
     public const string AddressRefreshDays = "address.refresh_days";
     public const string AddressDownloadUrl = "address.download_url";
 
@@ -223,6 +225,14 @@ public static class SettingsCatalog
         {
             Min = 1,
             Max = 365,
+        },
+        new(LocationParkRadiusMeters, SettingType.Int, 25,
+            "Locations of the same operator within this many metres of each other form a charging park: the map shows them " +
+            "side by side instead of on top of each other and the card can show the whole park. 0 turns parks off. Applies " +
+            "with the next recomputation (every 10 minutes).")
+        {
+            Min = 0,
+            Max = 200,
         },
         new(AddressRefreshDays, SettingType.Int, 30,
             "Days between checks of the BEV address register for a newer reference date (published for 1 April and " +

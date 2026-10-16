@@ -5,7 +5,7 @@ import {
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { AuthService } from '../auth/auth.service';
 import { FavoritesService } from '../favorites/favorites.service';
@@ -100,7 +100,7 @@ describe('EvsesService', () => {
     const result = service.location('loc-1');
     http
       .expectOne('/api/v1/locations/loc-1')
-      .flush({ data: { location: locationSummary(), evses: [] }, meta: { attribution: [] } });
+      .flush({ data: { park: [], location: locationSummary(), evses: [] }, meta: { attribution: [] } });
 
     expect((await result).data.location.id).toBe('loc-1');
   });
@@ -220,7 +220,7 @@ describe('LocationDetailPage', () => {
 
   function detail(evses: EvseDetail[]): LocationDetailResponse {
     return {
-      data: { location: locationSummary({ evsesTotal: evses.length, evsesAvailable: 0 }), evses },
+      data: { park: [], location: locationSummary({ evsesTotal: evses.length, evsesAvailable: 0 }), evses },
       meta: { attribution: [ATTRIBUTION, ATTRIBUTION] },
     };
   }
@@ -426,6 +426,19 @@ describe('LocationDetailPage', () => {
 
     expect(text(page(), '#detail-notice')).toContain('konnte nicht geladen werden');
   });
+
+  it('opens another station of the charging park in place', async () => {
+    const other = locationSummary({ id: 'loc-2', name: 'Andere Säule', evsesTotal: 1, parkId: 'loc-1', parkLocations: 2 });
+    await open({ data: { park: [other], location: locationSummary({ parkId: 'loc-1', parkLocations: 2 }), evses: [] }, meta: { attribution: [] } });
+
+    page().querySelector<HTMLButtonElement>('.park-member')!.click();
+    await settle();
+    http.expectOne('/api/v1/locations/loc-2').flush({ data: { park: [locationSummary()], location: other, evses: [] }, meta: { attribution: [] } });
+    await settle();
+
+    expect(TestBed.inject(Router).url).toBe('/locations/loc-2');
+    expect(text(page(), '#location-name')).toBe('Andere Säule');
+  });
 });
 
 describe('LocationDetails (info card)', () => {
@@ -435,7 +448,7 @@ describe('LocationDetails (info card)', () => {
 
   const root = () => fixture.nativeElement as HTMLElement;
   const response = (id: string, evses: EvseDetail[]): LocationDetailResponse => ({
-    data: { location: locationSummary({ id }), evses },
+    data: { park: [], location: locationSummary({ id }), evses },
     meta: { attribution: [] },
   });
 
@@ -507,6 +520,47 @@ describe('LocationDetails (info card)', () => {
     expect(text(root(), '#no-evses')).toBe('Für diesen Standort sind keine Ladepunkte bekannt.');
     expect(root().querySelector('.timeline-state')).toBeNull();
   });
+
+  it('shows the other stations of its charging park and the whole park on demand', async () => {
+    fixture = TestBed.createComponent(LocationDetails);
+    const opened: string[] = [];
+    fixture.componentInstance.openLocation.subscribe((location) => opened.push(location.id));
+    const own = locationSummary({ id: 'loc-1', evsesTotal: 2, evsesAvailable: 1, parkId: 'loc-1', parkLocations: 3 });
+    const twin = locationSummary({ id: 'loc-2', evsesTotal: 2, evsesAvailable: 0, parkId: 'loc-1', parkLocations: 3 });
+    const south = locationSummary({ id: 'loc-3', name: 'Parkplatz Süd', evsesTotal: 1, evsesAvailable: 1, parkId: 'loc-1', parkLocations: 3 });
+    const words = (element: Element) => element.textContent!.replace(/\s+/g, ' ').trim();
+    await show('loc-1');
+    http.expectOne('/api/v1/locations/loc-1').flush({ data: { park: [twin, south], location: own, evses: [evse()] }, meta: { attribution: [] } });
+    await settle();
+
+    expect(text(root(), '.park-summary')).toBe('Ladepark: 3 Stationen an diesem Ort, zusammen 5 Ladepunkte (2 frei)');
+    const members = Array.from(root().querySelectorAll<HTMLButtonElement>('.park-member'));
+    expect(members.map(words)).toEqual(['Andere Station: 2 Ladepunkte, 0 frei', 'Andere Station: 1 Ladepunkt, 1 frei · Parkplatz Süd']);
+    members[1].click();
+    expect(opened).toEqual(['loc-3']);
+    expect(root().querySelector('.park-station')).toBeNull();
+
+    // The whole park: the other stations load their own details, without a park section of their own.
+    const toggle = root().querySelector<HTMLButtonElement>('#park-toggle')!;
+    expect(words(toggle)).toBe('Ganzen Ladepark ansehen');
+    toggle.click();
+    await settle();
+    http.expectOne('/api/v1/locations/loc-2').flush({ data: { park: [own, south], location: twin, evses: [] }, meta: { attribution: [] } });
+    http.expectOne('/api/v1/locations/loc-3').flush({ data: { park: [own, twin], location: south, evses: [] }, meta: { attribution: [] } });
+    await settle();
+    expect(Array.from(root().querySelectorAll('.park-station-title')).map(words)).toEqual(['Station 2 von 3', 'Station 3 von 3']);
+    expect(root().querySelectorAll('#park').length).toBe(1);
+    expect(text(root().querySelector('.park-station')!, 'app-location-details h2')).toBe('Ladepunkte dieser Station');
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(words(toggle)).toBe('Nur diese Station zeigen');
+
+    // Another location starts with its own view again.
+    await show('loc-4');
+    http.expectOne('/api/v1/locations/loc-4').flush(response('loc-4', []));
+    await settle();
+    expect(root().querySelector('#park')).toBeNull();
+    expect(root().querySelector('.park-station')).toBeNull();
+  });
 });
 
 describe('LocationDetails with prices', () => {
@@ -553,7 +607,7 @@ describe('LocationDetails with prices', () => {
     await settle();
     http
       .expectOne('/api/v1/locations/loc-1')
-      .flush({ data: { location: locationSummary(), evses: [evse(), evse({ id: 'e-2' }), evse({ id: 'e-3' })] }, meta: { attribution: [] } });
+      .flush({ data: { park: [], location: locationSummary(), evses: [evse(), evse({ id: 'e-2' }), evse({ id: 'e-3' })] }, meta: { attribution: [] } });
     await settle();
     expect(Array.from(root().querySelectorAll('.price')).map((price) => price.textContent!.trim())).toEqual([
       'Preis wird geladen …',
@@ -597,7 +651,7 @@ describe('LocationDetails with prices', () => {
     fixture = TestBed.createComponent(LocationDetails);
     fixture.componentRef.setInput('locationId', 'loc-1');
     await settle();
-    http.expectOne('/api/v1/locations/loc-1').flush({ data: { location: locationSummary(), evses: [evse()] }, meta: { attribution: [] } });
+    http.expectOne('/api/v1/locations/loc-1').flush({ data: { park: [], location: locationSummary(), evses: [evse()] }, meta: { attribution: [] } });
     await settle();
     http.expectOne('/api/v1/evses/e-1/prices').flush(prices(null, [empPrice('cheap', 10), empPrice('mine', 12), empPrice('other', 15)]));
     await settle();

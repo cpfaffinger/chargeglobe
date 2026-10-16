@@ -78,6 +78,8 @@ export function locationSummary(overrides: Partial<LocationSummary> = {}): Locat
     maxAvailablePowerKw: 22,
     evsesOccupied: 0,
     evsesFaulted: 0,
+    parkId: null,
+    parkLocations: 1,
     ...overrides,
   };
 }

@@ -1668,6 +1668,7 @@ describe('HomePage (map)', () => {
     it('shows the details of the location in the card, without leaving the map', async () => {
       const detail: LocationDetailResponse = {
         data: {
+          park: [],
           location: locationSummary(),
           evses: [
             {
