@@ -23,6 +23,24 @@ export function pointProperties(location: { evsesTotal: number; evsesAvailable: 
   return { ...shares, unknown: shares.unknown + (location.evsesTotal === 0 ? 1 : 0), total: location.evsesTotal };
 }
 
+/**
+ * The counts of a crowded spot (park marker) from the properties of its points, summed as a cluster sums them
+ * ({@link CLUSTER_PROPERTIES}).
+ */
+export function crowdCounts(points: readonly Record<string, unknown>[]): Record<MarkerKey, number> {
+  const counts = Object.fromEntries(MARKER_KEYS.map((key) => [key, 0])) as Record<MarkerKey, number>;
+  for (const point of points) {
+    const marker = point['marker'] as MarkerKey;
+    if (FREE_KEYS.includes(marker)) {
+      counts[marker] += Number(point['free'] ?? 0);
+    }
+    counts.OCCUPIED += Number(point['occupied'] ?? 0);
+    counts.OUT_OF_ORDER += Number(point['faulted'] ?? 0);
+    counts.UNKNOWN += Number(point['unknown'] ?? 0);
+  }
+  return counts;
+}
+
 /** The counts per marker of a cluster from its properties; missing ones count 0. */
 export function clusterCounts(properties: Record<string, unknown>): Record<MarkerKey, number> {
   return Object.fromEntries(MARKER_KEYS.map((key) => [key, Number(properties[key] ?? 0)])) as Record<MarkerKey, number>;
@@ -52,7 +70,13 @@ const point = (radius: number, size: number, turn: number): string => {
  * its share of the EVSEs; in the middle a disc with the number of locations. The title lists the counts for screen
  * readers and tooltips.
  */
-export function clusterPie(counts: Record<MarkerKey, number>, colors: PieColors, labels: Record<MarkerKey, string>, locations: number): string {
+export function clusterPie(
+  counts: Record<MarkerKey, number>,
+  colors: PieColors,
+  labels: Record<MarkerKey, string>,
+  locations: number,
+  what = 'Standorte',
+): string {
   const total = MARKER_KEYS.reduce((sum, key) => sum + counts[key], 0);
   const outer = clusterRadius(locations);
   const size = outer * 2 + 4;
@@ -73,7 +97,7 @@ export function clusterPie(counts: Record<MarkerKey, number>, colors: PieColors,
   const title = parts.map((key) => `${counts[key]} ${labels[key]}`).join(', ');
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" role="img">` +
-    `<title>${locations} Standorte, ${total} Ladepunkte: ${title}</title>` +
+    `<title>${locations} ${what}, ${total} Ladepunkte: ${title}</title>` +
     `<circle cx="${center}" cy="${center}" r="${outer + 1.5}" fill="${colors.ring}"/>` +
     segments.join('') +
     `<circle cx="${center}" cy="${center}" r="${inner}" fill="${colors.center}"/>` +

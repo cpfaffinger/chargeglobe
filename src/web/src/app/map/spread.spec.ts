@@ -1,4 +1,4 @@
-import { MAX_SPREAD, SPREAD_OFFSETS, offsetExpression, spreadSlots } from './spread';
+import { MAX_SPREAD, SPREAD_OFFSETS, crowdOf, offsetExpression, spots, spreadSlots } from './spread';
 
 /** A location the given metres north and east of a spot in Lower Austria. */
 const at = (id: string, north: number, east = 0) => ({
@@ -32,14 +32,19 @@ describe('spread of markers at one spot', () => {
     expect([...slots.values()].sort()).toEqual(['2-0', '2-1']);
   });
 
-  it('puts more markers than the ring holds on the ring again', () => {
-    const many = Array.from({ length: MAX_SPREAD + 2 }, (_, index) => at(`s${index}`, 0));
+  it('fills the ring up to its size and makes a crowded spot one park marker', () => {
+    const full = Array.from({ length: MAX_SPREAD }, (_, index) => at(`r${index}`, 0));
+    const many = Array.from({ length: MAX_SPREAD + 2 }, (_, index) => at(`s${index}`, 0, 500));
+    const all = [...full, ...many, at('alone', 1000)];
 
-    const slots = spreadSlots(many);
-
-    expect(slots.get('s0')).toBe(`${MAX_SPREAD}-0`);
-    expect(slots.get('s8')).toBe(`${MAX_SPREAD}-0`);
-    expect(slots.get('s9')).toBe(`${MAX_SPREAD}-1`);
+    const slots = spreadSlots(all);
+    expect(slots.get('r7')).toBe(`${MAX_SPREAD}-7`);
+    expect(slots.has('s0')).toBeFalse();
+    const crowd = crowdOf(all);
+    expect(crowd.size).toBe(MAX_SPREAD + 2);
+    expect(new Set(crowd.values())).toEqual(new Set(['s0']));
+    expect(crowd.has('r0') || crowd.has('alone')).toBeFalse();
+    expect(spots(all).map((spot) => spot.length)).toEqual([MAX_SPREAD, MAX_SPREAD + 2, 1]);
   });
 
   it('offsets the markers around the spot, the first one to the left', () => {
