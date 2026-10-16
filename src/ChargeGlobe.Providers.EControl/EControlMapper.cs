@@ -72,7 +72,7 @@ public sealed class EControlMapper
             // The register lists publicly accessible charge points only (BGBl. I Nr. 38/2018, § 3 Abs. 5).
             AccessType.PUBLIC,
             OpeningTimes(station.OpeningHours),
-            [.. Points(station).Select((point, index) => ToEvse(externalId, point, index))],
+            [.. Points(station).Select((point, index) => ToEvse(externalId, point, index, ChargingStations(station)))],
             observedAt,
             raw,
             station.CountryId,
@@ -125,7 +125,28 @@ public sealed class EControlMapper
                     Euro(point.PriceCentKwh), Euro(point.PriceCentMin), Euro(point.StartFeeCent),
                     Euro(point.BlockingFeeCentMin), point.BlockingFeeFromMinute, null, "Ad-hoc", Url(station.PriceUrl), observedAt, raw));
 
-    private ProviderEvseSnapshot ToEvse(string stationExternalId, PointDto point, int index)
+    /// <summary>A charging station has at most this many points; more under one station part name a site, not a station.</summary>
+    public const int MaxPointsPerStation = 4;
+
+    /// <summary>
+    /// The charging station of each point (by EVSE-ID): the station part of a four-part EVSE-ID (<see cref="EvseId.StationPart"/>),
+    /// if at most <see cref="MaxPointsPerStation"/> points of the E-Control station share it.
+    /// </summary>
+    public static IReadOnlyDictionary<string, string> ChargingStations(StationDto station)
+    {
+        var parts = Points(station)
+            .Select(point => (point.EvseId, Station: EvseId.TryParse(point.EvseId, out var evseId) ? evseId.StationPart : null))
+            .Where(item => item.Station is not null)
+            .ToList();
+        return parts
+            .GroupBy(item => item.Station!)
+            .Where(group => group.Count() <= MaxPointsPerStation)
+            .SelectMany(group => group)
+            .DistinctBy(item => item.EvseId)
+            .ToDictionary(item => item.EvseId!, item => item.Station!);
+    }
+
+    private ProviderEvseSnapshot ToEvse(string stationExternalId, PointDto point, int index, IReadOnlyDictionary<string, string> stations)
     {
         var powerType = PowerTypeOf(point.ElectricityType);
         var maxPowerKw = point.CapacityKw is { } kw ? (decimal?)Math.Round((decimal)kw, 2) : null;
@@ -133,7 +154,8 @@ public sealed class EControlMapper
             EvseExternalId(stationExternalId, point, index),
             point.EvseId,
             null,
-            null,
+            // E-Control has no station level; a four-part EVSE-ID names the station (docs/endpunkte/econtrol.md).
+            point.EvseId is { } id ? stations.GetValueOrDefault(id) : null,
             maxPowerKw,
             powerType,
             [.. (point.ConnectorType ?? []).Where(type => type.Key is not null).Select(type => ToConnector(type.Key!, powerType, maxPowerKw))],

@@ -47,7 +47,8 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("LocationId");
+                    b.HasIndex("LocationId", "Label")
+                        .IsUnique();
 
                     b.ToTable("charging_station", (string)null);
                 });

@@ -25,7 +25,7 @@
           "externalId": "AT*TST*ETEST0001*1",
           "evseId": "AT*TST*ETEST0001*1",
           "physicalReference": null,
-          "stationExternalId": null,
+          "stationExternalId": "AT*TST*ETEST0001",
           "maxPowerKw": 22,
           "powerType": "AC_3_PHASE",
           "connectors": [
@@ -60,7 +60,7 @@
           "externalId": "AT*TST*ETEST0001*2",
           "evseId": "AT*TST*ETEST0001*2",
           "physicalReference": null,
-          "stationExternalId": null,
+          "stationExternalId": "AT*TST*ETEST0001",
           "maxPowerKw": 11.04,
           "powerType": "AC_1_PHASE",
           "connectors": [
@@ -253,7 +253,7 @@
           "externalId": "AT*TST*ETEST0002*DC1",
           "evseId": "AT*TST*ETEST0002*DC1",
           "physicalReference": null,
-          "stationExternalId": null,
+          "stationExternalId": "AT*TST*ETEST0002",
           "maxPowerKw": 150,
           "powerType": "DC",
           "connectors": [

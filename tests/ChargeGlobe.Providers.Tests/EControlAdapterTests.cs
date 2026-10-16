@@ -472,4 +472,23 @@ public class EControlProviderTests
         Assert.Equal(EControlClient.BaseAddress, http.BaseAddress);
         Assert.Contains("chargeglobe", http.DefaultRequestHeaders.UserAgent.ToString());
     }
+
+    [Fact]
+    public void Points_share_a_charging_station_by_the_station_part_of_their_EVSE_ID_up_to_four()
+    {
+        static PointDto Point(string? evseId) => new(evseId, 22, false, null, null, null, null, null, null, null, null);
+        static StationDto Station(params PointDto[] points) =>
+            new("AT", "TST", "E1", "ACTIVE", null, null, null, null, null, null, null, null, points);
+
+        var pillars = EControlMapper.ChargingStations(Station(
+            Point("AT*TST*E100*1"), Point("AT*TST*E100*2"), Point("AT*TST*E101*1"), Point("AT*TST*E1"), Point(null), Point("AT*TST*E100*1")));
+        Assert.Equal(
+            new Dictionary<string, string> { ["AT*TST*E100*1"] = "AT*TST*E100", ["AT*TST*E100*2"] = "AT*TST*E100", ["AT*TST*E101*1"] = "AT*TST*E101" },
+            pillars);
+
+        // Five points under one station part name a site (a garage), not a charging station.
+        var garage = EControlMapper.ChargingStations(Station([.. Enumerable.Range(1, EControlMapper.MaxPointsPerStation + 1).Select(n => Point($"AT*TST*E200*{n}"))]));
+        Assert.Empty(garage);
+        Assert.Empty(EControlMapper.ChargingStations(Station() with { Points = null }));
+    }
 }

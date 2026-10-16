@@ -56,4 +56,15 @@ public class EvseIdTests
 
         Assert.Contains("nonsense", exception.Message);
     }
+
+    [Theory]
+    [InlineData("AT*MER*E006566*01", "AT*MER*E006566")]
+    [InlineData("at-evn-e2454-1", "AT*EVN*E2454")]
+    [InlineData("AT*GBC*E1", null)]
+    [InlineData("ATEVNE24541", null)]
+    [InlineData("AT*EST*E000*01994*2", null)]
+    [InlineData("AT*EST*E000*01994", null)]
+    [InlineData("AT*TST*ETEST0002*DC1", "AT*TST*ETEST0002")]
+    public void A_four_part_EVSE_ID_names_its_charging_station(string input, string? station) =>
+        Assert.Equal(station, EvseId.Parse(input).StationPart);
 }

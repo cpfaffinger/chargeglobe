@@ -25,7 +25,7 @@
           "externalId": "AT*VIE*E1150650004*6",
           "evseId": "AT*VIE*E1150650004*6",
           "physicalReference": null,
-          "stationExternalId": null,
+          "stationExternalId": "AT*VIE*E1150650004",
           "maxPowerKw": 11,
           "powerType": "AC_3_PHASE",
           "connectors": [
@@ -61,7 +61,7 @@
           "externalId": "AT*VIE*E1150650004*1",
           "evseId": "AT*VIE*E1150650004*1",
           "physicalReference": null,
-          "stationExternalId": null,
+          "stationExternalId": "AT*VIE*E1150650004",
           "maxPowerKw": 11,
           "powerType": "AC_3_PHASE",
           "connectors": [
