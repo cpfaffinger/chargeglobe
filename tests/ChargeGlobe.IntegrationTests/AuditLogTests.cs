@@ -100,7 +100,7 @@ public class AuditLogTests(IntegrationFactory factory) : IClassFixture<Integrati
     {
         var (userId, email, user) = await UserAsync();
         var (viaKey, plain) = await CreateKeyAsync(user, "manager", Permissions.ApiKeyManage);
-        var (created, _) = await CreateKeyAsync(factory.Client(apiKey: plain), "through a key", Permissions.EvseRead);
+        var (created, _) = await CreateKeyAsync(factory.Client(apiKey: plain), "through a key", Permissions.ApiKeyManage);
         using var admin = await AdminAsync();
 
         // By the account (id or part of the e-mail address) or by the key it used.
