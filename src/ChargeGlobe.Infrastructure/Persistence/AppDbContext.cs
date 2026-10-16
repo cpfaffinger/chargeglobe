@@ -85,8 +85,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<CrawlerRun> CrawlerRuns => Set<CrawlerRun>();
 
-    public DbSet<AddressImport> AddressImports => Set<AddressImport>();
-
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder) =>
         ChargingModel.ConfigureConventions(configurationBuilder);
 
