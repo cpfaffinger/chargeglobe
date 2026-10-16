@@ -20,6 +20,8 @@ export interface EvseDetail {
   status: string;
   statusSince: string | null;
   statusObservedAt: string | null;
+  /** Key of the source of the current status (e.g. econtrol); null with UNKNOWN. */
+  statusSource: string | null;
   maxPowerKw: number | null;
   powerType: string | null;
   connectors: ConnectorDetail[];

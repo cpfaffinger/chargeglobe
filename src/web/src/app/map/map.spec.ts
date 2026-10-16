@@ -1677,6 +1677,7 @@ describe('HomePage (map)', () => {
               status: 'AVAILABLE',
               statusSince: null,
               statusObservedAt: null,
+              statusSource: null,
               maxPowerKw: 22,
               powerType: 'AC_3_PHASE',
               connectors: [{ standard: 'IEC_62196_T2', format: 'SOCKET', powerType: 'AC_3_PHASE', maxPowerKw: 22 }],

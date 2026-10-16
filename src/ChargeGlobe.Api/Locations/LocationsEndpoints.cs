@@ -98,8 +98,9 @@ public static class LocationsEndpoints
             .WithSummary("Get a charging location with its EVSEs")
             .WithDescription(
                 "Returns one active location (`id` from `listLocations`) with all its EVSEs: EVSE-ID (`hasEvseId` false " +
-                "for an ID assigned by chargeglobe), current OCPI status with `statusSince` and `statusObservedAt` " +
-                "(UNKNOWN if older than `map.status_max_age_minutes`), maximum power, current type, connectors, " +
+                "for an ID assigned by chargeglobe), current OCPI status with `statusSince`, `statusObservedAt` and " +
+                "`statusSource` (key of the source that reported it, e.g. econtrol; the status is the source's own, faults " +
+                "included; null and status UNKNOWN if older than `map.status_max_age_minutes`), maximum power, current type, connectors, " +
                 "`authMethods` (how a session is started and paid: RFID_READER, APP, QR_CODE, WEBSITE, CHARGING_CONTRACT, " +
                 "CREDIT_CARD_PAYABLE, DEBIT_CARD_PAYABLE, CONTACTLESS_CARD_SUPPORT, CHIP_CARD_SUPPORT, PED_TERMINAL, CASH; " +
                 "empty if unknown) and `roaming` (charging cards of other providers accepted; null if unknown). " +
@@ -121,6 +122,7 @@ public static class LocationsEndpoints
                                 "AVAILABLE",
                                 DateTimeOffset.Parse("2026-10-14T07:40:00Z", CultureInfo.InvariantCulture),
                                 DateTimeOffset.Parse("2026-10-14T08:15:00Z", CultureInfo.InvariantCulture),
+                                "econtrol",
                                 22m,
                                 "AC_3_PHASE",
                                 [new ConnectorDetail("IEC_62196_T2", "SOCKET", "AC_3_PHASE", 22m)],

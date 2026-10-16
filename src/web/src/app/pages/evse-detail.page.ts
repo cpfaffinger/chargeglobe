@@ -19,7 +19,7 @@ import {
   powerTypeLabel,
   yesNo,
 } from '../evses/labels';
-import { Segment, statusOf, timeline } from '../evses/status';
+import { Segment, faultSource, sourceName, statusOf, timeline } from '../evses/status';
 import { OccupancyHeatmap, StatusTimeline } from '../evses/status-charts';
 import { EvsePricesResponse, comparison, money, priceParts } from '../evses/prices';
 import { MapLink, ShareResult } from '../map/map-link';
@@ -97,10 +97,10 @@ const SHARE_MESSAGES: Record<ShareResult, string | null> = {
         </mat-chip-set>
         <p class="lead" id="status-meta">
           @if (evse.status.since) {
-            seit {{ evse.status.since | date: 'dd.MM.yyyy HH:mm' }} ·
+            {{ faultSource(evse.status.status, evse.status.source) }}seit {{ evse.status.since | date: 'dd.MM.yyyy HH:mm' }} ·
           }
           @if (evse.status.observedAt) {
-            gemeldet {{ evse.status.observedAt | date: 'dd.MM.yyyy HH:mm' }} von {{ evse.status.source }}
+            gemeldet {{ evse.status.observedAt | date: 'dd.MM.yyyy HH:mm' }} von {{ sourceName(evse.status.source) }}
           } @else {
             noch keine Statusmeldung
           }
@@ -412,6 +412,8 @@ export class EvseDetailPage {
   protected readonly historyDays = HISTORY_DAYS;
   protected readonly occupancyWeeks = OCCUPANCY_WEEKS;
   protected readonly statusOf = statusOf;
+  protected readonly faultSource = faultSource;
+  protected readonly sourceName = sourceName;
   protected readonly connectorLabel = connectorLabel;
   protected readonly formatLabel = formatLabel;
   protected readonly powerTypeLabel = powerTypeLabel;
