@@ -166,6 +166,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
         builder.Entity<DataProtectionKey>().ToTable("data_protection_key");
 
+        builder.Entity<AddressImport>(entity =>
+        {
+            entity.ToTable("address_import");
+            entity.Property(state => state.Id).ValueGeneratedNever();
+        });
+
         builder.Entity<PollPlan>(entity =>
         {
             entity.ToTable("poll_plan");

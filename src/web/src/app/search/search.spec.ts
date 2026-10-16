@@ -33,6 +33,23 @@ describe('SearchService', () => {
     expect(await hits).toEqual([HIT]);
     http.verify();
   });
+
+  it('asks the address search, with the position to prefer when there is one', async () => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    const http = TestBed.inject(HttpTestingController);
+    const service = TestBed.inject(SearchService);
+    const address = { label: 'Hauptplatz 1, 4020 Linz', latitude: 48.30591, longitude: 14.28637 };
+    const attribution = [{ source: 'bev-address', text: '© Österreichisches Adressregister', license: 'CC-BY-4.0' }];
+
+    const near = service.geocode('Hauptplatz 1', { latitude: 48.306123, longitude: 14.286789 });
+    http.expectOne('/api/v1/geocode?q=Hauptplatz%201&near=48.3061,14.2868').flush({ data: [address], meta: { returned: 1, attribution } });
+    expect(await near).toEqual({ hits: [address], attribution });
+
+    const anywhere = service.geocode('Hauptplatz 1', null);
+    http.expectOne('/api/v1/geocode?q=Hauptplatz%201').flush({ data: [], meta: { returned: 0, attribution: [] } });
+    expect(await anywhere).toEqual({ hits: [], attribution: [] });
+    http.verify();
+  });
 });
 
 @Component({ template: 'elsewhere' })

@@ -921,6 +921,33 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                     b.ToTable("source_record", (string)null);
                 });
 
+            modelBuilder.Entity("ChargeGlobe.Infrastructure.Persistence.AddressImport", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Addresses")
+                        .HasColumnType("integer")
+                        .HasColumnName("addresses");
+
+                    b.Property<DateTimeOffset>("CheckedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("checked_at");
+
+                    b.Property<DateTimeOffset>("ImportedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("imported_at");
+
+                    b.Property<DateOnly>("ReferenceDate")
+                        .HasColumnType("date")
+                        .HasColumnName("reference_date");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("address_import", (string)null);
+                });
+
             modelBuilder.Entity("ChargeGlobe.Infrastructure.Persistence.ApiKey", b =>
                 {
                     b.Property<Guid>("Id")

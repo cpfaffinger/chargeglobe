@@ -39,7 +39,7 @@ Operator (CPO) ─┬─ 1..n ─ Location ─ 1..n ─ ChargingStation? ─ 1..
 
 | Tabelle | Spalten | Zweck |
 |---|---|---|
-| `source` | `key` (PK: `econtrol`, `ocm`, `osm`, `evn`, `oeamtc`, …), `display_name`, `tier` (`OFFICIAL`, `OPEN_DATA`, `PUBLIC_WEB`, `APP_BACKEND`, `PARTNER`), `license`, `attribution_text`, `capabilities text[]` (Namen der Provider-Capabilities) | Registry der Quellen; die Felder kommen aus dem Descriptor des Adapters. Ob ein Provider aktiv ist, steht im Config-Service (`enabled`, Scope `provider:<key>`), nicht hier |
+| `source` | `key` (PK: `econtrol`, `ocm`, `bev-address`, `osm`, `evn`, `oeamtc`, …), `display_name`, `tier` (`OFFICIAL`, `OPEN_DATA`, `PUBLIC_WEB`, `APP_BACKEND`, `PARTNER`), `license`, `attribution_text`, `capabilities text[]` (Namen der Provider-Capabilities) | Registry der Quellen; die Felder kommen aus dem Descriptor des Adapters. Ob ein Provider aktiv ist, steht im Config-Service (`enabled`, Scope `provider:<key>`), nicht hier |
 | `source_record` | PK `source_key` + `external_id` + `entity_type` (`LOCATION`/`EVSE`/`CONNECTOR`), `entity_id`, `match_method` (`EVSE_ID_EXACT`, `EVSE_ID_NORMALIZED`, `GEO_OPERATOR`, `GEO_ONLY`, `MANUAL`, `CREATED` = Datensatz hat die Entität angelegt), `match_confidence` (0–1), `first_seen`, `last_seen`, `last_snapshot_id` | Quell-ID ↔ kanonische Entität (n:1) |
 | `attribute_origin` | PK `entity_type` + `entity_id` + `attribute` (`geom`, `max_power_kw`, `name`, …), `source_key`, `observed_at`, `value_hash` (SHA-256) | welches Attribut stammt woher |
 | `raw_snapshot` | `id` (bigint), `source_key`, `job_id`, `fetched_at`, `request_fingerprint` (z. B. `location:<externe Id>`), `content_hash` (SHA-256 des Payloads), `payload jsonb`, `http_status` | Replay; eindeutig je `source_key` + `content_hash` (ein erneut gesehener Datensatz aktualisiert nur `fetched_at`/`job_id`); Retention `ingest.snapshot_retention_days` (30) |
@@ -88,7 +88,14 @@ Operator (CPO) ─┬─ 1..n ─ Location ─ 1..n ─ ChargingStation? ─ 1..
 | `provider_backoff` | `provider_key` (PK), `failures` (in Folge), `paused_until?`, `blocked`, `reason?`, `updated_at` | Pause nach Fehlern der Quelle; eine Sperre endet mit der nächsten Änderung einer Einstellung der Quelle |
 | `crawler_run` | `id`, `provider_key`, `job_type`, `target` (Region(en) oder Abfragepunkt), `started_at`, `finished_at?`, `requests`, `records`, `result` (`RUNNING`/`OK`/`FAILED`), `error?`, `cooldown_until?` | Protokoll für Log und `/admin/crawler`; gelöscht nach `crawler.run_retention_days` |
 | `ingest_queue` | `id` (bigint), `provider_key`, `job_id`, `payload jsonb` (`IngestBatch`: Standorte mit `raw_snapshot`-Id oder Statuswerte), `enqueued_at`, `attempts`, `next_attempt_at?`, `error?`, `processed_at?` | Übergabe Crawler → Worker; gesperrt wird per Zeilensperre in der Verarbeitungstransaktion statt per Lease-Spalten; Retention `ingest.queue_retention_days` nach Verarbeitung |
-| `job_lease` | `job_name` (PK), `leased_by`, `lease_until` | Single-Runner-Jobs (derzeit `ingest-retention`) |
+| `job_lease` | `job_name` (PK), `leased_by`, `lease_until` | Single-Runner-Jobs (`ingest-retention`, `address-import`) |
+
+### Adressen (Adresssuche)
+
+| Tabelle | Spalten | Anmerkung |
+|---|---|---|
+| `address` | `id` (PK `pk_address`, Adresscode `ADRCD` des BEV), `street`, `house_number` („1“, „3A“, „12/3“), `postal_code`, `city` (Ortschaft; nennt sie nur einen Teil der Gemeinde wie „Wien,Innere Stadt“, die Gemeinde), `municipality_code` (Gemeindekennziffer), `geom geography(Point,4326)`, `search_text` (Straße, Hausnummer, PLZ, Ortschaft und Gemeinde; klein, „ß“ als „ss“, Satzzeichen als Leerzeichen) mit GIN-Trigramm-Index `ix_address_search` | alle Adressen des BEV-Adressregisters (Quelle `bev-address`, CC BY 4.0, [Endpunkt-Notiz](endpunkte/bev-adressen.md)); für `GET /geocode`. Nicht im EF-Modell: der Import ersetzt die Tabelle als Ganzes (`address_load` → `address_new` → Umbenennen in einer Transaktion, DDL in `AddressStore.CreateTableSql`, auch von der Migration `AddressSearch` genutzt). Keine Verbindung zu `location` |
+| `address_import` | `id` (immer 1), `reference_date`, `imported_at`, `checked_at`, `addresses` | importierter Stichtag, Zeitpunkt des Imports und der letzten Prüfung auf einen neueren (`address.refresh_days`) |
 
 ### Preise
 

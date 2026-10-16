@@ -1,4 +1,5 @@
 using System.Data.Common;
+using ChargeGlobe.Application.Addresses;
 using ChargeGlobe.Application.Conflicts;
 using ChargeGlobe.Application.Evses;
 using ChargeGlobe.Application.Favorites;
@@ -12,6 +13,7 @@ using ChargeGlobe.Application.Settings;
 using ChargeGlobe.Application.Sources;
 using ChargeGlobe.Application.Stats;
 using ChargeGlobe.Application.Tariffs;
+using ChargeGlobe.Infrastructure.Addresses;
 using ChargeGlobe.Infrastructure.Health;
 using ChargeGlobe.Infrastructure.Identity;
 using ChargeGlobe.Infrastructure.Ingest;
@@ -52,6 +54,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IStatsQueries, StatsQueries>();
         services.AddScoped<IEvseQueries, EvseQueries>();
         services.AddScoped<ISearchQueries, SearchQueries>();
+        services.AddScoped<IAddressStore, AddressStore>();
         services.AddScoped<IOperatorQueries, OperatorQueries>();
         services.AddScoped<IConflictQueries, ConflictQueries>();
         services.AddScoped<IConflictResolution, ConflictResolution>();

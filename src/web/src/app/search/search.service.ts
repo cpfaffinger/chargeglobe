@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { SourceAttribution } from '../map/locations.service';
 
 /** Element of GET /api/v1/search. */
 export interface SearchHit {
@@ -20,8 +21,25 @@ export interface SearchHit {
   evseStatus: string | null;
 }
 
+/** Element of GET /api/v1/geocode: an Austrian address. */
+export interface AddressHit {
+  /** E.g. "Hauptplatz 1, 4020 Linz". */
+  label: string;
+  latitude: number;
+  longitude: number;
+}
+
+/** The addresses of a query and the attribution of the address register. */
+export interface AddressResult {
+  hits: AddressHit[];
+  attribution: SourceAttribution[];
+}
+
 /** Shortest query the API answers. */
 export const MIN_QUERY = 2;
+
+/** Shortest query the address search answers. */
+export const MIN_ADDRESS_QUERY = 3;
 
 /** Client of the public search. */
 @Injectable({ providedIn: 'root' })
@@ -31,6 +49,18 @@ export class SearchService {
   async search(query: string): Promise<SearchHit[]> {
     const response = await firstValueFrom(this.http.get<{ data: SearchHit[] }>('/api/v1/search', { params: { q: query, limit: 8 } }));
     return response.data;
+  }
+
+  /** Addresses for start and destination (route:read), the nearest to <code>near</code> first. */
+  async geocode(query: string, near: { latitude: number; longitude: number } | null): Promise<AddressResult> {
+    const params: Record<string, string> = { q: query };
+    if (near) {
+      params['near'] = `${near.latitude.toFixed(4)},${near.longitude.toFixed(4)}`;
+    }
+    const response = await firstValueFrom(
+      this.http.get<{ data: AddressHit[]; meta: { attribution: SourceAttribution[] } }>('/api/v1/geocode', { params }),
+    );
+    return { hits: response.data, attribution: response.meta.attribution };
   }
 }
 
