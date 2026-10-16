@@ -283,10 +283,87 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
         return [.. rows.Select(row => new OccupancyCell(row.Weekday, row.Hour, row.Charging, row.Total))];
     }
 
-    public async Task<IReadOnlyList<SourceAttribution>> AttributionAsync(Guid id, CancellationToken cancellationToken)
+    /// <summary>Sort key of EVSEs without status in the order <see cref="EvseSort.StatusSince"/>: after all others.</summary>
+    private static readonly DateTimeOffset NoStatus = new(9999, 12, 31, 0, 0, 0, TimeSpan.Zero);
+
+    /// <summary>
+    /// One statement over the active EVSEs of active locations with their station and current status; keyset paging on the
+    /// normalized EVSE-ID (byte order, collation C) or on (status since, id). The operator filter compares the parts of the
+    /// normalized EVSE-ID, so surrogates never match it.
+    /// </summary>
+    public async Task<EvseSearchPage> SearchAsync(
+        EvseSearchFilter filter, EvseSort sort, EvseCursor? after, int limit, CancellationToken cancellationToken)
+    {
+        var byId = sort == EvseSort.EvseId;
+        var afterKey = byId ? after?.Key : null;
+        DateTimeOffset? afterSince = !byId && after is not null
+            ? DateTimeOffset.Parse(after.Key, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.RoundtripKind)
+            : null;
+        var afterId = after?.Id ?? Guid.Empty;
+        string[] statuses = [.. filter.Statuses];
+        string[] connectors = [.. filter.Connector];
+        Guid? stationId = Guid.TryParse(filter.ChargingStation, out var station) ? station : null;
+        var stationLabel = stationId is null && filter.ChargingStation is { } label
+            ? string.Concat(label.ToUpperInvariant().Where(character => character is not ('*' or '-') && !char.IsWhiteSpace(character)))
+            : null;
+        // With a country the prefix of the normalized EVSE-ID uses the text_pattern_ops index.
+        var operatorPrefix = filter.OperatorCountry is { } country ? $"{country}{filter.OperatorParty}%" : null;
+        var rows = await db.Database.SqlQuery<EvseRow>($"""
+            SELECT e.id AS "Id", e.evse_id_display AS "EvseId", e.evse_id_norm AS "EvseIdNorm",
+                   l.id AS "LocationId", l.name AS "LocationName", l.city AS "City", l.region_code AS "Region", l.park_id AS "ParkId",
+                   s.id AS "StationId", s.label AS "StationLabel",
+                   coalesce(c.status, 'UNKNOWN') AS "Status", c.since AS "StatusSince", c.source_key AS "StatusSource",
+                   e.max_power_kw AS "MaxPowerKw", coalesce(c.since, {NoStatus}) AS "SortSince"
+            FROM evse e
+            JOIN location l ON l.id = e.location_id AND l.lifecycle = 'ACTIVE'
+            LEFT JOIN charging_station s ON s.id = e.charging_station_id
+            LEFT JOIN evse_status_current c ON c.evse_id = e.id
+            WHERE e.lifecycle = 'ACTIVE'
+              AND ({filter.OperatorParty}::text IS NULL OR (e.identity_kind = 'EVSE_ID' AND substr(e.evse_id_norm, 3, 3) = {filter.OperatorParty}::text))
+              AND ({operatorPrefix}::text IS NULL OR e.evse_id_norm LIKE {operatorPrefix}::text)
+              AND ({filter.Region}::text IS NULL OR l.region_code = {filter.Region}::text)
+              AND (cardinality({statuses}::text[]) = 0 OR coalesce(c.status, 'UNKNOWN') = ANY({statuses}::text[]))
+              AND ({filter.MinPowerKw}::numeric IS NULL OR e.max_power_kw >= {filter.MinPowerKw}::numeric)
+              AND ({filter.MaxPowerKw}::numeric IS NULL OR e.max_power_kw <= {filter.MaxPowerKw}::numeric)
+              AND (cardinality({connectors}::text[]) = 0
+                   OR EXISTS (SELECT 1 FROM connector k WHERE k.evse_id = e.id AND k.standard = ANY({connectors}::text[])))
+              AND ({filter.StatusSinceBefore}::timestamptz IS NULL OR c.since <= {filter.StatusSinceBefore}::timestamptz)
+              AND ({stationId}::uuid IS NULL OR e.charging_station_id = {stationId}::uuid)
+              AND ({stationLabel}::text IS NULL OR upper(translate(s.label, '*- ', '')) = {stationLabel}::text)
+              AND ({afterKey}::text IS NULL OR e.evse_id_norm COLLATE "C" > {afterKey}::text)
+              AND ({afterSince}::timestamptz IS NULL OR (coalesce(c.since, {NoStatus}), e.id) > ({afterSince}::timestamptz, {afterId}))
+            ORDER BY CASE WHEN {byId} THEN e.evse_id_norm COLLATE "C" END,
+                     CASE WHEN {byId} THEN NULL ELSE coalesce(c.since, {NoStatus}) END,
+                     e.id
+            LIMIT {limit + 1}
+            """).ToListAsync(cancellationToken);
+        var page = rows.Take(limit).ToList();
+        var last = page.LastOrDefault();
+        var next = rows.Count > limit && last is not null
+            ? new EvseCursor(sort, byId ? last.EvseIdNorm : last.SortSince.ToString("O", System.Globalization.CultureInfo.InvariantCulture), last.Id)
+            : null;
+        List<Guid> ids = [.. page.Select(row => row.Id)];
+        return new EvseSearchPage(
+            [.. page.Select(row => new EvseListItem(
+                row.Id,
+                row.EvseId,
+                new EvseListLocation(row.LocationId, row.LocationName, row.City, row.Region, row.ParkId),
+                row.StationId is { } id ? new EvseStationRef(id, row.StationLabel) : null,
+                row.Status,
+                row.StatusSince,
+                row.StatusSource,
+                row.MaxPowerKw))],
+            next,
+            await AttributionAsync(ids, cancellationToken));
+    }
+
+    public Task<IReadOnlyList<SourceAttribution>> AttributionAsync(Guid id, CancellationToken cancellationToken) =>
+        AttributionAsync([id], cancellationToken);
+
+    private async Task<IReadOnlyList<SourceAttribution>> AttributionAsync(List<Guid> ids, CancellationToken cancellationToken)
     {
         var keys = await db.SourceRecords
-            .Where(record => record.EntityType == EntityType.EVSE && record.EntityId == id)
+            .Where(record => record.EntityType == EntityType.EVSE && ids.Contains(record.EntityId))
             .Select(record => record.SourceKey)
             .Distinct()
             .ToListAsync(cancellationToken);
@@ -295,6 +372,40 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             .OrderBy(source => source.Key)
             .Select(source => new SourceAttribution(source.Key, source.AttributionText, source.License))
             .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>One row of the search; property names are the column aliases.</summary>
+    private sealed class EvseRow
+    {
+        public Guid Id { get; set; }
+
+        public string EvseId { get; set; } = null!;
+
+        public string EvseIdNorm { get; set; } = null!;
+
+        public Guid LocationId { get; set; }
+
+        public string? LocationName { get; set; }
+
+        public string? City { get; set; }
+
+        public string? Region { get; set; }
+
+        public Guid? ParkId { get; set; }
+
+        public Guid? StationId { get; set; }
+
+        public string? StationLabel { get; set; }
+
+        public string Status { get; set; } = null!;
+
+        public DateTimeOffset? StatusSince { get; set; }
+
+        public string? StatusSource { get; set; }
+
+        public decimal? MaxPowerKw { get; set; }
+
+        public DateTimeOffset SortSince { get; set; }
     }
 
     /// <summary>One row of the occupancy query; property names are the column aliases.</summary>

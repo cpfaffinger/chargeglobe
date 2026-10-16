@@ -34,7 +34,7 @@
 - [x] Datenfrische im Admin (`/admin/crawler`, `GET /admin/crawler/freshness`): Anteil frischer Status je Region, ältester Abfragepunkt je Priorität, Budget, Störungsphasen je Betreiber (48 h)
 - [ ] Metriken (OpenTelemetry → Prometheus/Grafana): Requests, Fehlerquote, Datenfrische je Quelle
 - [x] API v1: `GET /evses/{evseId}` (EVSE-ID in jeder Schreibweise oder UUID), Statushistorie, Belegung (`evse:read`)
-- [ ] API v1: EVSE-Suche (`GET /evses`)
+- [x] API v1: EVSE-Suche `GET /evses` (Betreiber, Region, Status, Leistung, Stecker, Statusalter, Ladestation; Cursor-Paging, Sortierung nach EVSE-ID oder Statusbeginn)
 - [x] Angular: Karte mit MapLibre und OSM-Vektorkacheln (OpenFreeMap, `GET /map/config`) als anonyme Startseite, eigener Standort per Geolocation ([ADR-0007](adr/0007-karte-standort-routing.md))
 - [x] `GET /locations` (bbox, aggregiert, Attribution) und `GET /locations/{id}`; Ladepunkt-Marker mit Clustering, Status-Farben, Legende, Infokarte und Quellenangabe
 - [x] Design auf Angular-Basis ([ADR-0012](adr/0012-design-system-und-theming.md)): Angular Material 3 + CDK, Palette „Volt“ und Roboto Flex (selbst gehostet), Light/Dark/System über `ThemeService` mit Umschalter in Toolbar bzw. Seitenmenü, Karte mit dunklem Stil (`map.style_url_dark`) und Markern in Statusfarbe mit Symbol, Stepper im Setup, Akkordeon mit Suche in den Einstellungen, Tabelle mit Paginator im Postausgang, Seiten außer der Karte als Lazy-Chunks
