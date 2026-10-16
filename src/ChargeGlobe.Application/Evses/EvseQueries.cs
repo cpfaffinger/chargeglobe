@@ -134,11 +134,69 @@ public sealed record LocationPrices(Guid LocationId, LocationAdHocPrice? AdHoc, 
 /// <param name="Attribution">The sources of the ad-hoc prices.</param>
 public sealed record LocationPricesPage(IReadOnlyList<LocationPrices> Locations, IReadOnlyList<SourceAttribution> Attribution);
 
+/// <summary>Order of the EVSE search.</summary>
+public enum EvseSort
+{
+    /// <summary>By normalized EVSE-ID.</summary>
+    EvseId,
+
+    /// <summary>Longest unchanged status first; EVSEs without status last.</summary>
+    StatusSince,
+}
+
+/// <summary>Filters of the EVSE search; null or empty means "no filter". Only active EVSEs of active locations are searched.</summary>
+/// <param name="OperatorCountry">Country part of the EVSE-ID (e.g. <c>AT</c>); null for any country.</param>
+/// <param name="OperatorParty">Operator part of the EVSE-ID (e.g. <c>EVN</c>).</param>
+/// <param name="Statuses">Current OCPI statuses, one of them is enough; <c>UNKNOWN</c> also matches EVSEs without status.</param>
+/// <param name="Connector">OCPI connector standards; one connector of the EVSE with one of them is enough.</param>
+/// <param name="StatusSinceBefore">The current status began at or before this time (e.g. "out of order for over 24 h").</param>
+/// <param name="ChargingStation">Id or label of the charging station (separators and case do not matter).</param>
+public sealed record EvseSearchFilter(
+    string? OperatorCountry,
+    string? OperatorParty,
+    string? Region,
+    IReadOnlyList<string> Statuses,
+    decimal? MinPowerKw,
+    decimal? MaxPowerKw,
+    IReadOnlyList<string> Connector,
+    DateTimeOffset? StatusSinceBefore,
+    string? ChargingStation);
+
+/// <summary>Position after the last EVSE of a page: its sort key (normalized EVSE-ID or status since) and id.</summary>
+public sealed record EvseCursor(EvseSort Sort, string Key, Guid Id);
+
+/// <param name="Region">ISO 3166-2 code; null if none is known.</param>
+/// <param name="ParkId">Charging park of the location; null if it stands alone.</param>
+public sealed record EvseListLocation(Guid Id, string? Name, string? City, string? Region, Guid? ParkId);
+
+/// <param name="Label">Identifier of the station in the source, e.g. <c>AT*MER*E006566</c>.</param>
+public sealed record EvseStationRef(Guid Id, string? Label);
+
+/// <summary>One hit of the EVSE search.</summary>
+/// <param name="Status">Current OCPI status as stored (not replaced when stale); <c>UNKNOWN</c> without status.</param>
+/// <param name="StatusSince">Since when the EVSE has this status; null without status.</param>
+/// <param name="StatusSource">Source of the current status.</param>
+public sealed record EvseListItem(
+    Guid Id,
+    string EvseId,
+    EvseListLocation Location,
+    EvseStationRef? ChargingStation,
+    string Status,
+    DateTimeOffset? StatusSince,
+    string? StatusSource,
+    decimal? MaxPowerKw);
+
+/// <param name="Next">Cursor of the next page; null on the last one.</param>
+public sealed record EvseSearchPage(IReadOnlyList<EvseListItem> Evses, EvseCursor? Next, IReadOnlyList<SourceAttribution> Attribution);
+
 /// <summary>Read model of the EVSE detail endpoints (permission <c>evse:read</c>, docs/06 "Ladepunkte").</summary>
 public interface IEvseQueries
 {
     /// <summary>An EVSE given by its UUID or its EVSE-ID in any notation; null if unknown.</summary>
     Task<EvseView?> FindAsync(string evseId, CancellationToken cancellationToken);
+
+    /// <summary>Active EVSEs matching the filter in the given order, at most <paramref name="limit"/>, after <paramref name="after"/>.</summary>
+    Task<EvseSearchPage> SearchAsync(EvseSearchFilter filter, EvseSort sort, EvseCursor? after, int limit, CancellationToken cancellationToken);
 
     /// <summary>Status intervals overlapping [<paramref name="from"/>, <paramref name="to"/>), oldest first.</summary>
     Task<IReadOnlyList<StatusInterval>> StatusHistoryAsync(
