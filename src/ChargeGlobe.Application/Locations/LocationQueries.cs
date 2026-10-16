@@ -35,6 +35,11 @@ public static class Availability
 /// <param name="MaxAvailablePowerKw">Highest power among the EVSEs that are AVAILABLE now; null if none is.</param>
 /// <param name="EvsesOccupied">EVSEs charging, blocked or reserved now.</param>
 /// <param name="EvsesFaulted">EVSEs out of order or inoperative now; the rest of <paramref name="EvsesTotal"/> has no current status.</param>
+/// <param name="ParkId">
+/// Charging park the location belongs to: locations of the same operator next to each other (<c>location.park_radius_meters</c>),
+/// e.g. two charging stations the source lists separately at one spot; null if the location stands alone.
+/// </param>
+/// <param name="ParkLocations">Locations in its park, itself included; 1 if it stands alone.</param>
 public sealed record LocationSummary(
     Guid Id,
     string? Name,
@@ -53,7 +58,9 @@ public sealed record LocationSummary(
     LocationFacilities Facilities,
     decimal? MaxAvailablePowerKw,
     int EvsesOccupied,
-    int EvsesFaulted);
+    int EvsesFaulted,
+    Guid? ParkId = null,
+    int ParkLocations = 1);
 
 /// <param name="GreenEnergy">The operator states 100 % renewable energy.</param>
 /// <param name="FreeParking">Parking is free of charge while charging.</param>
@@ -124,7 +131,19 @@ public sealed record EvseDetail(
     IReadOnlyList<string> AuthMethods,
     bool? Roaming);
 
-public sealed record LocationDetail(LocationSummary Location, IReadOnlyList<EvseDetail> Evses, IReadOnlyList<SourceAttribution> Attribution);
+/// <param name="Park">The other locations of its charging park, nearest first; empty if it stands alone.</param>
+public sealed record LocationDetail(
+    LocationSummary Location, IReadOnlyList<EvseDetail> Evses, IReadOnlyList<SourceAttribution> Attribution, IReadOnlyList<LocationSummary> Park);
+
+/// <summary>
+/// Charging parks: active locations of one operator within <c>location.park_radius_meters</c> of each other (also
+/// through a chain of them) share a park id (columns <c>location.park_id</c>, <c>location.park_locations</c>).
+/// </summary>
+public interface ILocationParks
+{
+    /// <summary>Recomputes the parks; returns the number of locations whose park changed.</summary>
+    Task<int> RefreshAsync(CancellationToken cancellationToken);
+}
 
 /// <summary>
 /// Filters of the map. Connector, power, ad-hoc payment and roaming must hold for the same active EVSE; the counts of a

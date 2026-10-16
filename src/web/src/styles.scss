@@ -968,6 +968,39 @@ app-location-detail {
   gap: 16px;
 }
 
+// Charging park: the other stations at the spot, and their details below on demand.
+#park {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--mat-sys-surface-container);
+}
+
+#park .park-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font: var(--mat-sys-title-small);
+}
+
+#park .park-members {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.park-station {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+}
+
 // In the info card: less space, smaller heatmap cells.
 app-location-details.compact {
   gap: 16px;

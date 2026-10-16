@@ -121,6 +121,7 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
                        max(c.observed_at) AS "StatusObservedAt",
                        l.green_energy AS "GreenEnergy", l.free_parking AS "FreeParking", l.roofed_parking AS "RoofedParking",
                        l.barrier_free_parking_spaces AS "BarrierFreeParkingSpaces", l.price_url AS "PriceUrl",
+                       l.park_id AS "ParkId", l.park_locations AS "ParkLocations",
                        (count(*) OVER ())::int AS "Total",
                        CASE WHEN {anyRoute} THEN NULL ELSE ST_Distance(l.geom, (SELECT gg FROM route)) END AS "DistanceFromRoute",
                        CASE WHEN {anyRoute} THEN NULL
@@ -217,7 +218,22 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
             details.Where(evse => evse.Status == nameof(EvseStatus.AVAILABLE)).Max(evse => evse.MaxPowerKw),
             details.Count(evse => OccupiedStatuses.Contains(evse.Status)),
             details.Count(evse => FaultedStatuses.Contains(evse.Status)));
-        return new LocationDetail(summary, details, await AttributionAsync([id], cancellationToken));
+        // The park columns are maintained by LocationParks and not part of the EF model.
+        var park = (await db.Database
+            .SqlQuery<ParkRow>($"""SELECT park_id AS "ParkId", park_locations AS "ParkLocations" FROM location WHERE id = {id}""")
+            .ToListAsync(cancellationToken)).Single();
+        var members = park.ParkId is { } parkId
+            ? await db.Database
+                .SqlQuery<Guid>($"SELECT id AS \"Value\" FROM location WHERE park_id = {parkId} AND id <> {id} AND lifecycle = 'ACTIVE'")
+                .ToListAsync(cancellationToken)
+            : [];
+        var others = members.Count == 0
+            ? []
+            : (await SummariesAsync(null, [.. members], NoFilter, members.Count, cancellationToken, center: location.Coordinates))
+                .Select(row => row.ToSummary())
+                .ToList();
+        return new LocationDetail(
+            summary with { ParkId = park.ParkId, ParkLocations = park.ParkLocations }, details, await AttributionAsync([id], cancellationToken), others);
     }
 
     private DateTimeOffset FreshSince() =>
@@ -236,6 +252,13 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
             .OrderBy(source => source.Key)
             .Select(source => new SourceAttribution(source.Key, source.AttributionText, source.License))
             .ToListAsync(cancellationToken);
+    }
+
+    private sealed class ParkRow
+    {
+        public Guid? ParkId { get; set; }
+
+        public int ParkLocations { get; set; }
     }
 
     /// <summary>One row of the bounding box query; property names are the column aliases.</summary>
@@ -286,6 +309,10 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
 
         public string? PriceUrl { get; set; }
 
+        public Guid? ParkId { get; set; }
+
+        public int ParkLocations { get; set; }
+
         public double? DistanceFromRoute { get; set; }
 
         public double? PositionOnRoute { get; set; }
@@ -294,6 +321,6 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
             new(Id, Name, Address, PostalCode, City, Country, Latitude, Longitude, Operator, EvsesTotal, EvsesAvailable, MaxPowerKw,
                 StatusObservedAt, Availability.Of(EvsesAvailable, EvsesOccupied, EvsesFaulted),
                 new LocationFacilities(GreenEnergy, FreeParking, RoofedParking, BarrierFreeParkingSpaces, PriceUrl), MaxAvailablePowerKw,
-                EvsesOccupied, EvsesFaulted);
+                EvsesOccupied, EvsesFaulted, ParkId, ParkLocations);
     }
 }

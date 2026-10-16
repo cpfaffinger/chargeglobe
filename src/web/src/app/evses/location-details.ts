@@ -1,6 +1,6 @@
 import { DatePipe, DecimalPipe, PercentPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -20,6 +20,7 @@ import { OccupancyHeatmap, StatusTimeline } from './status-charts';
 import { CardsStore } from '../preferences/cards.store';
 import { EmpPrice, EvsePricesResponse, money, priceParts } from './prices';
 import { AVAILABILITY, busyText, tokenColor } from '../map/availability';
+import { LocationSummary } from '../map/locations.service';
 
 /** Days of the status timeline and weeks of the occupancy matrix. */
 const TIMELINE_DAYS = 7;
@@ -86,8 +87,31 @@ type LoadState = 'loading' | 'error' | 'ready';
       </div>
       }
 
+      @if (detail.data.park.length > 0 && !nested()) {
+        @let park = detail.data.park;
+        <section id="park" aria-label="Ladepark">
+          <p class="park-summary">
+            <app-icon name="ev_station" />
+            Ladepark: {{ park.length + 1 }} Stationen an diesem Ort, zusammen {{ parkTotal() }} Ladepunkte ({{ parkFree() }} frei)
+          </p>
+          <ul class="park-members">
+            @for (member of park; track member.id) {
+              <li>
+                <button matButton type="button" class="park-member" (click)="openLocation.emit(member)">
+                  Andere Station: {{ member.evsesTotal }} {{ member.evsesTotal === 1 ? 'Ladepunkt' : 'Ladepunkte' }},
+                  {{ member.evsesAvailable }} frei{{ member.name !== location.name && member.name ? ' · ' + member.name : '' }}
+                </button>
+              </li>
+            }
+          </ul>
+          <button matButton="tonal" type="button" id="park-toggle" [attr.aria-expanded]="parkOpen()" (click)="parkOpen.set(!parkOpen())">
+            {{ parkOpen() ? 'Nur diese Station zeigen' : 'Ganzen Ladepark ansehen' }}
+          </button>
+        </section>
+      }
+
       <section aria-labelledby="evses-title">
-        <h2 id="evses-title">Ladepunkte</h2>
+        <h2 id="evses-title">{{ nested() ? 'Ladepunkte dieser Station' : 'Ladepunkte' }}</h2>
         @if (!history) {
           <p id="history-hint" class="details-state">
             Statusverlauf und Auslastung siehst du nach der <a routerLink="/login">Anmeldung</a>.
@@ -242,6 +266,14 @@ type LoadState = 'loading' | 'error' | 'ready';
       @if (attribution().length > 0) {
         <p id="detail-attribution">{{ attribution().join(' · ') }}</p>
       }
+      @if (parkOpen() && !nested()) {
+        @for (member of detail.data.park; track member.id) {
+          <section class="park-station" [attr.aria-label]="'Station ' + ($index + 2) + ' des Ladeparks'">
+            <h2 class="park-station-title">Station {{ $index + 2 }} von {{ detail.data.park.length + 1 }}</h2>
+            <app-location-details [locationId]="member.id" [nested]="true" />
+          </section>
+        }
+      }
     }
   `,
 })
@@ -253,6 +285,15 @@ export class LocationDetails {
   readonly locationId = input.required<string>();
   /** Show name, address and availability (the page); the info card shows them itself. */
   readonly header = input(false);
+  /** Shown inside the park view of another location: without the park section. */
+  readonly nested = input(false);
+  /** Another location of the park was chosen. */
+  readonly openLocation = output<LocationSummary>();
+  /** The other stations of the park are shown below. */
+  protected readonly parkOpen = signal(false);
+  /** EVSEs of the whole park, this location included. */
+  protected readonly parkTotal = computed(() => this.parkSum((location) => location.evsesTotal));
+  protected readonly parkFree = computed(() => this.parkSum((location) => location.evsesAvailable));
 
   private readonly auth = inject(AuthService);
   /** Timeline and heatmap need evse:read; everybody sees the EVSEs with their current status. */
@@ -324,8 +365,17 @@ export class LocationDetails {
     // Another location in the same card: start over.
     effect(() => {
       const id = this.locationId();
-      untracked(() => void this.load(id));
+      untracked(() => {
+        this.parkOpen.set(false);
+        void this.load(id);
+      });
     });
+  }
+
+  /** Sum over this location and the other locations of its park. */
+  private parkSum(count: (location: LocationSummary) => number): number {
+    const detail = this.detail();
+    return detail === null ? 0 : [detail.data.location, ...detail.data.park].reduce((sum, location) => sum + count(location), 0);
   }
 
   protected timelineState(evseId: string): LoadState {

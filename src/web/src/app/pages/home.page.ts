@@ -179,7 +179,7 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
             }
             <!-- The details are a chunk of their own and load after the card is visible. -->
             @defer (on immediate) {
-              <app-location-details [locationId]="location.id" />
+              <app-location-details [locationId]="location.id" (openLocation)="selected.set($event)" />
             } @placeholder {
               <app-loading class="details-state" text="Ladepunkte werden geladen …" />
             }

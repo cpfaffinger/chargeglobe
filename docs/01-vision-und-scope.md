@@ -45,7 +45,8 @@ Die deutsche Alltagssprache („Ladesäule“) und die Standards (OCPI, OICP, IS
 
 | Begriff (intern) | Deutsch / Alltag | Bedeutung | ID |
 |---|---|---|---|
-| **Location** | Ladestandort, Ladepark | Adresse/Koordinate mit 1..n Ladesäulen | intern (UUID) + Quell-IDs |
+| **Location** | Ladestandort | Adresse/Koordinate mit 1..n Ladesäulen, so wie die Quelle ihn meldet (bei der E-Control eine „Station“: mal eine Säule, mal ein ganzer Park) | intern (UUID) + Quell-IDs |
+| **Ladepark** (abgeleitet) | Ladepark | Standorte desselben Betreibers direkt nebeneinander (≤ 25 m); bündelt die Anzeige, ändert die Identität nicht | `park_id` (kleinste Standort-Id) |
 | **ChargingStation** (optional) | Ladesäule, Wallbox | physisches Gerät mit 1..n Ladepunkten | intern; manche Quellen liefern diese Ebene gar nicht |
 | **EVSE** | **Ladepunkt** | das, was gleichzeitig genau *ein* Fahrzeug laden kann; Status-Träger | **EVSE-ID** (z. B. `AT*EVN*E1234*5`) |
 | **Connector** | Stecker | Typ (Type 2, CCS, CHAdeMO, Schuko), max. Leistung; mehrere Stecker an einem EVSE teilen sich die Belegung | Nummer innerhalb des EVSE |

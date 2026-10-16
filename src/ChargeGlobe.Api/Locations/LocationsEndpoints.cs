@@ -15,7 +15,8 @@ public sealed record LocationsMeta(int Returned, int Limit, bool Truncated, IRea
 
 public sealed record LocationsResponse(IReadOnlyList<LocationSummary> Data, LocationsMeta Meta);
 
-public sealed record LocationDetailData(LocationSummary Location, IReadOnlyList<EvseDetail> Evses);
+/// <param name="Park">The other locations of the charging park, nearest first; empty if the location stands alone.</param>
+public sealed record LocationDetailData(LocationSummary Location, IReadOnlyList<EvseDetail> Evses, IReadOnlyList<LocationSummary> Park);
 
 public sealed record AttributionMeta(IReadOnlyList<SourceAttribution> Attribution);
 
@@ -69,6 +70,9 @@ public static class LocationsEndpoints
                 "as stated by the operator), free and roofed parking, the number of barrier-free parking spaces and the " +
                 "operator's price page (`priceUrl`); each is null if no source knows it. `maxAvailablePowerKw` is the highest " +
                 "power among the EVSEs that are AVAILABLE now (null if none is), e.g. to colour free locations by power. " +
+                "`parkId` groups locations of one operator next to each other (setting `location.park_radius_meters`, default " +
+                "25 m) into a charging park, e.g. two charging stations a source lists separately at one spot; " +
+                "`parkLocations` is the number of locations in it (1 and `parkId` null for a location alone). " +
                 "`meta.attribution` lists the sources of the " +
                 "data and the attribution text that must be shown with it. Public, no credentials needed.\n\n" +
                 "Optional filters (combined with AND; counts of a matching location still cover all its EVSEs):\n" +
@@ -104,7 +108,9 @@ public static class LocationsEndpoints
                 "`authMethods` (how a session is started and paid: RFID_READER, APP, QR_CODE, WEBSITE, CHARGING_CONTRACT, " +
                 "CREDIT_CARD_PAYABLE, DEBIT_CARD_PAYABLE, CONTACTLESS_CARD_SUPPORT, CHIP_CARD_SUPPORT, PED_TERMINAL, CASH; " +
                 "empty if unknown) and `roaming` (charging cards of other providers accepted; null if unknown). " +
-                "The location carries `facilities` as in `listLocations`. Opening a location asks the crawler for a fresh " +
+                "The location carries `facilities`, `parkId` and `parkLocations` as in `listLocations`; `park` lists the " +
+                "other locations of its charging park with their counts, nearest first (empty if it stands alone), so a " +
+                "client can show the whole park. Opening a location asks the crawler for a fresh " +
                 "status of it (served with the next free request, at most every two minutes). " +
                 "`meta.attribution` names the sources. 404 for an unknown or inactive location. Public.")
             .Produces<LocationDetailResponse>()
@@ -113,7 +119,7 @@ public static class LocationsEndpoints
                 StatusCodes.Status200OK,
                 new LocationDetailResponse(
                     new LocationDetailData(
-                        ExampleLocation with { EvsesTotal = 1, EvsesAvailable = 1 },
+                        ExampleLocation with { EvsesTotal = 1, EvsesAvailable = 1, ParkId = ExampleLocation.Id, ParkLocations = 2 },
                         [
                             new EvseDetail(
                                 Guid.Parse("01990a3e-5b1d-7d42-8c3a-6e9f1a2b3c4f"),
@@ -128,6 +134,14 @@ public static class LocationsEndpoints
                                 [new ConnectorDetail("IEC_62196_T2", "SOCKET", "AC_3_PHASE", 22m)],
                                 ["RFID_READER", "APP", "CREDIT_CARD_PAYABLE"],
                                 true),
+                        ],
+                        [
+                            ExampleLocation with
+                            {
+                                Id = Guid.Parse("01990a3e-5b1d-7d42-8c3a-6e9f1a2b3c50"),
+                                ParkId = ExampleLocation.Id,
+                                ParkLocations = 2,
+                            },
                         ]),
                     new AttributionMeta([ExampleAttribution])));
 
@@ -204,7 +218,7 @@ public static class LocationsEndpoints
 
         // Someone looks at the location: its query point is read with priority (at most every two minutes).
         await demand.RequestAsync(id, cancellationToken);
-        return Results.Ok(new LocationDetailResponse(new LocationDetailData(detail.Location, detail.Evses), new AttributionMeta(detail.Attribution)));
+        return Results.Ok(new LocationDetailResponse(new LocationDetailData(detail.Location, detail.Evses, detail.Park), new AttributionMeta(detail.Attribution)));
     }
 
     /// <summary>OCPI connector standards (repeated and/or comma-separated, any case); null if one is unknown.</summary>
