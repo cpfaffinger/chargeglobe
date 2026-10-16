@@ -17,6 +17,12 @@ public sealed class AddressStore(NpgsqlDataSource dataSource) : IAddressStore
     /// <summary>Words shorter than this have no trigram; they filter the hits of the longer ones.</summary>
     public const int MinIndexedWord = 3;
 
+    /// <summary>
+    /// Memory for building the indexes of the import. Lower than the default of the database image (a quarter of its
+    /// memory), so that the import fits next to the running stack on a small host; a smaller value only builds slower.
+    /// </summary>
+    public const string ImportMaintenanceWorkMem = "256MB";
+
     /// <summary>The DDL of the table, also used by the migration <c>AddressSearch</c>.</summary>
     public static string CreateTableSql(string table) => $"""
         CREATE TABLE {table} (
@@ -99,7 +105,9 @@ public sealed class AddressStore(NpgsqlDataSource dataSource) : IAddressStore
             """, cancellationToken);
         await ExecuteAsync(connection, $"""
             DROP TABLE address_load;
+            SET maintenance_work_mem = '{ImportMaintenanceWorkMem}';
             {CreateIndexesSql("address_new")}
+            RESET maintenance_work_mem;
             ANALYZE address_new;
             """, cancellationToken);
 
