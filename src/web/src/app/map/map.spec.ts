@@ -793,7 +793,7 @@ describe('HomePage (map)', () => {
         expect(text(root(), '#route-summary')).toBe('Route: 12 km · 16 min Route entfernen');
         // The card of the destination gives way to the stops along the route.
         expect(root().querySelector('#location-card')).toBeNull();
-        expect(text(root(), '#route-stops p')).toBe('Ladepunkte entlang der Route werden gesucht …');
+        expect(text(root(), '#route-stops app-loading')).toBe('Ladepunkte entlang der Route werden gesucht …');
         const along = http.expectOne('/api/v1/routes/locations');
         expect(along.request.body).toEqual({ geometry: { type: 'LineString', coordinates: geometry }, corridorMeters: 1000, limit: 500, ...NO_FILTERS });
         along.flush({
@@ -953,7 +953,7 @@ describe('HomePage (map)', () => {
           await settle();
           const reload = http.expectOne('/api/v1/routes/locations');
           expect(reload.request.body).toEqual({ geometry: { type: 'LineString', coordinates: geometry }, corridorMeters: 1000, limit: 500, ...NO_FILTERS, minPowerKw: 150 });
-          expect(text(root(), '#route-stops p')).toBe('Ladepunkte entlang der Route werden gesucht …');
+          expect(text(root(), '#route-stops app-loading')).toBe('Ladepunkte entlang der Route werden gesucht …');
           reload.flush({ data: [along[1]], meta: { returned: 1, limit: 500, truncated: false, attribution: [] } });
           await settle();
           await flushLocations();
@@ -1074,7 +1074,7 @@ describe('HomePage (map)', () => {
               ...NO_FILTERS,
             })),
           );
-          expect(text(root(), '#reach-locations p')).toBe('Ladepunkte in Reichweite werden gesucht …');
+          expect(text(root(), '#reach-locations app-loading')).toBe('Ladepunkte in Reichweite werden gesucht …');
           within.forEach((request, index) => request.flush(locationsOf(index === 0 ? inReach : [], [9, 4, 2][index])));
           await settle();
 

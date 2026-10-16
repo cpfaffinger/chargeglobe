@@ -66,6 +66,7 @@ export class PlaceSearch {
       this.request++;
       this.hits.set([]);
       this.searched.set(false);
+      this.failed.set(false);
       return;
     }
     this.timer = setTimeout(() => void this.run(query.trim()), SEARCH_DELAY_MS);
