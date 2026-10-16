@@ -13,6 +13,7 @@ import {
   EvseDetail,
   EvsesService,
   LocationDetailResponse,
+  LocationOccupancy,
   Occupancy,
 } from './evses.service';
 import { Segment, combine, faultSource, statusOf, timeline } from './status';
@@ -104,7 +105,7 @@ type LoadState = 'loading' | 'error' | 'ready';
               </li>
             }
           </ul>
-          <button matButton="tonal" type="button" id="park-toggle" [attr.aria-expanded]="parkOpen()" (click)="parkOpen.set(!parkOpen())">
+          <button matButton="tonal" type="button" id="park-toggle" [attr.aria-expanded]="parkOpen()" (click)="togglePark()">
             {{ parkOpen() ? 'Nur diese Station zeigen' : 'Ganzen Ladepark ansehen' }}
           </button>
         </section>
@@ -223,15 +224,18 @@ type LoadState = 'loading' | 'error' | 'ready';
           <mat-card-content>
             <section aria-labelledby="heatmap-title">
               <h2 id="heatmap-title">Auslastung nach Wochentag und Stunde</h2>
-              @if (detail.data.evses.length > 1) {
+              @if (detail.data.evses.length > 1 || inPark()) {
                 <mat-button-toggle-group
                   id="heatmap-select"
                   aria-label="Ladepunkt"
                   hideSingleSelectionIndicator
                   [value]="heatmapOf()"
-                  (change)="heatmapOf.set($event.value)"
+                  (change)="showHeatmap($event.value)"
                 >
-                  <mat-button-toggle value="all">Alle Ladepunkte</mat-button-toggle>
+                  @if (inPark()) {
+                    <mat-button-toggle value="park">Ganzer Ladepark</mat-button-toggle>
+                  }
+                  <mat-button-toggle value="all">{{ inPark() ? 'Diese Station' : 'Alle Ladepunkte' }}</mat-button-toggle>
                   @for (evse of detail.data.evses; track evse.id; let index = $index) {
                     <mat-button-toggle [value]="evse.id" [title]="evse.evseId">Ladepunkt {{ index + 1 }}</mat-button-toggle>
                   }
@@ -246,6 +250,9 @@ type LoadState = 'loading' | 'error' | 'ready';
                 }
                 @default {
                   @let heatmap = heatmapData();
+                  @if (heatmap.scope; as scope) {
+                    <p id="heatmap-scope">Ganzer Ladepark: {{ scope.locations }} Stationen, {{ scope.evses }} Ladepunkte zusammen</p>
+                  }
                   <p id="utilization">
                     @if (heatmap.utilization !== null) {
                       In den letzten {{ occupancyWeeks }} Wochen lud hier ein Fahrzeug bei
@@ -319,8 +326,12 @@ export class LocationDetails {
   private readonly timelines = signal<Record<string, Segment[] | 'error'>>({});
   private readonly occupancies = signal<Record<string, Occupancy | 'error'>>({});
   private readonly priceResults = signal<Record<string, EvsePricesResponse['data'] | 'error'>>({});
-  /** "all" or the id of the EVSE whose heatmap is shown. */
+  /** "all", "park" (the whole charging park) or the id of the EVSE whose heatmap is shown. */
   protected readonly heatmapOf = signal('all');
+  /** The combined occupancy of the whole park, loaded when it is chosen first. */
+  private readonly parkOccupancy = signal<LocationOccupancy | 'error' | null>(null);
+  /** The location belongs to a charging park and is not shown inside the park view of another one. */
+  protected readonly inPark = computed(() => (this.detail()?.data.park.length ?? 0) > 0 && !this.nested());
 
   protected readonly attribution = computed(() => [
     ...new Set(this.detail()?.meta.attribution.map((source) => source.text) ?? []),
@@ -335,6 +346,10 @@ export class LocationDetails {
   });
 
   protected readonly heatmapState = computed<LoadState>(() => {
+    if (this.heatmapOf() === 'park') {
+      const park = this.parkOccupancy();
+      return park === null ? 'loading' : park === 'error' ? 'error' : 'ready';
+    }
     const evses = this.detail()!.data.evses;
     const wanted = this.heatmapOf() === 'all' ? evses.length : 1;
     const results = this.selectedOccupancies();
@@ -346,6 +361,10 @@ export class LocationDetails {
 
   /** Matrix and totals of the selection; several EVSEs are summed reading by reading. */
   protected readonly heatmapData = computed(() => {
+    const park = this.parkOccupancy();
+    if (this.heatmapOf() === 'park' && park !== null && park !== 'error') {
+      return { days: park.days, observations: park.observations, utilization: park.utilization, scope: park };
+    }
     const loaded = this.selectedOccupancies().filter(
       (result): result is Occupancy => result !== 'error',
     );
@@ -358,6 +377,7 @@ export class LocationDetails {
       days: combine(loaded.map((occupancy) => occupancy.days)),
       observations,
       utilization: observations > 0 ? charging / observations : null,
+      scope: null,
     };
   });
 
@@ -409,6 +429,7 @@ export class LocationDetails {
     this.occupancies.set({});
     this.priceResults.set({});
     this.heatmapOf.set('all');
+    this.parkOccupancy.set(null);
     let detail: LocationDetailResponse;
     try {
       detail = await this.service.location(id);
@@ -469,6 +490,35 @@ export class LocationDetails {
     }
     if (request === this.request) {
       this.timelines.update((all) => ({ ...all, [evseId]: result }));
+    }
+  }
+
+  /** The park view shows the combined occupancy of the whole park; closing it goes back to this station. */
+  protected togglePark(): void {
+    const open = !this.parkOpen();
+    this.parkOpen.set(open);
+    if (this.history) {
+      this.showHeatmap(open ? 'park' : 'all');
+    }
+  }
+
+  /** Shows the heatmap of the choice; the whole park is loaded with one request the first time. */
+  protected showHeatmap(choice: string): void {
+    this.heatmapOf.set(choice);
+    if (choice === 'park' && this.parkOccupancy() === null) {
+      void this.loadParkOccupancy(this.request);
+    }
+  }
+
+  private async loadParkOccupancy(request: number): Promise<void> {
+    let result: LocationOccupancy | 'error';
+    try {
+      result = (await this.service.locationOccupancy(this.locationId(), OCCUPANCY_WEEKS, true)).data;
+    } catch {
+      result = 'error';
+    }
+    if (request === this.request) {
+      this.parkOccupancy.set(result);
     }
   }
 

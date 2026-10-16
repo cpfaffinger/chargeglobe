@@ -116,6 +116,22 @@ export interface Occupancy {
   days: OccupancyDay[];
 }
 
+/** GET /api/v1/locations/{id}/occupancy: the EVSEs of a location or its whole charging park summed. */
+export interface LocationOccupancy {
+  id: string;
+  park: boolean;
+  /** Locations summed up (1, or those of the park). */
+  locations: number;
+  evses: number;
+  weeks: number;
+  from: string;
+  to: string;
+  timeZone: string;
+  utilization: number | null;
+  observations: number;
+  days: OccupancyDay[];
+}
+
 export interface OccupancyResponse {
   data: Occupancy;
   meta: { attribution: SourceAttribution[] };
@@ -152,6 +168,15 @@ export class EvsesService {
           params: { from: from.toISOString(), to: to.toISOString() },
         },
       ),
+    );
+  }
+
+  /** Occupancy of all EVSEs of a location, with park of its whole charging park (evse:read). */
+  locationOccupancy(locationId: string, weeks: number, park: boolean): Promise<{ data: LocationOccupancy }> {
+    return firstValueFrom(
+      this.http.get<{ data: LocationOccupancy }>(`/api/v1/locations/${encodeURIComponent(locationId)}/occupancy`, {
+        params: { weeks, park },
+      }),
     );
   }
 

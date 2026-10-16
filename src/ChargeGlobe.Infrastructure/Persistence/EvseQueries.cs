@@ -250,9 +250,14 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             interval.Status.ToString(), interval.ValidFrom, interval.ValidTo, interval.SourceKey, interval.Confidence))];
     }
 
+    public Task<IReadOnlyList<OccupancyCell>?> OccupancyAsync(
+        Guid id, DateTimeOffset from, DateTimeOffset to, string timeZone, CancellationToken cancellationToken) =>
+        OccupancyAsync([id], from, to, timeZone, cancellationToken);
+
     public async Task<IReadOnlyList<OccupancyCell>?> OccupancyAsync(
-        Guid id, DateTimeOffset from, DateTimeOffset to, string timeZone, CancellationToken cancellationToken)
+        IReadOnlyList<Guid> ids, DateTimeOffset from, DateTimeOffset to, string timeZone, CancellationToken cancellationToken)
     {
+        Guid[] evseIds = [.. ids];
         try
         {
             // Fails for an unknown zone even when the EVSE has no observations.
@@ -270,7 +275,7 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
                        sum(obs_charging)::bigint AS "Charging",
                        sum(obs_total)::bigint AS "Total"
                 FROM evse_occupancy_hourly
-                WHERE evse_id = {id} AND bucket >= {from} AND bucket < {to}
+                WHERE evse_id = ANY({evseIds}) AND bucket >= {from} AND bucket < {to}
                 GROUP BY 1, 2
                 ORDER BY 1, 2
                 """)

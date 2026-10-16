@@ -122,6 +122,13 @@ describe('EvsesService', () => {
     expect((await history).data.intervals).toEqual([]);
     expect((await profile).data.weeks).toBe(4);
   });
+
+  it('asks for the combined occupancy of a whole charging park', async () => {
+    const park = service.locationOccupancy('loc-1', 4, true);
+    http.expectOne('/api/v1/locations/loc-1/occupancy?weeks=4&park=true').flush({ data: { id: 'loc-1', park: true, locations: 2 } });
+
+    expect((await park).data.locations).toBe(2);
+  });
 });
 
 describe('status helpers', () => {
@@ -441,6 +448,11 @@ describe('LocationDetailPage', () => {
   });
 });
 
+/** An empty answer to a status history request. */
+function history(request: TestRequest): void {
+  request.flush({ data: { intervals: [] }, meta: { attribution: [] } });
+}
+
 describe('LocationDetails (info card)', () => {
   let http: HttpTestingController;
   let auth: ReturnType<typeof fakeAuth>;
@@ -519,6 +531,73 @@ describe('LocationDetails (info card)', () => {
 
     expect(text(root(), '#no-evses')).toBe('Für diesen Standort sind keine Ladepunkte bekannt.');
     expect(root().querySelector('.timeline-state')).toBeNull();
+  });
+
+  it('shows the combined occupancy of the whole charging park on demand, loaded once', async () => {
+    auth.hasPermission.and.callFake((permission) => permission === 'evse:read');
+    fixture = TestBed.createComponent(LocationDetails);
+    const own = locationSummary({ id: 'loc-1', parkId: 'loc-1', parkLocations: 2 });
+    const twin = locationSummary({ id: 'loc-2', parkId: 'loc-1', parkLocations: 2 });
+    const parkBody = {
+      data: { id: 'loc-1', park: true, locations: 2, evses: 4, weeks: 4, from: '2026-09-18T15:00:00Z', to: '2026-10-16T15:00:00Z',
+              timeZone: 'Europe/Vienna', utilization: 0.25, observations: 40, days: days([1, 8, 0.25, 40]) },
+    };
+    const toggle = (label: string) =>
+      Array.from(root().querySelectorAll<HTMLElement>('#heatmap-select mat-button-toggle')).find((item) => item.textContent!.trim() === label)!;
+    const choose = async (label: string) => {
+      toggle(label).querySelector('button')!.click();
+      await settle();
+    };
+    await show('loc-1');
+    http.expectOne('/api/v1/locations/loc-1').flush({ data: { park: [twin], location: own, evses: [evse()] }, meta: { attribution: [] } });
+    await settle();
+    history(http.expectOne((request) => request.url === '/api/v1/evses/e-1/status/history'));
+    http.expectOne('/api/v1/evses/e-1/occupancy?weeks=4').flush(occupancy('e-1', 0.5, 4, days([1, 8, 0.5, 4])));
+    await settle();
+
+    expect(Array.from(root().querySelectorAll('#heatmap-select mat-button-toggle')).map((item) => item.textContent!.trim())).toEqual([
+      'Ganzer Ladepark',
+      'Diese Station',
+      'Ladepunkt 1',
+    ]);
+    expect(root().querySelector('#heatmap-scope')).toBeNull();
+
+    await choose('Ganzer Ladepark');
+    expect(text(root(), '.heatmap-state')).toBe('Auslastung wird geladen …');
+    http.expectOne('/api/v1/locations/loc-1/occupancy?weeks=4&park=true').flush(parkBody);
+    await settle();
+    expect(text(root(), '#heatmap-scope')).toBe('Ganzer Ladepark: 2 Stationen, 4 Ladepunkte zusammen');
+    expect(text(root(), '#utilization')).toBe('In den letzten 4 Wochen lud hier ein Fahrzeug bei 25% der 40 Statusmeldungen.');
+
+    // Back to this station and to the park again: no second request.
+    await choose('Diese Station');
+    expect(root().querySelector('#heatmap-scope')).toBeNull();
+    expect(text(root(), '#utilization')).toContain('50%');
+    await choose('Ganzer Ladepark');
+    expect(text(root(), '#heatmap-scope')).toContain('2 Stationen');
+
+    // The park view switches to the whole park and back; another location starts over, a failure is told.
+    root().querySelector<HTMLButtonElement>('#park-toggle')!.click();
+    await settle();
+    http.expectOne('/api/v1/locations/loc-2').flush({ data: { park: [own], location: twin, evses: [] }, meta: { attribution: [] } });
+    await settle();
+    expect(text(root(), '#heatmap-scope')).toContain('2 Stationen');
+    root().querySelector<HTMLButtonElement>('#park-toggle')!.click();
+    await settle();
+    expect(root().querySelector('#heatmap-scope')).toBeNull();
+
+    await show('loc-5');
+    http.expectOne('/api/v1/locations/loc-5').flush({ data: { park: [twin], location: locationSummary({ id: 'loc-5' }), evses: [evse()] }, meta: { attribution: [] } });
+    await settle();
+    history(http.expectOne((request) => request.url === '/api/v1/evses/e-1/status/history'));
+    http.expectOne('/api/v1/evses/e-1/occupancy?weeks=4').flush(occupancy('e-1', 0.5, 4, days([1, 8, 0.5, 4])));
+    await settle();
+    root().querySelector<HTMLButtonElement>('#park-toggle')!.click();
+    await settle();
+    http.expectOne('/api/v1/locations/loc-5/occupancy?weeks=4&park=true').flush({ title: 'Error' }, { status: 500, statusText: 'Error' });
+    http.expectOne('/api/v1/locations/loc-2').flush({ data: { park: [], location: twin, evses: [] }, meta: { attribution: [] } });
+    await settle();
+    expect(text(root(), '.heatmap-state.error')).toBe('Die Auslastung konnte nicht geladen werden.');
   });
 
   it('shows the other stations of its charging park and the whole park on demand', async () => {

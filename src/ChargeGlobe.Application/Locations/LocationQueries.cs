@@ -135,6 +135,9 @@ public sealed record EvseDetail(
 public sealed record LocationDetail(
     LocationSummary Location, IReadOnlyList<EvseDetail> Evses, IReadOnlyList<SourceAttribution> Attribution, IReadOnlyList<LocationSummary> Park);
 
+/// <param name="Locations">Locations whose EVSEs are listed (1, or the locations of the park).</param>
+public sealed record LocationEvses(int Locations, IReadOnlyList<Guid> EvseIds);
+
 /// <summary>
 /// Charging parks: active locations of one operator within <c>location.park_radius_meters</c> of each other (also
 /// through a chain of them) share a park id (columns <c>location.park_id</c>, <c>location.park_locations</c>).
@@ -197,4 +200,10 @@ public interface ILocationQueries
     Task<LocationPage> ByIdsAsync(IReadOnlyList<Guid> ids, CancellationToken cancellationToken);
 
     Task<LocationDetail?> FindAsync(Guid id, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The active EVSEs of an active location, with <paramref name="park"/> those of all locations of its charging park;
+    /// null if the location is unknown or inactive.
+    /// </summary>
+    Task<LocationEvses?> EvsesAsync(Guid id, bool park, CancellationToken cancellationToken);
 }

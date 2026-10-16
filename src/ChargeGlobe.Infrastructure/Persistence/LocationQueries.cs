@@ -236,6 +236,29 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
             summary with { ParkId = park.ParkId, ParkLocations = park.ParkLocations }, details, await AttributionAsync([id], cancellationToken), others);
     }
 
+    public async Task<LocationEvses?> EvsesAsync(Guid id, bool park, CancellationToken cancellationToken)
+    {
+        // The park columns are not part of the EF model.
+        var locations = await db.Database
+            .SqlQuery<Guid>($"""
+                SELECT member.id AS "Value"
+                FROM location l
+                JOIN location member ON member.id = l.id OR ({park} AND l.park_id IS NOT NULL AND member.park_id = l.park_id)
+                WHERE l.id = {id} AND l.lifecycle = 'ACTIVE' AND member.lifecycle = 'ACTIVE'
+                """)
+            .ToListAsync(cancellationToken);
+        if (locations.Count == 0)
+        {
+            return null;
+        }
+
+        var evses = await db.Evses
+            .Where(evse => locations.Contains(evse.LocationId) && evse.Lifecycle == Lifecycle.ACTIVE)
+            .Select(evse => evse.Id)
+            .ToListAsync(cancellationToken);
+        return new LocationEvses(locations.Count, evses);
+    }
+
     private DateTimeOffset FreshSince() =>
         timeProvider.GetUtcNow().AddMinutes(-config.Get<int>(SettingsCatalog.MapStatusMaxAgeMinutes));
 

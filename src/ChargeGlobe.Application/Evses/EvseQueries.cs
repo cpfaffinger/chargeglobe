@@ -151,6 +151,10 @@ public interface IEvseQueries
     Task<IReadOnlyList<OccupancyCell>?> OccupancyAsync(
         Guid id, DateTimeOffset from, DateTimeOffset to, string timeZone, CancellationToken cancellationToken);
 
+    /// <summary>As <see cref="OccupancyAsync(Guid, DateTimeOffset, DateTimeOffset, string, CancellationToken)"/>, summed over several EVSEs.</summary>
+    Task<IReadOnlyList<OccupancyCell>?> OccupancyAsync(
+        IReadOnlyList<Guid> ids, DateTimeOffset from, DateTimeOffset to, string timeZone, CancellationToken cancellationToken);
+
     /// <summary>
     /// The current ad-hoc price, the periods of the price history overlapping [<paramref name="from"/>, <paramref name="to"/>)
     /// and the prices of the EMP tariffs valid now that apply at the EVSE.
