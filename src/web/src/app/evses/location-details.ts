@@ -350,6 +350,9 @@ export class LocationDetails {
    */
   protected readonly evseGroups = computed(() => {
     const evses = this.detail()?.data.evses ?? [];
+    if (evses.length === 0) {
+      return [];
+    }
     if (evses.every((evse) => evse.chargingStation === null)) {
       return [{ label: '', title: null, evses }];
     }

@@ -350,7 +350,7 @@ describe('LocationDetailPage', () => {
     expect(segments[1].title).toMatch(/^lädt: \d\d\.\d\d\. \d\d:\d\d – \d\d\.\d\d\. \d\d:\d\d$/);
     expect(text(second, 'h3')).toBe('XX*CG*E0123456789ABCDEF (ID von chargeglobe vergeben)');
     expect(text(second, '.status')).toBe('unbekannt');
-    expect(text(second, '.connectors')).toBe('Schuko Typ 2');
+    expect(Array.from(second.querySelectorAll('.connector')).map((connector) => connector.textContent!.trim())).toEqual(['Schuko', 'Typ 2']);
     // Several connectors share the status of their EVSE.
     expect(first.querySelector('.connector-note')).toBeNull();
     expect(text(second, '.connector-note')).toBe(
