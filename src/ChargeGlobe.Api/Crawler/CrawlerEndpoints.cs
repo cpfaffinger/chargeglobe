@@ -2,10 +2,13 @@ using ChargeGlobe.Api.Auth;
 using ChargeGlobe.Api.OpenApi;
 using ChargeGlobe.Application.Ingest;
 using ChargeGlobe.Domain.Identity;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace ChargeGlobe.Api.Crawler;
 
 public sealed record CrawlerStatusResponse(CrawlerStatus Data);
+
+public sealed record CrawlerFreshnessResponse(DataFreshness Data);
 
 /// <param name="Returned">Number of runs in <c>data</c>.</param>
 public sealed record CrawlerRunsMeta(int Returned, int Limit);
@@ -17,6 +20,11 @@ public static class CrawlerEndpoints
 {
     private const int DefaultLimit = 50;
     private const int MaxLimit = 500;
+
+    /// <summary>The freshness view reads the status tables of all EVSEs; it is computed at most once a minute.</summary>
+    public static readonly TimeSpan FreshnessCacheDuration = TimeSpan.FromSeconds(60);
+
+    public const string FreshnessCacheKey = "crawler:freshness";
 
     private static readonly DateTimeOffset ExampleTime = DateTimeOffset.Parse("2026-10-14T08:15:00Z", System.Globalization.CultureInfo.InvariantCulture);
 
@@ -55,6 +63,38 @@ public static class CrawlerEndpoints
                     ],
                     new IngestQueueStatus(2, 0))));
 
+        crawler.MapGet("/freshness", GetFreshnessAsync)
+            .WithName("getCrawlerFreshness")
+            .WithSummary("Get how current the status data is per region, source and operator")
+            .WithDescription(
+                "Returns `regions[]` (every region: active EVSEs `evses`, those with a current status `withStatus`, and the " +
+                "share of `evses` in percent whose current status was observed in the last 20 and 60 minutes, " +
+                "`fresh20Percent`/`fresh60Percent`), `sources[]` (requests of the runs started in the last hour, " +
+                "`budgetPerHour`, and per query point priority HOT/NORMAL/QUIET the number of points, those never polled and " +
+                "the oldest last poll, null while one was never polled) and `operators[]`: the 10 operators (country and " +
+                "operator part of the EVSE-ID, e.g. `AT*EVN`) with the most out-of-order phases (status OUTOFORDER or " +
+                "INOPERATIVE) that began in the last 48 hours, with the EVSEs affected, the phases still `ongoing` and the " +
+                "median duration of the finished ones in minutes (`medianMinutes`, null if none finished). Computed at most " +
+                "once a minute; `at` is the time of the computation.")
+            .Produces<CrawlerFreshnessResponse>()
+            .WithResponseExample(
+                StatusCodes.Status200OK,
+                new CrawlerFreshnessResponse(new DataFreshness(
+                    ExampleTime,
+                    [new RegionFreshness("AT-9", "Wien", 4829, 4827, 99.9, 99.9)],
+                    [
+                        new SourceFreshness(
+                            "econtrol",
+                            1342,
+                            1500,
+                            [
+                                new PriorityPoll("HOT", 61, 0, ExampleTime.AddMinutes(-7)),
+                                new PriorityPoll("NORMAL", 235, 0, ExampleTime.AddMinutes(-24)),
+                                new PriorityPoll("QUIET", 0, 0, null),
+                            ]),
+                    ],
+                    [new OperatorFaults("AT*EVN", "EVN", 4939, 1210, 111, 15.2)])));
+
         crawler.MapGet("/runs", ListRunsAsync)
             .WithName("listCrawlerRuns")
             .WithSummary("List the latest crawler runs")
@@ -90,6 +130,16 @@ public static class CrawlerEndpoints
 
     private static async Task<IResult> GetStatusAsync(ICrawlerMonitor monitor, CancellationToken cancellationToken) =>
         Results.Ok(new CrawlerStatusResponse(await monitor.StatusAsync(cancellationToken)));
+
+    private static async Task<IResult> GetFreshnessAsync(ICrawlerMonitor monitor, IMemoryCache cache, CancellationToken cancellationToken)
+    {
+        var freshness = (await cache.GetOrCreateAsync(FreshnessCacheKey, entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = FreshnessCacheDuration;
+            return monitor.FreshnessAsync(cancellationToken);
+        }))!;
+        return Results.Ok(new CrawlerFreshnessResponse(freshness));
+    }
 
     private static async Task<IResult> ListRunsAsync(int? limit, string? provider, ICrawlerMonitor monitor, CancellationToken cancellationToken)
     {

@@ -273,6 +273,9 @@ describe('App with its routes', () => {
       expect(root().querySelector('#admin-tab-crawler')).not.toBeNull();
       http.expectOne('/api/v1/admin/crawler/status').flush({ data: { at: '2026-10-14T08:15:00Z', providers: [], queue: { pending: 0, failed: 0 } } });
       http.expectOne('/api/v1/admin/crawler/runs?limit=50').flush({ data: [], meta: { returned: 0, limit: 50 } });
+      http
+        .expectOne('/api/v1/admin/crawler/freshness')
+        .flush({ data: { at: '2026-10-14T08:15:00Z', regions: [], sources: [], operators: [] } });
     });
 
     it('opens /admin/mail only with settings:manage and shows the link only then', async () => {

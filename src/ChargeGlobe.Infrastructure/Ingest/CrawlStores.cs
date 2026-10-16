@@ -336,6 +336,73 @@ public sealed class CrawlerMonitor(
         return new CrawlerStatus(now, providers, new IngestQueueStatus(pending, failed));
     }
 
+    public async Task<DataFreshness> FreshnessAsync(CancellationToken cancellationToken)
+    {
+        var now = timeProvider.GetUtcNow();
+        var (fresh20, fresh60, since) = (now.AddMinutes(-20), now.AddMinutes(-60), now - ICrawlerMonitor.FaultWindow);
+        var regions = await db.Database.SqlQuery<RegionRow>($"""
+            SELECT r.code AS "Code", r.name AS "Name", count(e.id)::int AS "Evses", count(c.evse_id)::int AS "WithStatus",
+                   (count(*) FILTER (WHERE c.observed_at >= {fresh20}))::int AS "Fresh20",
+                   (count(*) FILTER (WHERE c.observed_at >= {fresh60}))::int AS "Fresh60"
+            FROM region r
+            LEFT JOIN location l ON l.region_code = r.code AND l.lifecycle = 'ACTIVE'
+            LEFT JOIN evse e ON e.location_id = l.id AND e.lifecycle = 'ACTIVE'
+            LEFT JOIN evse_status_current c ON c.evse_id = e.id
+            GROUP BY r.code, r.name
+            ORDER BY r.code
+            """).ToListAsync(cancellationToken);
+        var sources = new List<SourceFreshness>();
+        foreach (var key in SettingsCatalog.ProviderKeys)
+        {
+            var points = await db.PollTiles
+                .Where(tile => tile.ProviderKey == key)
+                .GroupBy(tile => tile.Priority)
+                .Select(group => new
+                {
+                    Priority = group.Key,
+                    Count = group.Count(),
+                    Never = group.Count(tile => tile.LastPolledAt == null),
+                    Oldest = group.Min(tile => tile.LastPolledAt),
+                })
+                .ToListAsync(cancellationToken);
+            sources.Add(new SourceFreshness(
+                key,
+                await runs.RequestsLastHourAsync(key, cancellationToken),
+                config.Get<int>(SettingsCatalog.ProviderRequestBudgetPerHour, SettingsCatalog.ProviderScope(key)),
+                [.. Enum.GetNames<TilePriority>().Select(priority => points.FirstOrDefault(point => point.Priority == priority) is { } group
+                    ? new PriorityPoll(priority, group.Count, group.Never, group.Never > 0 ? null : group.Oldest)
+                    : new PriorityPoll(priority, 0, 0, null))]));
+        }
+
+        // Phases that began in the window; the operator is the part of the EVSE-ID (surrogates have none).
+        var operators = await db.Database.SqlQuery<OperatorRow>($"""
+            WITH phase AS (
+                SELECT split_part(e.evse_id_display, '*', 1) AS country, split_part(e.evse_id_display, '*', 2) AS party,
+                       i.evse_id, i.valid_to, extract(epoch FROM i.valid_to - i.valid_from) / 60 AS minutes
+                FROM evse_status_interval i
+                JOIN evse e ON e.id = i.evse_id
+                WHERE i.valid_from >= {since} AND i.valid_from <= {now}
+                  AND i.status IN ('OUTOFORDER', 'INOPERATIVE') AND e.identity_kind = 'EVSE_ID')
+            SELECT p.country || '*' || p.party AS "Prefix",
+                   (SELECT o.name FROM operator o WHERE o.country = p.country AND o.operator_id = p.party) AS "Name",
+                   count(*)::int AS "Phases", count(DISTINCT p.evse_id)::int AS "Evses",
+                   (count(*) FILTER (WHERE p.valid_to IS NULL OR p.valid_to > {now}))::int AS "Ongoing",
+                   (percentile_cont(0.5) WITHIN GROUP (ORDER BY p.minutes) FILTER (WHERE p.valid_to <= {now}))::float8 AS "MedianMinutes"
+            FROM phase p
+            GROUP BY p.country, p.party
+            ORDER BY 3 DESC, 1
+            LIMIT {ICrawlerMonitor.TopOperators}
+            """).ToListAsync(cancellationToken);
+        return new DataFreshness(
+            now,
+            [.. regions.Select(row => new RegionFreshness(row.Code, row.Name, row.Evses, row.WithStatus, Percent(row.Fresh20, row.Evses), Percent(row.Fresh60, row.Evses)))],
+            sources,
+            [.. operators.Select(row => new OperatorFaults(
+                row.Prefix, row.Name, row.Phases, row.Evses, row.Ongoing, row.MedianMinutes is { } median ? Math.Round(median, 1) : null))]);
+    }
+
+    private static double Percent(int part, int total) => total == 0 ? 0 : Math.Round(100.0 * part / total, 1);
+
     public async Task<IReadOnlyList<CrawlerRunView>> RunsAsync(int limit, string? provider, CancellationToken cancellationToken) =>
         await db.CrawlerRuns
             .Where(run => provider == null || run.ProviderKey == provider)
@@ -346,4 +413,36 @@ public sealed class CrawlerMonitor(
                 run.Id, run.ProviderKey, run.JobType, run.Target, run.StartedAt, run.FinishedAt, run.Requests, run.Records,
                 run.Result, run.Error, run.CooldownUntil))
             .ToListAsync(cancellationToken);
+
+    /// <summary>One row of the region query; property names are the column aliases.</summary>
+    private sealed class RegionRow
+    {
+        public string Code { get; set; } = null!;
+
+        public string Name { get; set; } = null!;
+
+        public int Evses { get; set; }
+
+        public int WithStatus { get; set; }
+
+        public int Fresh20 { get; set; }
+
+        public int Fresh60 { get; set; }
+    }
+
+    /// <summary>One row of the operator query; property names are the column aliases.</summary>
+    private sealed class OperatorRow
+    {
+        public string Prefix { get; set; } = null!;
+
+        public string? Name { get; set; }
+
+        public int Phases { get; set; }
+
+        public int Evses { get; set; }
+
+        public int Ongoing { get; set; }
+
+        public double? MedianMinutes { get; set; }
+    }
 }

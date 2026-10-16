@@ -142,6 +142,7 @@ curl -k -X PUT -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/m
 curl -k -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/me/favorites   # Favoriten mit aktuellem Status; UI: /favorites
 curl -k -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/me/preferences   # Startposition, Filter, Kartenoptionen und eigene Ladekarten (cards) des Kontos (updatedAt null = noch keine)
 curl -k -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/admin/crawler/status   # Budget, Pause, Abfragepunkte, Pläne, Queue je Quelle (econtrol, ocm) (jobs:read); UI: /admin/crawler
+curl -k -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/admin/crawler/freshness   # Datenfrische je Region (% Status < 20/60 min), Quelle (ältester Abruf je Priorität) und Betreiber (Störungsphasen 48 h), 60 s gecacht (jobs:read)
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/conflicts?limit=20"   # offene Konflikte zwischen Quellen mit Kandidaten und Abstand (conflict:resolve); UI: /admin/conflicts
 curl -k -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"action":"keep"}' https://localhost:5005/api/v1/conflicts/<id>/resolve   # entscheiden: merge (+targetId) / separate bei identity, keep bei evse_id
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select decision, count(*) from match_decision group by 1"   # Entscheidungen über mehrdeutige Datensätze

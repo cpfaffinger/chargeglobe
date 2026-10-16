@@ -4,7 +4,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { AdminCrawlerPage, CRAWLER_REFRESH_MS } from '../pages/admin-crawler.page';
 import { flush, text } from '../testing';
-import { CrawlerRun, CrawlerService, CrawlerStatus, ProviderCrawlStatus } from './crawler.service';
+import { CrawlerRun, CrawlerService, CrawlerStatus, DataFreshness, ProviderCrawlStatus } from './crawler.service';
 
 function provider(overrides: Partial<ProviderCrawlStatus> = {}): ProviderCrawlStatus {
   return {
@@ -32,6 +32,33 @@ function provider(overrides: Partial<ProviderCrawlStatus> = {}): ProviderCrawlSt
 
 function status(providers: ProviderCrawlStatus[] = [provider()]): CrawlerStatus {
   return { at: '2026-10-14T08:15:00Z', providers, queue: { pending: 1234, failed: 2 } };
+}
+
+function freshness(overrides: Partial<DataFreshness> = {}): DataFreshness {
+  return {
+    at: '2026-10-14T08:14:00Z',
+    regions: [
+      { code: 'AT-1', name: 'Burgenland', evses: 0, withStatus: 0, fresh20Percent: 0, fresh60Percent: 0 },
+      { code: 'AT-9', name: 'Wien', evses: 4829, withStatus: 4827, fresh20Percent: 99.9, fresh60Percent: 100 },
+    ],
+    sources: [
+      {
+        key: 'econtrol',
+        requestsLastHour: 1342,
+        budgetPerHour: 1500,
+        points: [
+          { priority: 'HOT', count: 61, neverPolled: 0, oldestPoll: '2026-10-14T08:07:00Z' },
+          { priority: 'NORMAL', count: 235, neverPolled: 3, oldestPoll: null },
+          { priority: 'QUIET', count: 0, neverPolled: 0, oldestPoll: null },
+        ],
+      },
+    ],
+    operators: [
+      { prefix: 'AT*EVN', name: 'EVN', phases: 4939, evses: 1210, ongoing: 111, medianMinutes: 15.2 },
+      { prefix: 'AT*XYZ', name: null, phases: 2, evses: 1, ongoing: 2, medianMinutes: null },
+    ],
+    ...overrides,
+  };
 }
 
 function run(overrides: Partial<CrawlerRun> = {}): CrawlerRun {
@@ -71,6 +98,10 @@ describe('CrawlerService', () => {
     const runs = service.runs();
     http.expectOne('/api/v1/admin/crawler/runs?limit=50').flush({ data: [run()], meta: { returned: 1, limit: 50 } });
     expect((await runs).length).toBe(1);
+
+    const fresh = service.freshness();
+    http.expectOne('/api/v1/admin/crawler/freshness').flush({ data: freshness() });
+    expect((await fresh).regions.length).toBe(2);
   });
 });
 
@@ -81,6 +112,13 @@ describe('AdminCrawlerPage', () => {
 
   const root = () => fixture.nativeElement as HTMLElement;
   const rows = () => Array.from(root().querySelectorAll('#runs tbody tr.mat-mdc-row:not(.no-data)'));
+  /** The rows of a table, each as its cells joined by a blank. */
+  const cells = (table: string) =>
+    Array.from(root().querySelectorAll(`${table} tbody tr`)).map((row) =>
+      Array.from(row.querySelectorAll('td'))
+        .map((cell) => cell.textContent!.trim())
+        .join(' '),
+    );
 
   async function settle(): Promise<void> {
     await flush();
@@ -93,9 +131,10 @@ describe('AdminCrawlerPage', () => {
   }
 
   beforeEach(() => {
-    service = jasmine.createSpyObj<CrawlerService>('CrawlerService', ['status', 'runs']);
+    service = jasmine.createSpyObj<CrawlerService>('CrawlerService', ['status', 'runs', 'freshness']);
     service.status.and.resolveTo(status());
     service.runs.and.resolveTo([]);
+    service.freshness.and.resolveTo(freshness());
     spyOn(window, 'setInterval').and.callFake(((handler: () => void, timeout: number) => {
       expect(timeout).toBe(CRAWLER_REFRESH_MS);
       tick = handler;
@@ -150,6 +189,26 @@ describe('AdminCrawlerPage', () => {
     expect(text(blocked, '#pause')).toBe('gesperrt bis zur nächsten Einstellungsänderung');
     expect(blocked.querySelector('.muted')).toBeNull();
     expect(text(blocked, '#tiles')).not.toContain('ältester Abruf');
+  });
+
+  it('shows the freshness per region and source and the faults per operator', async () => {
+    await render();
+
+    expect(text(root(), '#freshness-at')).toMatch(/^Stand \d{2}:14 · höchstens einmal pro Minute neu berechnet\./);
+    const regions = cells('#freshness-regions');
+    expect(regions).toEqual(['Burgenland (AT-1) 0 0 0.0 % 0.0 %', 'Wien (AT-9) 4,829 4,827 99.9 % 100.0 %']);
+    expect(text(root(), '#freshness-econtrol')).toMatch(
+      /^econtrol: 1342 \/ 1500 Abrufe in der letzten Stunde · lebhaft: 61 Punkte, ältester Abruf \d{2}:07 · normal: 235 Punkte, 3 noch nie abgefragt · ruhig: keine Punkte$/,
+    );
+    const operators = cells('#freshness-operators');
+    expect(operators).toEqual(['AT*EVN · EVN 4,939 1,210 111 15.2 min', 'AT*XYZ 2 1 2 –']);
+  });
+
+  it('tells when no operator had faults', async () => {
+    service.freshness.and.resolveTo(freshness({ operators: [] }));
+    await render();
+
+    expect(text(root(), '#no-faults')).toBe('Keine Störungsphasen in den letzten 48 Stunden.');
   });
 
   it('lists the latest runs with result, error and cooldown', async () => {

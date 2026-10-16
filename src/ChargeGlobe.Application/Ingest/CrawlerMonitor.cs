@@ -45,9 +45,48 @@ public sealed record CrawlerRunView(
     string? Error,
     DateTimeOffset? CooldownUntil);
 
+/// <summary>How current the status data is, per region, source and operator (admin view, <c>jobs:read</c>).</summary>
+/// <param name="At">Time of the snapshot.</param>
+public sealed record DataFreshness(
+    DateTimeOffset At, IReadOnlyList<RegionFreshness> Regions, IReadOnlyList<SourceFreshness> Sources, IReadOnlyList<OperatorFaults> Operators);
+
+/// <summary>Active EVSEs of a region and the share whose current status is younger than 20 and 60 minutes.</summary>
+/// <param name="WithStatus">EVSEs with a current status at all.</param>
+/// <param name="Fresh20Percent">Share of <paramref name="Evses"/> (0–100, one decimal) with a status of the last 20 minutes.</param>
+/// <param name="Fresh60Percent">Share of <paramref name="Evses"/> with a status of the last 60 minutes.</param>
+public sealed record RegionFreshness(string Code, string Name, int Evses, int WithStatus, double Fresh20Percent, double Fresh60Percent);
+
+/// <param name="BudgetPerHour">Setting <c>provider.request_budget_per_hour</c>.</param>
+/// <param name="Points">Query points per priority HOT, NORMAL, QUIET.</param>
+public sealed record SourceFreshness(string Key, int RequestsLastHour, int BudgetPerHour, IReadOnlyList<PriorityPoll> Points);
+
+/// <param name="NeverPolled">Points without any poll yet.</param>
+/// <param name="OldestPoll">Oldest last poll of the points; null if there are none or one was never polled.</param>
+public sealed record PriorityPoll(string Priority, int Count, int NeverPolled, DateTimeOffset? OldestPoll);
+
+/// <summary>
+/// Out-of-order phases (status OUTOFORDER or INOPERATIVE) of an operator that began in the last 48 hours, by the operator
+/// part of the EVSE-ID.
+/// </summary>
+/// <param name="Prefix">Country and operator part of the EVSE-ID, e.g. <c>AT*EVN</c>.</param>
+/// <param name="Name">Name of the operator, if known.</param>
+/// <param name="Evses">EVSEs with at least one such phase.</param>
+/// <param name="Ongoing">Phases not yet over.</param>
+/// <param name="MedianMinutes">Median duration of the finished phases, one decimal; null if none finished.</param>
+public sealed record OperatorFaults(string Prefix, string? Name, int Phases, int Evses, int Ongoing, double? MedianMinutes);
+
 public interface ICrawlerMonitor
 {
+    /// <summary>Window of <see cref="DataFreshness.Operators"/>.</summary>
+    static readonly TimeSpan FaultWindow = TimeSpan.FromHours(48);
+
+    /// <summary>Most operators in <see cref="DataFreshness.Operators"/>.</summary>
+    const int TopOperators = 10;
+
     Task<CrawlerStatus> StatusAsync(CancellationToken cancellationToken);
+
+    /// <summary>Freshness per region and source, out-of-order phases of the operators with the most of them.</summary>
+    Task<DataFreshness> FreshnessAsync(CancellationToken cancellationToken);
 
     /// <summary>The newest runs first, optionally of one provider.</summary>
     Task<IReadOnlyList<CrawlerRunView>> RunsAsync(int limit, string? provider, CancellationToken cancellationToken);
