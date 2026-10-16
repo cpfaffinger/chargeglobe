@@ -14,7 +14,11 @@ public sealed class AddressImportService(
     TimeProvider timeProvider,
     ILogger<AddressImportService> logger) : BackgroundService
 {
-    public static readonly TimeSpan Interval = TimeSpan.FromHours(1);
+    /// <summary>
+    /// Short, so that an empty table (first start, a migration that removed the import state) is filled soon after the
+    /// deploy; a check that is not due costs one read of <c>address_import</c>.
+    /// </summary>
+    public static readonly TimeSpan Interval = TimeSpan.FromMinutes(10);
 
     /// <summary>Longer than an import takes (download and load, a few minutes), so no second worker starts one.</summary>
     public static readonly TimeSpan LeaseDuration = TimeSpan.FromHours(3);

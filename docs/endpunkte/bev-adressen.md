@@ -35,15 +35,15 @@
 ```
 "6793782";"90001";"17223";"1010";"904712";"90101013";"";1;"";"";;"";"keine Angabe";"1";0;"";3007.82;341148.29;31256;"G";"Q"
 ```
-- Mapping auf das Modell (Tabelle `address`, docs/03):
-  - `ADRCD` → `id`
-  - `STRASSE.STRASSENNAME` über `SKZ` → `street`
-  - `HNR_ADR_ZUSAMMEN` → `house_number` („1“, „3A“, „12/3“)
-  - `PLZ` → `postal_code`
+- Mapping auf das Modell (Tabellen `address_street` und `address`, docs/03):
+  - `ADRCD` → `address.id`
+  - `STRASSE.STRASSENNAME` über `SKZ` → `address_street.street`
+  - `HNR_ADR_ZUSAMMEN` → `address.house_number` („1“, „3A“, „12/3“)
+  - `PLZ` → `address_street.postal_code`
   - `ORTSCHAFT.ORTSNAME` über `GKZ`+`OKZ` → `city`; nennt die Ortschaft nur einen Teil ihrer Gemeinde („Wien,Innere Stadt“), ist `city` die Gemeinde („Wien“); unbekannte Ortschaft → Gemeinde
   - `GKZ` → `municipality_code`, `GEMEINDE.GEMEINDENAME` geht in den Suchtext
-  - `RW`, `HW`, `EPSG` → `geom` per `ST_Transform` nach WGS 84; `EPSG` ist 31254, 31255 oder 31256 (MGI / Austria GK West, Central, East)
-  - Straße, Hausnummer, PLZ, Ortschaft und Gemeinde → `search_text` (klein, „ß“ als „ss“, Satzzeichen als Leerzeichen)
+  - `RW`, `HW`, `EPSG` → `address.geom` per `ST_Transform` nach WGS 84 (`address_street.geom` ist das Mittel der Adressen einer Straße); `EPSG` ist 31254, 31255 oder 31256 (MGI / Austria GK West, Central, East)
+  - Straße, PLZ, Ortschaft und Gemeinde → `address_street.search_text` (klein, „ß“ als „ss“, Satzzeichen als Leerzeichen); eine Zeile in `address_street` je Straße, PLZ, Ortschaft und Gemeinde
 - Übersprungen werden Zeilen mit falscher Feldzahl, ohne Code, Koordinaten oder bekannte Projektion, mit unbekannter Straße oder Gemeinde (am 01.10.2026: keine; jede Adresse hat eine Straße).
 
 ## Status-Mapping
