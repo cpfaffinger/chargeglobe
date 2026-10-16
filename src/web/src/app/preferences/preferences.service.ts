@@ -3,6 +3,7 @@ import { DestroyRef, Injectable, computed, effect, inject, untracked } from '@an
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
 import { MapFilterStore, MapFilters, NO_FILTERS } from '../map/map-filters';
+import { DEFAULT_VEHICLE, Vehicle, VehicleStore } from '../map/charging-plan';
 import { DEFAULT_MAP_OPTIONS, MapOptions, MapOptionsStore } from '../map/map-options';
 import { MapView, MapViewStore } from '../map/map-view.store';
 import { CardsStore } from './cards.store';
@@ -17,6 +18,8 @@ export interface PreferencesDocument {
   mapOptions: MapOptions | null;
   /** EMP keys of the user's charging cards and apps; missing or null: none. */
   cards?: string[] | null;
+  /** The car of the charging plan; missing or null: the defaults. */
+  vehicle?: Vehicle | null;
 }
 
 export interface PreferencesResponse {
@@ -32,7 +35,7 @@ function toFilters(filters: Partial<MapFilters> | null): MapFilters {
 }
 
 /**
- * Keeps start position, filters, map options and own charging cards of a signed-in user in the account (docs/06,
+ * Keeps start position, filters, map options, own charging cards and the car of the charging plan of a signed-in user in the account (docs/06,
  * "Einstellungen"), so they follow the user across devices; anonymous visitors keep the map values in the browser only
  * and have no cards. After the login the account's
  * values replace the browser's, or, if the account has none yet, the browser's are uploaded. Every later change is
@@ -46,6 +49,7 @@ export class PreferencesService {
   private readonly filters = inject(MapFilterStore);
   private readonly options = inject(MapOptionsStore);
   private readonly cards = inject(CardsStore);
+  private readonly vehicles = inject(VehicleStore);
   /** Number of the current login; answers for an earlier one are dropped. */
   private session = 0;
   /** True once the account's values are known; changes before are not written. */
@@ -59,6 +63,7 @@ export class PreferencesService {
     filters: this.filters.filters(),
     mapOptions: this.options.options(),
     cards: this.cards.cards(),
+    vehicle: this.vehicles.vehicle(),
   }));
 
   constructor() {
@@ -112,6 +117,7 @@ export class PreferencesService {
     }
     this.options.set(document.mapOptions ?? DEFAULT_MAP_OPTIONS);
     this.cards.set(document.cards ?? []);
+    this.vehicles.set(document.vehicle ?? DEFAULT_VEHICLE);
     this.synced = JSON.stringify(this.document());
   }
 

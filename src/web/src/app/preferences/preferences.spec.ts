@@ -8,6 +8,7 @@ import { DEFAULT_MAP_OPTIONS, MapOptionsStore, OPTIONS_STORAGE_KEY } from '../ma
 import { HOME_VIEW_KEY, MapViewStore } from '../map/map-view.store';
 import { ME, fakeAuth, flush } from '../testing';
 import { CardsStore } from './cards.store';
+import { DEFAULT_VEHICLE, VEHICLE_STORAGE_KEY, VehicleStore } from '../map/charging-plan';
 import { PREFERENCES_DEBOUNCE_MS, PreferencesDocument, PreferencesService } from './preferences.service';
 
 const URL = '/api/v1/me/preferences';
@@ -49,7 +50,7 @@ describe('PreferencesService', () => {
     http.expectOne((request) => request.method === 'GET' && request.url === URL).flush({ data: data ?? { home: null, filters: null, mapOptions: null }, meta: { updatedAt } });
 
   beforeEach(() => {
-    for (const key of [HOME_VIEW_KEY, FILTERS_STORAGE_KEY, OPTIONS_STORAGE_KEY]) {
+    for (const key of [HOME_VIEW_KEY, FILTERS_STORAGE_KEY, OPTIONS_STORAGE_KEY, VEHICLE_STORAGE_KEY]) {
       localStorage.removeItem(key);
     }
     auth = fakeAuth();
@@ -57,7 +58,7 @@ describe('PreferencesService', () => {
 
   afterEach(() => {
     http.verify();
-    for (const key of [HOME_VIEW_KEY, FILTERS_STORAGE_KEY, OPTIONS_STORAGE_KEY]) {
+    for (const key of [HOME_VIEW_KEY, FILTERS_STORAGE_KEY, OPTIONS_STORAGE_KEY, VEHICLE_STORAGE_KEY]) {
       localStorage.removeItem(key);
     }
   });
@@ -72,13 +73,20 @@ describe('PreferencesService', () => {
   it('uploads the values of the browser at the first login of the account', async () => {
     localStorage.setItem(HOME_VIEW_KEY, JSON.stringify(HOME));
     localStorage.setItem(OPTIONS_STORAGE_KEY, JSON.stringify({ clusterRadius: 80, clusterMaxZoom: 15 }));
+    localStorage.setItem(VEHICLE_STORAGE_KEY, JSON.stringify({ consumptionKwhPer100Km: 21, batteryKwh: 64 }));
     setUp();
     await signIn();
     respond(null, null);
     await flush();
 
     const put = http.expectOne((request) => request.method === 'PUT' && request.url === URL);
-    expect(put.request.body).toEqual({ home: HOME, filters: NO_FILTERS, mapOptions: { clusterRadius: 80, clusterMaxZoom: 15 }, cards: [] });
+    expect(put.request.body).toEqual({
+      home: HOME,
+      filters: NO_FILTERS,
+      mapOptions: { clusterRadius: 80, clusterMaxZoom: 15 },
+      cards: [],
+      vehicle: { consumptionKwhPer100Km: 21, batteryKwh: 64, startSoc: null, arrivalSoc: null },
+    });
     put.flush({ data: put.request.body, meta: { updatedAt: '2026-10-14T08:00:00Z' } });
     await flush();
 
@@ -95,6 +103,8 @@ describe('PreferencesService', () => {
     expect(TestBed.inject(MapViewStore).home()).toEqual(HOME);
     expect(TestBed.inject(MapFilterStore).filters()).toEqual({ ...NO_FILTERS, connector: ['CHADEMO'], minPowerKw: 50, availableOnly: true });
     expect(TestBed.inject(MapOptionsStore).options()).toEqual({ clusterRadius: 0, clusterMaxZoom: 18 });
+    // Without a car in the account the defaults apply.
+    expect(TestBed.inject(VehicleStore).vehicle()).toEqual(DEFAULT_VEHICLE);
     // Taking them over is no change of the user.
     await waitForWrite();
 
@@ -110,6 +120,22 @@ describe('PreferencesService', () => {
     TestBed.tick();
     TestBed.inject(MapViewStore).setHome(HOME);
     await waitForWrite();
+  });
+
+  it('takes the car of the account and writes a changed one', async () => {
+    setUp();
+    await signIn();
+    respond({ home: null, filters: null, mapOptions: null, vehicle: { consumptionKwhPer100Km: 16, batteryKwh: 82, startSoc: 90, arrivalSoc: 20 } });
+    await flush();
+    const vehicles = TestBed.inject(VehicleStore);
+    expect(vehicles.vehicle()).toEqual({ consumptionKwhPer100Km: 16, batteryKwh: 82, startSoc: 90, arrivalSoc: 20 });
+
+    vehicles.set({ arrivalSoc: null });
+    await waitForWrite();
+    const put = http.expectOne((request) => request.method === 'PUT');
+    expect(put.request.body.vehicle).toEqual({ consumptionKwhPer100Km: 16, batteryKwh: 82, startSoc: 90, arrivalSoc: null });
+    put.flush({ data: put.request.body, meta: { updatedAt: '2026-10-16T08:00:00Z' } });
+    await flush();
   });
 
   it('takes the own cards of the account, writes a changed choice and forgets them after the logout', async () => {
