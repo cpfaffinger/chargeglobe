@@ -68,7 +68,7 @@ E-Control register page 3/17: stations 2001–3000 of 16070
 Job INVENTORY_FULL econtrol AT-9,AT-3,AT-4,AT-1 failed: E-Control search/stations returned 503.; provider paused until 08:20:00 UTC (failure 1 in a row)
 ```
 
-Die Standard-Logs des `HttpClient` (eine Zeile je Request ohne Kontext) sind im Crawler auf `Warning` gefiltert. Administratoren sehen den Zustand live unter `/admin/crawler` (`GET /api/v1/admin/crawler/status` und `/runs`, Permission `jobs:read`).
+Die Standard-Logs des `HttpClient` (eine Zeile je Request ohne Kontext) sind im Crawler auf `Warning` gefiltert. Administratoren sehen den Zustand live unter `/admin/crawler` (`GET /api/v1/admin/crawler/status` und `/runs`, Permission `jobs:read`), dazu den Abschnitt **Datenfrische** (`GET /api/v1/admin/crawler/freshness`, 60 s gecacht): je Region der Anteil der Ladepunkte mit einem Status jünger als 20 bzw. 60 Minuten, je Quelle Abrufe der letzten Stunde gegen das Budget und der älteste Abruf je Priorität, je Betreiber (EVSE-ID-Präfix, Top 10) Zahl und Median-Dauer der Störungsphasen (`OUTOFORDER`/`INOPERATIVE`) der letzten 48 Stunden – kurze Phasen mit kleinem Median (z. B. EVN, um 15 Minuten) sind Meldeverhalten der Quelle, keine echten Ausfälle.
 
 ### 6. Change Detection & Dedupe
 - `content_hash` der Antwort: identische Antwort → nur `last_seen` aktualisieren, kein neuer Snapshot.

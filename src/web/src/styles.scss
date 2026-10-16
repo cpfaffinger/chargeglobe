@@ -1566,6 +1566,28 @@ app-setting-row .error {
   gap: 8px 16px;
 }
 
+#freshness .freshness-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+#freshness .freshness-table th,
+#freshness .freshness-table td {
+  padding: 4px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+#freshness .freshness-table td:not(:first-child),
+#freshness .freshness-table th:not(:first-child) {
+  text-align: right;
+}
+
+#freshness h3 {
+  margin: 16px 0 4px;
+  font: var(--mat-sys-title-small);
+}
+
 .crawler-source {
   margin-top: 16px;
 }

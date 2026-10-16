@@ -64,6 +64,46 @@ export interface CrawlerRun {
   cooldownUntil: string | null;
 }
 
+export interface RegionFreshness {
+  code: string;
+  name: string;
+  evses: number;
+  withStatus: number;
+  fresh20Percent: number;
+  fresh60Percent: number;
+}
+
+export interface PriorityPoll {
+  priority: 'HOT' | 'NORMAL' | 'QUIET';
+  count: number;
+  neverPolled: number;
+  oldestPoll: string | null;
+}
+
+export interface SourceFreshness {
+  key: string;
+  requestsLastHour: number;
+  budgetPerHour: number;
+  points: PriorityPoll[];
+}
+
+export interface OperatorFaults {
+  prefix: string;
+  name: string | null;
+  phases: number;
+  evses: number;
+  ongoing: number;
+  medianMinutes: number | null;
+}
+
+/** GET /api/v1/admin/crawler/freshness (jobs:read), computed at most once a minute. */
+export interface DataFreshness {
+  at: string;
+  regions: RegionFreshness[];
+  sources: SourceFreshness[];
+  operators: OperatorFaults[];
+}
+
 export const RUNS_SHOWN = 50;
 
 /** Client of the crawler endpoints for administrators. */
@@ -73,6 +113,10 @@ export class CrawlerService {
 
   async status(): Promise<CrawlerStatus> {
     return (await firstValueFrom(this.http.get<{ data: CrawlerStatus }>('/api/v1/admin/crawler/status'))).data;
+  }
+
+  async freshness(): Promise<DataFreshness> {
+    return (await firstValueFrom(this.http.get<{ data: DataFreshness }>('/api/v1/admin/crawler/freshness'))).data;
   }
 
   async runs(): Promise<CrawlerRun[]> {

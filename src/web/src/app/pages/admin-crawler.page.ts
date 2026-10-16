@@ -7,12 +7,14 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTableModule } from '@angular/material/table';
 import { RouterLink } from '@angular/router';
 import { attempt } from '../auth/problem';
-import { CrawlerRun, CrawlerService, CrawlerStatus, ProviderCrawlStatus } from '../crawler/crawler.service';
+import { CrawlerRun, CrawlerService, CrawlerStatus, DataFreshness, PriorityPoll, ProviderCrawlStatus } from '../crawler/crawler.service';
 import { AppIcon } from '../design/icon';
 import { AppLoading } from '../design/loading';
 
 /** Polling interval of the page; the API is meant for it. */
 export const CRAWLER_REFRESH_MS = 5000;
+
+const PRIORITY_LABELS: Record<PriorityPoll['priority'], string> = { HOT: 'lebhaft', NORMAL: 'normal', QUIET: 'ruhig' };
 
 const JOB_LABELS: Record<string, string> = {
   INVENTORY_FULL: 'Inventar',
@@ -105,6 +107,77 @@ const JOB_LABELS: Record<string, string> = {
       </p>
     }
 
+    @if (freshness(); as fresh) {
+      <section id="freshness">
+        <h2>Datenfrische</h2>
+        <p class="muted" id="freshness-at">
+          Stand {{ fresh.at | date: 'HH:mm' }} · höchstens einmal pro Minute neu berechnet. Frisch heißt: der aktuelle Status eines
+          Ladepunkts wurde in den letzten 20 bzw. 60 Minuten abgefragt.
+        </p>
+        <div class="table-box">
+          <table class="freshness-table" id="freshness-regions">
+            <thead>
+              <tr><th>Region</th><th>Ladepunkte</th><th>mit Status</th><th>&lt; 20 min</th><th>&lt; 60 min</th></tr>
+            </thead>
+            <tbody>
+              @for (region of fresh.regions; track region.code) {
+                <tr>
+                  <td>{{ region.name }} ({{ region.code }})</td>
+                  <td>{{ region.evses | number }}</td>
+                  <td>{{ region.withStatus | number }}</td>
+                  <td>{{ region.fresh20Percent | number: '1.1-1' }} %</td>
+                  <td>{{ region.fresh60Percent | number: '1.1-1' }} %</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @for (source of fresh.sources; track source.key) {
+          <p class="freshness-source" [id]="'freshness-' + source.key">
+            <strong>{{ source.key }}</strong>: {{ source.requestsLastHour }} / {{ source.budgetPerHour }} Abrufe in der letzten Stunde
+            @for (point of source.points; track point.priority) {
+              · {{ priority(point) }}:
+              @if (point.count === 0) {
+                keine Punkte
+              } @else {
+                {{ point.count }} Punkte,
+                @if (point.oldestPoll) {
+                  ältester Abruf {{ point.oldestPoll | date: 'HH:mm' }}
+                } @else {
+                  {{ point.neverPolled }} noch nie abgefragt
+                }
+              }
+            }
+          </p>
+        }
+        <h3>Störungen je Betreiber (48 h)</h3>
+        <p class="muted">
+          Phasen mit Status „außer Betrieb“ oder „nicht betriebsbereit“, die in den letzten 48 Stunden begonnen haben, nach dem
+          Betreiberteil der EVSE-ID; die zehn Betreiber mit den meisten Phasen.
+        </p>
+        <div class="table-box">
+          <table class="freshness-table" id="freshness-operators">
+            <thead>
+              <tr><th>Betreiber</th><th>Phasen</th><th>Ladepunkte</th><th>laufend</th><th>Median</th></tr>
+            </thead>
+            <tbody>
+              @for (operator of fresh.operators; track operator.prefix) {
+                <tr>
+                  <td>{{ operator.prefix }}{{ operator.name ? ' · ' + operator.name : '' }}</td>
+                  <td>{{ operator.phases | number }}</td>
+                  <td>{{ operator.evses | number }}</td>
+                  <td>{{ operator.ongoing | number }}</td>
+                  <td>{{ operator.medianMinutes === null ? '–' : (operator.medianMinutes | number: '1.0-1') + ' min' }}</td>
+                </tr>
+              } @empty {
+                <tr><td colspan="5" id="no-faults">Keine Störungsphasen in den letzten 48 Stunden.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+
     <section id="runs">
       <h2>Letzte Läufe</h2>
       <div class="table-box">
@@ -158,6 +231,7 @@ export class AdminCrawlerPage {
   protected readonly columns = ['startedAt', 'job', 'target', 'requests', 'records', 'result'];
   protected readonly status = signal<CrawlerStatus | null>(null);
   protected readonly runs = signal<CrawlerRun[]>([]);
+  protected readonly freshness = signal<DataFreshness | null>(null);
   protected readonly loading = signal(false);
   protected readonly errors = signal<string[]>([]);
 
@@ -167,17 +241,23 @@ export class AdminCrawlerPage {
     inject(DestroyRef).onDestroy(() => clearInterval(timer));
   }
 
-  /** Status and runs together; a refresh while one is running is skipped. */
+  /** Status, runs and freshness together; a refresh while one is running is skipped. */
   protected load(): Promise<void> {
     if (this.loading()) {
       return Promise.resolve();
     }
 
     return attempt(this.loading, this.errors, async () => {
-      const [status, runs] = await Promise.all([this.crawler.status(), this.crawler.runs()]);
+      // The freshness is cached for a minute by the API, so asking for it with every refresh costs little.
+      const [status, runs, freshness] = await Promise.all([this.crawler.status(), this.crawler.runs(), this.crawler.freshness()]);
       this.status.set(status);
       this.runs.set(runs);
+      this.freshness.set(freshness);
     });
+  }
+
+  protected priority(point: PriorityPoll): string {
+    return PRIORITY_LABELS[point.priority];
   }
 
   protected job(jobType: string): string {
