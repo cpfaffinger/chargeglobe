@@ -204,6 +204,9 @@ public sealed class JobLeases(AppDbContext db, TimeProvider timeProvider) : IJob
             .ToListAsync(cancellationToken);
         return acquired.Count == 1;
     }
+
+    public Task ReleaseAsync(string jobName, string instanceId, CancellationToken cancellationToken) =>
+        db.Database.ExecuteSqlAsync($"DELETE FROM job_lease WHERE job_name = {jobName} AND leased_by = {instanceId}", cancellationToken);
 }
 
 /// <summary>
