@@ -1741,6 +1741,27 @@ describe('HomePage (map)', () => {
       toggle().click();
       await settle();
       expect(actions().hidden).toBeTrue();
+
+      // The filter button is part of the folded actions: a symbol, its count also on the closed toggle.
+      expect(root().querySelector('#map-legend-bar #filter-toggle')).toBeNull();
+      expect(root().querySelector('#map-actions .home-actions #filter-toggle')!.getAttribute('aria-label')).toBe('Filter');
+      expect(text(root(), '#filter-toggle')).toBe('');
+      expect(root().querySelector('#actions-toggle .filter-count')).toBeNull();
+      TestBed.inject(MapFilterStore).set({ ...NO_FILTERS, greenEnergy: true });
+      await settle();
+      http.expectOne(`${url}&greenEnergy=true`).flush(response());
+      await settle();
+      expect(text(root(), '#actions-toggle .filter-count')).toBe('1');
+      toggle().click();
+      await settle();
+      expect(root().querySelector('#actions-toggle .filter-count')).toBeNull();
+      expect(text(root(), '#filter-toggle .filter-count')).toBe('1');
+      root().querySelector<HTMLButtonElement>('#filter-toggle')!.click();
+      await settle();
+      // Opening the filters folds the actions away.
+      expect(root().querySelector('#filter-panel')).not.toBeNull();
+      expect(actions().hidden).toBeTrue();
+      expect(toggle().getAttribute('aria-expanded')).toBe('false');
     });
 
     it('marks every status of the legend and the card with a symbol', async () => {
