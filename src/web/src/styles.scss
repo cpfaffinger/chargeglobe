@@ -391,6 +391,14 @@ app-location-details .details-state {
   min-width: 8em;
 }
 
+#route-planner app-place-search {
+  flex-basis: 100%;
+}
+
+#route-planner .place-search {
+  width: 100%;
+}
+
 #route-planner .picking {
   background: var(--mat-sys-secondary-container);
 }
@@ -412,10 +420,17 @@ app-location-details .details-state {
 }
 
 #working,
-.loading {
+.loading,
+app-loading {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+app-loading {
+  margin: 4px 0;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-medium);
 }
 
 #location-card .card-head > div {

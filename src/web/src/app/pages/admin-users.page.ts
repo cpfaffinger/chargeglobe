@@ -12,6 +12,7 @@ import { AccountState, AdminService, RoleSummary, UserPage, UserSummary, USERS_P
 import { AuthService } from '../auth/auth.service';
 import { attempt } from '../auth/problem';
 import { AppIcon } from '../design/icon';
+import { AppLoading } from '../design/loading';
 import { GermanPaginatorIntl } from '../design/paginator-intl';
 
 export const STATE_LABELS: Record<AccountState, string> = {
@@ -29,7 +30,7 @@ export const SEARCH_DEBOUNCE_MS = 300;
  * disable or enable, assign roles, send the confirmation mail again.
  */
 @Component({
-  imports: [AppIcon, DatePipe, MatButtonModule, MatFormFieldModule, MatInputModule, MatPaginatorModule, MatSelectModule, MatTableModule],
+  imports: [AppLoading, AppIcon, DatePipe, MatButtonModule, MatFormFieldModule, MatInputModule, MatPaginatorModule, MatSelectModule, MatTableModule],
   selector: 'app-admin-users',
   providers: [{ provide: MatPaginatorIntl, useClass: GermanPaginatorIntl }],
   template: `
@@ -43,6 +44,9 @@ export const SEARCH_DEBOUNCE_MS = 300;
     </div>
     @for (error of errors(); track error) {
       <p class="error" role="alert">{{ error }}</p>
+    }
+    @if (loading()) {
+      <app-loading id="users-loading" text="Konten werden geladen …" />
     }
     @if (users(); as current) {
       <div class="table-box">

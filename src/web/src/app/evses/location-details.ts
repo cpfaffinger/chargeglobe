@@ -8,6 +8,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../auth/auth.service';
 import { AppIcon } from '../design/icon';
+import { AppLoading } from '../design/loading';
 import {
   EvseDetail,
   EvsesService,
@@ -36,6 +37,7 @@ type LoadState = 'loading' | 'error' | 'ready';
  */
 @Component({
   imports: [
+    AppLoading,
     AppIcon,
     DatePipe,
     DecimalPipe,
@@ -59,7 +61,7 @@ type LoadState = 'loading' | 'error' | 'ready';
       </p>
     }
     @if (!detail() && !notice()) {
-      <p id="details-loading" class="details-state">Ladepunkte werden geladen …</p>
+      <app-loading id="details-loading" class="details-state" text="Ladepunkte werden geladen …" />
     }
     @if (detail(); as detail) {
       @let location = detail.data.location;
@@ -132,7 +134,7 @@ type LoadState = 'loading' | 'error' | 'ready';
               @if (prices) {
                 @switch (priceState(evse.id)) {
                   @case ('loading') {
-                    <p class="price price-state">Preis wird geladen …</p>
+                    <app-loading class="price price-state" text="Preis wird geladen …" />
                   }
                   @case ('error') {
                     <p class="price price-state error">Der Preis konnte nicht geladen werden.</p>
@@ -168,8 +170,7 @@ type LoadState = 'loading' | 'error' | 'ready';
               @if (history) {
               @switch (timelineState(evse.id)) {
                 @case ('loading') {
-                  <p class="timeline-state">Verlauf wird geladen …</p>
-                  <mat-progress-bar mode="indeterminate" aria-label="Verlauf wird geladen" />
+                  <app-loading class="timeline-state" text="Verlauf wird geladen …" />
                 }
                 @case ('error') {
                   <p class="timeline-state error">Der Statusverlauf konnte nicht geladen werden.</p>
@@ -214,7 +215,7 @@ type LoadState = 'loading' | 'error' | 'ready';
               }
               @switch (heatmapState()) {
                 @case ('loading') {
-                  <p class="heatmap-state">Auslastung wird geladen …</p>
+                  <app-loading class="heatmap-state" text="Auslastung wird geladen …" />
                 }
                 @case ('error') {
                   <p class="heatmap-state error">Die Auslastung konnte nicht geladen werden.</p>

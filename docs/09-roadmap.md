@@ -98,6 +98,7 @@
 | **UI-Design** | entschieden: Angular Material (Material 3) + Angular CDK mit Light und Dark Mode, Palette „Volt“, Roboto Flex | umgesetzt, siehe [ADR-0012](adr/0012-design-system-und-theming.md); Wahl des Modus später als Customizing im Benutzerprofil |
 | **Karten-Kacheln selbst hosten** | öffentliche OpenFreeMap-Instanz / eigener Kachel-Service im Compose-Stack | öffentliche Instanz, solange sie zuverlässig ist; Wechsel über `map.style_url` ohne Codeänderung ([ADR-0007](adr/0007-karte-standort-routing.md)). |
 | **Identity-Provider** | nur lokale Konten / zusätzlich OIDC (GitHub, Google, Entra) | lokal im MVP; OIDC-Login später additiv über ASP.NET Core Identity External Logins. |
+| **Adresssuche (Geocoder)** für Start und Ziel der Route | eigener Photon- oder Nominatim-Dienst im Compose-Stack (OSM-Extrakt Österreich, wie Valhalla auf einem anderen Host gebaut) / externer Dienst (Nominatim der OSMF, kommerzielle Anbieter) | eigener Dienst: externe Geocoder bekämen die gesuchten Adressen (personenbezogen), und die Nutzungsrichtlinie der OSMF-Instanz verbietet Autocomplete; Photon passt besser zur Eingabe beim Tippen. Bis dahin sucht der Routenplaner nur Ladestandorte (`GET /search`) und nimmt Punkte auf der Karte. |
 | **Tesla-Quelle** | Tesla-Standortkarte (öffentlich) vs. Owner-API (Login) | nur öffentliche Standortdaten + Roaming-EVSE-IDs aus E-Control; keine Owner-API. |
 
 ## Risiken
