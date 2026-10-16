@@ -23,7 +23,7 @@ import {
   OccupancyResponse,
   StatusHistoryResponse,
 } from './evses.service';
-import { EVSE_STATUS, combine, heatColor, statusOf, timeline } from './status';
+import { combine, EVSE_STATUS, faultSource, heatColor, sourceName, statusOf, timeline } from './status';
 
 const DAY = 24 * 60 * 60 * 1000;
 const ATTRIBUTION = { source: 'econtrol', text: 'Datenquelle: E-Control', license: 'Terms' };
@@ -72,6 +72,7 @@ function evse(overrides: Partial<EvseDetail> = {}): EvseDetail {
     status: 'CHARGING',
     statusSince: '2026-10-14T07:40:00Z',
     statusObservedAt: '2026-10-14T08:15:00Z',
+    statusSource: 'econtrol',
     maxPowerKw: 22,
     powerType: 'AC_3_PHASE',
     connectors: [
@@ -129,6 +130,16 @@ describe('status helpers', () => {
     expect(statusOf('SOMETHING_NEW')).toBe(EVSE_STATUS['UNKNOWN']);
     expect(statusOf('CHARGING')).toEqual({ color: 'var(--cg-status-occupied)', icon: 'bolt', label: 'lädt' });
     expect(statusOf('INOPERATIVE').icon).toBe('close');
+  });
+
+  it('names the source of a fault and of a status', () => {
+    expect(faultSource('OUTOFORDER', 'econtrol')).toBe('laut E-Control ');
+    expect(faultSource('INOPERATIVE', 'ocm')).toBe('laut Open Charge Map ');
+    expect(faultSource('CHARGING', 'econtrol')).toBe('');
+    expect(faultSource('OUTOFORDER', null)).toBe('');
+    expect(sourceName('econtrol')).toBe('E-Control');
+    expect(sourceName('other')).toBe('other');
+    expect(sourceName(null)).toBe('');
   });
 
   it('clips the intervals to the range and drops those outside', () => {

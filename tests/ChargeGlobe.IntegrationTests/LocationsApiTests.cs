@@ -270,6 +270,7 @@ public class LocationsApiTests(IntegrationFactory factory) : IClassFixture<Integ
 
         var evses = detail.GetProperty("data").GetProperty("evses").EnumerateArray().ToList();
         Assert.Equal(["AVAILABLE", "CHARGING"], evses.Select(evse => evse.GetProperty("status").GetString()));
+        Assert.Equal(["econtrol", "econtrol"], evses.Select(evse => evse.GetProperty("statusSource").GetString()));
         var summary = detail.GetProperty("data").GetProperty("location");
         Assert.Equal((1, 1, 0), (summary.GetProperty("evsesAvailable").GetInt32(), summary.GetProperty("evsesOccupied").GetInt32(), summary.GetProperty("evsesFaulted").GetInt32()));
         Assert.True(evses[0].GetProperty("hasEvseId").GetBoolean());
@@ -292,6 +293,7 @@ public class LocationsApiTests(IntegrationFactory factory) : IClassFixture<Integ
         {
             var stale = await GetJsonAsync(client, $"/api/v1/locations/{id}");
             Assert.Equal("UNKNOWN", stale.GetProperty("data").GetProperty("evses")[0].GetProperty("status").GetString());
+            Assert.Equal(JsonValueKind.Null, stale.GetProperty("data").GetProperty("evses")[0].GetProperty("statusSource").ValueKind);
             Assert.Equal("OCCUPIED", stale.GetProperty("data").GetProperty("location").GetProperty("availability").GetString());
             var listed = await GetJsonAsync(client, $"/api/v1/locations?bbox={ViennaBox}&limit=1");
             Assert.Equal((0, "OCCUPIED"), (listed.GetProperty("data")[0].GetProperty("evsesAvailable").GetInt32(), listed.GetProperty("data")[0].GetProperty("availability").GetString()));

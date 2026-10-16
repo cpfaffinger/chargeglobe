@@ -23,6 +23,19 @@ export const EVSE_STATUS: Record<string, { color: string; icon: IconName; label:
 
 export const statusOf = (status: string) => EVSE_STATUS[status] ?? EVSE_STATUS['UNKNOWN'];
 
+/** Names of the sources (keys of the table source) in status lines. */
+const SOURCE_NAMES: Record<string, string> = { econtrol: 'E-Control', ocm: 'Open Charge Map' };
+
+export const sourceName = (key: string | null): string => (key === null ? '' : (SOURCE_NAMES[key] ?? key));
+
+/**
+ * "laut E-Control " before "seit …" for a fault (out of order, not operational): chargeglobe shows the status of the
+ * source as it is, this says who reports the fault. Empty for other statuses and without a source.
+ */
+export function faultSource(status: string, source: string | null): string {
+  return (status === 'OUTOFORDER' || status === 'INOPERATIVE') && source !== null ? `laut ${sourceName(source)} ` : '';
+}
+
 /** Part of a timeline bar: position and width in percent of the shown range. */
 export interface Segment {
   status: string;

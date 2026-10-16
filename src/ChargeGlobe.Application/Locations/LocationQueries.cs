@@ -107,6 +107,7 @@ public sealed record ConnectorDetail(string Standard, string? Format, string? Po
 
 /// <param name="EvseId">EVSE-ID with separators; for a surrogate the chargeglobe ID <c>XX*CG*E…</c>.</param>
 /// <param name="Status">OCPI status, or <c>UNKNOWN</c> if there is none or it is older than the allowed age.</param>
+/// <param name="StatusSource">Key of the source that reported the current status (table <c>source</c>); null with <c>UNKNOWN</c>.</param>
 /// <param name="AuthMethods">Ways to start and pay a session (<c>AuthMethod</c> names); empty if unknown.</param>
 /// <param name="Roaming">Charging cards of other providers are accepted; null if unknown.</param>
 public sealed record EvseDetail(
@@ -116,6 +117,7 @@ public sealed record EvseDetail(
     string Status,
     DateTimeOffset? StatusSince,
     DateTimeOffset? StatusObservedAt,
+    string? StatusSource,
     decimal? MaxPowerKw,
     string? PowerType,
     IReadOnlyList<ConnectorDetail> Connectors,

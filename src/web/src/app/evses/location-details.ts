@@ -15,7 +15,7 @@ import {
   LocationDetailResponse,
   Occupancy,
 } from './evses.service';
-import { Segment, combine, statusOf, timeline } from './status';
+import { Segment, combine, faultSource, statusOf, timeline } from './status';
 import { OccupancyHeatmap, StatusTimeline } from './status-charts';
 import { CardsStore } from '../preferences/cards.store';
 import { EmpPrice, EvsePricesResponse, money, priceParts } from './prices';
@@ -118,7 +118,7 @@ type LoadState = 'loading' | 'error' | 'ready';
               </div>
               <p class="meta">
                 @if (evse.statusSince) {
-                  seit {{ evse.statusSince | date: 'dd.MM.yyyy HH:mm' }}
+                  {{ faultSource(evse.status, evse.statusSource) }}seit {{ evse.statusSince | date: 'dd.MM.yyyy HH:mm' }}
                 }
                 @if (evse.maxPowerKw !== null) {
                   · bis {{ evse.maxPowerKw | number: '1.0-1' : 'en-US' }} kW
@@ -267,6 +267,7 @@ export class LocationDetails {
   protected readonly timelineDays = TIMELINE_DAYS;
   protected readonly occupancyWeeks = OCCUPANCY_WEEKS;
   protected readonly statusOf = statusOf;
+  protected readonly faultSource = faultSource;
   protected readonly busy = busyText;
   protected readonly availabilityColor = (key: keyof typeof AVAILABILITY) => tokenColor(AVAILABILITY[key].token);
   protected readonly availabilityIcon = (key: keyof typeof AVAILABILITY) => AVAILABILITY[key].icon;

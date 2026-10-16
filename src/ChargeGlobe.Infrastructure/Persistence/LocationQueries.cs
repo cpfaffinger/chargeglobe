@@ -177,16 +177,17 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
             .Where(current => evseIds.Contains(current.EvseId))
             .ToDictionaryAsync(current => current.EvseId, cancellationToken);
         var fresh = FreshSince();
-        string StatusOf(Guid evseId) =>
-            statuses.TryGetValue(evseId, out var current) && current.ObservedAt >= fresh ? current.Status.ToString() : nameof(EvseStatus.UNKNOWN);
+        EvseStatusCurrent? FreshStatus(Guid evseId) =>
+            statuses.TryGetValue(evseId, out var current) && current.ObservedAt >= fresh ? current : null;
 
         var details = evses.Select(evse => new EvseDetail(
                 evse.Id,
                 evse.EvseIdDisplay,
                 evse.IdentityKind == IdentityKind.EVSE_ID,
-                StatusOf(evse.Id),
+                FreshStatus(evse.Id)?.Status.ToString() ?? nameof(EvseStatus.UNKNOWN),
                 statuses.GetValueOrDefault(evse.Id)?.Since,
                 statuses.GetValueOrDefault(evse.Id)?.ObservedAt,
+                FreshStatus(evse.Id)?.SourceKey,
                 evse.MaxPowerKw,
                 evse.PowerType?.ToString(),
                 [.. evse.Connectors.OrderBy(connector => connector.Ordinal).Select(connector => new ConnectorDetail(

@@ -180,7 +180,7 @@ describe('EvseDetailPage', () => {
 
     expect(text(page(), '#evse-id')).toBe('AT*VIE*E1234*1');
     expect(text(page(), '.status')).toBe('lädt');
-    expect(text(page(), '#status-meta')).toMatch(/^seit 14\.10\.2026 \d\d:40 · gemeldet 14\.10\.2026 \d\d:15 von econtrol$/);
+    expect(text(page(), '#status-meta')).toMatch(/^seit 14\.10\.2026 \d\d:40 · gemeldet 14\.10\.2026 \d\d:15 von E-Control$/);
     expect(page().querySelector('#lifecycle')).toBeNull();
     expect(text(page(), '#evse-location')).toContain('Parkgarage Stephansplatz, Stephansplatz 1, 1010 Wien');
     expect(page().querySelector('#evse-location a')!.getAttribute('href')).toBe('/locations/loc-1');
