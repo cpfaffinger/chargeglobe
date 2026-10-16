@@ -28,6 +28,25 @@ public sealed partial record EvseId
     /// <summary>Everything after the leading <c>E</c> of the outlet part.</summary>
     public string OutletId => Normalized[6..];
 
+    /// <summary>Longest last part that still counts as the outlet of a station ("1", "01", "DC1").</summary>
+    public const int MaxOutletLength = 3;
+
+    /// <summary>
+    /// The charging station the EVSE-ID names when it has the four-part form <c>country*operator*E&lt;station&gt;*&lt;outlet&gt;</c>
+    /// with a short outlet, e.g. <c>AT*MER*E006566</c> of <c>AT*MER*E006566*01</c>; null for other forms (<c>AT*GBC*E1</c>,
+    /// without separators, or a long last part such as <c>AT*EST*E000*01994</c>, where the number of the point comes last).
+    /// </summary>
+    public string? StationPart
+    {
+        get
+        {
+            var parts = Display.Split('*');
+            return parts.Length == 4 && parts.All(part => part.Length > 0) && parts[3].Length <= MaxOutletLength
+                ? string.Join('*', parts[..3])
+                : null;
+        }
+    }
+
     public static EvseId Parse(string? input) =>
         TryParse(input, out var evseId)
             ? evseId

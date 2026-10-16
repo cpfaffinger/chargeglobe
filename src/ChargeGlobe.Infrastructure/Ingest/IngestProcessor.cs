@@ -108,6 +108,7 @@ public sealed class IngestProcessor(AppDbContext db)
         List<Guid> locationIds = [.. records.Where(record => record.EntityType == EntityType.LOCATION).Select(record => record.EntityId)];
         List<Guid> recordEvses = [.. records.Where(record => record.EntityType == EntityType.EVSE).Select(record => record.EntityId)];
         await db.Locations.Where(location => locationIds.Contains(location.Id)).LoadAsync(cancellationToken);
+        await db.ChargingStations.Where(station => locationIds.Contains(station.LocationId)).LoadAsync(cancellationToken);
         var evses = await db.Evses
             .Include(evse => evse.Connectors)
             .Where(evse => recordEvses.Contains(evse.Id) || evseIds.Contains(evse.EvseIdNorm))
@@ -369,6 +370,18 @@ public sealed class IngestProcessor(AppDbContext db)
             cancellationToken);
         await attributes.SetAsync("power_type", snapshot.PowerType?.ToString(), _ => evse.PowerType = snapshot.PowerType, cancellationToken);
         await attributes.SetAsync("physical_reference", snapshot.PhysicalReference, value => evse.PhysicalReference = value, cancellationToken);
+        // The charging station the source names (E-Control: the station part of a four-part EVSE-ID), one per location
+        // and label; without one the EVSE keeps its station.
+        if (snapshot.StationExternalId is { } stationRef)
+        {
+            var station = await FindStationAsync(evse.LocationId, stationRef, cancellationToken);
+            await attributes.SetAsync(
+                "charging_station",
+                stationRef,
+                _ => evse.ChargingStationId = (station ??= NewStation(evse.LocationId, stationRef)).Id,
+                cancellationToken);
+        }
+
         await attributes.SetAsync(
             "connectors",
             JsonSerializer.Serialize(snapshot.Connectors, Json),
@@ -388,6 +401,18 @@ public sealed class IngestProcessor(AppDbContext db)
         Touch(evse, attributes.Changed, at);
         _evses++;
         return evse;
+    }
+
+    private async Task<ChargingStation?> FindStationAsync(Guid locationId, string label, CancellationToken cancellationToken) =>
+        db.ChargingStations.Local.FirstOrDefault(station => station.LocationId == locationId && station.Label == label)
+        ?? await db.ChargingStations.FirstOrDefaultAsync(station => station.LocationId == locationId && station.Label == label, cancellationToken);
+
+    private ChargingStation NewStation(Guid locationId, string label)
+    {
+        var station = ChargingStation.Create(locationId);
+        station.Label = label;
+        db.ChargingStations.Add(station);
+        return station;
     }
 
     private async Task<Evse?> FindEvseAsync(System.Linq.Expressions.Expression<Func<Evse, bool>> predicate, CancellationToken cancellationToken) =>

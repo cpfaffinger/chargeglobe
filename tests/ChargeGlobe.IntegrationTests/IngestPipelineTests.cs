@@ -62,6 +62,32 @@ public class IngestPipelineTests(IntegrationFactory factory) : IClassFixture<Int
             .ToListAsync());
 
     [Fact]
+    public async Task Four_part_EVSE_IDs_put_their_EVSEs_on_one_charging_station_per_location()
+    {
+        var (locations, _, code) = Fixture();
+        await EnqueueAsync(Locations(locations));
+        await DrainAsync();
+
+        var evses = await EvsesAsync(code);
+        var stations = await factory.WithDbAsync(db => db.ChargingStations.ToDictionaryAsync(station => station.Id, station => station.Label));
+        string? StationOf(string evseId) =>
+            evses.Single(evse => evse.EvseIdDisplay == evseId).ChargingStationId is { } id ? stations[id] : null;
+        Assert.Equal($"AT*{code}*ETEST0001", StationOf($"AT*{code}*ETEST0001*1"));
+        Assert.Equal(
+            evses.Single(evse => evse.EvseIdDisplay == $"AT*{code}*ETEST0001*1").ChargingStationId,
+            evses.Single(evse => evse.EvseIdDisplay == $"AT*{code}*ETEST0001*2").ChargingStationId);
+        Assert.Equal($"AT*{code}*ETEST0002", StationOf($"AT*{code}*ETEST0002*DC1"));
+        // Without an EVSE-ID there is no station to name.
+        Assert.Null(Assert.Single(evses, evse => evse.IdentityKind == IdentityKind.SURROGATE).ChargingStationId);
+
+        // A second import keeps the stations.
+        var count = await factory.WithDbAsync(db => db.ChargingStations.CountAsync());
+        await EnqueueAsync(Locations(locations));
+        await DrainAsync();
+        Assert.Equal(count, await factory.WithDbAsync(db => db.ChargingStations.CountAsync()));
+    }
+
+    [Fact]
     public async Task Inventory_is_merged_once_and_a_second_import_only_confirms_it()
     {
         var (locations, _, code) = Fixture();

@@ -86,7 +86,7 @@ public sealed record ProviderEvseSnapshot(
     string ExternalId,
     string? EvseId,                               // unnormalisiert, wie geliefert
     string? PhysicalReference,                    // Aufdruck an der Säule, z. B. "A2"
-    string? StationExternalId,                    // Säulen-Ebene, falls vorhanden
+    string? StationExternalId,                    // Ladestation (Säule), falls die Quelle sie benennt; der Ingest legt charging_station je Standort und Kennung an
     decimal? MaxPowerKw, PowerType? PowerType,
     IReadOnlyList<ProviderConnectorSnapshot> Connectors,
     EvseStatus? Status, string? StatusRaw,        // falls die Inventar-Antwort Status mitliefert

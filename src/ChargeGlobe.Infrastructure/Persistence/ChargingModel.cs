@@ -96,6 +96,8 @@ internal static class ChargingModel
         builder.Entity<ChargingStation>(entity =>
         {
             entity.ToTable("charging_station");
+            // One station per location and label (E-Control: the station part of the EVSE-ID).
+            entity.HasIndex(station => new { station.LocationId, station.Label }).IsUnique();
             entity.HasOne<Location>().WithMany().HasForeignKey(station => station.LocationId).OnDelete(DeleteBehavior.Cascade);
         });
 
