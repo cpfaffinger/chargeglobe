@@ -18,12 +18,6 @@ public sealed class AddressStore(NpgsqlDataSource dataSource) : IAddressStore
     /// <summary>Streets the first stage hands to the second; enough for 8 hits with house numbers spread over them.</summary>
     public const int StreetCandidates = 20;
 
-    /// <summary>
-    /// Memory for building the indexes of the import. Lower than the default of the database image (a quarter of its
-    /// memory), so that the import fits next to the running stack on a small host; a smaller value only builds slower.
-    /// </summary>
-    public const string ImportMaintenanceWorkMem = "256MB";
-
     /// <summary>The DDL of both tables, also used by the migration <c>AddressStreets</c>; <paramref name="suffix"/> names the staging pair.</summary>
     public static string CreateTablesSql(string suffix = "") => $"""
         CREATE TABLE address_street{suffix} (
@@ -133,11 +127,10 @@ public sealed class AddressStore(NpgsqlDataSource dataSource) : IAddressStore
             JOIN address_street_new s ON s.street = p.street AND s.postal_code = p.postal_code AND s.city = p.city
                 AND s.municipality_code = p.municipality_code AND s.search_text = p.search_text;
             """, cancellationToken);
+        // The indexes are built with the maintenance_work_mem of the server (DB_MAINTENANCE_WORK_MEM, 256 MB by default).
         await ExecuteAsync(connection, $"""
             DROP TABLE address_point;
-            SET maintenance_work_mem = '{ImportMaintenanceWorkMem}';
             {CreateIndexesSql("_new")}
-            RESET maintenance_work_mem;
             ANALYZE address_street_new;
             ANALYZE address_new;
             """, cancellationToken);

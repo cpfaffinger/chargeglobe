@@ -51,6 +51,21 @@ public class DockerfileTests
         Assert.All(sources, source => Assert.StartsWith("./", source));
     }
 
+    /// <summary>The memory variables of .env reach Postgres, with the same defaults in the compose file as in .env.example.</summary>
+    [Theory]
+    [InlineData("DB_SHARED_BUFFERS", "- shared_buffers=")]
+    [InlineData("DB_EFFECTIVE_CACHE_SIZE", "- effective_cache_size=")]
+    [InlineData("DB_MAINTENANCE_WORK_MEM", "- maintenance_work_mem=")]
+    [InlineData("DB_WORK_MEM", "- work_mem=")]
+    [InlineData("DB_MEMORY_LIMIT", "mem_limit: ")]
+    public void Database_memory_settings_pass_to_postgres_with_the_defaults_of_env_example(string variable, string target)
+    {
+        var example = File.ReadAllLines(Path.Combine(RepoRoot, ".env.example")).Single(line => line.StartsWith($"{variable}=", StringComparison.Ordinal));
+        var compose = File.ReadAllLines(Path.Combine(RepoRoot, "docker-compose.yml")).Select(line => line.Trim());
+
+        Assert.Contains($"{target}${{{variable}:-{example[(variable.Length + 1)..]}}}", compose);
+    }
+
     [Theory]
     [InlineData("src/ChargeGlobe.Api/Dockerfile")]
     [InlineData("src/ChargeGlobe.Jobs/Dockerfile")]
