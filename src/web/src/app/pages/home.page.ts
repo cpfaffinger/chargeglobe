@@ -381,13 +381,13 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
               <button matButton type="button" id="planner-own" (click)="useOwnPosition()">{{ ownPositionName }}</button>
             }
             <button matButton type="button" id="pick-start" [class.picking]="plan.picking === 'start'" (click)="pick('start')">Auf Karte wählen</button>
-            <app-place-search id="planner-start-search" label="Start suchen" (picked)="setPlace('start', $event)" />
+            <app-place-search id="planner-start-search" label="Start suchen" [near]="view()" (picked)="setPlace('start', $event)" />
           </div>
           <div class="planner-row">
             <span class="planner-label">Ziel</span>
             <span id="planner-destination" class="planner-place">{{ plan.destination?.name ?? 'noch nicht gewählt' }}</span>
             <button matButton type="button" id="pick-destination" [class.picking]="plan.picking === 'destination'" (click)="pick('destination')">Auf Karte wählen</button>
-            <app-place-search id="planner-destination-search" label="Ziel suchen" (picked)="setPlace('destination', $event)" />
+            <app-place-search id="planner-destination-search" label="Ziel suchen" [near]="view()" (picked)="setPlace('destination', $event)" />
           </div>
           @if (plan.picking) {
             <p id="planner-hint">Tippe auf die Karte oder einen Ladestandort, um {{ plan.picking === 'start' ? 'den Start' : 'das Ziel' }} festzulegen.</p>

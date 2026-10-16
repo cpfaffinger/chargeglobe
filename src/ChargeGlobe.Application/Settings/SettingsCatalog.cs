@@ -49,6 +49,9 @@ public static class SettingsCatalog
     public const string IngestQueueRetentionDays = "ingest.queue_retention_days";
     public const string IngestSnapshotRetentionDays = "ingest.snapshot_retention_days";
 
+    public const string AddressRefreshDays = "address.refresh_days";
+    public const string AddressDownloadUrl = "address.download_url";
+
     /// <summary>Start scope (docs/01): Vienna, Lower Austria, Upper Austria, Burgenland.</summary>
     public const string DefaultRegions = "AT-9,AT-3,AT-4,AT-1";
 
@@ -221,6 +224,16 @@ public static class SettingsCatalog
             Min = 1,
             Max = 365,
         },
+        new(AddressRefreshDays, SettingType.Int, 30,
+            "Days between checks of the BEV address register for a newer reference date (published for 1 April and " +
+            "1 October). A newer one is downloaded and replaces all addresses of the address search.")
+        {
+            Min = 1,
+            Max = 365,
+        },
+        new(AddressDownloadUrl, SettingType.String,
+            "https://data.bev.gv.at/download/Adressregister/Adresse_Relationale_Tabellen_Stichtagsdaten_{date}.zip",
+            "Download URL of the BEV address register (ZIP of CSV tables); {date} stands for the reference date as yyyyMMdd."),
         new(ProviderReferer, SettingType.String, null,
             "Referer sent with every request, for sources that bind the API key to the domain it was " +
             "registered for, e.g. https://example.org/ (a bare host name is completed with https://).")

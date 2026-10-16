@@ -355,3 +355,21 @@ public sealed class CrawlerRun
 
     public DateTimeOffset? CooldownUntil { get; set; }
 }
+
+/// <summary>
+/// The imported reference date of the address register (single row, id 1); the addresses themselves are in
+/// <c>address</c>, which EF Core does not map (it is replaced as a whole, see AddressStore).
+/// </summary>
+public sealed class AddressImport
+{
+    public int Id { get; set; }
+
+    public DateOnly ReferenceDate { get; set; }
+
+    public DateTimeOffset ImportedAt { get; set; }
+
+    /// <summary>Last check for a newer reference date.</summary>
+    public DateTimeOffset CheckedAt { get; set; }
+
+    public int Addresses { get; set; }
+}

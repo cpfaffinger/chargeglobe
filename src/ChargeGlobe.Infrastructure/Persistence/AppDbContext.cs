@@ -85,6 +85,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<CrawlerRun> CrawlerRuns => Set<CrawlerRun>();
 
+    public DbSet<AddressImport> AddressImports => Set<AddressImport>();
+
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder) =>
         ChargingModel.ConfigureConventions(configurationBuilder);
 
@@ -165,6 +167,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
         });
 
         builder.Entity<DataProtectionKey>().ToTable("data_protection_key");
+
+        builder.Entity<AddressImport>(entity =>
+        {
+            entity.ToTable("address_import");
+            entity.Property(state => state.Id).ValueGeneratedNever();
+        });
 
         builder.Entity<PollPlan>(entity =>
         {

@@ -1,4 +1,6 @@
+using ChargeGlobe.Application.Addresses;
 using ChargeGlobe.Application.Mail;
+using ChargeGlobe.Infrastructure.Addresses;
 using ChargeGlobe.Providers.Abstractions;
 using ChargeGlobe.Providers.EControl;
 using ChargeGlobe.Providers.OpenChargeMap;
@@ -92,6 +94,13 @@ public static class JobServices
         {
             services.AddHostedService<MailDeliveryService>();
             services.AddHostedService<IngestWorkerService>();
+            services.AddHttpClient<IAddressRegister, BevAddressRegister>(http =>
+            {
+                http.Timeout = BevAddressRegister.Timeout;
+                http.DefaultRequestHeaders.UserAgent.ParseAdd(EControlServiceCollectionExtensions.UserAgent);
+            });
+            services.AddScoped<AddressImporter>();
+            services.AddHostedService<AddressImportService>();
         }
         else
         {
