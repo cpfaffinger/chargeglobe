@@ -79,4 +79,7 @@ public interface IJobLeases
 {
     /// <summary>True if this instance holds the job until now + <paramref name="duration"/>.</summary>
     Task<bool> TryAcquireAsync(string jobName, string instanceId, TimeSpan duration, CancellationToken cancellationToken);
+
+    /// <summary>Gives the job free before its lease runs out, if this instance holds it.</summary>
+    Task ReleaseAsync(string jobName, string instanceId, CancellationToken cancellationToken);
 }

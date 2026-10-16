@@ -20,8 +20,11 @@ public sealed class AddressImportService(
     /// </summary>
     public static readonly TimeSpan Interval = TimeSpan.FromMinutes(10);
 
-    /// <summary>Longer than an import takes (download and load, a few minutes), so no second worker starts one.</summary>
-    public static readonly TimeSpan LeaseDuration = TimeSpan.FromHours(3);
+    /// <summary>
+    /// Longer than an import takes (download and load, about a minute), so no second worker starts one. The lease is
+    /// given free after every run; the duration only matters if a worker stops during a run (e.g. a deploy).
+    /// </summary>
+    public static readonly TimeSpan LeaseDuration = TimeSpan.FromHours(1);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -51,14 +54,24 @@ public sealed class AddressImportService(
         try
         {
             await using var scope = scopeFactory.CreateAsyncScope();
-            if (!await scope.ServiceProvider.GetRequiredService<IJobLeases>()
-                    .TryAcquireAsync(AddressImporter.JobName, options.InstanceId, LeaseDuration, stoppingToken))
+            var leases = scope.ServiceProvider.GetRequiredService<IJobLeases>();
+            if (!await leases.TryAcquireAsync(AddressImporter.JobName, options.InstanceId, LeaseDuration, stoppingToken))
             {
                 return;
             }
 
             var started = Stopwatch.GetTimestamp();
-            var result = await scope.ServiceProvider.GetRequiredService<AddressImporter>().RunAsync(stoppingToken);
+            AddressImportResult result;
+            try
+            {
+                result = await scope.ServiceProvider.GetRequiredService<AddressImporter>().RunAsync(stoppingToken);
+            }
+            finally
+            {
+                // A new worker (other instance id after a deploy) must not wait for the lease of the old one.
+                await leases.ReleaseAsync(AddressImporter.JobName, options.InstanceId, CancellationToken.None);
+            }
+
             switch (result.Outcome)
             {
                 case AddressImportOutcome.Imported:

@@ -633,6 +633,8 @@ public class IngestJobsTests
             (Job, Instance) = (jobName, instanceId);
             return Task.FromResult(Grant);
         }
+
+        public Task ReleaseAsync(string jobName, string instanceId, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     private sealed class EnabledSettings(params string[] enabled) : IProviderSettings

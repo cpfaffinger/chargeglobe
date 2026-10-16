@@ -106,6 +106,7 @@ public class AddressImportTests
         await service.StartAsync(CancellationToken.None);
         await WaitUntilAsync(() => logger.Messages.Any(message => message.StartsWith("Address import: 1 addresses of the reference date 2026-10-01 in ", StringComparison.Ordinal)), "import");
         Assert.Equal((AddressImporter.JobName, "worker-1", AddressImportService.LeaseDuration), (leases.Job, leases.Instance, leases.Duration));
+        await WaitUntilAsync(() => leases.Releases == 1, "lease given free after the run");
 
         // An hour later the check is not due: no message.
         store.State = new AddressImportState(October, T0, T0, 1);
@@ -127,11 +128,14 @@ public class AddressImportTests
         time.Advance(AddressImportService.Interval);
         await WaitUntilAsync(() => leases.Calls == 5, "lease refused");
         Assert.Equal(probes, register.Probes);
+        Assert.Equal(4, leases.Releases);
 
         leases.Grant = true;
         register.Failure = new HttpRequestException("register offline");
         time.Advance(AddressImportService.Interval);
         await WaitUntilAsync(() => logger.Messages.Contains("Address import failed, retrying with the next tick: register offline"), "failure");
+        // A failed run gives the lease free too.
+        await WaitUntilAsync(() => leases.Releases == 5, "lease given free after the failure");
         await service.StopAsync(CancellationToken.None);
     }
 
@@ -260,6 +264,7 @@ public class AddressImportTests
     private sealed class Leases : IJobLeases
     {
         private int _calls;
+        private int _releases;
 
         public bool Grant { get; set; } = true;
 
@@ -276,6 +281,15 @@ public class AddressImportTests
             (Job, Instance, Duration) = (jobName, instanceId, duration);
             Interlocked.Increment(ref _calls);
             return Task.FromResult(Grant);
+        }
+
+        public int Releases => Volatile.Read(ref _releases);
+
+        public Task ReleaseAsync(string jobName, string instanceId, CancellationToken cancellationToken)
+        {
+            Assert.Equal((Job, Instance), (jobName, instanceId));
+            Interlocked.Increment(ref _releases);
+            return Task.CompletedTask;
         }
     }
 }

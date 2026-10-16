@@ -467,5 +467,19 @@ public class IngestPipelineTests(IntegrationFactory factory) : IClassFixture<Int
         time.Advance(TimeSpan.FromMinutes(6));
         Assert.True(await Acquire("worker-2"));
         Assert.Equal("worker-2", (await factory.WithDbAsync(db => db.JobLeases.SingleAsync(lease => lease.JobName == job))).LeasedBy);
+
+        // Only the holder gives a lease free; then another instance gets it before it runs out.
+        await factory.WithDbAsync(async db =>
+        {
+            await new JobLeases(db, time).ReleaseAsync(job, "worker-1", CancellationToken.None);
+            return true;
+        });
+        Assert.False(await Acquire("worker-1"));
+        await factory.WithDbAsync(async db =>
+        {
+            await new JobLeases(db, time).ReleaseAsync(job, "worker-2", CancellationToken.None);
+            return true;
+        });
+        Assert.True(await Acquire("worker-1"));
     }
 }

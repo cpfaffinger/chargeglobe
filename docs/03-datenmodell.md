@@ -88,7 +88,7 @@ Operator (CPO) ─┬─ 1..n ─ Location ─ 1..n ─ ChargingStation? ─ 1..
 | `provider_backoff` | `provider_key` (PK), `failures` (in Folge), `paused_until?`, `blocked`, `reason?`, `updated_at` | Pause nach Fehlern der Quelle; eine Sperre endet mit der nächsten Änderung einer Einstellung der Quelle |
 | `crawler_run` | `id`, `provider_key`, `job_type`, `target` (Region(en) oder Abfragepunkt), `started_at`, `finished_at?`, `requests`, `records`, `result` (`RUNNING`/`OK`/`FAILED`), `error?`, `cooldown_until?` | Protokoll für Log und `/admin/crawler`; gelöscht nach `crawler.run_retention_days` |
 | `ingest_queue` | `id` (bigint), `provider_key`, `job_id`, `payload jsonb` (`IngestBatch`: Standorte mit `raw_snapshot`-Id oder Statuswerte), `enqueued_at`, `attempts`, `next_attempt_at?`, `error?`, `processed_at?` | Übergabe Crawler → Worker; gesperrt wird per Zeilensperre in der Verarbeitungstransaktion statt per Lease-Spalten; Retention `ingest.queue_retention_days` nach Verarbeitung |
-| `job_lease` | `job_name` (PK), `leased_by`, `lease_until` | Single-Runner-Jobs (`ingest-retention`, `address-import`) |
+| `job_lease` | `job_name` (PK), `leased_by`, `lease_until` | Single-Runner-Jobs (`ingest-retention` hält die Lease einen Tag lang als Takt; `address-import` gibt sie nach jedem Lauf frei) |
 
 ### Adressen (Adresssuche)
 
