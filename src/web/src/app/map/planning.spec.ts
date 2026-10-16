@@ -9,7 +9,7 @@ import {
   planCharging,
   validVehicle,
 } from './charging-plan';
-import { CLUSTER_PROPERTIES, clusterCounts, clusterPie, clusterRadius, pointProperties } from './cluster-pie';
+import { CLUSTER_PROPERTIES, clusterCounts, clusterPie, clusterRadius, crowdCounts, pointProperties } from './cluster-pie';
 import { busyText, evseShares } from './availability';
 import { RouteLocation, locationPlace, ownPlace, pointPlace } from './routes.service';
 import { LEGEND_STORAGE_KEY, MapHints, TRUNCATED_SNOOZE_KEY, TRUNCATED_SNOOZE_MS } from './map-hints';
@@ -189,6 +189,20 @@ describe('cluster pies', () => {
       colors.center,
     ]);
     expect(svg.querySelector('text')!.getAttribute('font-size')).toBe('11');
+  });
+
+  it('sums the points of a crowded spot like a cluster and names the stations of the park', () => {
+    const counts = crowdCounts([
+      { marker: 'AVAILABLE_FAST', free: 2, occupied: 1, faulted: 0, unknown: 0 },
+      { marker: 'OCCUPIED', free: 0, occupied: 2, faulted: 1, unknown: 1 },
+      { marker: 'AVAILABLE_FAST', free: 1 },
+    ]);
+
+    expect(counts).toEqual({ AVAILABLE: 0, AVAILABLE_FAST: 3, AVAILABLE_HPC: 0, OCCUPIED: 3, OUT_OF_ORDER: 1, UNKNOWN: 1 });
+    const svg = new DOMParser().parseFromString(clusterPie(counts, colors, labels, 3, 'Stationen eines Ladeparks'), 'image/svg+xml');
+    expect(svg.querySelector('title')!.textContent).toBe(
+      '3 Stationen eines Ladeparks, 8 Ladepunkte: 3 frei 23–149 kW, 3 belegt, 1 außer Betrieb, 1 Status unbekannt',
+    );
   });
 });
 

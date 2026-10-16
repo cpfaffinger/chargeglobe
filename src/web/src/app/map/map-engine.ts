@@ -4,8 +4,8 @@ import type { FeatureCollection, Point } from 'geojson';
 import type { GeoJSONSource, Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { ICONS } from '../design/icon';
 import { MARKERS, MARKER_KEYS, MarkerKey, markerOf } from './availability';
-import { CLUSTER_PROPERTIES, clusterCounts, clusterPie, pointProperties } from './cluster-pie';
-import { offsetExpression, spreadSlots } from './spread';
+import { CLUSTER_PROPERTIES, clusterCounts, clusterPie, crowdCounts, pointProperties } from './cluster-pie';
+import { crowdOf, offsetExpression, spreadSlots } from './spread';
 import { Bbox, LocationSummary } from './locations.service';
 import { MapOptions } from './map-options';
 import { MapView } from './map-view.store';
@@ -134,12 +134,20 @@ export class MapLibreEngine extends MapEngine {
     const toGeoJson = (locations: LocationSummary[]): FeatureCollection => {
       // Locations at the same spot (e.g. two stations of a charging park) are drawn side by side, not on top of each other.
       const slots = spreadSlots(locations);
+      // Spots with more locations than the ring holds get one park marker (updateClusters) instead of their points.
+      const crowd = crowdOf(locations);
       return {
         type: 'FeatureCollection',
         features: locations.map((location) => ({
           type: 'Feature',
           geometry: { type: 'Point', coordinates: [location.longitude, location.latitude] },
-          properties: { id: location.id, marker: markerOf(location), spread: slots.get(location.id) ?? '', ...pointProperties(location) },
+          properties: {
+            id: location.id,
+            marker: markerOf(location),
+            spread: slots.get(location.id) ?? '',
+            crowd: crowd.get(location.id) ?? '',
+            ...pointProperties(location),
+          },
         })),
       };
     };
@@ -205,7 +213,7 @@ export class MapLibreEngine extends MapEngine {
         id: 'location-points',
         type: 'symbol',
         source,
-        filter: ['!', ['has', 'point_count']],
+        filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'crowd'], '']],
         layout: {
           'icon-image': ['concat', 'status-', ['get', 'marker']],
           'icon-allow-overlap': true,
@@ -242,18 +250,32 @@ export class MapLibreEngine extends MapEngine {
     const labels = Object.fromEntries(MARKER_KEYS.map((key) => [key, MARKERS[key].label])) as Record<MarkerKey, string>;
     let clusterCache = new Map<number, Marker>();
     let shownClusters = new Map<number, Marker>();
+    // Park markers of crowded spots, by the id of the spot; built from the unclustered points of the spot.
+    let crowdCache = new Map<string, Marker>();
+    let shownCrowds = new Map<string, Marker>();
     function clearClusters(): void {
       shownClusters.forEach((marker) => marker.remove());
       shownClusters = new Map();
       clusterCache = new Map();
+      shownCrowds.forEach((marker) => marker.remove());
+      shownCrowds = new Map();
+      crowdCache = new Map();
     }
     const updateClusters = () => {
       if (!loaded || !map.getSource(source) || !map.isSourceLoaded(source)) {
         return;
       }
       const next = new Map<number, Marker>();
+      const crowds = new Map<string, Map<string, { coordinates: [number, number]; properties: Record<string, unknown> }>>();
       for (const feature of map.querySourceFeatures(source)) {
         const properties = feature.properties;
+        const crowd = properties['crowd'] as string | undefined;
+        if (!properties['cluster'] && crowd) {
+          const members = crowds.get(crowd) ?? new Map();
+          members.set(properties['id'] as string, { coordinates: (feature.geometry as Point).coordinates as [number, number], properties });
+          crowds.set(crowd, members);
+          continue;
+        }
         const id = properties['cluster_id'] as number | undefined;
         if (!properties['cluster'] || id === undefined || next.has(id)) {
           continue;
@@ -286,6 +308,37 @@ export class MapLibreEngine extends MapEngine {
       }
       shownClusters.forEach((marker, id) => !next.has(id) && marker.remove());
       shownClusters = next;
+
+      const nextCrowds = new Map<string, Marker>();
+      for (const [crowd, members] of crowds) {
+        let marker = crowdCache.get(crowd);
+        if (!marker) {
+          const points = [...members.values()];
+          const element = document.createElement('button');
+          element.type = 'button';
+          element.className = 'cluster-pie crowd-pie';
+          element.innerHTML = clusterPie(
+            crowdCounts(points.map((point) => point.properties)),
+            { status: theme.status, center: theme.cluster, onCenter: theme.onCluster, ring: theme.ring },
+            labels,
+            points.length,
+            'Stationen eines Ladeparks',
+          );
+          element.setAttribute('aria-label', element.querySelector('title')?.textContent ?? '');
+          element.addEventListener('click', (event) => {
+            event.stopPropagation();
+            options.onSelect(crowd);
+          });
+          marker = new maplibre.Marker({ element }).setLngLat(points[0].coordinates);
+          crowdCache.set(crowd, marker);
+        }
+        nextCrowds.set(crowd, marker);
+        if (!shownCrowds.has(crowd)) {
+          marker.addTo(map);
+        }
+      }
+      shownCrowds.forEach((marker, crowd) => !nextCrowds.has(crowd) && marker.remove());
+      shownCrowds = nextCrowds;
     };
     map.on('render', updateClusters);
 

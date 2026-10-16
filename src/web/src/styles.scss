@@ -988,9 +988,31 @@ app-location-detail {
 }
 
 #park .park-members {
+  align-self: stretch;
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+#park .park-members li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+// A large park: the list scrolls inside the card.
+#park .park-members.scroll {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+#park .park-search {
+  align-self: stretch;
+}
+
+#park .park-none {
+  padding: 8px 0;
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .park-station {

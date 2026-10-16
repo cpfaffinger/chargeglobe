@@ -1,13 +1,14 @@
 /**
  * Locations at (nearly) the same spot, e.g. two charging stations a source lists separately with the same
  * coordinates: their markers are drawn side by side around the spot instead of on top of each other, so each stays
- * visible and can be tapped. The map engine picks the offset per marker from {@link SPREAD_OFFSETS} by its slot.
+ * visible and can be tapped. The map engine picks the offset per marker from {@link SPREAD_OFFSETS} by its slot; a spot
+ * with more than {@link MAX_SPREAD} locations becomes one park marker.
  */
 
 /** Locations closer than this share a spot. */
 export const SAME_SPOT_METERS = 5;
 
-/** Spots with more markers than this put the others on the same ring again. */
+/** Most markers on the ring around a spot; a spot with more gets one park marker instead. */
 export const MAX_SPREAD = 8;
 
 const METERS_PER_DEGREE = 111_200;
@@ -33,13 +34,10 @@ interface Placed {
   longitude: number;
 }
 
-/**
- * The slot of every location that shares its spot with others (key of {@link SPREAD_OFFSETS}); locations alone have
- * none. Members of a spot are ordered by id, so a marker keeps its place when the map reloads.
- */
-export function spreadSlots(locations: readonly Placed[]): Map<string, string> {
-  const cells = new Map<string, Placed[][]>();
-  const spots: Placed[][] = [];
+/** Groups the locations by spot: within {@link SAME_SPOT_METERS} of the first location of a spot. */
+export function spots<T extends Placed>(locations: readonly T[]): T[][] {
+  const cells = new Map<string, T[][]>();
+  const groups: T[][] = [];
   const cellOf = (location: Placed) => {
     const latitudeStep = SAME_SPOT_METERS / METERS_PER_DEGREE;
     const longitudeStep = latitudeStep / Math.cos((location.latitude * Math.PI) / 180);
@@ -52,7 +50,7 @@ export function spreadSlots(locations: readonly Placed[]): Map<string, string> {
   };
   for (const location of locations) {
     const [row, column] = cellOf(location);
-    let spot: Placed[] | undefined;
+    let spot: T[] | undefined;
     for (let dRow = -1; dRow <= 1 && !spot; dRow++) {
       for (let dColumn = -1; dColumn <= 1 && !spot; dColumn++) {
         spot = cells.get(`${row + dRow}:${column + dColumn}`)?.find((candidate) => near(candidate[0], location));
@@ -60,20 +58,39 @@ export function spreadSlots(locations: readonly Placed[]): Map<string, string> {
     }
     if (!spot) {
       spot = [];
-      spots.push(spot);
+      groups.push(spot);
       const key = `${row}:${column}`;
       cells.set(key, [...(cells.get(key) ?? []), spot]);
     }
     spot.push(location);
   }
+  return groups.map((group) => [...group].sort((a, b) => a.id.localeCompare(b.id)));
+}
+
+/**
+ * The slot of every location that shares its spot with up to {@link MAX_SPREAD} - 1 others (key of
+ * {@link SPREAD_OFFSETS}); locations alone and those of crowded spots (see {@link crowdOf}) have none. Members of a
+ * spot are ordered by id, so a marker keeps its place when the map reloads.
+ */
+export function spreadSlots(locations: readonly Placed[]): Map<string, string> {
   const slots = new Map<string, string>();
-  for (const spot of spots.filter((members) => members.length > 1)) {
-    const count = Math.min(spot.length, MAX_SPREAD);
-    [...spot]
-      .sort((a, b) => a.id.localeCompare(b.id))
-      .forEach((location, index) => slots.set(location.id, `${count}-${index % MAX_SPREAD}`));
+  for (const spot of spots(locations).filter((members) => members.length > 1 && members.length <= MAX_SPREAD)) {
+    spot.forEach((location, index) => slots.set(location.id, `${spot.length}-${index}`));
   }
   return slots;
+}
+
+/**
+ * Spots with more locations than the ring holds (e.g. a garage whose wallboxes the source lists separately with the
+ * same coordinates): location id → id of the spot, its first location by id. The map draws one park marker for such a
+ * spot instead of its points.
+ */
+export function crowdOf(locations: readonly Placed[]): Map<string, string> {
+  const crowd = new Map<string, string>();
+  for (const spot of spots(locations).filter((members) => members.length > MAX_SPREAD)) {
+    spot.forEach((location) => crowd.set(location.id, spot[0].id));
+  }
+  return crowd;
 }
 
 /**

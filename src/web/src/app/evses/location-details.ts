@@ -4,6 +4,8 @@ import { Component, computed, effect, inject, input, output, signal, untracked }
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../auth/auth.service';
@@ -22,6 +24,13 @@ import { CardsStore } from '../preferences/cards.store';
 import { EmpPrice, EvsePricesResponse, money, priceParts } from './prices';
 import { AVAILABILITY, busyText, tokenColor } from '../map/availability';
 import { LocationSummary } from '../map/locations.service';
+
+/** Other stations of a park whose details load at once in the park view, and per "load more". */
+const PARK_PAGE = 10;
+/** From this many other stations (the ring of the map is full) the park list gets a search. */
+const PARK_SEARCH_FROM = 8;
+/** Order of the park list: free stations first. */
+const AVAILABILITY_ORDER = ['AVAILABLE', 'OCCUPIED', 'OUT_OF_ORDER', 'UNKNOWN'];
 
 /** Days of the status timeline and weeks of the occupancy matrix. */
 const TIMELINE_DAYS = 7;
@@ -46,6 +55,8 @@ type LoadState = 'loading' | 'error' | 'ready';
     MatButtonToggleModule,
     MatCardModule,
     MatChipsModule,
+    MatFormFieldModule,
+    MatInputModule,
     MatProgressBarModule,
     OccupancyHeatmap,
     PercentPipe,
@@ -95,14 +106,25 @@ type LoadState = 'loading' | 'error' | 'ready';
             <app-icon name="ev_station" />
             Ladepark: {{ park.length + 1 }} Stationen an diesem Ort, zusammen {{ parkTotal() }} Ladepunkte ({{ parkFree() }} frei)
           </p>
-          <ul class="park-members">
-            @for (member of park; track member.id) {
+          @if (park.length >= parkSearchFrom) {
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="park-search">
+              <mat-label>Station suchen</mat-label>
+              <input matInput type="search" id="park-search" [value]="parkQuery()" (input)="searchPark($event)" />
+            </mat-form-field>
+          }
+          <ul class="park-members" [class.scroll]="park.length >= parkSearchFrom">
+            @for (member of parkMembers(); track member.id) {
               <li>
+                <span class="status-dot" [style.background]="availabilityColor(member.availability)"
+                  ><app-icon [name]="availabilityIcon(member.availability)"
+                /></span>
                 <button matButton type="button" class="park-member" (click)="openLocation.emit(member)">
                   Andere Station: {{ member.evsesTotal }} {{ member.evsesTotal === 1 ? 'Ladepunkt' : 'Ladepunkte' }},
                   {{ member.evsesAvailable }} frei{{ member.name !== location.name && member.name ? ' · ' + member.name : '' }}
                 </button>
               </li>
+            } @empty {
+              <li class="park-none">Keine Station passt zur Suche.</li>
             }
           </ul>
           <button matButton="tonal" type="button" id="park-toggle" [attr.aria-expanded]="parkOpen()" (click)="togglePark()">
@@ -274,11 +296,17 @@ type LoadState = 'loading' | 'error' | 'ready';
         <p id="detail-attribution">{{ attribution().join(' · ') }}</p>
       }
       @if (parkOpen() && !nested()) {
-        @for (member of detail.data.park; track member.id) {
+        <!-- Large parks load the details of the other stations step by step, in the order of the list above. -->
+        @for (member of parkMembers().slice(0, parkShown()); track member.id) {
           <section class="park-station" [attr.aria-label]="'Station ' + ($index + 2) + ' des Ladeparks'">
             <h2 class="park-station-title">Station {{ $index + 2 }} von {{ detail.data.park.length + 1 }}</h2>
             <app-location-details [locationId]="member.id" [nested]="true" />
           </section>
+        }
+        @if (parkMembers().length > parkShown()) {
+          <button matButton="tonal" type="button" id="park-more" (click)="parkShown.set(parkShown() + parkPage)">
+            Weitere {{ nextPage() }} Stationen laden ({{ parkMembers().length - parkShown() }} offen)
+          </button>
         }
       }
     }
@@ -298,6 +326,20 @@ export class LocationDetails {
   readonly openLocation = output<LocationSummary>();
   /** The other stations of the park are shown below. */
   protected readonly parkOpen = signal(false);
+  /** From this many other stations the park list can be searched and scrolls. */
+  protected readonly parkSearchFrom = PARK_SEARCH_FROM;
+  protected readonly parkPage = PARK_PAGE;
+  /** Other stations whose details are shown in the park view. */
+  protected readonly parkShown = signal(PARK_PAGE);
+  protected readonly parkQuery = signal('');
+  /** The other stations of the park: free first, then occupied, out of order and unknown; filtered by the search. */
+  protected readonly parkMembers = computed(() => {
+    const query = this.parkQuery().trim().toLowerCase();
+    return [...(this.detail()?.data.park ?? [])]
+      .filter((member) => query === '' || `${member.name ?? ''} ${member.address ?? ''}`.toLowerCase().includes(query))
+      .sort((a, b) => AVAILABILITY_ORDER.indexOf(a.availability) - AVAILABILITY_ORDER.indexOf(b.availability));
+  });
+  protected readonly nextPage = computed(() => Math.min(PARK_PAGE, this.parkMembers().length - this.parkShown()));
   /** EVSEs of the whole park, this location included. */
   protected readonly parkTotal = computed(() => this.parkSum((location) => location.evsesTotal));
   protected readonly parkFree = computed(() => this.parkSum((location) => location.evsesAvailable));
@@ -387,6 +429,8 @@ export class LocationDetails {
       const id = this.locationId();
       untracked(() => {
         this.parkOpen.set(false);
+        this.parkShown.set(PARK_PAGE);
+        this.parkQuery.set('');
         void this.load(id);
       });
     });
@@ -491,6 +535,11 @@ export class LocationDetails {
     if (request === this.request) {
       this.timelines.update((all) => ({ ...all, [evseId]: result }));
     }
+  }
+
+  protected searchPark(event: Event): void {
+    this.parkQuery.set((event.target as HTMLInputElement).value);
+    this.parkShown.set(PARK_PAGE);
   }
 
   /** The park view shows the combined occupancy of the whole park; closing it goes back to this station. */

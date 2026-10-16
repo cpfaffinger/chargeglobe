@@ -600,6 +600,55 @@ describe('LocationDetails (info card)', () => {
     expect(text(root(), '.heatmap-state.error')).toBe('Die Auslastung konnte nicht geladen werden.');
   });
 
+  it('sorts a large park, lets it be searched and loads the other stations step by step', async () => {
+    fixture = TestBed.createComponent(LocationDetails);
+    const states = ['OUT_OF_ORDER', 'AVAILABLE', 'OCCUPIED', 'UNKNOWN'] as const;
+    const others = Array.from({ length: 12 }, (_, index) =>
+      locationSummary({ id: `m-${index}`, name: `Wallbox ${index}`, availability: states[index % 4], parkId: 'loc-1', parkLocations: 13 }),
+    );
+    const words = (element: Element) => element.textContent!.replace(/\s+/g, ' ').trim();
+    const flushMembers = (ids: string[]) =>
+      ids.forEach((id) =>
+        http.expectOne(`/api/v1/locations/${id}`).flush({ data: { park: [], location: locationSummary({ id }), evses: [] }, meta: { attribution: [] } }),
+      );
+    await show('loc-1');
+    http.expectOne('/api/v1/locations/loc-1').flush({ data: { park: others, location: locationSummary({ id: 'loc-1' }), evses: [] }, meta: { attribution: [] } });
+    await settle();
+
+    // Free first, then occupied, out of order and unknown; the list scrolls and can be searched.
+    const names = () => Array.from(root().querySelectorAll('.park-member')).map((member) => words(member).split(' · ')[1]);
+    expect(names().slice(0, 4)).toEqual(['Wallbox 1', 'Wallbox 5', 'Wallbox 9', 'Wallbox 2']);
+    expect(names().at(-1)).toBe('Wallbox 11');
+    expect(root().querySelector('.park-members')!.classList).toContain('scroll');
+    const search = root().querySelector<HTMLInputElement>('#park-search')!;
+    search.value = 'wallbox 1';
+    search.dispatchEvent(new Event('input'));
+    await settle();
+    expect(names()).toEqual(['Wallbox 1', 'Wallbox 10', 'Wallbox 11']);
+    search.value = 'gibt es nicht';
+    search.dispatchEvent(new Event('input'));
+    await settle();
+    expect(text(root(), '.park-none')).toBe('Keine Station passt zur Suche.');
+    search.value = '';
+    search.dispatchEvent(new Event('input'));
+    await settle();
+
+    // The park view loads ten at once, the rest on demand.
+    root().querySelector<HTMLButtonElement>('#park-toggle')!.click();
+    await settle();
+    flushMembers(['m-1', 'm-5', 'm-9', 'm-2', 'm-6', 'm-10', 'm-0', 'm-4', 'm-8', 'm-3']);
+    await settle();
+    expect(root().querySelectorAll('.park-station').length).toBe(10);
+    const more = root().querySelector<HTMLButtonElement>('#park-more')!;
+    expect(words(more)).toBe('Weitere 2 Stationen laden (2 offen)');
+    more.click();
+    await settle();
+    flushMembers(['m-7', 'm-11']);
+    await settle();
+    expect(root().querySelectorAll('.park-station').length).toBe(12);
+    expect(root().querySelector('#park-more')).toBeNull();
+  });
+
   it('shows the other stations of its charging park and the whole park on demand', async () => {
     fixture = TestBed.createComponent(LocationDetails);
     const opened: string[] = [];
