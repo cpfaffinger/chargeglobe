@@ -7,6 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSliderModule } from '@angular/material/slider';
 import { AppIcon } from '../design/icon';
+import { AppLoading } from '../design/loading';
 import { CONNECTORS, FILTER_FLAGS, FilterFlag, MapFilterStore, MapFilters, NO_FILTERS, POWER_STOPS } from './map-filters';
 import { OperatorSummary, OperatorsService } from './operators.service';
 
@@ -30,7 +31,7 @@ function stopOf(power: number | null, fallback: number): number {
  * with a search over name and operator ID.
  */
 @Component({
-  imports: [AppIcon, MatAutocompleteModule, MatButtonModule, MatCardModule, MatChipsModule, MatFormFieldModule, MatInputModule, MatSliderModule],
+  imports: [AppLoading, AppIcon, MatAutocompleteModule, MatButtonModule, MatCardModule, MatChipsModule, MatFormFieldModule, MatInputModule, MatSliderModule],
   selector: 'app-map-filter-panel',
   template: `
     <mat-card id="filter-panel" appearance="outlined" role="region" aria-label="Filter">
@@ -92,7 +93,12 @@ function stopOf(power: number | null, fallback: number): number {
                 <span class="hit-detail">{{ item.locations }} {{ item.locations === 1 ? 'Standort' : 'Standorte' }}</span>
               </mat-option>
             } @empty {
-              <mat-option disabled>{{ operatorsFailed() ? 'Die Betreiber sind gerade nicht erreichbar.' : 'Kein Betreiber gefunden.' }}</mat-option>
+              @if (!operatorsLoading()) {
+                <mat-option disabled>{{ operatorsFailed() ? 'Die Betreiber sind gerade nicht erreichbar.' : 'Kein Betreiber gefunden.' }}</mat-option>
+              }
+            }
+            @if (operatorsLoading()) {
+              <mat-option disabled class="operators-loading"><app-loading text="Betreiber werden gesucht …" /></mat-option>
             }
           </mat-autocomplete>
         </mat-form-field>
@@ -121,6 +127,7 @@ export class MapFilterPanel {
   protected readonly lastStop = LAST_STOP;
   protected readonly operators = signal<OperatorSummary[]>([]);
   protected readonly operatorsFailed = signal(false);
+  protected readonly operatorsLoading = signal(false);
   /** Names of the selected operators by id. */
   protected readonly names = signal<Record<string, string>>({});
   protected readonly minStop = computed(() => stopOf(this.filters().minPowerKw, 0));
@@ -190,6 +197,7 @@ export class MapFilterPanel {
 
   private async findOperators(query: string): Promise<void> {
     const search = ++this.search;
+    this.operatorsLoading.set(true);
     try {
       const operators = await this.operatorsService.search(query);
       if (search === this.search) {
@@ -200,6 +208,10 @@ export class MapFilterPanel {
       if (search === this.search) {
         this.operators.set([]);
         this.operatorsFailed.set(true);
+      }
+    } finally {
+      if (search === this.search) {
+        this.operatorsLoading.set(false);
       }
     }
   }

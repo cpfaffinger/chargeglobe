@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { attempt } from '../auth/problem';
+import { AppLoading } from '../design/loading';
 import { Emp, TariffsService } from '../tariffs/tariffs.service';
 import { CardsStore } from './cards.store';
 
@@ -9,7 +10,7 @@ import { CardsStore } from './cards.store';
  * account with the other preferences; the price comparisons highlight these cards.
  */
 @Component({
-  imports: [MatCheckboxModule],
+  imports: [AppLoading, MatCheckboxModule],
   selector: 'app-own-cards',
   template: `
     @for (error of errors(); track error) {
@@ -23,7 +24,13 @@ import { CardsStore } from './cards.store';
           </mat-checkbox>
         </li>
       } @empty {
-        <li class="muted">{{ busy() ? 'Anbieter werden geladen …' : 'Noch keine Ladekarten-Anbieter erfasst.' }}</li>
+        <li class="muted">
+          @if (busy()) {
+            <app-loading text="Anbieter werden geladen …" />
+          } @else {
+            Noch keine Ladekarten-Anbieter erfasst.
+          }
+        </li>
       }
     </ul>
   `,

@@ -5,6 +5,7 @@ import { MatCardModule } from '@angular/material/card';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../auth/auth.service';
 import { AppIcon } from '../design/icon';
+import { AppLoading } from '../design/loading';
 import { FavoriteButton } from '../favorites/favorite-button';
 import { FavoritesResponse, FavoritesService } from '../favorites/favorites.service';
 import { MARKERS, busyText, markerOf, tokenColor } from '../map/availability';
@@ -18,13 +19,16 @@ export const FAVORITES_REFRESH_MS = 60_000;
  * charge points, power, time of the status, and links to the map and the details.
  */
 @Component({
-  imports: [AppIcon, DatePipe, DecimalPipe, FavoriteButton, MatButtonModule, MatCardModule, RouterLink],
+  imports: [AppLoading, AppIcon, DatePipe, DecimalPipe, FavoriteButton, MatButtonModule, MatCardModule, RouterLink],
   selector: 'app-favorites',
   template: `
     <div class="favorites-head">
       <h1>Favoriten</h1>
       <button matButton type="button" id="refresh-favorites" [disabled]="loading()" (click)="load()"><app-icon name="refresh" />Aktualisieren</button>
     </div>
+    @if (loading() && !response()) {
+      <app-loading id="favorites-loading" text="Favoriten werden geladen …" />
+    }
     @if (failed()) {
       <p class="error" role="alert" id="favorites-error">Die Favoriten konnten nicht geladen werden. Bitte versuche es später erneut.</p>
     }

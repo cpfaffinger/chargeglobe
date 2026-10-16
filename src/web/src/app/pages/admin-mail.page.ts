@@ -10,6 +10,7 @@ import { MatTableModule } from '@angular/material/table';
 import { RouterLink } from '@angular/router';
 import { attempt, attemptValid } from '../auth/problem';
 import { AppIcon } from '../design/icon';
+import { AppLoading } from '../design/loading';
 import { GermanPaginatorIntl } from '../design/paginator-intl';
 import { MailOutboxPage, MailService, MailStatus, OUTBOX_PAGE_SIZE } from '../mail/mail.service';
 
@@ -19,6 +20,7 @@ import { MailOutboxPage, MailService, MailStatus, OUTBOX_PAGE_SIZE } from '../ma
  */
 @Component({
   imports: [
+    AppLoading,
     AppIcon,
     DatePipe,
     MatButtonModule,
@@ -77,6 +79,9 @@ import { MailOutboxPage, MailService, MailStatus, OUTBOX_PAGE_SIZE } from '../ma
       </div>
       @for (error of loadErrors(); track error) {
         <p class="error" role="alert">{{ error }}</p>
+      }
+      @if (loading()) {
+        <app-loading id="outbox-loading" text="Postausgang wird geladen …" />
       }
       @if (outbox(); as current) {
         <div class="table-box">

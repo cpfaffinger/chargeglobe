@@ -9,6 +9,7 @@ import { RouterLink } from '@angular/router';
 import { attempt } from '../auth/problem';
 import { CrawlerRun, CrawlerService, CrawlerStatus, ProviderCrawlStatus } from '../crawler/crawler.service';
 import { AppIcon } from '../design/icon';
+import { AppLoading } from '../design/loading';
 
 /** Polling interval of the page; the API is meant for it. */
 export const CRAWLER_REFRESH_MS = 5000;
@@ -24,7 +25,7 @@ const JOB_LABELS: Record<string, string> = {
  * and the latest runs. Refreshes itself every five seconds.
  */
 @Component({
-  imports: [AppIcon, DatePipe, DecimalPipe, MatButtonModule, MatCardModule, MatChipsModule, MatProgressBarModule, MatTableModule, RouterLink],
+  imports: [AppLoading, AppIcon, DatePipe, DecimalPipe, MatButtonModule, MatCardModule, MatChipsModule, MatProgressBarModule, MatTableModule, RouterLink],
   selector: 'app-admin-crawler',
   template: `
     <h1>Crawler</h1>
@@ -35,7 +36,9 @@ const JOB_LABELS: Record<string, string> = {
     </p>
     <div class="crawler-actions">
       <button matButton type="button" id="reload" [disabled]="loading()" (click)="load()"><app-icon name="refresh" />Aktualisieren</button>
-      @if (status(); as current) {
+      @if (loading()) {
+        <app-loading id="crawler-loading" text="Status wird geladen …" />
+      } @else if (status(); as current) {
         <span class="muted" id="updated">Stand {{ current.at | date: 'HH:mm:ss' }}</span>
       }
     </div>

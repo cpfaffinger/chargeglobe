@@ -19,6 +19,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { MatMenuModule } from '@angular/material/menu';
 import { AuthService } from '../auth/auth.service';
 import { AppIcon } from '../design/icon';
+import { AppLoading } from '../design/loading';
 import { ThemeService, Viewport } from '../design/theme.service';
 import { LocationDetails } from '../evses/location-details';
 import { money } from '../evses/prices';
@@ -32,6 +33,7 @@ import { GeolocateEvent, MapEngine, MapHandle, MapTheme } from '../map/map-engin
 import { MapFilterPanel } from '../map/map-filter-panel';
 import { MapOptionsPanel } from '../map/map-options-panel';
 import { MapOptionsStore } from '../map/map-options';
+import { PlaceSearch } from '../map/place-search';
 import { MapFilterStore, filterParams } from '../map/map-filters';
 import { MapHints, TRUNCATED_NOTICE_MS } from '../map/map-hints';
 import { MapLink, ShareResult } from '../map/map-link';
@@ -131,7 +133,7 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
  * configuration. The position is processed in the browser only and never sent to the API.
  */
 @Component({
-  imports: [AppIcon, DatePipe, DecimalPipe, FavoriteButton, LocationDetails, MapFilterPanel, MapOptionsPanel, MatButtonModule,
+  imports: [AppLoading, AppIcon, PlaceSearch, DatePipe, DecimalPipe, FavoriteButton, LocationDetails, MapFilterPanel, MapOptionsPanel, MatButtonModule,
     MatButtonToggleModule, MatCardModule, MatMenuModule, MatProgressSpinnerModule, NgTemplateOutlet],
   selector: 'app-home',
   host: { '[class.has-card]': 'selected() !== null || shownStopsState() !== null || shownReachState() !== null', '[class.has-filters]': 'filtersOpen() || optionsOpen()' },
@@ -179,7 +181,7 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
             @defer (on immediate) {
               <app-location-details [locationId]="location.id" />
             } @placeholder {
-              <p class="details-state">Ladepunkte werden geladen …</p>
+              <app-loading class="details-state" text="Ladepunkte werden geladen …" />
             }
           </mat-card-content>
         </mat-card>
@@ -194,7 +196,7 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
             </div>
             @switch (state) {
               @case ('loading') {
-                <p class="muted loading"><mat-spinner diameter="18" />Ladepunkte entlang der Route werden gesucht …</p>
+                <app-loading class="muted" text="Ladepunkte entlang der Route werden gesucht …" />
               }
               @case ('error') {
                 <p class="error">Die Ladepunkte entlang der Route konnten nicht geladen werden.</p>
@@ -298,7 +300,7 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
             </div>
             @switch (state) {
               @case ('loading') {
-                <p class="muted loading"><mat-spinner diameter="18" />Ladepunkte in Reichweite werden gesucht …</p>
+                <app-loading class="muted" text="Ladepunkte in Reichweite werden gesucht …" />
               }
               @case ('error') {
                 <p class="error">Die Ladepunkte in Reichweite konnten nicht geladen werden.</p>
@@ -379,11 +381,13 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
               <button matButton type="button" id="planner-own" (click)="useOwnPosition()">{{ ownPositionName }}</button>
             }
             <button matButton type="button" id="pick-start" [class.picking]="plan.picking === 'start'" (click)="pick('start')">Auf Karte wählen</button>
+            <app-place-search id="planner-start-search" label="Start suchen" (picked)="setPlace('start', $event)" />
           </div>
           <div class="planner-row">
             <span class="planner-label">Ziel</span>
             <span id="planner-destination" class="planner-place">{{ plan.destination?.name ?? 'noch nicht gewählt' }}</span>
             <button matButton type="button" id="pick-destination" [class.picking]="plan.picking === 'destination'" (click)="pick('destination')">Auf Karte wählen</button>
+            <app-place-search id="planner-destination-search" label="Ziel suchen" (picked)="setPlace('destination', $event)" />
           </div>
           @if (plan.picking) {
             <p id="planner-hint">Tippe auf die Karte oder einen Ladestandort, um {{ plan.picking === 'start' ? 'den Start' : 'das Ziel' }} festzulegen.</p>
@@ -808,6 +812,11 @@ export class HomePage {
 
   protected pick(target: 'start' | 'destination'): void {
     this.planner.update((plan) => ({ ...plan!, picking: target }));
+  }
+
+  /** A place from the search field of start or destination. */
+  protected setPlace(target: 'start' | 'destination', place: Place): void {
+    this.planner.update((plan) => ({ ...plan!, [target]: place, picking: null }));
   }
 
   protected useOwnPosition(): void {

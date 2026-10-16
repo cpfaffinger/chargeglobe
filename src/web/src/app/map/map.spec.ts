@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import { AuthService } from '../auth/auth.service';
 import { EvsesService, LocationDetailResponse } from '../evses/evses.service';
@@ -22,6 +23,7 @@ import { LEGEND_STORAGE_KEY, TRUNCATED_NOTICE_MS, TRUNCATED_SNOOZE_KEY } from '.
 import { CardsStore } from '../preferences/cards.store';
 import {
   LocationPrices,
+  Place,
   ReachAreas,
   RouteLocation,
   RoutesService,
@@ -791,7 +793,7 @@ describe('HomePage (map)', () => {
         expect(text(root(), '#route-summary')).toBe('Route: 12 km · 16 min Route entfernen');
         // The card of the destination gives way to the stops along the route.
         expect(root().querySelector('#location-card')).toBeNull();
-        expect(text(root(), '#route-stops p')).toBe('Ladepunkte entlang der Route werden gesucht …');
+        expect(text(root(), '#route-stops app-loading')).toBe('Ladepunkte entlang der Route werden gesucht …');
         const along = http.expectOne('/api/v1/routes/locations');
         expect(along.request.body).toEqual({ geometry: { type: 'LineString', coordinates: geometry }, corridorMeters: 1000, limit: 500, ...NO_FILTERS });
         along.flush({
@@ -951,7 +953,7 @@ describe('HomePage (map)', () => {
           await settle();
           const reload = http.expectOne('/api/v1/routes/locations');
           expect(reload.request.body).toEqual({ geometry: { type: 'LineString', coordinates: geometry }, corridorMeters: 1000, limit: 500, ...NO_FILTERS, minPowerKw: 150 });
-          expect(text(root(), '#route-stops p')).toBe('Ladepunkte entlang der Route werden gesucht …');
+          expect(text(root(), '#route-stops app-loading')).toBe('Ladepunkte entlang der Route werden gesucht …');
           reload.flush({ data: [along[1]], meta: { returned: 1, limit: 500, truncated: false, attribution: [] } });
           await settle();
           await flushLocations();
@@ -1072,7 +1074,7 @@ describe('HomePage (map)', () => {
               ...NO_FILTERS,
             })),
           );
-          expect(text(root(), '#reach-locations p')).toBe('Ladepunkte in Reichweite werden gesucht …');
+          expect(text(root(), '#reach-locations app-loading')).toBe('Ladepunkte in Reichweite werden gesucht …');
           within.forEach((request, index) => request.flush(locationsOf(index === 0 ? inReach : [], [9, 4, 2][index])));
           await settle();
 
@@ -1508,6 +1510,26 @@ describe('HomePage (map)', () => {
           root().querySelector<HTMLButtonElement>('#planner-cancel')!.click();
           await settle();
           expect(root().querySelector('#route-planner')).toBeNull();
+        });
+
+        it('takes start and destination from the search fields of the planner', async () => {
+          await openCard();
+          root().querySelector<HTMLButtonElement>('#route-from')!.click();
+          await settle();
+          const pickFrom = (id: string, place: Place) => {
+            fixture.debugElement.query(By.css(id)).componentInstance.picked.emit(place);
+          };
+
+          pickFrom('#planner-destination-search', { latitude: 48.3, longitude: 14.29, name: 'Linz Hauptplatz', kind: 'location', locationId: 'loc-9' });
+          await settle();
+          expect(text(root(), '#planner-destination')).toBe('Linz Hauptplatz');
+          expect(root().querySelector('#planner-hint')).toBeNull();
+          pickFrom('#planner-start-search', { latitude: 48.1, longitude: 16.2, name: 'Mödling', kind: 'location', locationId: 'loc-8' });
+          await settle();
+          expect(text(root(), '#planner-start')).toBe('Mödling');
+
+          root().querySelector<HTMLButtonElement>('#planner-cancel')!.click();
+          await settle();
         });
 
         it('keeps the own position as start when changing a route from there', async () => {

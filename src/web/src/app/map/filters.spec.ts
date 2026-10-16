@@ -346,6 +346,9 @@ describe('MapFilterPanel', () => {
     ]);
 
     openOperators();
+    await settle();
+    // While the search runs, the list says so.
+    expect(options().map((option) => option.textContent!.trim())).toEqual(['Betreiber werden gesucht …']);
     openOperators();
     await settle();
     answer([wien]);

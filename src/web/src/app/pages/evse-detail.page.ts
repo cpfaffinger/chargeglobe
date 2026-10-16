@@ -8,6 +8,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../auth/auth.service';
 import { AppIcon } from '../design/icon';
+import { AppLoading } from '../design/loading';
 import { EvseResponse, EvsesService, Occupancy, StatusInterval } from '../evses/evses.service';
 import {
   AD_HOC_METHODS,
@@ -48,6 +49,7 @@ const SHARE_MESSAGES: Record<ShareResult, string | null> = {
 
 @Component({
   imports: [
+    AppLoading,
     AppIcon,
     DatePipe,
     DecimalPipe,
@@ -192,7 +194,7 @@ const SHARE_MESSAGES: Record<ShareResult, string | null> = {
               <h2 id="price-title">Preise</h2>
               @switch (priceState()) {
                 @case ('loading') {
-                  <p class="price-state">Preis wird geladen …</p>
+                  <app-loading class="price-state" text="Preis wird geladen …" />
                 }
                 @case ('error') {
                   <p class="price-state error">Der Preis konnte nicht geladen werden.</p>
@@ -278,7 +280,7 @@ const SHARE_MESSAGES: Record<ShareResult, string | null> = {
             </mat-button-toggle-group>
             @switch (history()) {
               @case ('loading') {
-                <p class="timeline-state">Verlauf wird geladen …</p>
+                <app-loading class="timeline-state" text="Verlauf wird geladen …" />
               }
               @case ('error') {
                 <p class="timeline-state error">Der Statusverlauf konnte nicht geladen werden.</p>
@@ -322,7 +324,7 @@ const SHARE_MESSAGES: Record<ShareResult, string | null> = {
             </mat-button-toggle-group>
             @switch (occupancyState()) {
               @case ('loading') {
-                <p class="heatmap-state">Auslastung wird geladen …</p>
+                <app-loading class="heatmap-state" text="Auslastung wird geladen …" />
               }
               @case ('error') {
                 <p class="heatmap-state error">Die Auslastung konnte nicht geladen werden.</p>

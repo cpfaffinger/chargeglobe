@@ -4,6 +4,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
+import { AppLoading } from '../design/loading';
 import { connectorLabel } from '../evses/labels';
 import { RegionCount, POWER_CLASSES, StatsResponse, StatsService } from '../stats/stats.service';
 
@@ -37,7 +38,7 @@ const number = (value: number, digits = 0): string => new Intl.NumberFormat('de-
  * connector, the operators with most EVSEs, the current status and how fresh it is; for all regions or one.
  */
 @Component({
-  imports: [DatePipe, MatCardModule, MatFormFieldModule, MatProgressSpinnerModule, MatSelectModule, NgTemplateOutlet],
+  imports: [AppLoading, DatePipe, MatCardModule, MatFormFieldModule, MatProgressSpinnerModule, MatSelectModule, NgTemplateOutlet],
   selector: 'app-stats',
   template: `
     <ng-template #chart let-items>
@@ -67,7 +68,7 @@ const number = (value: number, digits = 0): string => new Intl.NumberFormat('de-
       </mat-form-field>
     </div>
     @if (loading()) {
-      <p class="loading" id="stats-loading"><mat-spinner diameter="18" />Statistik wird geladen …</p>
+      <app-loading id="stats-loading" text="Statistik wird geladen …" />
     }
     @if (failed()) {
       <p class="error" role="alert" id="stats-error">Die Statistik konnte nicht geladen werden. Bitte versuche es später erneut.</p>
