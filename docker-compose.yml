@@ -14,6 +14,20 @@ services:
   db:
     image: timescale/timescaledb-ha:pg17
     restart: unless-stopped
+    # Memory of Postgres for a host shared with other services (docs/02, Betrieb). The image tunes postgresql.conf
+    # once at initdb for the memory it sees (timescaledb-tune, the whole host); these parameters override it on
+    # every start, so the values in .env apply to existing data directories too.
+    command:
+      - postgres
+      - -c
+      - shared_buffers=${DB_SHARED_BUFFERS:-512MB}
+      - -c
+      - effective_cache_size=${DB_EFFECTIVE_CACHE_SIZE:-1536MB}
+      - -c
+      - maintenance_work_mem=${DB_MAINTENANCE_WORK_MEM:-256MB}
+      - -c
+      - work_mem=${DB_WORK_MEM:-16MB}
+    mem_limit: ${DB_MEMORY_LIMIT:-2g}
     depends_on:
       data-init:
         condition: service_completed_successfully
