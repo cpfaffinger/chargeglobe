@@ -467,9 +467,21 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
         <button matMiniFab type="button" id="actions-toggle" [attr.aria-expanded]="actionsOpen()"
           [attr.aria-label]="actionsOpen() ? 'Kartenfunktionen schließen' : 'Weitere Kartenfunktionen'" (click)="actionsOpen.set(!actionsOpen())">
           <app-icon [name]="actionsOpen() ? 'close' : 'more_vert'" />
+          <!-- Active filters stay visible while the filter button is folded away. -->
+          @if (!actionsOpen() && filterStore.count() > 0) {
+            <span class="filter-count fab-count" [attr.aria-label]="filterStore.count() + ' Filter aktiv'">{{ filterStore.count() }}</span>
+          }
         </button>
       }
       <div class="home-actions" [hidden]="viewport.mobile() && !actionsOpen()">
+        @if (viewport.mobile()) {
+          <button matMiniFab type="button" id="filter-toggle" title="Filter" aria-label="Filter" [attr.aria-expanded]="filtersOpen()" (click)="toggleFilters()">
+            <app-icon name="filter_list" />
+            @if (filterStore.count() > 0) {
+              <span class="filter-count fab-count" [attr.aria-label]="filterStore.count() + ' aktiv'">{{ filterStore.count() }}</span>
+            }
+          </button>
+        }
         <button matMiniFab type="button" id="home" [disabled]="!handle()" title="Zur Startposition" aria-label="Zur Startposition" (click)="goHome()">
           <app-icon name="home" />
         </button>
@@ -522,12 +534,15 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
           <app-icon name="info" />
         </button>
       }
-      <button matButton="tonal" type="button" id="filter-toggle" [attr.aria-expanded]="filtersOpen()" (click)="toggleFilters()">
-        <app-icon name="filter_list" />Filter
-        @if (filterStore.count() > 0) {
-          <span class="filter-count" [attr.aria-label]="filterStore.count() + ' aktiv'">{{ filterStore.count() }}</span>
-        }
-      </button>
+      <!-- On phones the filter button is part of the folded map actions. -->
+      @if (!viewport.mobile()) {
+        <button matButton="tonal" type="button" id="filter-toggle" [attr.aria-expanded]="filtersOpen()" (click)="toggleFilters()">
+          <app-icon name="filter_list" />Filter
+          @if (filterStore.count() > 0) {
+            <span class="filter-count" [attr.aria-label]="filterStore.count() + ' aktiv'">{{ filterStore.count() }}</span>
+          }
+        </button>
+      }
     </div>
     @if (attribution().length > 0) {
       <p id="data-attribution">{{ attribution().join(' · ') }}</p>
@@ -1095,6 +1110,8 @@ export class HomePage {
 
   protected toggleFilters(): void {
     this.filtersOpen.update((open) => !open);
+    // The panel covers the folded actions on phones; they close with it opening.
+    this.actionsOpen.set(false);
     this.optionsOpen.set(false);
     this.selected.set(null);
   }

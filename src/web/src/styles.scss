@@ -864,16 +864,22 @@ app-loading {
     flex-direction: column;
   }
 
-  // The legend goes to the top (own rule below), the filter button stays bottom left.
+  // The legend goes to the top (own rule below); the filter button is part of the folded map actions.
   #map-legend-bar {
     display: contents;
   }
 
-  #filter-toggle {
+  // Number of active filters on a round button (filter button, folded actions).
+  #filter-toggle,
+  #actions-toggle {
+    position: relative;
+  }
+
+  #map-actions .fab-count {
     position: absolute;
-    left: 12px;
-    bottom: 40px;
-    z-index: 1;
+    top: -4px;
+    right: -4px;
+    margin: 0;
   }
 
   #filter-panel,
@@ -892,11 +898,11 @@ app-loading {
     align-self: flex-start;
   }
 
-  // Folded legend on phones: the symbol sits right above the filter button.
+  // Folded legend on phones: the symbol sits bottom left.
   #legend-show {
     position: absolute;
     left: 12px;
-    bottom: 96px;
+    bottom: 40px;
     z-index: 1;
   }
 
@@ -920,8 +926,6 @@ app-loading {
 
   app-home.has-card .legend-box,
   app-home.has-card #legend-show,
-  app-home.has-card #filter-toggle,
-  app-home.has-filters #filter-toggle,
   app-home.has-card #data-attribution {
     display: none;
   }
