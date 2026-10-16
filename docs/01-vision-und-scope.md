@@ -41,15 +41,15 @@ Eine **offene, quellenübergreifende Datenbank aller öffentlichen E-Ladepunkte*
 
 ## Begriffe
 
-Die deutsche Alltagssprache („Ladesäule“) und die Standards (OCPI, OICP, ISO 15118) weichen voneinander ab. chargeglobe verwendet intern konsequent die Standard-Begriffe:
+Die deutsche Alltagssprache („Ladesäule“) und die Standards (OCPI, OICP, ISO 15118) weichen voneinander ab. chargeglobe verwendet intern konsequent die Standard-Begriffe und in der Oberfläche die deutschen Begriffe der EU-Verordnung AFIR (Art. 2: Ladepunkt, Ladestation, Ladepool/-standort); die Hilfeseite `/help/begriffe` (aus der Legende verlinkt) erklärt sie mit Beispielen. „Wie viele Fahrzeuge gleichzeitig“ ist die Zahl der Ladepunkte; mehrere Anschlüsse eines Ladepunkts sind Alternativen:
 
 | Begriff (intern) | Deutsch / Alltag | Bedeutung | ID |
 |---|---|---|---|
 | **Location** | Ladestandort | Adresse/Koordinate mit 1..n Ladesäulen, so wie die Quelle ihn meldet (bei der E-Control eine „Station“: mal eine Säule, mal ein ganzer Park) | intern (UUID) + Quell-IDs |
 | **Ladepark** (abgeleitet) | Ladepark | Standorte desselben Betreibers direkt nebeneinander (≤ 25 m); bündelt die Anzeige, ändert die Identität nicht | `park_id` (kleinste Standort-Id) |
-| **ChargingStation** (optional) | Ladesäule, Wallbox | physisches Gerät mit 1..n Ladepunkten | intern; manche Quellen liefern diese Ebene gar nicht |
+| **ChargingStation** (optional) | Ladestation (Säule, Wallbox) | physisches Gerät mit 1..n Ladepunkten | Kennung der Quelle (`charging_station.label`); die E-Control liefert diese Ebene nicht, chargeglobe leitet sie aus vierteiligen EVSE-IDs ab |
 | **EVSE** | **Ladepunkt** | das, was gleichzeitig genau *ein* Fahrzeug laden kann; Status-Träger | **EVSE-ID** (z. B. `AT*EVN*E1234*5`) |
-| **Connector** | Stecker | Typ (Type 2, CCS, CHAdeMO, Schuko), max. Leistung; mehrere Stecker an einem EVSE teilen sich die Belegung | Nummer innerhalb des EVSE |
+| **Connector** | Anschluss (Stecker oder fest angeschlagenes Kabel) | Typ (Typ 2, CCS, CHAdeMO, Schuko), Buchse oder Kabel, max. Leistung; mehrere Anschlüsse an einem EVSE teilen sich die Belegung | Nummer innerhalb des EVSE |
 
 **Zur „Netzpunkt-ID“:** Die Anforderung lautet, dass es je Ladesäule eine über alle Apps hinweg wiederfindbare Kennung gibt. In Österreich und im europäischen Roaming ist das die **EVSE-ID** (ISO 15118 / DIN SPEC 91286-Format `<Land>*<Betreiber-ID>*E<Ladepunkt-ID>`), die jedem Ladepunkt zugeordnet ist und von CPOs, Roaming-Plattformen (Hubject, Gireve, e-clearing) und den meisten Apps angezeigt wird. Sie ist der **Primärschlüssel für Identität** in chargeglobe (siehe [ADR-0001](adr/0001-evse-id-als-identitaet.md)). Begriffe wie „Netzpunkt“ oder „Zählpunkt“ (die 33-stellige Zählpunktnummer des Netzbetreibers) sind zwar ebenfalls eindeutig, aber in Apps nicht sichtbar und werden daher nur als *optionales Attribut* geführt, falls eine Quelle sie liefert. Details zur ID-Vergabe in Österreich in [08 – Datenquellen & Recht](08-datenquellen-und-recht.md).
 

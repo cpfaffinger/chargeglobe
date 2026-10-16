@@ -23,6 +23,7 @@ import { OccupancyHeatmap, StatusTimeline } from './status-charts';
 import { CardsStore } from '../preferences/cards.store';
 import { EmpPrice, EvsePricesResponse, money, priceParts } from './prices';
 import { AVAILABILITY, busyText, tokenColor } from '../map/availability';
+import { connectorLabel, formatLabel } from './labels';
 import { LocationSummary } from '../map/locations.service';
 
 /** Other stations of a park whose details load at once in the park view, and per "load more". */
@@ -31,6 +32,12 @@ const PARK_PAGE = 10;
 const PARK_SEARCH_FROM = 8;
 /** Order of the park list: free stations first. */
 const AVAILABILITY_ORDER = ['AVAILABLE', 'OCCUPIED', 'OUT_OF_ORDER', 'UNKNOWN'];
+
+/** "1 Ladepunkt", "4 Ladepunkte". */
+const count = (value: number, one: string, many: string): string => `${value} ${value === 1 ? one : many}`;
+
+/** The name of a station label without country and operator: AT*MER*E006566 → E006566. */
+export const stationName = (label: string): string => label.split('*').at(-1)!;
 
 /** Days of the status timeline and weeks of the occupancy matrix. */
 const TIMELINE_DAYS = 7;
@@ -104,7 +111,8 @@ type LoadState = 'loading' | 'error' | 'ready';
         <section id="park" aria-label="Ladepark">
           <p class="park-summary">
             <app-icon name="ev_station" />
-            Ladepark: {{ park.length + 1 }} Stationen an diesem Ort, zusammen {{ parkTotal() }} Ladepunkte ({{ parkFree() }} frei)
+            Ladepark: {{ park.length + 1 }} Stationen an diesem Ort, zusammen {{ parkTotal() }} Ladepunkte für bis zu
+            {{ parkTotal() }} Fahrzeuge ({{ parkFree() }} frei)
           </p>
           @if (park.length >= parkSearchFrom) {
             <mat-form-field appearance="outline" subscriptSizing="dynamic" class="park-search">
@@ -135,12 +143,19 @@ type LoadState = 'loading' | 'error' | 'ready';
 
       <section aria-labelledby="evses-title">
         <h2 id="evses-title">{{ nested() ? 'Ladepunkte dieser Station' : 'Ladepunkte' }}</h2>
+        @if (detail.data.evses.length > 0) {
+          <p class="capacity">{{ capacity() }}</p>
+        }
         @if (!history) {
           <p id="history-hint" class="details-state">
             Statusverlauf und Auslastung siehst du nach der <a routerLink="/login">Anmeldung</a>.
           </p>
         }
-        @for (evse of detail.data.evses; track evse.id) {
+        @for (group of evseGroups(); track group.label) {
+          @if (group.title) {
+            <h3 class="station-title">{{ group.title }}</h3>
+          }
+          @for (evse of group.evses; track evse.id) {
           <mat-card appearance="outlined" class="evse" [attr.data-evse]="evse.id">
             <mat-card-content>
               <div class="evse-head">
@@ -171,11 +186,15 @@ type LoadState = 'loading' | 'error' | 'ready';
                   · bis {{ evse.maxPowerKw | number: '1.0-1' : 'en-US' }} kW
                 }
               </p>
-              <p class="connectors">{{ connectors(evse) }}</p>
+              <ul class="connectors" aria-label="Anschlüsse">
+                @for (connector of evse.connectors; track $index) {
+                  <li class="connector"><app-icon name="ev_station" />{{ connectorText(connector) }}</li>
+                }
+              </ul>
               @if (evse.connectors.length > 1) {
                 <p class="connector-note">
-                  Ein Status für alle Stecker: Die Quelle meldet die Belegung je Ladepunkt. Lädt an einem Stecker ein Auto,
-                  gilt der ganze Ladepunkt als belegt.
+                  Ein Status für alle Anschlüsse: Die Quelle meldet die Belegung je Ladepunkt. Lädt an einem Anschluss ein
+                  Auto, gilt der ganze Ladepunkt als belegt.
                 </p>
               }
               @if (prices) {
@@ -236,6 +255,7 @@ type LoadState = 'loading' | 'error' | 'ready';
               }
             </mat-card-content>
           </mat-card>
+          }
         } @empty {
           <p id="no-evses">Für diesen Standort sind keine Ladepunkte bekannt.</p>
         }
@@ -324,6 +344,44 @@ export class LocationDetails {
   readonly nested = input(false);
   /** Another location of the park was chosen. */
   readonly openLocation = output<LocationSummary>();
+  /**
+   * The EVSEs by their charging station (in the order of their first EVSE); those without one last. Without any known
+   * station one group without title.
+   */
+  protected readonly evseGroups = computed(() => {
+    const evses = this.detail()?.data.evses ?? [];
+    if (evses.every((evse) => evse.chargingStation === null)) {
+      return [{ label: '', title: null, evses }];
+    }
+    const groups = new Map<string, EvseDetail[]>();
+    for (const evse of evses) {
+      const label = evse.chargingStation ?? '';
+      groups.set(label, [...(groups.get(label) ?? []), evse]);
+    }
+    return [...groups.entries()]
+      .sort(([a], [b]) => (a === '' ? 1 : 0) - (b === '' ? 1 : 0))
+      .map(([label, members]) => ({
+        label,
+        title: `${label === '' ? 'Ohne Angabe der Ladestation' : `Ladestation ${stationName(label)}`} · ${count(members.length, 'Ladepunkt', 'Ladepunkte')}`,
+        evses: members,
+      }));
+  });
+
+  /**
+   * "2 Ladestationen · 4 Ladepunkte (bis zu 4 Fahrzeuge gleichzeitig) · 4 Anschlüsse"; the stations only when all EVSEs
+   * have a known one.
+   */
+  protected readonly capacity = computed(() => {
+    const evses = this.detail()?.data.evses ?? [];
+    const stations = new Set(evses.map((evse) => evse.chargingStation));
+    const connectors = evses.reduce((sum, evse) => sum + evse.connectors.length, 0);
+    return [
+      ...(stations.has(null) ? [] : [count(stations.size, 'Ladestation', 'Ladestationen')]),
+      evses.length === 1 ? '1 Ladepunkt (ein Fahrzeug zugleich)' : `${evses.length} Ladepunkte (bis zu ${evses.length} Fahrzeuge gleichzeitig)`,
+      count(connectors, 'Anschluss', 'Anschlüsse'),
+    ].join(' · ');
+  });
+
   /** The other stations of the park are shown below. */
   protected readonly parkOpen = signal(false);
   /** From this many other stations the park list can be searched and scrolls. */
@@ -451,19 +509,17 @@ export class LocationDetails {
     return this.timelines()[evseId] as Segment[];
   }
 
-  protected connectors(evse: EvseDetail): string {
-    return evse.connectors
-      .map((connector) =>
-        [
-          connector.standard,
-          connector.format,
-          connector.maxPowerKw === null ? null : `${connector.maxPowerKw} kW`,
-        ]
-          .filter((part) => part !== null)
-          .join(' · '),
-      )
-      .join(', ');
+  /** "Typ 2 · Buchse · 22 kW": the type, socket or cable, the power. */
+  protected connectorText(connector: EvseDetail['connectors'][number]): string {
+    return [
+      connectorLabel(connector.standard),
+      connector.format === null ? null : formatLabel(connector.format),
+      connector.maxPowerKw === null ? null : `${connector.maxPowerKw} kW`,
+    ]
+      .filter((part) => part !== null)
+      .join(' · ');
   }
+
 
   private async load(id: string): Promise<void> {
     const request = ++this.request;

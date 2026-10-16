@@ -43,7 +43,7 @@ function stopOf(power: number | null, fallback: number): number {
           </button>
         </div>
 
-        <h3 id="filter-connector-label">Stecker</h3>
+        <h3 id="filter-connector-label">Anschluss</h3>
         <mat-chip-listbox multiple id="filter-connector" aria-labelledby="filter-connector-label" (change)="connectors($event)">
           @for (item of connectorOptions; track item.standard) {
             <mat-chip-option [value]="item.standard" [selected]="filters().connector.includes(item.standard)">{{ item.label }}</mat-chip-option>

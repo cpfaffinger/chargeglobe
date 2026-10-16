@@ -8,7 +8,7 @@ const CONNECTORS: Record<string, string> = {
   CHADEMO: 'CHAdeMO',
   DOMESTIC_F: 'Schuko',
   TESLA_S: 'Tesla',
-  UNKNOWN: 'unbekannter Stecker',
+  UNKNOWN: 'unbekannter Anschluss',
 };
 
 const FORMATS: Record<string, string> = { SOCKET: 'Buchse', CABLE: 'Kabel' };
@@ -67,7 +67,8 @@ const ATTRIBUTES: Record<string, string> = {
   auth_methods: 'Zahlungsarten',
   roaming: 'Roaming',
   physical_reference: 'Bezeichnung vor Ort',
-  connectors: 'Stecker',
+  connectors: 'Anschlüsse',
+  charging_station: 'Ladestation',
 };
 
 const label = (labels: Record<string, string>) => (value: string | null): string => (value === null ? '–' : (labels[value] ?? value));

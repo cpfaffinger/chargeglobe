@@ -117,6 +117,7 @@ public sealed record ConnectorDetail(string Standard, string? Format, string? Po
 /// <param name="StatusSource">Key of the source that reported the current status (table <c>source</c>); null with <c>UNKNOWN</c>.</param>
 /// <param name="AuthMethods">Ways to start and pay a session (<c>AuthMethod</c> names); empty if unknown.</param>
 /// <param name="Roaming">Charging cards of other providers are accepted; null if unknown.</param>
+/// <param name="ChargingStation">Label of the charging station (pillar, wallbox) of the EVSE as a source names it, e.g. <c>AT*MER*E006566</c>; null if unknown.</param>
 public sealed record EvseDetail(
     Guid Id,
     string EvseId,
@@ -129,7 +130,8 @@ public sealed record EvseDetail(
     string? PowerType,
     IReadOnlyList<ConnectorDetail> Connectors,
     IReadOnlyList<string> AuthMethods,
-    bool? Roaming);
+    bool? Roaming,
+    string? ChargingStation = null);
 
 /// <param name="Park">The other locations of its charging park, nearest first; empty if it stands alone.</param>
 public sealed record LocationDetail(

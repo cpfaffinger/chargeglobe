@@ -73,6 +73,7 @@ function evse(overrides: Partial<EvseDetail> = {}): EvseDetail {
     statusSince: '2026-10-14T07:40:00Z',
     statusObservedAt: '2026-10-14T08:15:00Z',
     statusSource: 'econtrol',
+    chargingStation: null,
     maxPowerKw: 22,
     powerType: 'AC_3_PHASE',
     connectors: [
@@ -337,7 +338,10 @@ describe('LocationDetailPage', () => {
     expect(text(first, '.status')).toBe('lädt');
     expect(first.querySelector<HTMLElement>('.status .status-dot')!.style.background).toBe('var(--cg-status-occupied)');
     expect(text(first, '.meta')).toMatch(/^seit 14\.10\.2026 \d\d:40 · bis 22 kW$/);
-    expect(text(first, '.connectors')).toBe('IEC_62196_T2 · SOCKET · 22 kW');
+    expect(text(first, '.connectors')).toBe('Typ 2 · Buchse · 22 kW');
+    // Without known stations: no station count and no groups.
+    expect(text(page(), '.capacity')).toBe('2 Ladepunkte (bis zu 2 Fahrzeuge gleichzeitig) · 3 Anschlüsse');
+    expect(page().querySelector('.station-title')).toBeNull();
     const segments = Array.from(first.querySelectorAll<HTMLElement>('.segment'));
     expect(segments.map((segment) => [segment.style.left, segment.style.width])).toEqual([
       ['0%', '50%'],
@@ -346,11 +350,11 @@ describe('LocationDetailPage', () => {
     expect(segments[1].title).toMatch(/^lädt: \d\d\.\d\d\. \d\d:\d\d – \d\d\.\d\d\. \d\d:\d\d$/);
     expect(text(second, 'h3')).toBe('XX*CG*E0123456789ABCDEF (ID von chargeglobe vergeben)');
     expect(text(second, '.status')).toBe('unbekannt');
-    expect(text(second, '.connectors')).toBe('DOMESTIC_F, IEC_62196_T2');
+    expect(text(second, '.connectors')).toBe('Schuko Typ 2');
     // Several connectors share the status of their EVSE.
     expect(first.querySelector('.connector-note')).toBeNull();
     expect(text(second, '.connector-note')).toBe(
-      'Ein Status für alle Stecker: Die Quelle meldet die Belegung je Ladepunkt. Lädt an einem Stecker ein Auto, gilt der ganze Ladepunkt als belegt.',
+      'Ein Status für alle Anschlüsse: Die Quelle meldet die Belegung je Ladepunkt. Lädt an einem Anschluss ein Auto, gilt der ganze Ladepunkt als belegt.',
     );
     expect(text(second, '.timeline-state')).toBe('Keine Statusmeldungen in den letzten 7 Tagen.');
 
@@ -649,6 +653,47 @@ describe('LocationDetails (info card)', () => {
     expect(root().querySelector('#park-more')).toBeNull();
   });
 
+  it('groups the EVSEs by their charging station and counts stations, EVSEs and connectors', async () => {
+    fixture = TestBed.createComponent(LocationDetails);
+    await show('loc-1');
+    http.expectOne('/api/v1/locations/loc-1').flush(
+      response('loc-1', [
+        evse({ id: 'e-1', evseId: 'AT*MER*E006566*01', chargingStation: 'AT*MER*E006566' }),
+        evse({ id: 'e-2', evseId: 'AT*MER*E006567*01', chargingStation: 'AT*MER*E006567' }),
+        evse({ id: 'e-3', evseId: 'AT*MER*E006566*02', chargingStation: 'AT*MER*E006566' }),
+      ]),
+    );
+    await settle();
+
+    expect(text(root(), '.capacity')).toBe('2 Ladestationen · 3 Ladepunkte (bis zu 3 Fahrzeuge gleichzeitig) · 3 Anschlüsse');
+    expect(Array.from(root().querySelectorAll('.station-title')).map((title) => title.textContent!.trim())).toEqual([
+      'Ladestation E006566 · 2 Ladepunkte',
+      'Ladestation E006567 · 1 Ladepunkt',
+    ]);
+    expect(Array.from(root().querySelectorAll('.evse h3')).map((title) => title.textContent!.trim())).toEqual([
+      'AT*MER*E006566*01',
+      'AT*MER*E006566*02',
+      'AT*MER*E006567*01',
+    ]);
+
+    // One EVSE without a known station: the stations are not counted, its group comes last.
+    await show('loc-2');
+    http.expectOne('/api/v1/locations/loc-2').flush(
+      response('loc-2', [evse({ id: 'e-4', chargingStation: null }), evse({ id: 'e-5', evseId: 'AT*MER*E1*1', chargingStation: 'AT*MER*E1' })]),
+    );
+    await settle();
+    expect(text(root(), '.capacity')).toBe('2 Ladepunkte (bis zu 2 Fahrzeuge gleichzeitig) · 2 Anschlüsse');
+    expect(Array.from(root().querySelectorAll('.station-title')).map((title) => title.textContent!.trim())).toEqual([
+      'Ladestation E1 · 1 Ladepunkt',
+      'Ohne Angabe der Ladestation · 1 Ladepunkt',
+    ]);
+
+    await show('loc-3');
+    http.expectOne('/api/v1/locations/loc-3').flush(response('loc-3', [evse({ connectors: [] })]));
+    await settle();
+    expect(text(root(), '.capacity')).toBe('1 Ladepunkt (ein Fahrzeug zugleich) · 0 Anschlüsse');
+  });
+
   it('shows the other stations of its charging park and the whole park on demand', async () => {
     fixture = TestBed.createComponent(LocationDetails);
     const opened: string[] = [];
@@ -661,7 +706,7 @@ describe('LocationDetails (info card)', () => {
     http.expectOne('/api/v1/locations/loc-1').flush({ data: { park: [twin, south], location: own, evses: [evse()] }, meta: { attribution: [] } });
     await settle();
 
-    expect(text(root(), '.park-summary')).toBe('Ladepark: 3 Stationen an diesem Ort, zusammen 5 Ladepunkte (2 frei)');
+    expect(text(root(), '.park-summary')).toBe('Ladepark: 3 Stationen an diesem Ort, zusammen 5 Ladepunkte für bis zu 5 Fahrzeuge (2 frei)');
     const members = Array.from(root().querySelectorAll<HTMLButtonElement>('.park-member'));
     expect(members.map(words)).toEqual(['Andere Station: 2 Ladepunkte, 0 frei', 'Andere Station: 1 Ladepunkt, 1 frei · Parkplatz Süd']);
     members[1].click();

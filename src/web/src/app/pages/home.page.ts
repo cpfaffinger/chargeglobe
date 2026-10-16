@@ -1,3 +1,4 @@
+import { RouterLink } from '@angular/router';
 import { DatePipe, DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import {
   Component,
@@ -134,7 +135,7 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
  */
 @Component({
   imports: [AppLoading, AppIcon, PlaceSearch, DatePipe, DecimalPipe, FavoriteButton, LocationDetails, MapFilterPanel, MapOptionsPanel, MatButtonModule,
-    MatButtonToggleModule, MatCardModule, MatMenuModule, MatProgressSpinnerModule, NgTemplateOutlet],
+    MatButtonToggleModule, MatCardModule, MatMenuModule, MatProgressSpinnerModule, NgTemplateOutlet, RouterLink],
   selector: 'app-home',
   host: { '[class.has-card]': 'selected() !== null || shownStopsState() !== null || shownReachState() !== null', '[class.has-filters]': 'filtersOpen() || optionsOpen()' },
   template: `
@@ -355,6 +356,7 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
               </li>
             }
           </ul>
+          <a routerLink="/help/begriffe" id="legend-help" title="Was ist ein Ladepunkt, eine Ladestation, ein Anschluss?">Begriffe</a>
           <button type="button" id="legend-hide" aria-label="Legende ausblenden" title="Legende ausblenden" (click)="hints.setLegend(false)">
             <app-icon name="close" />
           </button>

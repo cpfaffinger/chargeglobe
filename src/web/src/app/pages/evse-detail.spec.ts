@@ -188,7 +188,7 @@ describe('EvseDetailPage', () => {
 
     expect(value('technology', 'Maximale Leistung')).toBe('22 kW');
     expect(value('technology', 'Stromart')).toBe('Wechselstrom, 3-phasig');
-    expect(value('technology', 'Stecker')).toBe('Typ 2 · Buchse · 22 kW Schuko');
+    expect(value('technology', 'Anschlüsse')).toBe('Typ 2 · Buchse · 22 kW Schuko');
     
     expect(value('technology', 'Betreiber')).toBe('Wien Energie GmbH (VIE)');
     expect(value('technology', 'Bezeichnung vor Ort')).toBe('Säule 1');
@@ -316,7 +316,7 @@ describe('EvseDetailPage', () => {
     expect(text(page(), '#status-meta')).toBe('noch keine Statusmeldung (nicht aktuell)');
     expect(text(page(), '#evse-location')).toContain('Ladestandort,');
     expect(value('technology', 'Maximale Leistung')).toBe('–');
-    expect(value('technology', 'Stecker')).toBe('keine Angabe');
+    expect(value('technology', 'Anschlüsse')).toBe('keine Angabe');
     expect(value('technology', 'Betreiber')).toBe('Kleinbetreiber');
     expect(page().querySelector('#technology')!.textContent).not.toContain('Bezeichnung vor Ort');
     expect(value('access', 'Zahlungsarten')).toBe('keine Angabe');

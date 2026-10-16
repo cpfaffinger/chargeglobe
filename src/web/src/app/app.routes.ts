@@ -30,6 +30,7 @@ const pages: Routes = [
     loadComponent: () => import('./pages/favorites.page').then((page) => page.FavoritesPage),
     canActivate: [requirePermission()],
   },
+  { path: 'help/begriffe', loadComponent: () => import('./pages/help-terms.page').then((page) => page.HelpTermsPage) },
   {
     path: 'stats',
     loadComponent: () => import('./pages/stats.page').then((page) => page.StatsPage),

@@ -177,6 +177,10 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
         var statuses = await db.EvseStatusCurrent.AsNoTracking()
             .Where(current => evseIds.Contains(current.EvseId))
             .ToDictionaryAsync(current => current.EvseId, cancellationToken);
+        List<Guid> stationIds = [.. evses.Select(evse => evse.ChargingStationId).OfType<Guid>().Distinct()];
+        var stations = await db.ChargingStations.AsNoTracking()
+            .Where(station => stationIds.Contains(station.Id))
+            .ToDictionaryAsync(station => station.Id, station => station.Label, cancellationToken);
         var fresh = FreshSince();
         EvseStatusCurrent? FreshStatus(Guid evseId) =>
             statuses.TryGetValue(evseId, out var current) && current.ObservedAt >= fresh ? current : null;
@@ -194,7 +198,8 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
                 [.. evse.Connectors.OrderBy(connector => connector.Ordinal).Select(connector => new ConnectorDetail(
                     connector.Standard.ToString(), connector.Format?.ToString(), connector.PowerType?.ToString(), connector.MaxPowerKw))],
                 [.. evse.AuthMethods.Select(method => method.ToString())],
-                evse.Roaming))
+                evse.Roaming,
+                evse.ChargingStationId is { } stationId ? stations.GetValueOrDefault(stationId) : null))
             .ToList();
         var summary = new LocationSummary(
             location.Id,

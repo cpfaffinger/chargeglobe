@@ -55,6 +55,8 @@
 - [x] Einstellungen im Konto: `GET/PUT /me/preferences` mit Startposition, Filtern und Kartenoptionen, im Web nach dem Login geladen und 1 s nach jeder Änderung gespeichert; letzter Ausschnitt bleibt je Gerät
 - [x] Eigene Ladekarten des Nutzers (`cards` in `/me/preferences`, Auswahl unter „Mein Konto“, „deine Karte“ im Preisvergleich und „deine günstigste Karte“ in der Infokarte)
 - [x] Ingest-Durchsatz: Vorladen je Nachricht, ein Schreibvorgang je Nachricht; ein Register-Lauf ist in unter 3 min statt 16 min verarbeitet (docs/05)
+- [x] Ladeparks (Standorte desselben Betreibers ≤ 25 m), Marker am selben Punkt nebeneinander, Park-Marker ab 9 Stationen, Gesamtauslastung des Parks (`GET /locations/{id}/occupancy?park=true`)
+- [x] Ladestationen aus vierteiligen EVSE-IDs (`charging_station`), Infokarte mit Ladestationen, Ladepunkten (= Fahrzeuge) und Anschlüssen, Glossar `/help/begriffe`, Statistik mit Ladeparks, Ladestationen und Verteilungen
 - [x] Adresssuche für Start und Ziel aus dem BEV-Adressregister (`address_street` + `address`, `pg_trgm`, zweistufig, Import im Worker alle `address.refresh_days`, `GET /geocode`, Gruppe „Adressen“ in den Suchfeldern des Routenplaners)
 - [x] Routing: Compose-Service `routing` (Valhalla 3.9.1, OSM-Extrakt Österreich, Profil `routing`), `IRoutingEngine`, `POST /routes`, „Route hierher“ in der Infokarte mit Routenlinie auf der Karte
 - [ ] Routing-Extrakt automatisch aktualisieren (monatlich; Bau außerhalb des Live-Hosts)

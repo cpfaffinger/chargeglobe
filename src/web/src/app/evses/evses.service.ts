@@ -22,6 +22,8 @@ export interface EvseDetail {
   statusObservedAt: string | null;
   /** Key of the source of the current status (e.g. econtrol); null with UNKNOWN. */
   statusSource: string | null;
+  /** Label of its charging station (pillar, wallbox) as a source names it, e.g. AT*MER*E006566; null if unknown. */
+  chargingStation: string | null;
   maxPowerKw: number | null;
   powerType: string | null;
   connectors: ConnectorDetail[];
