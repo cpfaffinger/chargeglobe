@@ -83,19 +83,24 @@ public class FavoritesTests(IntegrationFactory factory) : IClassFixture<Integrat
         Assert.Equal(HttpStatusCode.NoContent, (await Client().PutAsync($"/api/v1/me/favorites/{ring}", null)).StatusCode);
 
         var body = await ListAsync();
-        var data = body.GetProperty("data").EnumerateArray().ToList();
+        // Removed locations of the other tests are listed too, marked.
+        var data = body.GetProperty("data").EnumerateArray().Where(item => !item.GetProperty("removed").GetBoolean()).ToList();
         // Newest first.
         Assert.Equal(["Testladepark Ring", "Teststation Stephansplatz"], data.Select(item => item.GetProperty("location").GetProperty("name").GetString()));
         var location = data[1].GetProperty("location");
         Assert.Equal((2, 1, "AVAILABLE"), (location.GetProperty("evsesTotal").GetInt32(), location.GetProperty("evsesAvailable").GetInt32(), location.GetProperty("availability").GetString()));
         Assert.True(data[1].GetProperty("addedAt").GetDateTimeOffset() <= data[0].GetProperty("addedAt").GetDateTimeOffset());
         var meta = body.GetProperty("meta");
-        Assert.Equal((2, IFavorites.Max), (meta.GetProperty("returned").GetInt32(), meta.GetProperty("max").GetInt32()));
+        Assert.Equal((body.GetProperty("data").GetArrayLength(), IFavorites.Max), (meta.GetProperty("returned").GetInt32(), meta.GetProperty("max").GetInt32()));
         Assert.Equal("econtrol", meta.GetProperty("attribution")[0].GetProperty("source").GetString());
 
         Assert.Equal(HttpStatusCode.NoContent, (await Client().DeleteAsync($"/api/v1/me/favorites/{stephansplatz}")).StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, (await Client().DeleteAsync($"/api/v1/me/favorites/{stephansplatz}")).StatusCode);
-        Assert.Equal(["Testladepark Ring"], (await ListAsync()).GetProperty("data").EnumerateArray().Select(item => item.GetProperty("location").GetProperty("name").GetString()));
+        Assert.Equal(
+            ["Testladepark Ring"],
+            (await ListAsync()).GetProperty("data").EnumerateArray()
+                .Where(item => !item.GetProperty("removed").GetBoolean())
+                .Select(item => item.GetProperty("location").GetProperty("name").GetString()));
 
         var audit = await factory.WithDbAsync(db => db.AuditLog
             .Where(entry => entry.Target == stephansplatz.ToString())
@@ -106,7 +111,7 @@ public class FavoritesTests(IntegrationFactory factory) : IClassFixture<Integrat
     }
 
     [Fact]
-    public async Task Unknown_locations_are_rejected_and_inactive_ones_left_out()
+    public async Task Unknown_locations_are_rejected_and_removed_ones_marked()
     {
         var problem = await (await Client().PutAsync($"/api/v1/me/favorites/{Guid.NewGuid()}", null)).AssertProblemAsync(HttpStatusCode.NotFound);
         Assert.Contains("listLocations", problem.GetProperty("detail").GetString());
@@ -121,9 +126,10 @@ public class FavoritesTests(IntegrationFactory factory) : IClassFixture<Integrat
             return db.SaveChangesAsync();
         });
 
-        Assert.DoesNotContain(
-            removed.Id.ToString(),
-            (await ListAsync()).GetProperty("data").EnumerateArray().Select(item => item.GetProperty("location").GetProperty("id").GetString()));
+        var favorite = Assert.Single(
+            (await ListAsync()).GetProperty("data").EnumerateArray(),
+            item => item.GetProperty("location").GetProperty("id").GetGuid() == removed.Id);
+        Assert.Equal((true, 0), (favorite.GetProperty("removed").GetBoolean(), favorite.GetProperty("location").GetProperty("evsesTotal").GetInt32()));
         // A favorite that is no longer active stays saved.
         Assert.Equal(HttpStatusCode.NoContent, (await Client().PutAsync($"/api/v1/me/favorites/{removed.Id}", null)).StatusCode);
     }
