@@ -125,6 +125,7 @@ TOKEN=$(curl -sk -H 'Content-Type: application/json' -d "{\"email\":\"$EMAIL\",\
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/evses/<EVSE-ID oder UUID>"                  # 200: EVSE mit Standort, Steckern, aktuellem Status
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/evses/<EVSE-ID>/status/history"           # Statusintervalle der letzten 7 Tage (max. 90 Tage je Abfrage)
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/evses/<EVSE-ID>/occupancy?weeks=4"        # Matrix Wochentag × Stunde (Europe/Vienna)
+curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/locations/<Standort-UUID>/occupancy?park=true"   # Auslastung des ganzen Ladeparks zusammen (evse:read)
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/evses/<EVSE-ID>/prices"                  # Ad-hoc-Preis, Verlauf, Kosten 30 kWh/40 min, emps[] = Ladekarten nach Kosten (price:read)
 curl -k -H "Authorization: Bearer $TOKEN" -X PUT -H 'Content-Type: application/json' -d '{"name":"SMATRICS","website":"https://smatrics.com"}' https://localhost:5005/api/v1/emps/smatrics   # Anbieter anlegen (tariff:write); UI: /admin/tariffs
 curl -k -H "Authorization: Bearer $TOKEN" -X PUT -H 'Content-Type: application/json' -d '{"emp":"smatrics","name":"Basic","currency":"EUR","validFrom":"2026-01-01T00:00:00Z","pricePerKwhAc":0.45,"pricePerKwhDc":0.65,"roamingOnly":true}' https://localhost:5005/api/v1/tariffs/$(cat /proc/sys/kernel/random/uuid)   # Tarif anlegen, 201

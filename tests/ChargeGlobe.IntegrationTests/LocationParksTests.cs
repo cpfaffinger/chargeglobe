@@ -5,6 +5,7 @@ using ChargeGlobe.Application.Locations;
 using ChargeGlobe.Application.Settings;
 using ChargeGlobe.Domain;
 using ChargeGlobe.Domain.Charging;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ChargeGlobe.IntegrationTests;
@@ -114,5 +115,68 @@ public class LocationParksTests(IntegrationFactory factory)
         }
 
         Assert.Equal((park, 3), (await MapAsync())["Station A"]);
+    }
+
+    [Fact]
+    public async Task The_occupancy_of_a_location_or_its_whole_park_sums_the_readings_of_their_EVSEs()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var recent = new DateTimeOffset(now.Year, now.Month, now.Day, now.Hour, 10, 0, TimeSpan.Zero).AddDays(-2);
+        var (first, second, alone) = await factory.WithDbAsync(async db =>
+        {
+            var owner = Operator.Create($"Occupancy Operator {Guid.NewGuid():N}", "AT");
+            db.Operators.Add(owner);
+            Location At(double latitude)
+            {
+                var location = Location.Create(new GeoPoint(latitude, 9.65), "AT", now);
+                location.OperatorId = owner.Id;
+                db.Locations.Add(location);
+                return location;
+            }
+
+            var (a, b, c) = (At(47.08), At(47.08), At(47.09));
+            var (evseA, evseB) = (Evse.WithSurrogate(a.Id, now), Evse.WithSurrogate(b.Id, now));
+            db.Evses.AddRange(evseA, evseB, Evse.WithSurrogate(c.Id, now));
+            await db.SaveChangesAsync();
+            await db.Database.ExecuteSqlAsync($"""
+                INSERT INTO evse_status_observation (evse_id, time, source_key, status) VALUES
+                ({evseA.Id}, {recent}, 'econtrol', 'CHARGING'), ({evseA.Id}, {recent.AddMinutes(5)}, 'econtrol', 'CHARGING'),
+                ({evseA.Id}, {recent.AddMinutes(10)}, 'econtrol', 'AVAILABLE'), ({evseA.Id}, {recent.AddMinutes(15)}, 'econtrol', 'AVAILABLE'),
+                ({evseB.Id}, {recent}, 'econtrol', 'CHARGING'), ({evseB.Id}, {recent.AddMinutes(5)}, 'econtrol', 'CHARGING'),
+                ({evseB.Id}, {recent.AddMinutes(10)}, 'econtrol', 'CHARGING'), ({evseB.Id}, {recent.AddMinutes(15)}, 'econtrol', 'CHARGING')
+                """);
+            await db.Database.ExecuteSqlRawAsync("CALL refresh_continuous_aggregate('evse_occupancy_hourly', NULL, NULL)");
+            return (a.Id, b.Id, c.Id);
+        });
+        await RefreshAsync();
+        var email = $"park-occupancy-{Guid.NewGuid():N}@chargeglobe.test";
+        await factory.CreateConfirmedUserAsync(email);
+        var client = factory.Client((await factory.LoginAsync(email)).AccessToken);
+        async Task<JsonElement> DataAsync(string query)
+        {
+            var response = await client.GetAsync($"/api/v1/locations/{query}");
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            return (await response.ReadJsonAsync()).GetProperty("data");
+        }
+
+        static (bool, int, int, long, double) Totals(JsonElement data) =>
+            (data.GetProperty("park").GetBoolean(), data.GetProperty("locations").GetInt32(), data.GetProperty("evses").GetInt32(),
+             data.GetProperty("observations").GetInt64(), data.GetProperty("utilization").GetDouble());
+
+        Assert.Equal((false, 1, 1, 4L, 0.5), Totals(await DataAsync($"{first}/occupancy?timeZone=UTC")));
+        var park = await DataAsync($"{first}/occupancy?timeZone=UTC&park=true");
+        Assert.Equal((true, 2, 2, 8L, 0.75), Totals(park));
+        static int Iso(DayOfWeek day) => day == DayOfWeek.Sunday ? 7 : (int)day;
+        var day = park.GetProperty("days")[Iso(recent.DayOfWeek) - 1];
+        Assert.Equal((0.75, 8L), (day.GetProperty("chargingShare")[recent.Hour].GetDouble(), day.GetProperty("observations")[recent.Hour].GetInt64()));
+        Assert.Equal(1, (await DataAsync($"{alone}/occupancy?park=true")).GetProperty("locations").GetInt32());
+        Assert.Equal(2, (await DataAsync($"{second}/occupancy?park=true&weeks=12")).GetProperty("evses").GetInt32());
+
+        Assert.Equal(HttpStatusCode.Unauthorized, (await factory.Client().GetAsync($"/api/v1/locations/{first}/occupancy")).StatusCode);
+        await (await client.GetAsync($"/api/v1/locations/{Guid.NewGuid()}/occupancy")).AssertProblemAsync(HttpStatusCode.NotFound);
+        var weeks = await (await client.GetAsync($"/api/v1/locations/{first}/occupancy?weeks=13")).AssertProblemAsync(HttpStatusCode.UnprocessableEntity);
+        Assert.True(weeks.GetProperty("errors").TryGetProperty("weeks", out _));
+        var zone = await (await client.GetAsync($"/api/v1/locations/{first}/occupancy?timeZone=Mars/Olympus")).AssertProblemAsync(HttpStatusCode.UnprocessableEntity);
+        Assert.True(zone.GetProperty("errors").TryGetProperty("timeZone", out _));
     }
 }
