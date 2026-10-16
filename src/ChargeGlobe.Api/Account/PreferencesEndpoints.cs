@@ -27,12 +27,20 @@ public sealed record FilterPreferences(
 /// <summary>How the map combines nearby locations.</summary>
 public sealed record MapOptionPreferences(int? ClusterRadius, int? ClusterMaxZoom);
 
+/// <summary>The car of the charging plan along a route.</summary>
+/// <param name="ConsumptionKwhPer100Km">Energy use per 100 km.</param>
+/// <param name="BatteryKwh">Usable battery capacity.</param>
+/// <param name="StartSoc">State of charge at departure in %; null: full.</param>
+/// <param name="ArrivalSoc">State of charge wanted on arrival in %; null: the default of the app (10 %).</param>
+public sealed record VehiclePreference(decimal? ConsumptionKwhPer100Km, decimal? BatteryKwh, decimal? StartSoc, decimal? ArrivalSoc);
+
 /// <param name="Home">Null: no start position (the map uses the default of the configuration).</param>
 /// <param name="Filters">Null: no filters.</param>
 /// <param name="MapOptions">Null: the defaults.</param>
 /// <param name="Cards">Keys of the EMPs (<c>listEmps</c>) whose charging cards or apps the user has; null: none chosen.</param>
+/// <param name="Vehicle">The car of the charging plan; null: the defaults of the app.</param>
 public sealed record PreferencesDocument(
-    HomePreference? Home, FilterPreferences? Filters, MapOptionPreferences? MapOptions, IReadOnlyList<string>? Cards = null)
+    HomePreference? Home, FilterPreferences? Filters, MapOptionPreferences? MapOptions, IReadOnlyList<string>? Cards = null, VehiclePreference? Vehicle = null)
 {
     public static readonly PreferencesDocument Empty = new(null, null, null);
 }
@@ -48,13 +56,20 @@ public static class PreferencesEndpoints
     public const int MaxOperators = 100;
     public const int MaxCards = 20;
 
+    /// <summary>Ranges of the car, as in the web app (map/charging-plan.ts).</summary>
+    public const decimal MinConsumption = 5;
+    public const decimal MaxConsumption = 60;
+    public const decimal MinBattery = 10;
+    public const decimal MaxBattery = 250;
+
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
     private static readonly PreferencesDocument Example = new(
         new HomePreference(48.2082, 16.3738, 12),
         new FilterPreferences(["IEC_62196_T2_COMBO"], 50, null, [], true, false, false, false, false),
         new MapOptionPreferences(60, 14),
-        ["smatrics", "oeamtc"]);
+        ["smatrics", "oeamtc"],
+        new VehiclePreference(18, 60, 80, 15));
 
     public static IEndpointRouteBuilder MapPreferencesEndpoints(this IEndpointRouteBuilder endpoints)
     {
@@ -69,7 +84,9 @@ public static class PreferencesEndpoints
                 "`listLocations` query parameters; null = none) and `mapOptions` (`clusterRadius` in pixels, 0 = never " +
                 "combine; `clusterMaxZoom`, the highest zoom level at which locations are combined; null = defaults) and " +
                 "`cards` (keys of the EMPs from `listEmps` whose charging cards or apps the user has; the price comparison of " +
-                "`getEvsePrices` can highlight them; null = none). " +
+                "`getEvsePrices` can highlight them; null = none) and `vehicle` (the car of the charging plan along a route: " +
+                "`consumptionKwhPer100Km`, `batteryKwh`, `startSoc` and `arrivalSoc` in %, the last two null for the defaults " +
+                "of the app; null = defaults). " +
                 "`meta.updatedAt` is null while the account has not stored preferences yet; the web app then uploads the " +
                 "values of the browser. Requires an account or API key, no specific permission.")
             .Produces<PreferencesResponse>()
@@ -85,8 +102,10 @@ public static class PreferencesEndpoints
                 "values (latitude −90…90, longitude −180…180, zoom 0…24); `filters.connector` OCPI connector standards (as in " +
                 "`listLocations`, stored in upper case); `minPowerKw`/`maxPowerKw` above 0, at most 1000, min not above " +
                 "max; at most 100 `operatorId`; `mapOptions` with both values (`clusterRadius` 0…120, `clusterMaxZoom` 5…18); " +
-                "at most 20 `cards`, each the key of an existing EMP (duplicates are dropped). " +
-                "200 with the stored document; 422 with field errors such as `home.zoom`, `filters.connector` or `cards`. A change " +
+                "at most 20 `cards`, each the key of an existing EMP (duplicates are dropped); `vehicle` with " +
+                "`consumptionKwhPer100Km` 5…60 and `batteryKwh` 10…250, `startSoc` and `arrivalSoc` null or 0…100. " +
+                "200 with the stored document; 422 with field errors such as `home.zoom`, `filters.connector`, `cards` or " +
+                "`vehicle.batteryKwh`. A change " +
                 "is recorded in the audit log. Requires an account or API key, no specific permission.")
             .Produces<PreferencesResponse>()
             .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
@@ -152,6 +171,15 @@ public static class PreferencesEndpoints
         }
 
         validation.Require(request.Cards is not { Count: > MaxCards }, "cards", $"At most {MaxCards} cards.");
+        if (request.Vehicle is { } vehicle)
+        {
+            validation
+                .Require(vehicle.ConsumptionKwhPer100Km >= MinConsumption && vehicle.ConsumptionKwhPer100Km <= MaxConsumption, "vehicle.consumptionKwhPer100Km", $"Must be between {MinConsumption} and {MaxConsumption}.")
+                .Require(vehicle.BatteryKwh >= MinBattery && vehicle.BatteryKwh <= MaxBattery, "vehicle.batteryKwh", $"Must be between {MinBattery} and {MaxBattery}.")
+                .Require(vehicle.StartSoc is null or (>= 0 and <= 100), "vehicle.startSoc", "Must be empty or between 0 and 100.")
+                .Require(vehicle.ArrivalSoc is null or (>= 0 and <= 100), "vehicle.arrivalSoc", "Must be empty or between 0 and 100.");
+        }
+
         if (request.MapOptions is { } options)
         {
             validation

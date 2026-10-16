@@ -69,7 +69,7 @@
 - [x] Reichweite mit dem Auto (`POST /routes/reach`, Isochronen nach Fahrzeit oder Strecke; Knopf „Reichweite“ zeigt 15/30/60 min als Flächen auf der Karte)
 - [x] Ladepunkte in Reichweite (`POST /locations/within` mit Polygon/MultiPolygon und den Filtern der Karte; Karte „In Reichweite“ mit Zahlen je Fahrzeit-Band und den schnellsten freien Standorten)
 - [x] Statistik der Ladeinfrastruktur (`GET /stats` und Seite `/stats`: Zähler je Bundesland, Leistungsklasse, Stecker, Betreiber, Status und Frische)
-- [x] Ladeplanung entlang der Route (Verbrauch, Akku, Ladezustand bei Abfahrt und Ankunft; empfohlene Ladestopps im Browser, übernehmbar als Route)
+- [x] Ladeplanung entlang der Route (Verbrauch, Akku, Ladezustand bei Abfahrt und Ankunft; empfohlene Ladestopps im Browser, übernehmbar als Route; das Fahrzeug folgt dem Konto)
 - [x] Routenplaner mit frei wählbarem Start und Ziel (eigener Standort, Ladestandort oder Punkt auf der Karte)
 - [x] Cluster als Ringdiagramm der Marker; Navigation auf Tablets im Seitenmenü; kompakte Kartenknöpfe auf Handys
 - [x] Preise entlang der Route (`POST /locations/prices`: günstigster Ad-hoc-Preis und günstigste eigene Karte je Standort in einem Request; in „Unterwegs laden“ mit Umschalter „günstigste zuerst“)

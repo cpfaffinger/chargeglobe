@@ -79,7 +79,25 @@ public class PreferencesTests(IntegrationFactory factory)
         { """{"mapOptions":{"clusterRadius":50}}""", "mapOptions.clusterMaxZoom" },
         { "{\"cards\":[" + string.Join(',', Enumerable.Range(0, 21).Select(index => $"\"card-{index}\"")) + "]}", "cards" },
         { """{"cards":["no-such-emp"]}""", "cards" },
+        { """{"vehicle":{"consumptionKwhPer100Km":4,"batteryKwh":60}}""", "vehicle.consumptionKwhPer100Km" },
+        { """{"vehicle":{"batteryKwh":60}}""", "vehicle.consumptionKwhPer100Km" },
+        { """{"vehicle":{"consumptionKwhPer100Km":18,"batteryKwh":251}}""", "vehicle.batteryKwh" },
+        { """{"vehicle":{"consumptionKwhPer100Km":18,"batteryKwh":60,"startSoc":101}}""", "vehicle.startSoc" },
+        { """{"vehicle":{"consumptionKwhPer100Km":18,"batteryKwh":60,"arrivalSoc":-1}}""", "vehicle.arrivalSoc" },
     };
+
+    [Fact]
+    public async Task The_car_of_the_charging_plan_follows_the_account()
+    {
+        var (client, _) = await SignedInAsync();
+
+        var put = await client.PutAsJsonAsync("/api/v1/me/preferences", new { vehicle = new { consumptionKwhPer100Km = 17.5, batteryKwh = 77, startSoc = 80, arrivalSoc = (int?)null } });
+        Assert.Equal(HttpStatusCode.OK, put.StatusCode);
+
+        var vehicle = (await (await client.GetAsync("/api/v1/me/preferences")).ReadJsonAsync()).GetProperty("data").GetProperty("vehicle");
+        Assert.Equal((17.5m, 77m, 80m), (vehicle.GetProperty("consumptionKwhPer100Km").GetDecimal(), vehicle.GetProperty("batteryKwh").GetDecimal(), vehicle.GetProperty("startSoc").GetDecimal()));
+        Assert.Equal(JsonValueKind.Null, vehicle.GetProperty("arrivalSoc").ValueKind);
+    }
 
     [Fact]
     public async Task Own_cards_are_keys_of_known_EMPs_without_duplicates()
