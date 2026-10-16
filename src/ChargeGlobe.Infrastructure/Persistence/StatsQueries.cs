@@ -18,6 +18,12 @@ public sealed class StatsQueries(AppDbContext db, IAppConfig config, TimeProvide
 
     public const int TopOperatorCount = 10;
 
+    /// <summary>Classes of EVSEs per site (a charging park, else a location alone), in their order.</summary>
+    public static readonly string[] SiteSizes = ["1", "2", "3_4", "5_10", "11_PLUS"];
+
+    /// <summary>Classes of connectors per EVSE, in their order.</summary>
+    public static readonly string[] ConnectorSizes = ["0", "1", "2", "3_PLUS"];
+
     private static readonly string[] OccupiedStatuses = Availability.OccupiedStatuses;
 
     private static readonly string[] FaultedStatuses = Availability.FaultedStatuses;
@@ -32,12 +38,34 @@ public sealed class StatsQueries(AppDbContext db, IAppConfig config, TimeProvide
 
         // The same scope for every query: active locations (of the region) and their active EVSEs.
         var totals = await db.Database.SqlQuery<TotalsRow>($"""
-            WITH loc AS (SELECT id FROM location WHERE lifecycle = 'ACTIVE' AND ({region}::text IS NULL OR region_code = {region}::text)),
-                 ev AS (SELECT e.id FROM evse e JOIN loc ON loc.id = e.location_id WHERE e.lifecycle = 'ACTIVE')
+            WITH loc AS (SELECT id, park_id FROM location WHERE lifecycle = 'ACTIVE' AND ({region}::text IS NULL OR region_code = {region}::text)),
+                 ev AS (SELECT e.id, e.charging_station_id FROM evse e JOIN loc ON loc.id = e.location_id WHERE e.lifecycle = 'ACTIVE')
             SELECT (SELECT count(*) FROM loc)::int AS "Locations",
                    (SELECT count(*) FROM ev)::int AS "Evses",
-                   (SELECT count(*) FROM connector c JOIN ev ON ev.id = c.evse_id)::int AS "Connectors"
+                   (SELECT count(*) FROM connector c JOIN ev ON ev.id = c.evse_id)::int AS "Connectors",
+                   (SELECT count(DISTINCT park_id) FROM loc)::int AS "Parks",
+                   (SELECT count(DISTINCT charging_station_id) FROM ev)::int AS "Stations"
             """).SingleAsync(cancellationToken);
+
+        // A site is a charging park, or a location that stands alone.
+        var sites = await db.Database.SqlQuery<SizeRow>($"""
+            WITH loc AS (SELECT id, park_id FROM location WHERE lifecycle = 'ACTIVE' AND ({region}::text IS NULL OR region_code = {region}::text)),
+                 site AS (SELECT coalesce(loc.park_id, loc.id) AS id, count(e.id) AS n
+                          FROM loc LEFT JOIN evse e ON e.location_id = loc.id AND e.lifecycle = 'ACTIVE'
+                          GROUP BY 1)
+            SELECT CASE WHEN n <= 1 THEN '1' WHEN n = 2 THEN '2' WHEN n <= 4 THEN '3_4' WHEN n <= 10 THEN '5_10' ELSE '11_PLUS' END AS "Size",
+                   count(*)::int AS "Count"
+            FROM site GROUP BY 1
+            """).ToListAsync(cancellationToken);
+
+        var perEvse = await db.Database.SqlQuery<SizeRow>($"""
+            WITH loc AS (SELECT id FROM location WHERE lifecycle = 'ACTIVE' AND ({region}::text IS NULL OR region_code = {region}::text)),
+                 ev AS (SELECT e.id, count(c.id) AS n
+                        FROM evse e JOIN loc ON loc.id = e.location_id LEFT JOIN connector c ON c.evse_id = e.id
+                        WHERE e.lifecycle = 'ACTIVE' GROUP BY e.id)
+            SELECT CASE WHEN n = 0 THEN '0' WHEN n = 1 THEN '1' WHEN n = 2 THEN '2' ELSE '3_PLUS' END AS "Size", count(*)::int AS "Count"
+            FROM ev GROUP BY 1
+            """).ToListAsync(cancellationToken);
 
         var regions = await db.Database.SqlQuery<RegionRow>($"""
             WITH loc AS (SELECT id, region_code FROM location WHERE lifecycle = 'ACTIVE' AND ({region}::text IS NULL OR region_code = {region}::text)),
@@ -110,12 +138,16 @@ public sealed class StatsQueries(AppDbContext db, IAppConfig config, TimeProvide
             .ToListAsync(cancellationToken);
 
         var byClass = power.ToDictionary(row => row.Class, row => row.Evses);
+        var bySite = sites.ToDictionary(row => row.Size, row => row.Count);
+        var byConnectors = perEvse.ToDictionary(row => row.Size, row => row.Count);
         return new Stats(
-            new StatsTotals(totals.Locations, totals.Evses, totals.Connectors),
+            new StatsTotals(totals.Locations, totals.Evses, totals.Connectors, totals.Parks, totals.Stations),
             [.. regions.Select(row => new RegionCount(row.Code, row.Name, row.Locations, row.Evses))],
             [.. PowerClasses.Select(name => new PowerClassCount(name, byClass.GetValueOrDefault(name)))],
             [.. connectors.Select(row => new ConnectorCount(row.Standard, row.Connectors))],
             [.. operators.Select(row => new OperatorCount(row.Id, row.Name, row.Evses))],
+            [.. SiteSizes.Select(size => new SizeCount(size, bySite.GetValueOrDefault(size)))],
+            [.. ConnectorSizes.Select(size => new SizeCount(size, byConnectors.GetValueOrDefault(size)))],
             new StatusCounts(status.Available, status.Occupied, status.Faulted, status.Unknown, status.Stale),
             new Freshness(Round(status.P50), Round(status.P90)),
             now,
@@ -132,6 +164,17 @@ public sealed class StatsQueries(AppDbContext db, IAppConfig config, TimeProvide
         public int Evses { get; set; }
 
         public int Connectors { get; set; }
+
+        public int Parks { get; set; }
+
+        public int Stations { get; set; }
+    }
+
+    private sealed class SizeRow
+    {
+        public string Size { get; set; } = null!;
+
+        public int Count { get; set; }
     }
 
     private sealed class RegionRow

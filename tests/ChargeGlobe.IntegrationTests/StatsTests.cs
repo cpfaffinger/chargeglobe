@@ -79,6 +79,12 @@ public class StatsTests(IntegrationFactory factory) : IClassFixture<IntegrationF
         Assert.Equal(
             await factory.WithDbAsync(db => db.Evses.CountAsync()),
             totals.GetProperty("evses").GetInt32());
+        // Two stations named by four-part EVSE-IDs (ETEST0001 with two EVSEs, ETEST0002 with one); no park.
+        Assert.Equal((0, 2), (totals.GetProperty("parks").GetInt32(), totals.GetProperty("stations").GetInt32()));
+        Assert.Equal(
+            [("1", 0), ("2", 2), ("3_4", 0), ("5_10", 0), ("11_PLUS", 0)],
+            Pairs(data.GetProperty("evsesPerSite"), "size", "count"));
+        Assert.Equal([("0", 0), ("1", 2), ("2", 2), ("3_PLUS", 0)], Pairs(data.GetProperty("connectorsPerEvse"), "size", "count"));
 
         // All regions of the seed, the fixture lies in Vienna.
         var regions = data.GetProperty("byRegion").EnumerateArray().ToList();
