@@ -92,7 +92,7 @@ public static class LocationOccupancyEndpoints
             return new Validation().Require(false, "timeZone", "Must be an IANA time zone name, e.g. Europe/Vienna or UTC.").ToResult()!;
         }
 
-        var attribution = (await locations.ByIdsAsync([id], cancellationToken)).Attribution;
+        var attribution = (await locations.ByIdsAsync([id], false, cancellationToken)).Attribution;
         return Results.Ok(new LocationOccupancyResponse(
             Build(id, park == true, members, count, from, to, zone, cells), new AttributionMeta(attribution)));
     }

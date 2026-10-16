@@ -24,16 +24,18 @@ public static class FavoritesEndpoints
             .WithName("listFavorites")
             .WithSummary("List the caller's favorite locations with their current status")
             .WithDescription(
-                "Returns the active locations the caller marked as favorite, newest first: `data[]` with `location` (as in " +
+                "Returns the locations the caller marked as favorite, newest first: `data[]` with `location` (as in " +
                 "`listLocations`: counts of free EVSEs, `availability`, `maxPowerKw`, `maxAvailablePowerKw`, " +
-                "`statusObservedAt`, `facilities`) and `addedAt`. Locations that are no longer active are left out. `meta` " +
+                "`statusObservedAt`, `facilities`), `addedAt` and `removed`. `removed` is true for a location no source lists " +
+                "any more (lifecycle REMOVED): it has no active EVSEs, is not on the map and `getLocation` answers 404; " +
+                "the caller may remove it with `removeFavorite`. `meta` " +
                 "with `returned`, `max` (most favorites per account) and `attribution`. Meant for refreshing a list of " +
                 "favorites every minute. Requires an account or API key, no specific permission.")
             .Produces<FavoritesResponse>()
             .WithResponseExample(
                 StatusCodes.Status200OK,
                 new FavoritesResponse(
-                    [new Favorite(LocationsEndpoints.ExampleLocation, DateTimeOffset.Parse("2026-10-14T08:00:00Z", CultureInfo.InvariantCulture))],
+                    [new Favorite(LocationsEndpoints.ExampleLocation, DateTimeOffset.Parse("2026-10-14T08:00:00Z", CultureInfo.InvariantCulture), false)],
                     new FavoritesMeta(1, IFavorites.Max, [LocationsEndpoints.ExampleAttribution])));
 
         favorites.MapPut("/{locationId:guid}", AddFavoriteAsync)

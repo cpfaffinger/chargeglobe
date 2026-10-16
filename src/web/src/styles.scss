@@ -1823,6 +1823,14 @@ app-favorites .availability {
   margin: 8px 0 0;
 }
 
+app-favorites .removed-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 8px 0 0;
+  color: var(--mat-sys-on-surface-variant);
+}
+
 app-favorites .favorite-actions {
   display: flex;
   flex-wrap: wrap;

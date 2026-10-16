@@ -4,16 +4,17 @@ using ChargeGlobe.Application.Locations;
 namespace ChargeGlobe.Jobs;
 
 /// <summary>
-/// Worker role: recomputes the charging parks (<see cref="ILocationParks"/>) at start and every <see cref="Interval"/>,
-/// in one worker at a time (job lease <c>location-parks</c>, given free after the run).
+/// Worker role: at start and every <see cref="Interval"/>, in one worker at a time (job lease <c>location-maintenance</c>,
+/// given free after the run), first the lifecycle (<see cref="ILocationLifecycle"/>), then the charging parks
+/// (<see cref="ILocationParks"/>), so that removed locations leave their park in the same run.
 /// </summary>
-public sealed class LocationParkService(
+public sealed class LocationMaintenanceService(
     IServiceScopeFactory scopeFactory,
     JobOptions options,
     TimeProvider timeProvider,
-    ILogger<LocationParkService> logger) : BackgroundService
+    ILogger<LocationMaintenanceService> logger) : BackgroundService
 {
-    public const string JobName = "location-parks";
+    public const string JobName = "location-maintenance";
 
     public static readonly TimeSpan Interval = TimeSpan.FromMinutes(10);
 
@@ -51,24 +52,34 @@ public sealed class LocationParkService(
                 return;
             }
 
-            int changed;
+            LifecycleChanges lifecycle;
+            int parks;
             try
             {
-                changed = await scope.ServiceProvider.GetRequiredService<ILocationParks>().RefreshAsync(stoppingToken);
+                lifecycle = await scope.ServiceProvider.GetRequiredService<ILocationLifecycle>().RefreshAsync(stoppingToken);
+                parks = await scope.ServiceProvider.GetRequiredService<ILocationParks>().RefreshAsync(stoppingToken);
             }
             finally
             {
                 await leases.ReleaseAsync(JobName, options.InstanceId, CancellationToken.None);
             }
 
-            if (changed > 0)
+            if (lifecycle.Any)
             {
-                logger.LogInformation("Charging parks: {Count} location(s) changed their park", changed);
+                logger.LogInformation(
+                    "Lifecycle: {LocationsRemoved} location(s) and {EvsesRemoved} EVSE(s) removed, {LocationsActive} location(s) and " +
+                    "{EvsesActive} EVSE(s) active again, {Stations} empty charging station(s) deleted",
+                    lifecycle.LocationsRemoved, lifecycle.EvsesRemoved, lifecycle.LocationsActive, lifecycle.EvsesActive, lifecycle.StationsDeleted);
+            }
+
+            if (parks > 0)
+            {
+                logger.LogInformation("Charging parks: {Count} location(s) changed their park", parks);
             }
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            logger.LogWarning("Charging park update failed, retrying with the next tick: {Reason}", exception.Message);
+            logger.LogWarning("Location maintenance failed, retrying with the next tick: {Reason}", exception.Message);
         }
     }
 }

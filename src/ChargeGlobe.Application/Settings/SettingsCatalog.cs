@@ -51,6 +51,8 @@ public static class SettingsCatalog
 
     public const string LocationParkRadiusMeters = "location.park_radius_meters";
 
+    public const string LifecycleMissingRuns = "lifecycle.missing_runs";
+
     public const string AddressRefreshDays = "address.refresh_days";
     public const string AddressDownloadUrl = "address.download_url";
 
@@ -233,6 +235,15 @@ public static class SettingsCatalog
         {
             Min = 0,
             Max = 200,
+        },
+        new(LifecycleMissingRuns, SettingType.Int, 2,
+            "Complete inventory runs of a source in a row that must miss a location or charge point (also because the " +
+            "source lists it as inactive) before the source counts it as gone. Once every source that knew it counts it as " +
+            "gone, it is REMOVED: no longer on the map, in the search or the statistics. Listed again, it is active at " +
+            "once. Applies with the next check (every 10 minutes).")
+        {
+            Min = 1,
+            Max = 30,
         },
         new(AddressRefreshDays, SettingType.Int, 30,
             "Days between checks of the BEV address register for a newer reference date (published for 1 April and " +

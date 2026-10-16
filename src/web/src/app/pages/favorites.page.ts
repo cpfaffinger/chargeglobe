@@ -48,28 +48,35 @@ export const FAVORITES_REFRESH_MS = 60_000;
                 </div>
                 <app-favorite-button [locationId]="location.id" />
               </div>
-              <p class="availability">
-                <span class="status-dot" [style.background]="color(location)"><app-icon [name]="icon(location)" /></span>
-                {{ location.evsesAvailable }} von {{ location.evsesTotal }} Ladepunkten frei{{ busy(location) }}
-                @if (location.maxAvailablePowerKw !== null) {
-                  · frei bis {{ location.maxAvailablePowerKw | number: '1.0-1' : 'en-US' }} kW
-                } @else if (location.maxPowerKw !== null) {
-                  · bis {{ location.maxPowerKw | number: '1.0-1' : 'en-US' }} kW
-                }
-              </p>
-              <p class="status-age">
-                @if (location.statusObservedAt) {
-                  Status von {{ location.statusObservedAt | date: 'dd.MM.yyyy HH:mm' }}
-                } @else {
-                  Kein aktueller Status
-                }
-              </p>
-              <p class="favorite-actions">
-                <a matButton routerLink="/" [fragment]="mapFragment(location)" class="show-on-map">Auf der Karte</a>
-                @if (canSeeDetails) {
-                  <a matButton [routerLink]="['/locations', location.id]" class="details">Details</a>
-                }
-              </p>
+              @if (favorite.removed) {
+                <p class="removed-hint" role="note">
+                  <app-icon name="info" />Nicht mehr gemeldet: Die Quellen führen diesen Standort nicht mehr. Du kannst ihn aus den
+                  Favoriten entfernen.
+                </p>
+              } @else {
+                <p class="availability">
+                  <span class="status-dot" [style.background]="color(location)"><app-icon [name]="icon(location)" /></span>
+                  {{ location.evsesAvailable }} von {{ location.evsesTotal }} Ladepunkten frei{{ busy(location) }}
+                  @if (location.maxAvailablePowerKw !== null) {
+                    · frei bis {{ location.maxAvailablePowerKw | number: '1.0-1' : 'en-US' }} kW
+                  } @else if (location.maxPowerKw !== null) {
+                    · bis {{ location.maxPowerKw | number: '1.0-1' : 'en-US' }} kW
+                  }
+                </p>
+                <p class="status-age">
+                  @if (location.statusObservedAt) {
+                    Status von {{ location.statusObservedAt | date: 'dd.MM.yyyy HH:mm' }}
+                  } @else {
+                    Kein aktueller Status
+                  }
+                </p>
+                <p class="favorite-actions">
+                  <a matButton routerLink="/" [fragment]="mapFragment(location)" class="show-on-map">Auf der Karte</a>
+                  @if (canSeeDetails) {
+                    <a matButton [routerLink]="['/locations', location.id]" class="details">Details</a>
+                  }
+                </p>
+              }
             </mat-card-content>
           </mat-card>
         } @empty {
