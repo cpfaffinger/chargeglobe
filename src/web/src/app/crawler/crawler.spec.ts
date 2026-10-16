@@ -112,6 +112,13 @@ describe('AdminCrawlerPage', () => {
 
   const root = () => fixture.nativeElement as HTMLElement;
   const rows = () => Array.from(root().querySelectorAll('#runs tbody tr.mat-mdc-row:not(.no-data)'));
+  /** The rows of a table, each as its cells joined by a blank. */
+  const cells = (table: string) =>
+    Array.from(root().querySelectorAll(`${table} tbody tr`)).map((row) =>
+      Array.from(row.querySelectorAll('td'))
+        .map((cell) => cell.textContent!.trim())
+        .join(' '),
+    );
 
   async function settle(): Promise<void> {
     await flush();
@@ -188,12 +195,12 @@ describe('AdminCrawlerPage', () => {
     await render();
 
     expect(text(root(), '#freshness-at')).toMatch(/^Stand \d{2}:14 · höchstens einmal pro Minute neu berechnet\./);
-    const regions = Array.from(root().querySelectorAll('#freshness-regions tbody tr')).map((row) => text(row));
+    const regions = cells('#freshness-regions');
     expect(regions).toEqual(['Burgenland (AT-1) 0 0 0.0 % 0.0 %', 'Wien (AT-9) 4,829 4,827 99.9 % 100.0 %']);
     expect(text(root(), '#freshness-econtrol')).toMatch(
       /^econtrol: 1342 \/ 1500 Abrufe in der letzten Stunde · lebhaft: 61 Punkte, ältester Abruf \d{2}:07 · normal: 235 Punkte, 3 noch nie abgefragt · ruhig: keine Punkte$/,
     );
-    const operators = Array.from(root().querySelectorAll('#freshness-operators tbody tr')).map((row) => text(row));
+    const operators = cells('#freshness-operators');
     expect(operators).toEqual(['AT*EVN · EVN 4,939 1,210 111 15.2 min', 'AT*XYZ 2 1 2 –']);
   });
 
