@@ -3,7 +3,12 @@ using ChargeGlobe.Application.Locations;
 namespace ChargeGlobe.Application.Stats;
 
 /// <summary>Active locations, their active EVSEs and the connectors of these.</summary>
-public sealed record StatsTotals(int Locations, int Evses, int Connectors);
+/// <param name="Parks">Charging parks among the locations (locations of one operator next to each other).</param>
+/// <param name="Stations">Charging stations with active EVSEs, as far as a source names them (docs/03, <c>charging_station</c>).</param>
+public sealed record StatsTotals(int Locations, int Evses, int Connectors, int Parks, int Stations);
+
+/// <summary>How many sites (or EVSEs) have a size: <c>Size</c> is one of the classes of the distribution.</summary>
+public sealed record SizeCount(string Size, int Count);
 
 /// <summary>Active locations and EVSEs whose location lies in the region.</summary>
 public sealed record RegionCount(string Code, string Name, int Locations, int Evses);
@@ -35,6 +40,8 @@ public sealed record Stats(
     IReadOnlyList<PowerClassCount> ByPowerClass,
     IReadOnlyList<ConnectorCount> ByConnector,
     IReadOnlyList<OperatorCount> TopOperators,
+    IReadOnlyList<SizeCount> EvsesPerSite,
+    IReadOnlyList<SizeCount> ConnectorsPerEvse,
     StatusCounts Status,
     Freshness Freshness,
     DateTimeOffset GeneratedAt,

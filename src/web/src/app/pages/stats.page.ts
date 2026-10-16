@@ -6,7 +6,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { AppLoading } from '../design/loading';
 import { connectorLabel } from '../evses/labels';
-import { RegionCount, POWER_CLASSES, StatsResponse, StatsService } from '../stats/stats.service';
+import { CONNECTOR_SIZES, RegionCount, POWER_CLASSES, SITE_SIZES, StatsResponse, StatsService } from '../stats/stats.service';
 
 /** One bar of a chart: label, value and its share of the largest value (0–100). */
 interface Bar {
@@ -76,9 +76,11 @@ const number = (value: number, digits = 0): string => new Intl.NumberFormat('de-
     @if (stats(); as response) {
       @let data = response.data;
       <div class="stats-tiles">
-        <div class="tile" id="tile-locations"><span class="tile-value">{{ format(data.totals.locations) }}</span><span class="tile-label">Standorte</span></div>
+        <div class="tile" id="tile-locations"><span class="tile-value">{{ format(data.totals.locations) }}</span><span class="tile-label">Ladestandorte</span></div>
+        <div class="tile" id="tile-parks"><span class="tile-value">{{ format(data.totals.parks) }}</span><span class="tile-label">Ladeparks</span></div>
+        <div class="tile" id="tile-stations"><span class="tile-value">{{ format(data.totals.stations) }}</span><span class="tile-label">Ladestationen bekannt</span></div>
         <div class="tile" id="tile-evses"><span class="tile-value">{{ format(data.totals.evses) }}</span><span class="tile-label">Ladepunkte</span></div>
-        <div class="tile" id="tile-connectors"><span class="tile-value">{{ format(data.totals.connectors) }}</span><span class="tile-label">Stecker</span></div>
+        <div class="tile" id="tile-connectors"><span class="tile-value">{{ format(data.totals.connectors) }}</span><span class="tile-label">Anschlüsse</span></div>
         <div class="tile" id="tile-available"><span class="tile-value">{{ format(data.status.available) }}</span><span class="tile-label">gerade frei</span></div>
       </div>
       <div class="stats-grid">
@@ -96,9 +98,26 @@ const number = (value: number, digits = 0): string => new Intl.NumberFormat('de-
             <ng-container [ngTemplateOutlet]="chart" [ngTemplateOutletContext]="{ $implicit: powerBars() }" />
           </mat-card-content>
         </mat-card>
+        <mat-card appearance="outlined" id="per-site">
+          <mat-card-content>
+            <h2>Ladepunkte je Standort oder Ladepark</h2>
+            <p class="lead">
+              Ein Ladepunkt lädt genau ein Fahrzeug zugleich. Standorte desselben Betreibers direkt nebeneinander zählen als ein
+              Ladepark.
+            </p>
+            <ng-container [ngTemplateOutlet]="chart" [ngTemplateOutletContext]="{ $implicit: siteBars() }" />
+          </mat-card-content>
+        </mat-card>
+        <mat-card appearance="outlined" id="per-evse">
+          <mat-card-content>
+            <h2>Anschlüsse je Ladepunkt</h2>
+            <p class="lead">Mehrere Anschlüsse (Stecker oder Kabel) an einem Ladepunkt sind Alternativen, kein zweites Fahrzeug.</p>
+            <ng-container [ngTemplateOutlet]="chart" [ngTemplateOutletContext]="{ $implicit: connectorSizeBars() }" />
+          </mat-card-content>
+        </mat-card>
         <mat-card appearance="outlined" id="by-connector">
           <mat-card-content>
-            <h2>Steckertypen</h2>
+            <h2>Anschlüsse nach Typ</h2>
             <ng-container [ngTemplateOutlet]="chart" [ngTemplateOutletContext]="{ $implicit: connectorBars() }" />
           </mat-card-content>
         </mat-card>
@@ -157,6 +176,14 @@ export class StatsPage {
   );
   protected readonly connectorBars = computed(() =>
     bars((this.stats()?.data.byConnector ?? []).map((item) => ({ key: item.standard, label: connectorLabel(item.standard), value: item.connectors }))),
+  );
+  protected readonly siteBars = computed(() =>
+    bars((this.stats()?.data.evsesPerSite ?? []).map((item) => ({ key: item.size, label: SITE_SIZES[item.size] ?? item.size, value: item.count }))),
+  );
+  protected readonly connectorSizeBars = computed(() =>
+    bars(
+      (this.stats()?.data.connectorsPerEvse ?? []).map((item) => ({ key: item.size, label: CONNECTOR_SIZES[item.size] ?? item.size, value: item.count })),
+    ),
   );
   protected readonly operatorBars = computed(() =>
     bars((this.stats()?.data.topOperators ?? []).map((item) => ({ key: item.id, label: item.name, value: item.evses }))),

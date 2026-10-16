@@ -9,7 +9,7 @@ function stats(overrides: Partial<StatsResponse['data']> = {}): StatsResponse {
   return {
     data: {
       region: null,
-      totals: { locations: 5840, evses: 13210, connectors: 19880 },
+      totals: { locations: 5840, evses: 13210, connectors: 19880, parks: 1120, stations: 4310 },
       byRegion: [
         { code: 'AT-3', name: 'Niederösterreich', locations: 1410, evses: 3050 },
         { code: 'AT-9', name: 'Wien', locations: 1620, evses: 6100 },
@@ -27,6 +27,21 @@ function stats(overrides: Partial<StatsResponse['data']> = {}): StatsResponse {
         { standard: 'IEC_62196_T2_COMBO', connectors: 2930 },
       ],
       topOperators: [{ id: 'op-1', name: 'Wien Energie GmbH', evses: 2310 }],
+      evsesPerSite: [
+        { size: '1', count: 1400 },
+        { size: '2', count: 2350 },
+        { size: '3_4', count: 690 },
+        { size: '5_10', count: 230 },
+        { size: '11_PLUS', count: 60 },
+        { size: 'NEW', count: 0 },
+      ],
+      connectorsPerEvse: [
+        { size: '0', count: 20 },
+        { size: '1', count: 13080 },
+        { size: '2', count: 105 },
+        { size: '3_PLUS', count: 5 },
+        { size: 'NEW', count: 0 },
+      ],
       status: { available: 6000, occupied: 2000, faulted: 500, unknown: 200, stale: 4510 },
       freshness: { p50Minutes: 4.5, p90Minutes: 12 },
       generatedAt: '2026-10-15T08:00:00Z',
@@ -91,10 +106,12 @@ describe('StatsPage', () => {
 
     expect(page().querySelector('#stats-loading')).toBeNull();
     const tile = (id: string) => `${text(page(), `#${id} .tile-value`)} ${text(page(), `#${id} .tile-label`)}`;
-    expect(['tile-locations', 'tile-evses', 'tile-connectors', 'tile-available'].map(tile)).toEqual([
-      '5.840 Standorte',
+    expect(['tile-locations', 'tile-parks', 'tile-stations', 'tile-evses', 'tile-connectors', 'tile-available'].map(tile)).toEqual([
+      '5.840 Ladestandorte',
+      '1.120 Ladeparks',
+      '4.310 Ladestationen bekannt',
       '13.210 Ladepunkte',
-      '19.880 Stecker',
+      '19.880 Anschlüsse',
       '6.000 gerade frei',
     ]);
 
@@ -118,6 +135,21 @@ describe('StatsPage', () => {
       ['CCS (Combo 2)', '2.930'],
     ]);
     expect(rows('top-operators')).toEqual([['Wien Energie GmbH', '2.310']]);
+    expect(rows('per-site')).toEqual([
+      ['1 Ladepunkt', '1.400'],
+      ['2 Ladepunkte', '2.350'],
+      ['3–4 Ladepunkte', '690'],
+      ['5–10 Ladepunkte', '230'],
+      ['mehr als 10', '60'],
+      ['NEW', '0'],
+    ]);
+    expect(rows('per-evse')).toEqual([
+      ['ohne Angabe', '20'],
+      ['1 Anschluss', '13.080'],
+      ['2 Anschlüsse', '105'],
+      ['3 oder mehr', '5'],
+      ['NEW', '0'],
+    ]);
 
     expect(Array.from(page().querySelectorAll('#status .status-legend li')).map((item) => item.textContent!.trim())).toEqual([
       'frei: 6.000',

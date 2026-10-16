@@ -17,6 +17,8 @@ public sealed record StatsData(
     IReadOnlyList<PowerClassCount> ByPowerClass,
     IReadOnlyList<ConnectorCount> ByConnector,
     IReadOnlyList<OperatorCount> TopOperators,
+    IReadOnlyList<SizeCount> EvsesPerSite,
+    IReadOnlyList<SizeCount> ConnectorsPerEvse,
     StatusCounts Status,
     Freshness Freshness,
     DateTimeOffset GeneratedAt);
@@ -38,7 +40,12 @@ public static partial class StatsEndpoints
             .WithSummary("Get counts of the charging infrastructure")
             .WithDescription(
                 "Counts the active charging locations and their active EVSEs, in all regions or in `region` (ISO 3166-2 code " +
-                "such as `AT-9`; 422 if unknown). `totals`: locations, EVSEs and their connectors. `byRegion`: locations and " +
+                "such as `AT-9`; 422 if unknown). `totals`: locations, EVSEs and their connectors, `parks` (charging parks: " +
+                "locations of one operator next to each other) and `stations` (charging stations with active EVSEs as far as " +
+                "a source names them). `evsesPerSite`: how many sites – a park, or a location alone – have 1, 2, 3–4, 5–10 or " +
+                "more EVSEs (sizes `1`, `2`, `3_4`, `5_10`, `11_PLUS`; an EVSE charges one vehicle at a time). " +
+                "`connectorsPerEvse`: EVSEs with 0, 1, 2 or more connectors (`0`, `1`, `2`, `3_PLUS`; several connectors " +
+                "of one EVSE are alternatives). `byRegion`: locations and " +
                 "EVSEs per region. `byPowerClass`: EVSEs by maximum power, classes `UP_TO_22`, `FROM_23_TO_49`, " +
                 "`FROM_50_TO_149`, `FROM_150` (kW) and `UNKNOWN`, always all five. `byConnector`: connectors per OCPI " +
                 "standard, most first. `topOperators`: the 10 operators with the most EVSEs. `status`: EVSEs by current " +
@@ -54,7 +61,7 @@ public static partial class StatsEndpoints
                 new StatsResponse(
                     new StatsData(
                         null,
-                        new StatsTotals(5_840, 13_210, 19_880),
+                        new StatsTotals(5_840, 13_210, 19_880, 1_120, 4_310),
                         [new RegionCount("AT-9", "Wien", 1_620, 3_980), new RegionCount("AT-3", "Niederösterreich", 1_410, 3_050)],
                         [
                             new PowerClassCount("UP_TO_22", 10_120), new PowerClassCount("FROM_23_TO_49", 310), new PowerClassCount("FROM_50_TO_149", 1_480),
@@ -62,6 +69,8 @@ public static partial class StatsEndpoints
                         ],
                         [new ConnectorCount("IEC_62196_T2", 12_400), new ConnectorCount("IEC_62196_T2_COMBO", 2_930)],
                         [new OperatorCount(Guid.Parse("01990a3e-5b1d-7d42-8c3a-6e9f1a2b3c40"), "Wien Energie GmbH", 2_310)],
+                        [new SizeCount("1", 1_400), new SizeCount("2", 2_350), new SizeCount("3_4", 690), new SizeCount("5_10", 230), new SizeCount("11_PLUS", 60)],
+                        [new SizeCount("0", 20), new SizeCount("1", 13_080), new SizeCount("2", 105), new SizeCount("3_PLUS", 5)],
                         new StatusCounts(7_020, 2_180, 410, 90, 3_510),
                         new Freshness(4.5, 12.0),
                         DateTimeOffset.Parse("2026-10-15T08:00:00Z", System.Globalization.CultureInfo.InvariantCulture)),
@@ -84,7 +93,8 @@ public static partial class StatsEndpoints
         }))!;
         return Results.Ok(new StatsResponse(
             new StatsData(
-                code, stats.Totals, stats.ByRegion, stats.ByPowerClass, stats.ByConnector, stats.TopOperators, stats.Status, stats.Freshness, stats.GeneratedAt),
+                code, stats.Totals, stats.ByRegion, stats.ByPowerClass, stats.ByConnector, stats.TopOperators, stats.EvsesPerSite,
+                stats.ConnectorsPerEvse, stats.Status, stats.Freshness, stats.GeneratedAt),
             new AttributionMeta(stats.Attribution)));
     }
 
