@@ -5,45 +5,59 @@ using Microsoft.Extensions.Time.Testing;
 
 namespace ChargeGlobe.Jobs.Tests;
 
-public class LocationParkServiceTests
+public class LocationMaintenanceServiceTests
 {
     private static readonly DateTimeOffset T0 = new(2026, 10, 16, 15, 0, 0, TimeSpan.Zero);
 
     [Fact]
-    public async Task The_parks_are_recomputed_at_start_and_every_ten_minutes_by_one_worker()
+    public async Task Lifecycle_and_parks_are_recomputed_at_start_and_every_ten_minutes_by_one_worker()
     {
         var parks = new Parks { Next = 3 };
+        var lifecycle = new LifecycleStub { Next = new LifecycleChanges(1, 2, 3, 4, 5) };
         var leases = new Leases();
         var services = new ServiceCollection()
             .AddScoped<IJobLeases>(_ => leases)
             .AddScoped<ILocationParks>(_ => parks)
+            .AddScoped<ILocationLifecycle>(_ => lifecycle)
             .BuildServiceProvider();
         var time = new FakeTimeProvider(T0);
-        var logger = new IngestJobsTests.ListLogger<LocationParkService>();
-        var service = new LocationParkService(services.GetRequiredService<IServiceScopeFactory>(), new JobOptions(JobRole.Worker, "worker-1"), time, logger);
+        var logger = new IngestJobsTests.ListLogger<LocationMaintenanceService>();
+        var service = new LocationMaintenanceService(services.GetRequiredService<IServiceScopeFactory>(), new JobOptions(JobRole.Worker, "worker-1"), time, logger);
 
         await service.StartAsync(CancellationToken.None);
         await WaitUntilAsync(() => logger.Messages.Contains("Charging parks: 3 location(s) changed their park"), "first run");
-        Assert.Equal((LocationParkService.JobName, "worker-1", 1), (leases.Job, leases.Instance, leases.Releases));
+        Assert.Equal((LocationMaintenanceService.JobName, "worker-1", 1), (leases.Job, leases.Instance, leases.Releases));
+        Assert.Equal(
+            "Lifecycle: 1 location(s) and 3 EVSE(s) removed, 2 location(s) and 4 EVSE(s) active again, 5 empty charging station(s) deleted",
+            logger.Messages.First());
 
         // Nothing changed: no message.
         parks.Next = 0;
-        time.Advance(LocationParkService.Interval);
+        lifecycle.Next = new LifecycleChanges(0, 0, 0, 0, 0);
+        time.Advance(LocationMaintenanceService.Interval);
         await WaitUntilAsync(() => leases.Releases == 2, "second run");
-        Assert.Single(logger.Messages);
+        Assert.Equal(2, logger.Messages.Count);
 
         // Another worker holds the lease.
         leases.Grant = false;
-        time.Advance(LocationParkService.Interval);
+        time.Advance(LocationMaintenanceService.Interval);
         await WaitUntilAsync(() => leases.Calls == 3, "lease refused");
-        Assert.Equal(2, parks.Runs);
+        Assert.Equal((2, 2), (parks.Runs, lifecycle.Runs));
 
+        // A failed lifecycle run skips the parks and gives the lease free.
         leases.Grant = true;
-        parks.Failure = new InvalidOperationException("database not migrated");
-        time.Advance(LocationParkService.Interval);
-        await WaitUntilAsync(() => logger.Messages.Contains("Charging park update failed, retrying with the next tick: database not migrated"), "failure");
-        Assert.Equal(3, leases.Releases);
+        lifecycle.Failure = new InvalidOperationException("database not migrated");
+        time.Advance(LocationMaintenanceService.Interval);
+        await WaitUntilAsync(() => logger.Messages.Contains("Location maintenance failed, retrying with the next tick: database not migrated"), "failure");
+        Assert.Equal((3, 2), (leases.Releases, parks.Runs));
         await service.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
+    public void Lifecycle_changes_tell_whether_anything_changed()
+    {
+        Assert.False(new LifecycleChanges(0, 0, 0, 0, 0).Any);
+        Assert.True(new LifecycleChanges(0, 0, 0, 0, 1).Any);
     }
 
     private static async Task WaitUntilAsync(Func<bool> condition, string expectation)
@@ -70,6 +84,23 @@ public class LocationParkServiceTests
         {
             Interlocked.Increment(ref _runs);
             return Failure is null ? Task.FromResult(Next) : Task.FromException<int>(Failure);
+        }
+    }
+
+    private sealed class LifecycleStub : ILocationLifecycle
+    {
+        private int _runs;
+
+        public LifecycleChanges Next { get; set; } = new(0, 0, 0, 0, 0);
+
+        public Exception? Failure { get; set; }
+
+        public int Runs => Volatile.Read(ref _runs);
+
+        public Task<LifecycleChanges> RefreshAsync(CancellationToken cancellationToken)
+        {
+            Interlocked.Increment(ref _runs);
+            return Failure is null ? Task.FromResult(Next) : Task.FromException<LifecycleChanges>(Failure);
         }
     }
 

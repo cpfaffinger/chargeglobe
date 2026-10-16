@@ -15,9 +15,16 @@ public sealed class Favorites(AppDbContext db, ILocationQueries locations, Audit
         var favorites = await db.FavoriteLocations.AsNoTracking()
             .Where(favorite => favorite.UserId == userId)
             .ToDictionaryAsync(favorite => favorite.LocationId, favorite => favorite.CreatedAt, cancellationToken);
-        var page = await locations.ByIdsAsync([.. favorites.Keys], cancellationToken);
+        List<Guid> ids = [.. favorites.Keys];
+        var page = await locations.ByIdsAsync(ids, includeRemoved: true, cancellationToken);
+        var removed = await db.Locations.AsNoTracking()
+            .Where(location => ids.Contains(location.Id) && location.Lifecycle == Lifecycle.REMOVED)
+            .Select(location => location.Id)
+            .ToListAsync(cancellationToken);
         return new FavoriteList(
-            [.. page.Locations.Select(location => new Favorite(location, favorites[location.Id])).OrderByDescending(favorite => favorite.AddedAt)],
+            [.. page.Locations
+                .Select(location => new Favorite(location, favorites[location.Id], removed.Contains(location.Id)))
+                .OrderByDescending(favorite => favorite.AddedAt)],
             page.Attribution);
     }
 

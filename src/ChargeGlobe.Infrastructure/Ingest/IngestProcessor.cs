@@ -223,6 +223,9 @@ public sealed class IngestProcessor(AppDbContext db)
             record.Seen(at, item.SnapshotId);
         }
 
+        // Listed again: active again at once (docs/03, "Lebenszyklus"); the lifecycle job only removes.
+        Reactivate(location);
+
         // The operator belongs to the country of its EVSE-ID prefix, which may differ from the address (CH*ECU in Austria).
         var operatorCountry = snapshot.OperatorCountry is { } given && IsCountryCode(given) ? given : country;
         var operatorId = await ResolveOperatorAsync(snapshot, operatorCountry, cancellationToken);
@@ -360,6 +363,7 @@ public sealed class IngestProcessor(AppDbContext db)
             }
         }
 
+        Reactivate(evse);
         var attributes = new AttributeWriter(db, sourceKey, EntityType.EVSE, evse.Id, at, _tiers);
         await attributes.SetAsync("location_id", locationId.ToString(), _ => evse.LocationId = locationId, cancellationToken);
         await attributes.SetAsync("operator_id", operatorId?.ToString(), _ => evse.OperatorId = operatorId, cancellationToken);
@@ -622,6 +626,22 @@ public sealed class IngestProcessor(AppDbContext db)
 
         db.SourceConflicts.Add(SourceConflict.Create(EntityType.EVSE, evseId, "evse_id", values, at));
         _conflicts++;
+    }
+
+    private static void Reactivate(Location location)
+    {
+        if (location.Lifecycle == Lifecycle.REMOVED)
+        {
+            location.Lifecycle = Lifecycle.ACTIVE;
+        }
+    }
+
+    private static void Reactivate(Evse evse)
+    {
+        if (evse.Lifecycle == Lifecycle.REMOVED)
+        {
+            evse.Lifecycle = Lifecycle.ACTIVE;
+        }
     }
 
     private static void Touch(TrackedEntity entity, bool changed, DateTimeOffset at)

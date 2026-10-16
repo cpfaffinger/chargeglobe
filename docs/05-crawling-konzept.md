@@ -20,7 +20,7 @@
 | `StatusPoll` | Status um einen Abfragepunkt (bzw. einer Region bei Quellen ohne Punktsuche) | je Punkt 5/15/60 min nach Aktivität, nachts ×3 | hoch → Hauptgegenstand der Optimierung |
 | `TilePlan` | Abfragepunkte aus den bekannten Standorten neu berechnen, Prioritäten aus der Aktivität | 1×/Stunde | keine Requests |
 | `PricePoll` | Ad-hoc-/EMP-Preise | 1×/Tag je EVSE, sofort bei neuem EVSE | mittel |
-| `Reconcile` | Vergleich: EVSEs, die seit 14 Tagen in keiner Quelle mehr auftauchen → `lifecycle=REMOVED`; neue EVSEs im amtlichen Verzeichnis ohne Status-Quelle → Hinweis | 1×/Tag | gering |
+| Lebenszyklus (Worker, `LocationLifecycle`) | Standorte und EVSEs, die `lifecycle.missing_runs` (Default 2) gezählte Inventarläufe jeder Quelle nicht mehr gemeldet haben → `lifecycle=REMOVED`, wieder gemeldete → `ACTIVE` (Regeln in [03](03-datenmodell.md#lebenszyklus)) | alle 10 min, wirksam nach Inventarläufen | keine Requests |
 
 ## Status-Polling-Strategie (passiv)
 

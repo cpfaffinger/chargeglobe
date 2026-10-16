@@ -8,6 +8,8 @@ import { LocationSummary, SourceAttribution } from '../map/locations.service';
 export interface Favorite {
   location: LocationSummary;
   addedAt: string;
+  /** No source lists the location any more; it is not on the map and has no details. */
+  removed: boolean;
 }
 
 export interface FavoritesResponse {

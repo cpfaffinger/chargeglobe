@@ -154,6 +154,8 @@ docker compose exec db psql -U chargeglobe -d chargeglobe -c "select view_name, 
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select code, name, round(ST_Area(geom)/1e6) km2 from region order by 1"   # AT-1 … AT-9 aus dem OSM-Seed
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select region_code, count(*) from location group by 1 order by 1"   # Standorte je Bundesland
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select park_locations, count(*) from location where park_id is not null group by 1 order by 1"   # Ladeparks: Standorte je Park (location.park_radius_meters, alle 10 min neu berechnet)
+docker compose exec db psql -U chargeglobe -d chargeglobe -c "select 'location' t, lifecycle, count(*) from location group by 2 union all select 'evse', lifecycle, count(*) from evse group by 2 order by 1,2"   # Lebenszyklus: REMOVED = von keiner Quelle mehr gemeldet (lifecycle.missing_runs Inventarläufe, docs/03)
+docker compose logs worker | grep "Lifecycle:"   # Änderungen des Lebenszyklus (alle 10 min, nur bei Änderungen geloggt)
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select provider_key, job_type, region_code, next_run_at, leased_by, last_result from poll_plan order by 1,2,3"
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select provider_key, sum(requests) requests, count(*) runs from crawler_run where started_at > now() - interval '1 hour' group by 1"   # Abrufvolumen der letzten Stunde (≤ provider.request_budget_per_hour)
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select priority, count(*), min(last_polled_at) from poll_tile group by 1"   # Abfragepunkte je Priorität

@@ -101,7 +101,7 @@ public static class JobServices
             });
             services.AddScoped<AddressImporter>();
             services.AddHostedService<AddressImportService>();
-            services.AddHostedService<LocationParkService>();
+            services.AddHostedService<LocationMaintenanceService>();
         }
         else
         {

@@ -88,7 +88,7 @@ Operator (CPO) ─┬─ 1..n ─ Location ─ 1..n ─ ChargingStation? ─ 1..
 | `provider_backoff` | `provider_key` (PK), `failures` (in Folge), `paused_until?`, `blocked`, `reason?`, `updated_at` | Pause nach Fehlern der Quelle; eine Sperre endet mit der nächsten Änderung einer Einstellung der Quelle |
 | `crawler_run` | `id`, `provider_key`, `job_type`, `target` (Region(en) oder Abfragepunkt), `started_at`, `finished_at?`, `requests`, `records`, `result` (`RUNNING`/`OK`/`FAILED`), `error?`, `cooldown_until?` | Protokoll für Log und `/admin/crawler`; gelöscht nach `crawler.run_retention_days` |
 | `ingest_queue` | `id` (bigint), `provider_key`, `job_id`, `payload jsonb` (`IngestBatch`: Standorte mit `raw_snapshot`-Id oder Statuswerte), `enqueued_at`, `attempts`, `next_attempt_at?`, `error?`, `processed_at?` | Übergabe Crawler → Worker; gesperrt wird per Zeilensperre in der Verarbeitungstransaktion statt per Lease-Spalten; Retention `ingest.queue_retention_days` nach Verarbeitung |
-| `job_lease` | `job_name` (PK), `leased_by`, `lease_until` | Single-Runner-Jobs (`ingest-retention` hält die Lease einen Tag lang als Takt; `address-import` und `location-parks` geben sie nach jedem Lauf frei) |
+| `job_lease` | `job_name` (PK), `leased_by`, `lease_until` | Single-Runner-Jobs (`ingest-retention` hält die Lease einen Tag lang als Takt; `address-import` und `location-maintenance` geben sie nach jedem Lauf frei) |
 
 ### Adressen (Adresssuche)
 
@@ -112,6 +112,18 @@ Zwei Arten von Preisen (`TariffKind`): der **Ad-hoc-Preis** (`AD_HOC`, ohne Vert
 Der Preisvergleich je Ladepunkt (`GET /evses/{evseId}/prices`, Feld `emps`) rechnet zur Abfragezeit: alle Tarife, die jetzt gelten und am EVSE greifen, mit dem AC- oder DC-Preis, aufsteigend nach den Kosten der Beispielrechnung. Tarife sind wenige Zeilen und werden im Speicher gefiltert.
 
 Vorgesehen: Tarifelemente nach OCPI (Zeitfenster, Tag/Nacht, Leistungsklassen) statt der flachen Spalten, wählbare Szenarien (AC 11 kW / 20 kWh / 2 h, DC 50 kW / 30 kWh / 40 min, HPC 150 kW / 40 kWh / 20 min) und eine Zuordnung Tarif ↔ Ladepunkt aus den Roaming-Listen der EMPs, wo `roaming` allein nicht reicht.
+
+## Lebenszyklus
+
+Standorte und EVSEs sind `ACTIVE`, bis keine Quelle sie mehr meldet; dann `REMOVED` (`PLANNED` setzt derzeit keine Quelle). Nur `ACTIVE` erscheint auf der Karte, in Suche, Statistik, Ladeparks, Korridor- und Flächenabfragen und Detailseiten (`GET /locations/{id}` antwortet für entfernte Standorte `404`, `GET /evses/{id}` liefert sie mit `lifecycle: "REMOVED"`); Favoriten behalten entfernte Standorte mit `removed: true`. Zeitreihen, Preise und Quell-Datensätze bleiben erhalten.
+
+Regeln (`LocationLifecycle`, alle 10 Minuten im Worker, siehe docs/02):
+
+- **Gezählte Inventarläufe**: `crawler_run` mit `job_type = INVENTORY_FULL`, `result = OK`, `records > 0`, alle Ingest-Nachrichten des Laufs verarbeitet (`ingest_queue.job_id`), und mindestens halb so viele Datensätze wie der größte der drei vorherigen Läufe derselben Quelle und desselben Ziels – eine Quelle, die nur einen Bruchteil liefert, entfernt nicht den Rest. Ein Lauf deckt die Regionen seines Ziels ab (`crawler_run.target`, z. B. `AT-1,…,AT-9`). Es zählen nur Läufe, die noch in `crawler_run` stehen (`crawler.run_retention_days`).
+- **Fehlender Quell-Datensatz**: ein `source_record` (Standort, oder EVSE über seinen Standort) fehlt, wenn mindestens `lifecycle.missing_runs` (Default 2) gezählte Läufe seiner Quelle über die Region des Standorts nach seinem `last_seen` begonnen haben. Inaktive Stationen liefert die E-Control-Quelle gar nicht erst (`INACTIVE` wird übersprungen), sie fehlen also ebenso. Standorte ohne Region (außerhalb der Regionspolygone) fehlen nie.
+- **Entfernen**: eine Entität, deren Quell-Datensätze alle fehlen, wird `REMOVED`; bei mehreren Quellen erst, wenn jede sie nicht mehr meldet.
+- **Wieder aktiv**: meldet eine Quelle die Entität wieder, setzt der Ingest sie sofort auf `ACTIVE`; ebenso der Job, wenn ein Datensatz nicht mehr fehlt (z. B. nach Erhöhen der Schwelle).
+- **Leere Ladestationen**: `charging_station`-Zeilen ohne EVSE (die Quelle hat die Ladepunkte einer anderen Stationskennung zugeordnet) werden gelöscht; entfernte EVSEs behalten ihre Station.
 
 ## Identity Resolution
 

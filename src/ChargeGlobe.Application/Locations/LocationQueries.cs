@@ -150,6 +150,24 @@ public interface ILocationParks
     Task<int> RefreshAsync(CancellationToken cancellationToken);
 }
 
+/// <summary>Changes of one lifecycle run.</summary>
+/// <param name="StationsDeleted">Charging stations without any EVSE that were deleted.</param>
+public sealed record LifecycleChanges(int LocationsRemoved, int LocationsActive, int EvsesRemoved, int EvsesActive, int StationsDeleted)
+{
+    public bool Any => LocationsRemoved + LocationsActive + EvsesRemoved + EvsesActive + StationsDeleted > 0;
+}
+
+/// <summary>
+/// Lifecycle of locations and EVSEs (docs/03, "Lebenszyklus"): a source record is missing once
+/// <c>lifecycle.missing_runs</c> complete inventory runs of its source over the region of the location did not list it;
+/// an entity whose records are all missing becomes <c>REMOVED</c>, one with a record listed again <c>ACTIVE</c>. Charging
+/// stations without EVSEs are deleted.
+/// </summary>
+public interface ILocationLifecycle
+{
+    Task<LifecycleChanges> RefreshAsync(CancellationToken cancellationToken);
+}
+
 /// <summary>
 /// Filters of the map. Connector, power, ad-hoc payment and roaming must hold for the same active EVSE; the counts of a
 /// matching location still cover all its EVSEs. A false flag means "no filter".
@@ -198,8 +216,11 @@ public interface ILocationQueries
     /// </summary>
     Task<AreaPage> InAreaAsync(string areaGeoJson, GeoPoint? center, LocationFilter filter, int limit, CancellationToken cancellationToken);
 
-    /// <summary>The active locations among <paramref name="ids"/> (e.g. favorites), aggregated like <see cref="InBoundingBoxAsync"/>.</summary>
-    Task<LocationPage> ByIdsAsync(IReadOnlyList<Guid> ids, CancellationToken cancellationToken);
+    /// <summary>
+    /// The locations among <paramref name="ids"/> (e.g. favorites), aggregated like <see cref="InBoundingBoxAsync"/>: the
+    /// active ones, with <paramref name="includeRemoved"/> also those no source lists any more.
+    /// </summary>
+    Task<LocationPage> ByIdsAsync(IReadOnlyList<Guid> ids, bool includeRemoved, CancellationToken cancellationToken);
 
     Task<LocationDetail?> FindAsync(Guid id, CancellationToken cancellationToken);
 

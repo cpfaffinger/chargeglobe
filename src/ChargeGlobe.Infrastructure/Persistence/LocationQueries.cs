@@ -58,9 +58,9 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
             locations, rows.FirstOrDefault()?.Total ?? 0, rows.Count > limit, await AttributionAsync([.. locations.Select(location => location.Id)], cancellationToken));
     }
 
-    public async Task<LocationPage> ByIdsAsync(IReadOnlyList<Guid> ids, CancellationToken cancellationToken)
+    public async Task<LocationPage> ByIdsAsync(IReadOnlyList<Guid> ids, bool includeRemoved, CancellationToken cancellationToken)
     {
-        var rows = await SummariesAsync(null, [.. ids], NoFilter, ids.Count, cancellationToken);
+        var rows = await SummariesAsync(null, [.. ids], NoFilter, ids.Count, cancellationToken, anyLifecycle: includeRemoved);
         var locations = rows.Select(row => row.ToSummary()).ToList();
         return new LocationPage(locations, false, await AttributionAsync([.. locations.Select(location => location.Id)], cancellationToken));
     }
@@ -76,7 +76,7 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
     /// </summary>
     private Task<List<SummaryRow>> SummariesAsync(
         BoundingBox? within, Guid[]? ids, LocationFilter filter, int take, CancellationToken cancellationToken,
-        IReadOnlyList<GeoPoint>? route = null, int corridorMeters = 0, string? area = null, GeoPoint? center = null)
+        IReadOnlyList<GeoPoint>? route = null, int corridorMeters = 0, string? area = null, GeoPoint? center = null, bool anyLifecycle = false)
     {
         var anyArea = area is null;
         var areaJson = area ?? NoArea;
@@ -130,7 +130,7 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
                 LEFT JOIN operator o ON o.id = l.operator_id
                 LEFT JOIN evse e ON e.location_id = l.id AND e.lifecycle = 'ACTIVE'
                 LEFT JOIN evse_status_current c ON c.evse_id = e.id
-                WHERE l.lifecycle = 'ACTIVE'
+                WHERE ({anyLifecycle} OR l.lifecycle = 'ACTIVE')
                   AND ({anyBox} OR l.geom && ST_MakeEnvelope({box.MinLongitude}, {box.MinLatitude}, {box.MaxLongitude}, {box.MaxLatitude}, 4326)::geography)
                   AND ({anyId} OR l.id = ANY({wanted}::uuid[]))
                   AND ({anyRoute} OR ST_DWithin(l.geom, (SELECT gg FROM route), {corridorMeters}))

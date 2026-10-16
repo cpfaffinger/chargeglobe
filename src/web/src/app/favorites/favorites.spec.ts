@@ -12,6 +12,7 @@ const response = (...ids: string[]): FavoritesResponse => ({
   data: ids.map((id, index) => ({
     location: locationSummary({ id, name: index === 0 ? 'Parkgarage Stephansplatz' : null, maxAvailablePowerKw: index === 0 ? 150 : null }),
     addedAt: '2026-10-14T08:00:00Z',
+    removed: false,
   })),
   meta: { returned: ids.length, max: 200, attribution: [{ source: 'econtrol', text: 'Datenquelle: E-Control', license: 'Terms' }] },
 });
@@ -220,12 +221,30 @@ describe('FavoritesPage', () => {
   it('shows a location without power', async () => {
     favorites.list.and.resolveTo({
       ...response(),
-      data: [{ location: locationSummary({ maxPowerKw: null, maxAvailablePowerKw: null, statusObservedAt: null }), addedAt: '2026-10-14T08:00:00Z' }],
+      data: [{ location: locationSummary({ maxPowerKw: null, maxAvailablePowerKw: null, statusObservedAt: null }), addedAt: '2026-10-14T08:00:00Z', removed: false }],
     });
     fixture = TestBed.createComponent(FavoritesPage);
     await settle();
 
     expect(text(root(), '.favorite .availability')).toBe('2 von 4 Ladepunkten frei');
     expect(text(root(), '.favorite .status-age')).toBe('Kein aktueller Status');
+  });
+
+  it('marks a location no source lists any more and offers only to remove it', async () => {
+    auth.hasPermission.and.returnValue(true);
+    const current = response('loc-1', 'loc-2');
+    favorites.list.and.resolveTo({ ...current, data: [current.data[0], { ...current.data[1], removed: true }] });
+    fixture = TestBed.createComponent(FavoritesPage);
+    await settle();
+
+    const cards = Array.from(root().querySelectorAll('.favorite'));
+    expect(cards[0].querySelector('.removed-hint')).toBeNull();
+    expect(text(cards[1], '.removed-hint')).toBe(
+      'Nicht mehr gemeldet: Die Quellen führen diesen Standort nicht mehr. Du kannst ihn aus den Favoriten entfernen.',
+    );
+    expect(cards[1].querySelector('.availability')).toBeNull();
+    expect(cards[1].querySelector('.details')).toBeNull();
+    expect(cards[1].querySelector('.show-on-map')).toBeNull();
+    expect(cards[1].querySelector('app-favorite-button')).not.toBeNull();
   });
 });
