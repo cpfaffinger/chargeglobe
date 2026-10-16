@@ -129,6 +129,37 @@ public static class UsersEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .WithResponseExample(StatusCodes.Status202Accepted, new MessageResponse("The confirmation mail is queued."));
 
+        users.MapGet("/{id:guid}/api-keys", ListUserApiKeysAsync)
+            .RequirePermission(Permissions.UserRead)
+            .WithName("listUserApiKeys")
+            .WithSummary("List the API keys of a user account")
+            .WithDescription(
+                "Returns all keys of the account, including revoked and expired ones, oldest first, as in `listApiKeys`: " +
+                "`name`, `prefix` (public part to recognize a key), `permissions`, `createdAt`, `expiresAt`, `lastUsedAt` and " +
+                "`revokedAt`. Neither the key nor its hash is ever returned (`key` is always null). 404 for an unknown account.")
+            .Produces<ApiKeyResponse[]>()
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .WithResponseExample(
+                StatusCodes.Status200OK,
+                new[]
+                {
+                    new ApiKeyResponse(
+                        Guid.Parse("01990d2a-5d2f-7b21-8c3e-6d9f0a1b2c3d"), "Import script", "3fa9c2d1", [Permissions.EvseRead],
+                        ExampleTime, ExampleTime.AddDays(90), ExampleTime.AddHours(2), null, null),
+                });
+
+        users.MapDelete("/{id:guid}/api-keys/{keyId:guid}", RevokeUserApiKeyAsync)
+            .RequirePermission(Permissions.UserManage)
+            .WithName("revokeUserApiKey")
+            .WithSummary("Revoke an API key of a user account")
+            .WithDescription(
+                "Revokes a key of the account immediately and permanently, e.g. a leaked key or one of an account that should " +
+                "keep working otherwise; it stays in `listUserApiKeys` with `revokedAt`. Recorded in the audit log as " +
+                "`apikey.revoke` with the caller as actor. Repeating the call is safe and answers 204 again. 404 if the account " +
+                "has no key with this id.")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
         var roles = endpoints.MapGroup("/api/v1/roles").WithTags("Users");
 
         roles.MapGet("/", ListRolesAsync)
@@ -223,6 +254,18 @@ public static class UsersEndpoints
             ? Results.Json(new MessageResponse("The confirmation mail is queued."), statusCode: StatusCodes.Status202Accepted)
             : ToResult(result, "id", user => new UserResponse(user));
     }
+
+    private static async Task<IResult> ListUserApiKeysAsync(
+        Guid id, UserAdministration administration, ApiKeyService apiKeys, CancellationToken cancellationToken) =>
+        await administration.FindAsync(id, cancellationToken) is null
+            ? NotFound($"There is no account with the id '{id}'.")
+            : Results.Ok((await apiKeys.ListAsync(id, cancellationToken)).Select(key => ApiKeyResponse.From(key)).ToArray());
+
+    private static async Task<IResult> RevokeUserApiKeyAsync(
+        Guid id, Guid keyId, ClaimsPrincipal principal, ApiKeyService apiKeys, CancellationToken cancellationToken) =>
+        await apiKeys.RevokeAsync(id, principal.GetActor(), keyId, cancellationToken)
+            ? Results.NoContent()
+            : NotFound($"The account '{id}' has no API key with the id '{keyId}'.");
 
     private static async Task<IResult> ListRolesAsync(UserAdministration administration, CancellationToken cancellationToken) =>
         Results.Ok(new RolesResponse(await administration.ListRolesAsync(cancellationToken)));

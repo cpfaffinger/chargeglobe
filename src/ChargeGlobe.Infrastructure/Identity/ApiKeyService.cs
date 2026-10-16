@@ -57,10 +57,17 @@ public sealed class ApiKeyService(AppDbContext db, PermissionService permissions
     }
 
     /// <summary>Revokes an own key. Returns <c>false</c> if the owner has no key with this id.</summary>
-    public async Task<bool> RevokeAsync(Actor actor, Guid id, CancellationToken cancellationToken)
+    public Task<bool> RevokeAsync(Actor actor, Guid id, CancellationToken cancellationToken) =>
+        RevokeAsync(actor.UserId!.Value, actor, id, cancellationToken);
+
+    /// <summary>
+    /// Revokes a key of <paramref name="ownerUserId"/> on behalf of <paramref name="actor"/> (an administrator for a key of
+    /// another account); idempotent, recorded as <c>apikey.revoke</c>. Returns <c>false</c> if the owner has no key with this id.
+    /// </summary>
+    public async Task<bool> RevokeAsync(Guid ownerUserId, Actor actor, Guid id, CancellationToken cancellationToken)
     {
         var apiKey = await db.ApiKeys.SingleOrDefaultAsync(
-            key => key.Id == id && key.OwnerUserId == actor.UserId, cancellationToken);
+            key => key.Id == id && key.OwnerUserId == ownerUserId, cancellationToken);
         if (apiKey is null)
         {
             return false;

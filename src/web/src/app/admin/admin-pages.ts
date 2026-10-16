@@ -27,6 +27,13 @@ export const ADMIN_PAGES: AdminPageLink[] = [
     description: 'Rollen als Bündel von Berechtigungen anlegen und bearbeiten.',
   },
   {
+    path: 'audit',
+    label: 'Audit-Log',
+    permission: 'audit:read',
+    category: 'Benutzer',
+    description: 'Wer hat wann was geändert: Konten, Rollen, API-Keys, Einstellungen, Tarife.',
+  },
+  {
     path: 'crawler',
     label: 'Crawler',
     permission: 'jobs:read',

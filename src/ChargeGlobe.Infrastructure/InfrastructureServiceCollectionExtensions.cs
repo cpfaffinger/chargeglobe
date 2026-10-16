@@ -49,6 +49,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddDataProtection().SetApplicationName("chargeglobe").PersistKeysToDbContext<AppDbContext>();
 
         services.AddScoped<AuditLog>();
+        services.AddScoped<AuditLogQueries>();
         services.AddScoped<ISourceRegistry, SourceRegistry>();
         services.AddScoped<ILocationQueries, LocationQueries>();
         services.AddScoped<IStatsQueries, StatsQueries>();

@@ -7,7 +7,7 @@ import { AuthService } from '../auth/auth.service';
 import { AdminRolesPage } from '../pages/admin-roles.page';
 import { AdminUsersPage, SEARCH_DEBOUNCE_MS } from '../pages/admin-users.page';
 import { ME, fakeAuth, flush, submit, text, type } from '../testing';
-import { AdminService, RoleSummary, UserPage, UserSummary } from './admin.service';
+import { AdminService, ApiKeyInfo, RoleSummary, UserPage, UserSummary } from './admin.service';
 
 function user(overrides: Partial<UserSummary> = {}): UserSummary {
   return {
@@ -27,6 +27,20 @@ const pageOf = (data: UserSummary[], total = data.length): UserPage => ({ data, 
 
 function role(overrides: Partial<RoleSummary> = {}): RoleSummary {
   return { name: 'User', permissions: ['evse:read'], users: 3, fullCatalog: false, default: true, ...overrides };
+}
+
+function apiKey(overrides: Partial<ApiKeyInfo> = {}): ApiKeyInfo {
+  return {
+    id: 'k-1',
+    name: 'Import',
+    prefix: '3fa9c2d1',
+    permissions: ['evse:read', 'price:read'],
+    createdAt: '2026-10-14T08:15:00Z',
+    expiresAt: null,
+    lastUsedAt: null,
+    revokedAt: null,
+    ...overrides,
+  };
 }
 
 const conflict = (detail: string) => new HttpErrorResponse({ status: 409, error: { title: 'Conflict', detail } });
@@ -98,6 +112,28 @@ describe('AdminService', () => {
     http.expectOne('/api/v1/permissions').flush([{ key: 'evse:read', description: 'Read' }]);
     expect((await permissions)[0].key).toBe('evse:read');
   });
+
+  it('calls the API key and audit endpoints', async () => {
+    const keys = service.apiKeys('u-1');
+    http.expectOne('/api/v1/users/u-1/api-keys').flush([apiKey()]);
+    expect((await keys)[0].prefix).toBe('3fa9c2d1');
+
+    const revoked = service.revokeApiKey('u-1', 'k-1');
+    const revokeRequest = http.expectOne('/api/v1/users/u-1/api-keys/k-1');
+    expect(revokeRequest.request.method).toBe('DELETE');
+    revokeRequest.flush(null);
+    await revoked;
+
+    const first = service.auditLog({ actor: '', action: 'apikey.', entity: '', from: '', to: '' }, null);
+    http.expectOne('/api/v1/audit-log?limit=100&action=apikey.').flush({ data: [], meta: { returned: 0, limit: 100, nextCursor: null } });
+    expect((await first).data).toEqual([]);
+
+    const older = service.auditLog({ actor: 'bob', action: '', entity: 'api_key:', from: '2026-10-15T22:00:00.000Z', to: '' }, '42');
+    http
+      .expectOne('/api/v1/audit-log?limit=100&actor=bob&entity=api_key:&from=2026-10-15T22:00:00.000Z&cursor=42')
+      .flush({ data: [], meta: { returned: 0, limit: 100, nextCursor: null } });
+    await older;
+  });
 });
 
 describe('AdminUsersPage', () => {
@@ -121,7 +157,16 @@ describe('AdminUsersPage', () => {
   }
 
   beforeEach(() => {
-    service = jasmine.createSpyObj<AdminService>('AdminService', ['users', 'roles', 'setRoles', 'setApproved', 'setEnabled', 'sendConfirmation']);
+    service = jasmine.createSpyObj<AdminService>('AdminService', [
+      'users',
+      'roles',
+      'setRoles',
+      'setApproved',
+      'setEnabled',
+      'sendConfirmation',
+      'apiKeys',
+      'revokeApiKey',
+    ]);
     service.users.and.resolveTo(pageOf([]));
     service.roles.and.resolveTo([role({ name: 'Admin', fullCatalog: true }), role()]);
     auth = fakeAuth(ME);
@@ -168,7 +213,45 @@ describe('AdminUsersPage', () => {
 
     expect(service.roles).not.toHaveBeenCalled();
     expect(text(rows()[0], '.roles')).toBe('Maintainer, User');
-    expect(rows()[0].querySelector('button')).toBeNull();
+    expect(rows()[0].querySelector('button:not(.show-keys)')).toBeNull();
+
+    // The keys of the account are visible, but cannot be revoked.
+    service.apiKeys.and.resolveTo([apiKey(), apiKey({ id: 'k-2', revokedAt: '2026-10-16T19:00:00Z' })]);
+    rows()[0].querySelector<HTMLButtonElement>('.show-keys')!.click();
+    await settle();
+    const keys = Array.from(root().querySelectorAll('#user-keys tbody tr'));
+    expect(text(keys[0], 'td:last-child')).toBe('gültig');
+    expect(text(keys[1], 'td:last-child')).toMatch(/^widerrufen 16\.10\.2026 \d{2}:00$/);
+    expect(root().querySelector('#user-keys .revoke')).toBeNull();
+  });
+
+  it('lists the API keys of an account without their values and revokes one', async () => {
+    service.users.and.resolveTo(pageOf([user({ id: 'a' })]));
+    service.apiKeys.and.resolveTo([apiKey({ expiresAt: '2026-12-31T23:00:00Z', lastUsedAt: '2026-10-16T18:00:00Z' })]);
+    service.revokeApiKey.and.resolveTo();
+    await render();
+
+    rows()[0].querySelector<HTMLButtonElement>('.show-keys')!.click();
+    await settle();
+    expect(service.apiKeys).toHaveBeenCalledWith('a');
+    expect(text(root(), '#user-keys h2')).toBe('API-Keys von bob@example.org');
+    const cells = Array.from(root().querySelectorAll('#user-keys tbody tr td')).map((cell) => cell.textContent!.trim());
+    expect(cells.slice(0, 3)).toEqual(['Import', '3fa9c2d1', 'evse:read, price:read']);
+    expect(cells[4]).toMatch(/^(31\.12\.2026|01\.01\.2027) \d{2}:00$/);
+    expect(cells[5]).toMatch(/^16\.10\.2026 \d{2}:00$/);
+
+    service.apiKeys.and.resolveTo([apiKey({ revokedAt: '2026-10-16T19:00:00Z' })]);
+    root().querySelector<HTMLButtonElement>('#user-keys .revoke')!.click();
+    await settle();
+    expect(service.revokeApiKey).toHaveBeenCalledWith('a', 'k-1');
+    expect(snackBar.open).toHaveBeenCalledWith('API-Key „Import“ von bob@example.org ist widerrufen.', 'OK', { duration: 4000 });
+    expect(root().querySelector('#user-keys .revoke')).toBeNull();
+
+    service.apiKeys.and.resolveTo([]);
+    rows()[0].querySelector<HTMLButtonElement>('.show-keys')!.click();
+    await settle();
+    expect(text(root(), '#keys-empty')).toBe('Dieses Konto hat keine API-Keys.');
+    expect(Array.from(root().querySelectorAll('#user-keys tbody tr td')).length).toBe(1);
   });
 
   it('approves, disables, enables, assigns roles and sends the confirmation mail', async () => {

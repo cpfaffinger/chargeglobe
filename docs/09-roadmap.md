@@ -51,7 +51,7 @@
 - [x] Administration `/admin` mit Unterseiten nach Kategorie (Nutzer, Rollen, Crawler, E-Mail, Einstellungen) und Dropdown in der Toolbar; Nutzer- und Rollenverwaltung in der API (`/users`, `/roles`, Permission `user:read`), Admin-Freischaltung neuer Konten (`auth.require_admin_approval`) und E-Mail-Bestätigung als Einstellung (`auth.require_confirmed_email`), Login-Codes mit deutschen Texten und „Bestätigungsmail erneut senden“; Setup-Assistent nur bei leerer Instanz
 - [x] Suche nach EVSE-ID, Name, Straße, PLZ und Ort (`GET /search`, `pg_trgm`) mit Suchfeld in der Toolbar, das zum Standort fliegt und die Infokarte öffnet
 - [x] Standortdetails direkt in der Infokarte der Karte (für alle Ladepunkte mit Status und Steckern, mit `evse:read` Verlauf und Auslastung), gemerkter Kartenausschnitt und eigene Startposition im Browser mit Knopf „Startposition“, ein Standort-Request zugleich ohne Abfrage beim Hineinzoomen, MapLibre lädt parallel zur Konfiguration
-- [ ] Angular: API-Keys fremder Konten, Audit-Log (`GET /audit-log`)
+- [x] Audit-Log `GET /audit-log` (`audit:read`) mit Seite `/admin/audit`; API-Keys fremder Konten unter `/admin/users` listen und widerrufen (`GET/DELETE /users/{id}/api-keys`)
 - [x] „Passwort ändern“ auf `/account` (`POST /auth/password/change`, beendet die anderen Sitzungen)
 - [x] Einstellungen im Konto: `GET/PUT /me/preferences` mit Startposition, Filtern und Kartenoptionen, im Web nach dem Login geladen und 1 s nach jeder Änderung gespeichert; letzter Ausschnitt bleibt je Gerät
 - [x] Eigene Ladekarten des Nutzers (`cards` in `/me/preferences`, Auswahl unter „Mein Konto“, „deine Karte“ im Preisvergleich und „deine günstigste Karte“ in der Infokarte)

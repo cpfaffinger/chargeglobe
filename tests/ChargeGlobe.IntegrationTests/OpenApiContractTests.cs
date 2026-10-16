@@ -76,9 +76,9 @@ public class OpenApiContractTests(IntegrationFactory factory)
             {
                 "addFavorite", "calculateReach", "calculateRoute", "changePassword", "confirmEmail", "createApiKey", "createInitialAdmin", "deleteEmp", "deleteRole", "deleteTariff", "geocodeAddress", "getCrawlerFreshness", "getCrawlerStatus", "getEvse",
                 "getEvseOccupancy", "getEvsePrices", "getEvseStatusHistory", "getHealth", "getLocation", "getLocationOccupancy", "getMapConfig", "getMe", "getPreferences", "getSetting", "getSetupStatus", "getStats", "getUser",
-                "listApiKeys", "listConflicts", "listCrawlerRuns", "listEmps", "listEvses", "listFavorites", "listLocationPrices", "listLocations", "listLocationsAlongRoute", "listLocationsInArea", "listMailOutbox", "listOperators", "listPermissions", "listRoles", "listSettings",
-                "listTariffs", "listUsers", "login", "logout", "putEmp", "putPreferences", "putRole", "putTariff", "refreshToken", "register", "removeFavorite", "requestPasswordReset", "resendConfirmation",
-                "resetPassword", "resolveConflict", "revokeApiKey", "search", "sendTestMail", "sendUserConfirmationMail", "setUserApproval", "setUserEnabled",
+                "listApiKeys", "listAuditLog", "listConflicts", "listCrawlerRuns", "listEmps", "listEvses", "listFavorites", "listLocationPrices", "listLocations", "listLocationsAlongRoute", "listLocationsInArea", "listMailOutbox", "listOperators", "listPermissions", "listRoles", "listSettings",
+                "listTariffs", "listUserApiKeys", "listUsers", "login", "logout", "putEmp", "putPreferences", "putRole", "putTariff", "refreshToken", "register", "removeFavorite", "requestPasswordReset", "resendConfirmation",
+                "resetPassword", "resolveConflict", "revokeApiKey", "revokeUserApiKey", "search", "sendTestMail", "sendUserConfirmationMail", "setUserApproval", "setUserEnabled",
                 "setUserRoles", "updateSetting",
             },
             operationIds.Order(StringComparer.Ordinal));

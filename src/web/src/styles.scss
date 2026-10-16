@@ -1467,6 +1467,7 @@ app-setting-row .error {
 }
 
 .users-filter,
+.audit-filter,
 #new-role {
   display: flex;
   flex-wrap: wrap;
@@ -1478,6 +1479,23 @@ app-setting-row .error {
 .users-filter mat-form-field {
   flex: 1;
   min-width: 240px;
+}
+
+.audit-filter mat-form-field {
+  flex: 1;
+  min-width: 160px;
+}
+
+#audit .target code {
+  word-break: break-all;
+}
+
+#user-keys {
+  margin-top: 16px;
+}
+
+#user-keys .revoked {
+  color: var(--mat-sys-on-surface-variant);
 }
 
 #users,

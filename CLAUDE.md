@@ -139,6 +139,8 @@ docker compose logs worker | grep "Address import"   # Import des BEV-Adressregi
 docker compose exec db psql -U chargeglobe -d chargeglobe -c "select reference_date, imported_at, checked_at, addresses, pg_size_pretty(pg_total_relation_size('address')) addresses_size, pg_size_pretty(pg_total_relation_size('address_street')) streets_size from address_import"   # Stichtag und Größe der Adresstabellen samt Indizes
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/users?q=example.org"   # Konten mit Status und Rollen (user:read); UI: /admin/users
 curl -k -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/roles        # Rollen mit Permissions (user:read); UI: /admin/roles
+curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/audit-log?action=apikey.&limit=20"   # Audit-Log, neueste zuerst, Filter actor/action/entity/from/to, weiter mit cursor (audit:read); UI: /admin/audit
+curl -k -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/users/<Konto-UUID>/api-keys   # API-Keys eines Kontos ohne Key-Werte (user:read); DELETE …/api-keys/<Key-UUID> widerruft (user:manage); UI: /admin/users
 curl -k -X PUT -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/me/favorites/<Standort-UUID>   # Favorit merken (204, idempotent); DELETE entfernt
 curl -k -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/me/favorites   # Favoriten mit aktuellem Status; UI: /favorites
 curl -k -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/me/preferences   # Startposition, Filter, Kartenoptionen und eigene Ladekarten (cards) des Kontos (updatedAt null = noch keine)
