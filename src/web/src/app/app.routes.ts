@@ -66,6 +66,11 @@ const pages: Routes = [
         canActivate: [requirePermission('user:read')],
       },
       {
+        path: 'audit',
+        loadComponent: () => import('./pages/admin-audit.page').then((page) => page.AdminAuditPage),
+        canActivate: [requirePermission('audit:read')],
+      },
+      {
         path: 'crawler',
         loadComponent: () => import('./pages/admin-crawler.page').then((page) => page.AdminCrawlerPage),
         canActivate: [requirePermission('jobs:read')],

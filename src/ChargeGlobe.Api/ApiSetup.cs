@@ -151,6 +151,7 @@ public static class ApiSetup
         app.MapStatsEndpoints();
         app.MapCrawlerEndpoints();
         app.MapUsersEndpoints();
+        app.MapAuditEndpoints();
         app.MapSearchEndpoints();
         app.MapOperatorsEndpoints();
         app.MapFavoritesEndpoints();

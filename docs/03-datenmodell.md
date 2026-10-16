@@ -74,7 +74,7 @@ Operator (CPO) ─┬─ 1..n ─ Location ─ 1..n ─ ChargingStation? ─ 1..
 | `role_permission` | `role_id`, `permission` | Rollen sind Berechtigungsbündel; Permissions kommen aus dem Katalog in Domain |
 | `user_permission` | `user_id`, `permission`, `granted_by`, `granted_at` | direkte Zusatzrechte ohne Rolle |
 | `api_key` | `id`, `name`, `key_hash`, `key_prefix` (erste 8 Zeichen zur Anzeige), `owner_user_id`, `permissions text[]` (Teilmenge der Rechte des Eigentümers), `expires_at`, `last_used_at`, `revoked_at`, `rate_limit_tier` | Klartext wird nur bei Erstellung einmal zurückgegeben |
-| `audit_log` (Hypertable) | `time`, `actor_user_id?`, `actor_api_key_id?`, `action`, `entity_type`, `entity_id`, `payload jsonb`, `ip` | jede schreibende Aktion |
+| `audit_log` | `id bigint` (PK, aufsteigend, Cursor der Liste), `actor_user_id?`, `actor_api_key_id?`, `action` (z. B. `apikey.revoke`), `target` (z. B. `api_key:<id>`), `occurred_at` (Index) | jede schreibende Aktion, gespeichert mit der Änderung selbst; gelesen über `GET /audit-log` |
 
 ### Konfiguration & Job-Verteilung
 

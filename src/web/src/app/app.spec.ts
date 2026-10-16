@@ -146,6 +146,7 @@ describe('App with its routes', () => {
         'nav-admin',
         'nav-admin-users',
         'nav-admin-roles',
+        'nav-admin-audit',
         'nav-admin-crawler',
         'nav-admin-conflicts',
         'nav-admin-mail',
@@ -276,6 +277,24 @@ describe('App with its routes', () => {
       http
         .expectOne('/api/v1/admin/crawler/freshness')
         .flush({ data: { at: '2026-10-14T08:15:00Z', regions: [], sources: [], operators: [] } });
+    });
+
+    it('opens /admin/audit only with audit:read and shows the link only then', async () => {
+      auth.me.set(ME);
+      auth.hasPermission.and.callFake((permission) => permission === 'settings:read');
+
+      await navigate('/admin/audit');
+
+      expect(router.url).toBe('/');
+      http.expectOne('/api/v1/map/config');
+
+      auth.hasPermission.and.callFake((permission) => permission === 'audit:read');
+      await navigate('/admin/audit');
+
+      expect(router.url).toBe('/admin/audit');
+      expect(text(root(), 'h1')).toBe('Audit-Log');
+      expect(root().querySelector('#admin-tab-audit')).not.toBeNull();
+      http.expectOne('/api/v1/audit-log?limit=100').flush({ data: [], meta: { returned: 0, limit: 100, nextCursor: null } });
     });
 
     it('opens /admin/mail only with settings:manage and shows the link only then', async () => {
