@@ -166,12 +166,26 @@ public class AddressRegisterTests
     {
         var vienna = new AddressRecord(1, "Mariahilfer Straße", "1A", "1060", "Wien,Mariahilf", "Wien", "90001", 0, 0, 31256);
         Assert.Equal("Wien", vienna.City);
-        Assert.Equal("mariahilfer strasse 1a 1060 wien mariahilf wien", vienna.SearchText);
+        Assert.Equal("mariahilfer strasse 1060 wien mariahilf wien", vienna.StreetSearchText);
         Assert.Equal("Oberndorf", (vienna with { Locality = "Oberndorf", Municipality = "Pfaffstätten" }).City);
 
         Assert.Equal("mariahilfer str 1 3 wien", AddressText.Normalize("  Mariahilfer Str. 1-3, Wien "));
         Assert.Equal("12/3", AddressText.Normalize("12/3"));
         Assert.Equal(["hauptplatz", "1", "linz"], AddressText.Words("Hauptplatz 1,  Linz"));
+    }
+
+    [Fact]
+    public void A_query_is_split_into_street_words_short_words_and_house_numbers()
+    {
+        var query = AddressQuery.Parse("Am Hauptplatz 12a, 4020 Linz 3/2 1234");
+        Assert.Equal(["hauptplatz", "4020", "linz", "1234"], query.Indexed);
+        Assert.Equal(["am"], query.Short);
+        Assert.Equal(["12a", "3/2"], query.Numbers);
+        Assert.Equal("hauptplatz 4020 linz 1234 am", query.StreetText);
+        Assert.True(query.Searchable);
+
+        Assert.False(AddressQuery.Parse("A 1 12").Searchable);
+        Assert.Equal(["123"], AddressQuery.Parse("Dorf 123").Numbers);
     }
 
     private static BevAddressRegister Register(Handler handler) =>

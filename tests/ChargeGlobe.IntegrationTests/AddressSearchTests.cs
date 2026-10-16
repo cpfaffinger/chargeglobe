@@ -8,7 +8,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace ChargeGlobe.IntegrationTests;
 
-/// <summary>Table <c>address</c>: replacement by staging table and swap, the search behind GET /geocode and the endpoint.</summary>
+/// <summary>
+/// Tables <c>address_street</c> and <c>address</c>: replacement by staging tables and swap, the two-stage search behind
+/// GET /geocode and the endpoint.
+/// </summary>
 [Collection(IdentityCollection.Name)]
 public class AddressSearchTests(IntegrationFactory factory)
 {
@@ -31,6 +34,8 @@ public class AddressSearchTests(IntegrationFactory factory)
         new(8000001, "Hauptplatz", "1", "8010", "Graz,Innere Stadt", "Graz", "60101", 159_600, 215_000, 31255),
         new(9000001, "Mariahilfer Straße", "1A", "1060", "Wien,Mariahilf", "Wien", "90001", 2300, 340500, 31256),
         new(9000002, "Dorfstraße", "3", "6020", "Innsbruck", "Innsbruck", "70101", 76_000, 237_000, 31254),
+        // Sorted as text "10" comes before "3"; as house numbers 3 is the lowest.
+        new(9000003, "Dorfstraße", "10", "6020", "Innsbruck", "Innsbruck", "70101", 76_050, 237_050, 31254),
     ];
 
     private Task<T> WithStoreAsync<T>(Func<IAddressStore, Task<T>> action) =>
@@ -59,7 +64,7 @@ public class AddressSearchTests(IntegrationFactory factory)
         });
 
     [Fact]
-    public async Task A_replacement_swaps_the_whole_table_and_records_the_reference_date()
+    public async Task A_replacement_swaps_both_tables_and_records_the_reference_date()
     {
         // A smaller first load, then the full one: nothing of the first stays.
         Assert.Equal(1, await ReplaceAsync(Addresses[^1]));
@@ -75,13 +80,23 @@ public class AddressSearchTests(IntegrationFactory factory)
         Assert.Equal(ImportedAt.AddDays(30), (await WithStoreAsync(store => store.StateAsync(CancellationToken.None)))!.CheckedAt);
 
         var indexes = await factory.WithDbAsync(db => db.Database
-            .SqlQuery<string>($"SELECT indexname AS \"Value\" FROM pg_indexes WHERE tablename = 'address' ORDER BY 1")
+            .SqlQuery<string>($"SELECT tablename || ':' || indexname AS \"Value\" FROM pg_indexes WHERE tablename IN ('address', 'address_street') ORDER BY 1")
             .ToListAsync());
-        Assert.Equal(["ix_address_search", "pk_address"], indexes);
+        Assert.Equal(
+            ["address:ix_address_street_number", "address:pk_address", "address_street:ix_address_street_search", "address_street:ix_address_street_similar", "address_street:pk_address_street"],
+            indexes);
         var leftovers = await factory.WithDbAsync(db => db.Database
-            .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM pg_tables WHERE tablename IN ('address_new', 'address_load')")
+            .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM pg_tables WHERE tablename IN ('address_new', 'address_street_new', 'address_load', 'address_point')")
             .SingleAsync());
         Assert.Equal(0, leftovers);
+
+        // One street per street, postal code and place, with the number of its addresses.
+        var streets = await factory.WithDbAsync(db => db.Database
+            .SqlQuery<string>($"SELECT street || ' ' || postal_code || ' ' || city || ' ' || addresses AS \"Value\" FROM address_street ORDER BY 1")
+            .ToListAsync());
+        Assert.Equal(
+            ["Dorfstraße 6020 Innsbruck 2", "Hauptplatz 4020 Linz 2", "Hauptplatz 8010 Graz 1", "Mariahilfer Straße 1060 Wien 1", "Stephansplatz 1010 Wien 2", "Stephansplatz 7152 Pamhagen 1"],
+            streets);
 
         var stephansplatz = (await SearchAsync("Stephansplatz 1 Wien")).Hits[0];
         Assert.Equal("Stephansplatz 1, 1010 Wien", stephansplatz.Label);
@@ -105,6 +120,32 @@ public class AddressSearchTests(IntegrationFactory factory)
         Assert.Equal("Mariahilfer Straße 1A, 1060 Wien", Assert.Single((await SearchAsync("mariahilfer strasse 1a")).Hits).Label);
         Assert.Single((await SearchAsync("Mariahilfer Str. 1A, Wien")).Hits);
         Assert.Single((await SearchAsync("Dorfstr 3 Innsbruck")).Hits);
+    }
+
+    [Fact]
+    public async Task Without_a_house_number_each_street_comes_once_with_its_lowest_number()
+    {
+        await ReplaceAsync(Addresses);
+
+        Assert.Equal(["Stephansplatz 1, 1010 Wien"], (await SearchAsync("Stephansplatz Wien")).Hits.Select(hit => hit.Label));
+        Assert.Equal(
+            ["Stephansplatz 1, 1010 Wien", "Stephansplatz 1, 7152 Pamhagen"],
+            (await SearchAsync("Stephansplatz")).Hits.Select(hit => hit.Label).Order());
+        Assert.Equal(["Stephansplatz 1, 7152 Pamhagen", "Stephansplatz 1, 1010 Wien"], (await SearchAsync("Stephansplatz", Pamhagen)).Hits.Select(hit => hit.Label));
+        Assert.Equal("Dorfstraße 3, 6020 Innsbruck", Assert.Single((await SearchAsync("Dorfstraße Innsbruck")).Hits).Label);
+    }
+
+    [Fact]
+    public async Task A_house_number_must_start_a_house_number_of_the_street_or_be_part_of_its_postal_code()
+    {
+        await ReplaceAsync(Addresses);
+
+        Assert.Equal(["Dorfstraße 10, 6020 Innsbruck"], (await SearchAsync("Dorfstraße 10")).Hits.Select(hit => hit.Label));
+        // A postal code is a word of the street: without a house number one hit for the street.
+        Assert.Equal("Dorfstraße 3, 6020 Innsbruck", Assert.Single((await SearchAsync("Dorfstraße 6020")).Hits).Label);
+        Assert.Empty((await SearchAsync("Dorfstraße 4")).Hits);
+        // "2" is part of the postal code 6020: every house number of the street matches, the lowest first.
+        Assert.Equal(["Dorfstraße 3, 6020 Innsbruck", "Dorfstraße 10, 6020 Innsbruck"], (await SearchAsync("Dorfstraße 2")).Hits.Select(hit => hit.Label));
     }
 
     [Fact]

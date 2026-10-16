@@ -27,8 +27,11 @@ public sealed record AddressRecord(
     /// </summary>
     public string City => Locality.StartsWith(Municipality + ",", StringComparison.Ordinal) ? Municipality : Locality;
 
-    /// <summary>What the search compares with (column <c>search_text</c>), normalized like a query.</summary>
-    public string SearchText => AddressText.Normalize($"{Street} {HouseNumber} {PostalCode} {Locality} {Municipality}");
+    /// <summary>
+    /// What the search compares the street with (column <c>address_street.search_text</c>): street, postal code,
+    /// locality and municipality, normalized like a query. The house number is matched separately.
+    /// </summary>
+    public string StreetSearchText => AddressText.Normalize($"{Street} {PostalCode} {Locality} {Municipality}");
 }
 
 /// <summary>One normalization for stored addresses and queries, so that both meet.</summary>
@@ -62,6 +65,38 @@ public static class AddressText
 
     /// <summary>The words of a normalized query.</summary>
     public static string[] Words(string query) => Normalize(query).Split(' ', StringSplitOptions.RemoveEmptyEntries);
+}
+
+/// <summary>
+/// A query split for the two stages of the search: words the trigram index of the streets can look up, short words
+/// that only filter the streets, and house numbers, which the street or one of its addresses must contain.
+/// </summary>
+/// <param name="Indexed">Words of three or more characters, except numbers shorter than a postal code.</param>
+/// <param name="Short">Words of one or two characters that are no numbers ("am").</param>
+/// <param name="Numbers">
+/// Words that start with a digit and are shorter than a postal code ("1", "12a", "3/2"): a house number that starts
+/// with the word, or a street (postal code) that contains it.
+/// </param>
+/// <param name="StreetText">The words of the street stage, for the similarity order.</param>
+public sealed record AddressQuery(string[] Indexed, string[] Short, string[] Numbers, string StreetText)
+{
+    /// <summary>Shortest word with a trigram.</summary>
+    public const int MinIndexedWord = 3;
+
+    /// <summary>Austrian postal codes have four digits; shorter numbers are taken as house numbers.</summary>
+    public const int PostalCodeLength = 4;
+
+    /// <summary>Without an indexed word the streets cannot be looked up; such a query finds nothing.</summary>
+    public bool Searchable => Indexed.Length > 0;
+
+    public static AddressQuery Parse(string query)
+    {
+        var words = AddressText.Words(query);
+        bool IsNumber(string word) => char.IsDigit(word[0]) && word.Length < PostalCodeLength;
+        var indexed = words.Where(word => word.Length >= MinIndexedWord && !IsNumber(word)).ToArray();
+        var short1 = words.Where(word => word.Length < MinIndexedWord && !IsNumber(word)).ToArray();
+        return new AddressQuery(indexed, short1, [.. words.Where(IsNumber)], string.Join(' ', [.. indexed, .. short1]));
+    }
 }
 
 /// <summary>A hit of the address search.</summary>
@@ -109,8 +144,9 @@ public interface IAddressStore
     Task<int> ReplaceAsync(IAsyncEnumerable<AddressRecord> records, DateOnly referenceDate, DateTimeOffset at, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Addresses whose street, house number, postal code, locality and municipality contain every word of the query,
-    /// the exact house number and the most similar first, then the nearest to <paramref name="near"/>.
+    /// Addresses whose street, postal code, locality and municipality contain every word of the query, house numbers
+    /// as the start of the house number: the exact house number first, then the nearest to <paramref name="near"/>,
+    /// then the most similar street. Without a house number in the query one address per street, the lowest number.
     /// </summary>
     Task<AddressSearchResult> SearchAsync(string query, GeoPoint? near, int limit, CancellationToken cancellationToken);
 }

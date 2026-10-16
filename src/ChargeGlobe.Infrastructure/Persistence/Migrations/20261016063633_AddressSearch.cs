@@ -1,5 +1,4 @@
 ﻿using System;
-using ChargeGlobe.Infrastructure.Addresses;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -28,8 +27,20 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                 });
 
             // The addresses of the geocoder; not in the EF model, because AddressStore replaces the table as a whole.
-            migrationBuilder.Sql(AddressStore.CreateTableSql("address"));
-            migrationBuilder.Sql(AddressStore.CreateIndexesSql("address"));
+            // The migration AddressStreets replaces this first layout.
+            migrationBuilder.Sql("""
+                CREATE TABLE address (
+                    id bigint NOT NULL,
+                    street text NOT NULL,
+                    house_number text NOT NULL,
+                    postal_code text NOT NULL,
+                    city text NOT NULL,
+                    municipality_code text NOT NULL,
+                    geom geography(Point, 4326) NOT NULL,
+                    search_text text NOT NULL);
+                ALTER TABLE address ADD CONSTRAINT pk_address PRIMARY KEY (id);
+                CREATE INDEX ix_address_search ON address USING gin (search_text gin_trgm_ops);
+                """);
         }
 
         /// <inheritdoc />

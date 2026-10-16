@@ -134,7 +134,7 @@ docker compose logs crawler worker          # Heartbeats beider Rollen (alle 30 
 curl -k "https://localhost:5005/api/v1/search?q=stephansplatz"   # Suche nach EVSE-ID, Name, Straße, PLZ, Ort (anonym)
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/geocode?q=Hauptplatz%201%20Linz&near=48.2,16.37"   # Adressen aus dem BEV-Adressregister, höchstens 8, genaue Hausnummer zuerst (route:read); 422 unter 3 Zeichen
 docker compose logs worker | grep "Address import"   # Import des BEV-Adressregisters beim Start und alle address.refresh_days Tage: "Address import: 2529… addresses of the reference date 2026-10-01 in … s"
-docker compose exec db psql -U chargeglobe -d chargeglobe -c "select reference_date, imported_at, checked_at, addresses, pg_size_pretty(pg_total_relation_size('address')) size from address_import"   # Stichtag und Größe der Adresstabelle samt Index
+docker compose exec db psql -U chargeglobe -d chargeglobe -c "select reference_date, imported_at, checked_at, addresses, pg_size_pretty(pg_total_relation_size('address')) addresses_size, pg_size_pretty(pg_total_relation_size('address_street')) streets_size from address_import"   # Stichtag und Größe der Adresstabellen samt Indizes
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/users?q=example.org"   # Konten mit Status und Rollen (user:read); UI: /admin/users
 curl -k -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/roles        # Rollen mit Permissions (user:read); UI: /admin/roles
 curl -k -X PUT -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/me/favorites/<Standort-UUID>   # Favorit merken (204, idempotent); DELETE entfernt
