@@ -73,7 +73,8 @@
 - [x] Stromart je Zone (`currents`, z. B. Partnerpreis nur an DC) und Prüfdatum je Tarif (`checkedOn`): „Stand prüfen“ nur, wenn weder Stand noch Prüfung jünger als `tariff.stale_months` sind
 - [ ] Auslandspreise (Zonen je Land)
 - [x] Tesla-Preise geprüft: findus-Standortseiten nicht automatisiert (Bot-Schutz, Website-Bedingungen), Ad-hoc-Preise aus der E-Control ([Endpunkt-Notiz](endpunkte/tesla-findus.md)); an Tesla-Ladepunkten Preis-Hinweis des Netzes mit der Standortseite (`priceNote`, 55 kuratierte Standorte)
-- [ ] ladetarif.at (Tarifkalkulator der E-Control) als `ITariffSource` prüfen: Produkte strukturiert, Nutzungsbedingungen klären
+- [x] ladetarif.at (Tarifkalkulator der E-Control) geprüft: keine Nutzungsbedingungen, keine Lizenz → kein Adapter, manueller Abgleich mit `scripts/tariffs/compare-ladetarif.py` ([Endpunkt-Notiz](endpunkte/ladetarif.md))
+- [ ] Freigabe von ladetarif.at bei der E-Control anfragen (Betreiber; Lesen, Weitergabe unter CC BY 4.0, Betreiber je Tarif), danach Adapter `ladetarif` als `ITariffSource`
 - [x] Tarifkatalog prüfen: `stale` in `GET /tariffs` und „Stand prüfen“ in `/admin/tariffs` (Stand unbekannt oder älter als `tariff.stale_months`), tägliche Zahl im Worker-Log
 - [ ] Preisblatt-Scraper als `ITariffSource` für die großen Anbieter
 
