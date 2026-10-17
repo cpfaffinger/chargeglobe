@@ -36,6 +36,7 @@
 - [x] Datenfrische im Admin (`/admin/crawler`, `GET /admin/crawler/freshness`): Anteil frischer Status je Region, ältester Abfragepunkt je Priorität, Budget, Störungsphasen je Betreiber (48 h)
 - [ ] Metriken (OpenTelemetry → Prometheus/Grafana): Requests, Fehlerquote, Datenfrische je Quelle
 - [x] API v1: `GET /evses/{evseId}` (EVSE-ID in jeder Schreibweise oder UUID), Statushistorie, Belegung (`evse:read`)
+- [x] EVSE-Suche räumlich (`bbox`, `near` + `radiusMeters`, `sort=distance`) und als CSV-Export `GET /evses/export` (`export:read`)
 - [x] API v1: EVSE-Suche `GET /evses` (Betreiber, Region, Status, Leistung, Stecker, Statusalter, Ladestation; Cursor-Paging, Sortierung nach EVSE-ID oder Statusbeginn)
 - [x] Angular: Karte mit MapLibre und OSM-Vektorkacheln (OpenFreeMap, `GET /map/config`) als anonyme Startseite, eigener Standort per Geolocation ([ADR-0007](adr/0007-karte-standort-routing.md))
 - [x] `GET /locations` (bbox, aggregiert, Attribution) und `GET /locations/{id}`; Ladepunkt-Marker mit Clustering, Status-Farben, Legende, Infokarte und Quellenangabe

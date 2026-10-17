@@ -123,6 +123,8 @@ curl -kI https://localhost:5005/maplibre/maplibre-gl-worker.mjs   # 200, Content
 curl -k "https://localhost:5005/api/v1/evses/AT*TST*E1*1"   # ohne Token: 401 Problem Details (evse:read nötig)
 TOKEN=$(curl -sk -H 'Content-Type: application/json' -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}" https://localhost:5005/api/v1/auth/login | sed 's/.*"accessToken":"\([^"]*\)".*/\1/')
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/evses?operatorId=EVN&status=OUTOFORDER&statusOlderThan=PT24H&sort=statusSince"   # EVSE-Suche: EVN seit über 24 h außer Betrieb, weiter mit cursor=<meta.nextCursor> (evse:read)
+curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/evses?near=48.2047,15.6256&radiusMeters=20000&operatorId=EVN&status=OUTOFORDER&sort=distance"   # Umkreis um St. Pölten, nächster zuerst, mit distanceMeters (evse:read)
+curl -k -H "Authorization: Bearer $TOKEN" -o evses.csv "https://localhost:5005/api/v1/evses/export?region=AT-3"   # dieselbe Suche als CSV, höchstens 100.000 Zeilen (export:read)
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/evses/<EVSE-ID oder UUID>"                  # 200: EVSE mit Standort, Steckern, aktuellem Status
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/evses/<EVSE-ID>/status/history"           # Statusintervalle der letzten 7 Tage (max. 90 Tage je Abfrage)
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/evses/<EVSE-ID>/occupancy?weeks=4"        # Matrix Wochentag × Stunde (Europe/Vienna)

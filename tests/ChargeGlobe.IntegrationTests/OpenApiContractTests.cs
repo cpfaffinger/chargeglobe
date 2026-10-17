@@ -61,11 +61,10 @@ public class OpenApiContractTests(IntegrationFactory factory)
             // Every successful response with a JSON body carries an example.
             foreach (var response in operation.GetProperty("responses").EnumerateObject().Where(response => response.Name.StartsWith('2')))
             {
-                if (response.Value.TryGetProperty("content", out var content))
+                // CSV and other non-JSON bodies (exportEvses) carry no example.
+                if (response.Value.TryGetProperty("content", out var content) && content.TryGetProperty("application/json", out var json))
                 {
-                    Assert.True(
-                        content.GetProperty("application/json").TryGetProperty("example", out _),
-                        $"{name}: response {response.Name} has no example");
+                    Assert.True(json.TryGetProperty("example", out _), $"{name}: response {response.Name} has no example");
                 }
             }
         }
@@ -74,7 +73,7 @@ public class OpenApiContractTests(IntegrationFactory factory)
         Assert.Equal(
             new[]
             {
-                "addFavorite", "calculateReach", "calculateRoute", "changePassword", "confirmEmail", "createApiKey", "createInitialAdmin", "deleteEmp", "deleteMe", "deleteRole", "deleteTariff", "deleteUser", "geocodeAddress", "getCrawlerFreshness", "getCrawlerStatus", "getEvse",
+                "addFavorite", "calculateReach", "calculateRoute", "changePassword", "confirmEmail", "createApiKey", "createInitialAdmin", "deleteEmp", "deleteMe", "deleteRole", "deleteTariff", "deleteUser", "exportEvses", "geocodeAddress", "getCrawlerFreshness", "getCrawlerStatus", "getEvse",
                 "getEvseOccupancy", "getEvsePrices", "getEvseStatusHistory", "getHealth", "getLocation", "getLocationOccupancy", "getMapConfig", "getMe", "getPreferences", "getSetting", "getSetupStatus", "getStats", "getUser",
                 "listApiKeys", "listAuditLog", "listConflicts", "listCrawlerRuns", "listEmps", "listEvses", "listFavorites", "listLocationPrices", "listLocations", "listLocationsAlongRoute", "listLocationsInArea", "listMailOutbox", "listOperators", "listPermissions", "listRoles", "listSettings",
                 "listTariffs", "listUserApiKeys", "listUsers", "login", "logout", "putEmp", "putPreferences", "putRole", "putTariff", "refreshToken", "register", "removeFavorite", "requestPasswordReset", "resendConfirmation",
