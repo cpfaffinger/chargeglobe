@@ -17,18 +17,18 @@ Damit verschiebt sich die Priorität: statt „alle Apps crawlen“ → **E-Cont
 | Anbieter | Rolle | Backend-Plattform | Android-Package | Web-Karte | Live-Status | Preise sichtbar | Belegte Endpunkte / Repos | Priorität |
 |---|---|---|---|---|---|---|---|---|
 | **E-Control ladestellen.at** | amtl. Verzeichnis | eigene API | – | ladestellen.at/#/electric | ja, je Ladepunkt | Ad-hoc | `api.e-control.at/charge/1.0` [V-sek: HA-Integration] | **P0** |
-| **EVN Drive** | CPO (> 3.850 LP) + EMP | unbekannt [U] | `com.evn.autoladen` [V] | autoladen.at (lt. AGB) [U] | App [U] | Tarif-PDFs | keine | P2 (Tarife) |
+| **EVN Drive** | CPO (> 3.850 LP) + EMP | e-vo-Portal `emobilportal.at` [V] | `com.evn.autoladen` [V] | autoladen.at (lt. AGB) [U] | ja, je EVSE, anonym [V] | Tarif-PDFs | [Endpunkt-Notiz](endpunkte/evn-drive.md) | **P1** (Status aller Betreiber im Portal) |
 | **Wien Energie Tanke** | CPO (> 3.000 LP) + EMP | unbekannt (Next.js-Frontend) | `com.b2c.wienenergie.tanke` [V] | Finder auf wienenergie.at (Google-Maps-Embed) | App „freie Stationen“ [U] | Tarifseite | keine | P2 (Tarife) |
-| **ÖAMTC ePower** | CPO (> 700) + EMP (~30.000 Roaming) | **e-vo CPMS** seit 2025 [V]; davor vermutl. has·to·be [U] | `com.htb.oeamtc` [U] | oeamtc.at/routenplaner/poi/laden | ja (App) | **vollständige Tarife** [V] | keine | **P1** (wichtigster EMP-Tarif) |
-| **Verbund V-Go** | EMP („powered by SMATRICS“) | SMATRICS charVIS | `at.verbund.charge` [V] | – | App [U] | nur App | keine | P2 |
+| **ÖAMTC ePower** | CPO (> 700) + EMP (~30.000 Roaming) | **e-vo CPMS** seit 2025 [V]; davor vermutl. has·to·be [U] | `at.oeamtc.epower` [V] | oeamtc.at/routenplaner/poi/laden | Stationspreise ja, Live-Status nur mit Konto [V] | **vollständige Tarife** [V] | [Endpunkt-Notiz](endpunkte/oeamtc-epower.md) | **P1** (wichtigster EMP-Tarif) |
+| **Verbund V-Go** | EMP („powered by SMATRICS“) | SMATRICS charVIS | `at.verbund.charge` [V] | – | ja, je EVSE, mit App-Key [V] | nur App | [Endpunkt-Notiz](endpunkte/vgo-smatrics.md) | **P1** (Inventar und Status, 91.600 EVSEs, Zugang klären) |
 | **SMATRICS / SMATRICS EnBW** | CPO, EMP, White-Label (ÖBB, Verbund) | eigenes **charVIS**; Roaming Hubject + e-clearing [V] | `at.eprovider` [V] | ladenetz.smatrics.com (Google Maps) | nicht verifiziert | Tarifseite [V] | keine | P1 |
-| **Octopus Electroverse** | Roaming-EMP ohne eigene LP | eigen | `energy.octopus.electricjuice.android` [V] | electroverse.com/map | App ja [V] | Betreiber-Roamingpreise | keine | P1 (Tarife vieler CPOs an einem Ort) |
+| **Octopus Electroverse** | Roaming-EMP ohne eigene LP | eigen | `energy.octopus.electricjuice.android` [V] | electroverse.com/map | App ja [V], nur mit Konto | Betreiber-Roamingpreise | [Endpunkt-Notiz](endpunkte/electroverse.md) | P1 (Tarife vieler CPOs an einem Ort) |
 | **Tesla** | CPO Supercharger | eigen | `com.teslamotors.tesla` [V] | tesla.com/findus | ja | App / GraphQL | evmap `TeslaGuestApi.kt` [V] | **P1** |
 | **Linz AG StromMOBIL** | CPO (~1.755 LP / 680 Standorte) + EMP | unbekannt | `com.linzag.strommobil` [V] | „LadeAtlas“ nur hinter Login | unbekannt | Tarif-PDF [V] | keine | P2 |
 | **Energie AG OÖ** | CPO + EMP (70 % da emobil) | Karte „energized by CIRRANTiC“ [V] | keine Lade-App gefunden | eag.viewer.cit-fusion.com | unbekannt | Preisblatt 2024 | keine | P2 |
 | **Burgenland Energie** | CPO + EMP (TANKE-Karte) | unbekannt | keine gefunden | burgenlandenergie.at/ladestationen | unbekannt | kaum öffentlich | keine | P3 |
 | **MOON Power** (Porsche Holding) | CPO (2.903 LP in AT) | **has·to·be / ChargePoint be.ENERGISED** [V] | `com.hastobe.moon` [V] | – | App | App | keine | P2 |
-| **IONITY** | CPO HPC | eigen; Hubject + Gireve | `com.cleevio.ionity.android.app` [V] | ionity.eu [U] | App | Passport-Tarife | keine | P2 |
+| **IONITY** | CPO HPC | eigen; Hubject + Gireve | `com.cleevio.ionity.android.app` [V] | ionity.eu [U] | Ad-hoc-Preis und Status je Stecker, anonym [V] | Passport-Tarife | [Endpunkt-Notiz](endpunkte/ionity.md) | P2 |
 | **EnBW mobility+** | EMP in AT, CPO via SMATRICS EnBW | eigen | `com.enbw.ev` [V] | enbw.com Ladekarte | ja, je EVSE | ja | evmap `EnBwAvailabilityDetector.kt` [V] | P2 (inoffizieller Key, siehe unten) |
 | **Shell Recharge** | CPO (HPC bei BILLA) + EMP | eigen | unklar [U] | ui-map.shellrecharge.com | nur Shell-eigene | – | `python-shellrecharge` (archiviert) | P3 |
 | **Plugsurfing** | EMP | eigen | `com.xitaso.plugsurfing` [V] | – | App | App | keine | P3 |
@@ -73,7 +73,7 @@ Außerhalb Scope, aber relevant für Phase 2: **da emobil** (Tirol, Operator-ID 
 
 ## Bekannte, öffentlich dokumentierte Endpunkte (aus Open-Source-Code)
 
-Alle Angaben stammen aus den genannten Repositories, nicht aus eigener App-Analyse. Nutzung inoffizieller Endpunkte nur nach ToS-Prüfung (siehe 08).
+Die Angaben stammen aus den genannten Repositories bzw. aus eigener App-Analyse (letzter Abschnitt). Nutzung inoffizieller Endpunkte nur nach ToS-Prüfung (siehe 08).
 
 ### E-Control (offiziell, Key) – [prusuino/ha_austrian_charging_stations](https://github.com/prusuino/ha_austrian_charging_stations)
 ```
@@ -107,15 +107,26 @@ Status: AVAILABLE | OCCUPIED | UNAVAILABLE | OUT_OF_SERVICE | UNSPECIFIED, inkl.
 GET https://app.chargecloud.de/emobility:ocpi/{operatorId}/app/2.0/locations?latitude=&longitude=&radius=
 ```
 
+### Aus der App-Analyse (Tier 2, 17.10.2026) – Details in den Endpunkt-Notizen
+Aus dekompilierten APKs belegt und mit curl für Graz nachgestellt (Replay-Skripte unter [`endpunkte/replay`](endpunkte/replay/README.md)). Alle Quellen: ToS noch nicht geprüft.
+
+| App | Endpunkt (Karte) | Zugang | Ergebnis Graz (47.05–47.09 N, 15.40–15.47 E) |
+|---|---|---|---|
+| [EVN Drive](endpunkte/evn-drive.md) | `GET emobilportal.at/api/v1/chargeStations/chargeAtlas?topLeftLat&topLeftLong&bottomRightLat&bottomRightLong&zoom` | anonym | 146 Stationen, 315 Ladepunkte mit Status |
+| [Verbund V-Go](endpunkte/vgo-smatrics.md) | `POST poi-service.smatrics-api.com/b2c/locations/reduced/bounding-box` | statischer App-Key (Bearer) | 101 Standorte, 256 EVSEs mit Status; Gesamtbestand 29.527 Standorte / 91.617 EVSEs in 2,6 MB |
+| [ÖAMTC ePower](endpunkte/oeamtc-epower.md) | `POST www.oeamtc.at/api/mob/oeamtc/gis-efuel/efuel/search?count&start` | statischer Basic-Client der App | 133 Stationen mit Preis je kWh, Status `UNKNOWN` (Live nur mit Konto) |
+| [IONITY](endpunkte/ionity.md) | `GET adhoc-bff.ionity.cloud/api/v1/location/static`, `GET …/v3/location/{uuid}` | anonym + Header `x-adhoc-platform`, `x-adhoc-app-feature-version` | 902 Standorte; Ad-hoc-Preis und Status je Stecker, keine EVSE-IDs |
+| [Octopus Electroverse](endpunkte/electroverse.md) | MVT-Kacheln `api.electroverse.com/rest/locations/tiles/elastic/{z}/{x}/{y}?operator_groups[]=` und GraphQL | Konto nötig | nicht nachstellbar |
+
 ### Schweiz (für Phase 3, offiziell) – siehe 08: BFE OCPI-API ab 11/2026.
 
 ## Detailprofile
 
 ### EVN Drive (EVN AG, NÖ)
 - Größter CPO Österreichs: > 3.850 eigene Ladepunkte, + 600 bei XXXLutz; Schnelllader bei Spar/Hofer/ASFINAG Roggendorf; Roamingpartner von ÖAMTC, Salzburg AG, DKV. [V]
-- App „EVN Drive“ (vormals „Autoladen 2.0“), AGB nennen autoladen.at als Stationsliste [U]. Backend und Operator-ID nicht belegt (vermutlich `AT*EVN`, über E-Control-Daten verifizierbar).
+- App „EVN Drive“ (vormals „Autoladen 2.0“), AGB nennen autoladen.at als Stationsliste [U]. Backend ist das e-mobil-Portal `emobilportal.at` (Operator-Token `AT*EVN`); die App-Karte zeigt alle Ladepunkte des Portals (Details in der [Endpunkt-Notiz](endpunkte/evn-drive.md)).
 - Tarife 07/2026 [V, PDF]: Drive Easy 0 €/Monat, 0,54 €/kWh AC/DC/HPC im EVN-Netz; Drive Smart 4,95 €/Monat, 0,45 €/kWh AC; Standgebühr ab 30 min nach Ladeende 0,50 €/min (Deckel 30/60 €). Ad-hoc „Charge & Pay“ (03/2025: 0,5417 AC / 0,6250 DC).
-- **Für chargeglobe:** Tarif netzweit → Tarifkatalog (`catalog/at/evn.json`); Status via E-Control; Web-Karte später per DevTools prüfen.
+- **Für chargeglobe:** Tarif netzweit → Tarifkatalog (`catalog/at/evn.json`); Status via E-Control, als Zweitquelle der anonyme Karten-Endpunkt des Portals.
 
 ### Wien Energie Tanke
 - > 3.000 öffentliche Ladestellen in/um Wien; Stadt Wien ~1.200 22-kW-Punkte im Straßenraum. Übernahme von ella (02/2026). Partner: SMATRICS, IONITY, ENIO. [V]
@@ -214,5 +225,5 @@ Abgleich der 40.868 aktiven Ladepunkte im Live-Bestand mit dem Katalog (50 Anbie
 1. E-Control: Key liegt vor, Adapter `ChargeGlobe.Providers.EControl` existiert ([Endpunkt-Notiz](endpunkte/econtrol.md)). Offen: Swagger ist auch mit Key nicht lesbar, Bulk-Endpunkt und Status-Aktualisierungsrate unbekannt; Operator-IDs aller Scope-Betreiber aus den Daten ziehen.
 2. Tarifkatalog aktuell halten (Stand je Tarif, Preisänderungen meist zum 1.1., 1.4., 1.7. und 1.10.); offene Lücken siehe „Tarife der Anbieter (Katalog 10/2026)“.
 3. Tesla-Adapter auf Basis der evmap-Endpunkte (cua-api + Guest-GraphQL) mit Fixtures.
-4. Netzwerkanalyse (DevTools) der Web-Karten: Electroverse, ÖAMTC, SMATRICS/ÖBB, Energie AG (CIRRANTiC), EnBW – jeweils Endpunkt-Notiz nach Vorlage in 05, Capabilities, ToS.
-5. Erst danach entscheiden, ob App-Analysen (Tier 2) überhaupt nötig sind; Kandidaten wären EVN Drive und Wien Energie Tanke, falls deren Web-Karten keine Preise je Ladepunkt liefern.
+4. Netzwerkanalyse (DevTools) der Web-Karten: Electroverse, SMATRICS/ÖBB, Energie AG (CIRRANTiC), EnBW – jeweils Endpunkt-Notiz nach Vorlage in 05, Capabilities, ToS.
+5. App-Endpunkte aus der Analyse vom 17.10.2026 (siehe „Aus der App-Analyse“): ToS bzw. Erlaubnis klären (EVN/e-vo für `emobilportal.at`, SMATRICS/Verbund für den POI-Dienst, ÖAMTC, IONITY), danach Adapter mit Fixtures bauen. Reihenfolge nach Nutzen: V-Go/SMATRICS (91.600 EVSEs mit Status), EVN-Portal (anonym, Status je EVSE), IONITY (Ad-hoc-Preis je Stecker), ÖAMTC (Stationspreise).
