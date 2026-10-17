@@ -29,7 +29,9 @@
                   "blockingFeePerMinute": 0.5,
                   "blockingAfterMinutes": 30,
                   "maxBlockingFee": 30,
-                  "blockingFrom": "CHARGING_END"
+                  "blockingFrom": "CHARGING_END",
+                  "blockingStartTime": "08:00",
+                  "blockingEndTime": "22:00"
                 },
                 {
                   "current": "DC",
@@ -83,7 +85,7 @@
               "notes": "Partnerladenetz: alle mit der Karte erreichbaren Stationen in AT, DE, IT, HR und SI."
             }
           ],
-          "notes": "Keine Blockiergebühr im EVN-Netz bis 3,7 kW und nachts 22–8 Uhr an 11/22 kW. Preisgarantie bis 31.12.2026.",
+          "notes": "Keine Blockiergebühr im EVN-Netz bis 3,7 kW. Preisgarantie bis 31.12.2026.",
           "sourceUrl": "https://www.evn.at/getmedia/3e64fd12-991e-4fe9-8529-118773d7c5c0/583_3_E-Mob-Ladetarife-Einzeln-fur-WEB_driveSmart_brutto.pdf",
           "sourceDate": "2026-07-01",
           "confidence": "HIGH",
@@ -111,7 +113,9 @@
                   "blockingFeePerMinute": 0.5,
                   "blockingAfterMinutes": 30,
                   "maxBlockingFee": 30,
-                  "blockingFrom": "CHARGING_END"
+                  "blockingFrom": "CHARGING_END",
+                  "blockingStartTime": "08:00",
+                  "blockingEndTime": "22:00"
                 },
                 {
                   "current": "DC",
@@ -134,7 +138,7 @@
               "notes": "Blockiergebühr ab 30 min nach Ladeende."
             }
           ],
-          "notes": "Nur an EVN-Ladestationen, kein Partnerladenetz. Keine Blockiergebühr im EVN-Netz bis 3,7 kW und nachts 22–8 Uhr an 11/22 kW. Preisgarantie bis 31.12.2026.",
+          "notes": "Nur an EVN-Ladestationen, kein Partnerladenetz. Keine Blockiergebühr im EVN-Netz bis 3,7 kW. Preisgarantie bis 31.12.2026.",
           "sourceUrl": "https://www.evn.at/getmedia/4f0a06d2-2333-4ee7-8e0d-5780c26fb76d/583_3_E-Mob-Ladetarife-Einzeln-fur-WEB_driveEasy_brutto.pdf",
           "sourceDate": "2026-07-01",
           "confidence": "HIGH",

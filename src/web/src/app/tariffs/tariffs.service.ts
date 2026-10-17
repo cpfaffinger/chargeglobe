@@ -18,6 +18,11 @@ export interface Network {
   name: string;
   country: string;
   operators: string[];
+  /** Hint about the prices of the network's charge points and the operator's page; null for none. */
+  priceNote?: string | null;
+  priceUrl?: string | null;
+  /** Number of sites with their own price page. */
+  sites?: number;
 }
 
 export type ZoneKind = 'OPERATOR' | 'HOME' | 'PARTNER' | 'ROAMING';

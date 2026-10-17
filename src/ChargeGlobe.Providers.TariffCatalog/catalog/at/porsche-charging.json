@@ -40,7 +40,10 @@
                   "current": "AC",
                   "pricePerKwh": 0.44,
                   "blockingFeePerMinute": 0.2,
-                  "blockingAfterMinutes": 360
+                  "blockingAfterMinutes": 360,
+                  "blockingStartTime": "08:00",
+                  "blockingEndTime": "00:00",
+                  "maxBlockingMinutes": 500
                 },
                 {
                   "current": "DC",
@@ -48,11 +51,10 @@
                   "blockingFeePerMinute": 0.2,
                   "blockingAfterMinutes": 60
                 }
-              ],
-              "notes": "AC-Blockiergebühr nur 8–24 Uhr, höchstens 500 Minuten."
+              ]
             }
           ],
-          "notes": null,
+          "notes": "Blockierregeln für AC (8–24 Uhr, höchstens 500 Minuten) gelten bis 31.12.2026.",
           "sourceUrl": "https://ask.porsche.com/at/de-AT/charging-service-price-list/",
           "sourceDate": "2026-10-10",
           "confidence": "HIGH",

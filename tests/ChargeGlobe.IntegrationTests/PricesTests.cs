@@ -178,6 +178,11 @@ public class PricesTests(IntegrationFactory factory) : IClassFixture<Integration
         Assert.NotEqual(Guid.Empty, own.GetProperty("tariffId").GetGuid());
         Assert.Equal(17.70m, available.GetProperty("data").GetProperty("current").GetProperty("price").GetProperty("exampleCost").GetDecimal());
 
+        // The hint of the network with the page of the site nearby; at the Ring the page of the network.
+        var note = available.GetProperty("data").GetProperty("priceNote");
+        Assert.Equal(("Preise je nach Tageszeit", "https://example.org/stephansplatz"), (note.GetProperty("text").GetString(), note.GetProperty("url").GetString()));
+        Assert.Equal("https://example.org/preise", (await PricesAsync(Fast)).GetProperty("data").GetProperty("priceNote").GetProperty("url").GetString());
+
         // DC: the DC prices, below the 300 kW stage of the roaming card.
         Assert.Equal([("own", "HOME", 15.00m), ("roam", "ROAMING", 19.00m), ("every", "HOME", 21.00m), ("flex", "ROAMING", 23.16m)], Emps(await PricesAsync(Fast)));
 

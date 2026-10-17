@@ -27,7 +27,9 @@
                   "current": "AC",
                   "pricePerKwh": 0.39,
                   "blockingFeePerMinute": 0.06,
-                  "blockingAfterMinutes": 180
+                  "blockingAfterMinutes": 180,
+                  "blockingStartTime": "09:00",
+                  "blockingEndTime": "19:00"
                 },
                 {
                   "current": "DC",
@@ -36,7 +38,7 @@
                   "blockingAfterMinutes": 60
                 }
               ],
-              "notes": "AC-Belegungsgebühr nur 9–19 Uhr, nicht an Stationen mit Parkgebühr."
+              "notes": "Keine AC-Belegungsgebühr an Stationen mit Parkgebühr."
             },
             {
               "kind": "PARTNER",

@@ -453,6 +453,7 @@ describe('EvseDetailPage with prices', () => {
     const rows = Array.from(page().querySelectorAll('#price-history tbody tr')).map((row) => text(row, 'td:nth-child(2)'));
     expect(rows).toEqual(['01.09.2026', 'heute']);
     expect(text(page(), '#price-history tbody tr:first-child td:nth-child(4)')).toBe('16,00 €');
+    expect(page().querySelector('#price-note')).toBeNull();
   });
 
   it('compares the ad-hoc price with the cards and marks the cheapest', async () => {
@@ -490,8 +491,11 @@ describe('EvseDetailPage with prices', () => {
   });
 
   it('says when no price is known or it could not be loaded', async () => {
-    await open(prices(null, []));
+    const response = prices(null, []);
+    response.data.priceNote = { text: 'Preis laut E-Control.', url: null };
+    await open(response);
     expect(text(page(), '#price-current')).toBe('Für diesen Ladepunkt ist kein Ad-hoc-Preis bekannt.');
+    expect(text(page(), '#price-note')).toBe('Preis laut E-Control.');
     expect(page().querySelector('#price-history')).toBeNull();
     expect(page().querySelector('#price-comparison')).toBeNull();
   });

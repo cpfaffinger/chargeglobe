@@ -30,7 +30,7 @@ public static class TariffsEndpoints
 
     private static readonly EmpView ExampleEmp = new("evn", "EVN", "https://www.evn.at", "AT", 2);
 
-    private static readonly NetworkView ExampleNetwork = new("wien-energie", "Wien Energie", "AT", ["AT*VES", "AT*VIE", "AT*VNA"]);
+    private static readonly NetworkView ExampleNetwork = new("wien-energie", "Wien Energie", "AT", ["AT*VES", "AT*VIE", "AT*VNA"], null, null, 0);
 
     private static readonly TariffView ExampleTariff = new(
         Guid.Parse("01990a3e-7c00-7a10-9b2c-3d4e5f6a7b8c"),
@@ -76,7 +76,9 @@ public static class TariffsEndpoints
             .WithDescription(
                 "Returns the networks by key: `operators` are the operator parts of the EVSE-IDs (country and party, e.g. " +
                 "`AT*EVN`) of the companies in the network. A network is one company with one or more operator IDs or a " +
-                "group of companies (a partner network). Zones of `listTariffs` name networks by `key`.")
+                "group of companies (a partner network). Zones of `listTariffs` name networks by `key`. `priceNote` and `priceUrl` " +
+                "describe the prices of the network's charge points where the register price is not enough (shown by " +
+                "`getEvsePrices`), `sites` counts its sites with their own price page.")
             .Produces<NetworksResponse>()
             .WithResponseExample(StatusCodes.Status200OK, new NetworksResponse([ExampleNetwork]));
 
@@ -118,7 +120,7 @@ public static class TariffsEndpoints
             .WithDescription(
                 "Takes the whole catalog of the tariff source `source` (key of 2 to 40 lower-case letters, digits or '-'; " +
                 "not `tariff-catalog`, the curated catalog of the repository) in the body: `networks[]` (`key`, `name`, " +
-                "`country`, `operators`) and `emps[]` (`key`, `name`, `website`, `country`, `tariffs[]` with `key`, `name`, " +
+                "`country`, `operators`, optional `priceNote`, `priceUrl`, `sites[]` with `name`, `latitude`, `longitude`, `url`) and `emps[]` (`key`, `name`, `website`, `country`, `tariffs[]` with `key`, `name`, " +
                 "`currency`, `monthlyFee`, `prerequisites`, `markets`, `zones[]`, `notes`, `sourceUrl`, `sourceDate`, " +
                 "`confidence`; zones as in `listTariffs`, `pricing` optional, default FIXED). Idempotent: an unchanged tariff stays, a changed one becomes a new " +
                 "version, a tariff of the source that is missing ends. The whole document is validated first; 422 lists " +

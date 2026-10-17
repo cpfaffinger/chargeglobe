@@ -214,6 +214,14 @@ const SHARE_MESSAGES: Record<ShareResult, string | null> = {
                   } @else {
                     <p id="price-current">Für diesen Ladepunkt ist kein Ad-hoc-Preis bekannt.</p>
                   }
+                  @if (pricing.priceNote; as note) {
+                    <p id="price-note" class="price-note">
+                      {{ note.text }}
+                      @if (note.url) {
+                        <a [href]="note.url" target="_blank" rel="noopener">Preise des Betreibers</a>
+                      }
+                    </p>
+                  }
                   @let rows = compare(pricing, cards.cards());
                   @if (rows.length > 0) {
                     <h3 id="comparison-title">Vergleich mit Ladekarten</h3>

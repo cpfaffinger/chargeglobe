@@ -221,6 +221,14 @@ type LoadState = 'loading' | 'error' | 'ready';
                     } @else {
                       <p class="price price-state">Kein Ad-hoc-Preis bekannt.</p>
                     }
+                    @if (pricing.priceNote; as note) {
+                      <p class="price-note">
+                        {{ note.text }}
+                        @if (note.url) {
+                          <a [href]="note.url" target="_blank" rel="noopener">Preise des Betreibers</a>
+                        }
+                      </p>
+                    }
                     @let own = ownCheapest(pricing);
                     @if (own) {
                       <p class="price own-card">

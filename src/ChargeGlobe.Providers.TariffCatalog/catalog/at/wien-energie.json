@@ -28,7 +28,9 @@
                   "pricePerKwh": 0.43,
                   "blockingFeePerMinute": 0.05,
                   "blockingAfterMinutes": 300,
-                  "maxBlockingFee": 25
+                  "maxBlockingFee": 25,
+                  "blockingStartTime": "08:00",
+                  "blockingEndTime": "22:00"
                 },
                 {
                   "current": "DC",
@@ -63,7 +65,7 @@
               "notes": "Partnernetz (Roaming): alle anderen Stationen mit Fremdkarten-Annahme."
             }
           ],
-          "notes": "Standzeitzuschlag nach 5 h (City/Spot), 12 h (Parking) bzw. 3 h (DC), nachts 22–8 Uhr an City/Spot frei. Die kWh-Preise werden am 1.4. und 1.10. angepasst.",
+          "notes": "Standzeitzuschlag nach 5 h (City/Spot), an Parking-Standorten nach 12 h und auch nachts. Die kWh-Preise werden am 1.4. und 1.10. angepasst.",
           "sourceUrl": "https://dokumente.wienenergie.at/link/tarifblatt-tanke-kwh-go-smart-pro/",
           "sourceDate": "2026-10-01",
           "confidence": "HIGH",
@@ -90,7 +92,9 @@
                   "pricePerKwh": 0.4,
                   "blockingFeePerMinute": 0.05,
                   "blockingAfterMinutes": 300,
-                  "maxBlockingFee": 25
+                  "maxBlockingFee": 25,
+                  "blockingStartTime": "08:00",
+                  "blockingEndTime": "22:00"
                 },
                 {
                   "current": "DC",
@@ -125,7 +129,7 @@
               "notes": "Partnernetz (Roaming): alle anderen Stationen mit Fremdkarten-Annahme."
             }
           ],
-          "notes": "Standzeitzuschlag nach 5 h (City/Spot), 12 h (Parking) bzw. 3 h (DC), nachts 22–8 Uhr an City/Spot frei. Die kWh-Preise werden am 1.4. und 1.10. angepasst.",
+          "notes": "Standzeitzuschlag nach 5 h (City/Spot), an Parking-Standorten nach 12 h und auch nachts. Die kWh-Preise werden am 1.4. und 1.10. angepasst.",
           "sourceUrl": "https://dokumente.wienenergie.at/link/tarifblatt-tanke-kwh-go-smart-pro/",
           "sourceDate": "2026-10-01",
           "confidence": "HIGH",
@@ -152,7 +156,9 @@
                   "pricePerKwh": 0.36,
                   "blockingFeePerMinute": 0.05,
                   "blockingAfterMinutes": 300,
-                  "maxBlockingFee": 25
+                  "maxBlockingFee": 25,
+                  "blockingStartTime": "08:00",
+                  "blockingEndTime": "22:00"
                 },
                 {
                   "current": "DC",
@@ -187,7 +193,7 @@
               "notes": "Partnernetz (Roaming): alle anderen Stationen mit Fremdkarten-Annahme."
             }
           ],
-          "notes": "Standzeitzuschlag nach 5 h (City/Spot), 12 h (Parking) bzw. 3 h (DC), nachts 22–8 Uhr an City/Spot frei. Die kWh-Preise werden am 1.4. und 1.10. angepasst.",
+          "notes": "Standzeitzuschlag nach 5 h (City/Spot), an Parking-Standorten nach 12 h und auch nachts. Die kWh-Preise werden am 1.4. und 1.10. angepasst.",
           "sourceUrl": "https://dokumente.wienenergie.at/link/tarifblatt-tanke-kwh-go-smart-pro/",
           "sourceDate": "2026-10-01",
           "confidence": "HIGH",

@@ -141,13 +141,19 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             .ThenBy(row => row.Plan.Name, StringComparer.Ordinal)
             .Select(row => new EmpUnavailable(row.Key, row.Name, row.Plan.Key, row.Plan.Name))
             .ToList();
+        var noteNetwork = catalog.Notes.FirstOrDefault(network => evse.OperatorId is { } id && network.Operators.Contains(id));
+        var note = noteNetwork is null
+            ? null
+            : new PriceNote(noteNetwork.PriceNote!, noteNetwork.PriceUrlNear(
+                await db.Locations.Where(location => location.Id == evse.LocationId).Select(location => (GeoPoint?)location.Coordinates).SingleAsync(cancellationToken)));
         return new EvsePrices(
             example,
             current is null ? null : new CurrentPrice(View(current.SourceKey, current.Components, example, catalog.LocalTime), current.Since, current.ObservedAt),
             history,
             prices,
             unavailable,
-            [.. unknown.Select(item => new EmpPriceUnknown(item.Key, item.Name, item.Plan.Key, item.Plan.Name, item.Zone.ToString()))]);
+            [.. unknown.Select(item => new EmpPriceUnknown(item.Key, item.Name, item.Plan.Key, item.Plan.Name, item.Zone.ToString()))],
+            note);
     }
     public async Task<LocationPricesPage> LocationPricesAsync(
         IReadOnlyList<Guid> locationIds, decimal? kwh, int? minutes, IReadOnlyCollection<string>? cards, CancellationToken cancellationToken)
@@ -216,7 +222,9 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
 
     /// <summary>The current tariff versions with their EMP and the operators of every network; few rows, used in memory.</summary>
     /// <param name="LocalTime">Now in Europe/Vienna: the start of the example session for prices with a time window or weekdays.</param>
-    private sealed record CurrentCatalog(IReadOnlyList<PlanRow> Plans, IReadOnlyDictionary<string, IReadOnlyCollection<string>> Networks, DateTime LocalTime)
+    /// <param name="Notes">The networks with a price hint.</param>
+    private sealed record CurrentCatalog(
+        IReadOnlyList<PlanRow> Plans, IReadOnlyDictionary<string, IReadOnlyCollection<string>> Networks, DateTime LocalTime, IReadOnlyList<ChargingNetwork> Notes)
     {
         public IReadOnlyCollection<string> Members(string network) => Networks.GetValueOrDefault(network) ?? [];
     }
@@ -247,9 +255,12 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             .Where(plan => plan.ValidFrom <= now && (plan.ValidTo == null || plan.ValidTo > now))
             .Join(db.Emps, plan => plan.EmpId, emp => emp.Id, (plan, emp) => new PlanRow(plan, emp.Key, emp.Name))
             .ToListAsync(cancellationToken);
-        var networks = await db.ChargingNetworks.AsNoTracking().ToDictionaryAsync(
-            network => network.Key, network => (IReadOnlyCollection<string>)network.Operators, cancellationToken);
-        return new CurrentCatalog(plans, networks, TimeZoneInfo.ConvertTime(now, Vienna).DateTime);
+        var all = await db.ChargingNetworks.AsNoTracking().ToListAsync(cancellationToken);
+        return new CurrentCatalog(
+            plans,
+            all.ToDictionary(network => network.Key, network => (IReadOnlyCollection<string>)network.Operators),
+            TimeZoneInfo.ConvertTime(now, Vienna).DateTime,
+            [.. all.Where(network => network.PriceNote is not null)]);
     }
 
     /// <summary>

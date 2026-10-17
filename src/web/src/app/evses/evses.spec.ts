@@ -860,6 +860,7 @@ describe('LocationDetails with prices', () => {
     http.expectOne('/api/v1/locations/loc-1').flush({ data: { park: [], location: locationSummary(), evses: [evse()] }, meta: { attribution: [] } });
     await settle();
     const response = prices(null, [card('own', 'HOME', 9, 4.9), { ...card('roam', 'ROAMING', 13, null), pricing: 'OPERATOR_AD_HOC' }]);
+    response.data.priceNote = { text: 'Preis laut E-Control; Tesla verlangt je nach Tageszeit abweichende Preise.', url: 'https://example.org/site' };
     response.data.priceUnknown = [{ emp: 'plugsurfing', empName: 'Plugsurfing', tariffKey: 'pay-per-use', tariff: 'Plugsurfing', zone: 'ROAMING' }];
     response.data.unavailable = [
       { emp: 'tesla', empName: 'Tesla', tariffKey: 'supercharging', tariff: 'Supercharging' },
@@ -876,6 +877,8 @@ describe('LocationDetails with prices', () => {
     ]);
     expect(rows[0].querySelector('.zone-home')).not.toBeNull();
     expect(text(root(), '.unavailable')).toBe('Hier nicht nutzbar: Tesla · Supercharging, EVN · #Drive Easy');
+    expect(text(root(), '.price-note')).toBe('Preis laut E-Control; Tesla verlangt je nach Tageszeit abweichende Preise. Preise des Betreibers');
+    expect(root().querySelector<HTMLAnchorElement>('.price-note a')!.href).toBe('https://example.org/site');
     expect(text(root(), '.price-unknown')).toBe('Nutzbar, Preis hier unbekannt: Plugsurfing · Plugsurfing');
   });
 

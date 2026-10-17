@@ -212,5 +212,25 @@ public class TariffTests
         Assert.Equal((new TimeOnly(8, 0), new TimeOnly(23, 0), 500), (components.BlockingStartTime!.Value, components.BlockingEndTime!.Value, components.BlockingMaxMinutes!.Value));
     }
 
+    [Fact]
+    public void A_charge_point_links_the_price_page_of_the_site_nearby()
+    {
+        var network = ChargingNetwork.Create("tesla", "Tesla", "AT", ["AT*TSL"], "tariff-catalog");
+        Assert.Null(network.PriceUrlNear(new GeoPoint(48.2, 16.3)));
+        network.SetPriceNote(" Preise je Tageszeit ", " https://example.org/all ", [
+            new NetworkSite("Wienerberg", 48.17, 16.35, "https://example.org/wienerberg"),
+            new NetworkSite("Parndorf", 47.99, 16.86, "https://example.org/parndorf"),
+        ]);
+
+        Assert.Equal(("Preise je Tageszeit", "https://example.org/all", 2), (network.PriceNote, network.PriceUrl, network.Sites.Count));
+        Assert.Equal("https://example.org/wienerberg", network.PriceUrlNear(new GeoPoint(48.1705, 16.3505)));
+        Assert.Equal("https://example.org/all", network.PriceUrlNear(new GeoPoint(48.18, 16.35)));
+        Assert.Equal("https://example.org/all", network.PriceUrlNear(null));
+        Assert.InRange(network.Sites[0].MetersTo(new GeoPoint(48.18, 16.35)), 1100, 1125);
+
+        network.SetPriceNote(" ", null, []);
+        Assert.Equal((null, null, 0), (network.PriceNote, network.PriceUrl, network.Sites.Count));
+    }
+
     private static (TariffZoneKind, decimal?) Of(TariffMatch? match) => (match!.Zone.Kind, match.Price!.PricePerKwh);
 }

@@ -51,16 +51,21 @@
               "prices": [
                 {
                   "current": "AC",
-                  "pricePerKwh": 0.51
+                  "pricePerKwh": 0.51,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 60,
+                  "blockingStartTime": "06:00",
+                  "blockingEndTime": "22:00"
                 },
                 {
                   "current": "DC",
                   "pricePerKwh": 0.51,
                   "blockingFeePerMinute": 0.1,
-                  "blockingAfterMinutes": 60
+                  "blockingAfterMinutes": 60,
+                  "blockingStartTime": "06:00",
+                  "blockingEndTime": "22:00"
                 }
-              ],
-              "notes": "Keine Blockiergebühr 22–6 Uhr."
+              ]
             },
             {
               "kind": "ROAMING",
@@ -96,16 +101,21 @@
               "prices": [
                 {
                   "current": "AC",
-                  "pricePerKwh": 0.41
+                  "pricePerKwh": 0.41,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 60,
+                  "blockingStartTime": "06:00",
+                  "blockingEndTime": "22:00"
                 },
                 {
                   "current": "DC",
                   "pricePerKwh": 0.41,
                   "blockingFeePerMinute": 0.1,
-                  "blockingAfterMinutes": 60
+                  "blockingAfterMinutes": 60,
+                  "blockingStartTime": "06:00",
+                  "blockingEndTime": "22:00"
                 }
-              ],
-              "notes": "Keine Blockiergebühr 22–6 Uhr."
+              ]
             },
             {
               "kind": "ROAMING",
@@ -157,7 +167,9 @@
                   "current": "AC",
                   "pricePerKwh": 0.59,
                   "blockingFeePerMinute": 0.07,
-                  "blockingAfterMinutes": 210
+                  "blockingAfterMinutes": 210,
+                  "blockingStartTime": "08:00",
+                  "blockingEndTime": "23:00"
                 },
                 {
                   "current": "DC",
@@ -178,7 +190,9 @@
                   "current": "AC",
                   "pricePerKwh": 0.69,
                   "blockingFeePerMinute": 0.07,
-                  "blockingAfterMinutes": 210
+                  "blockingAfterMinutes": 210,
+                  "blockingStartTime": "08:00",
+                  "blockingEndTime": "23:00"
                 },
                 {
                   "current": "DC",
@@ -189,7 +203,7 @@
               ]
             }
           ],
-          "notes": "AC-Blockiergebühr nicht 23–8 Uhr.",
+          "notes": null,
           "sourceUrl": "https://tariffcalculator.skoda-auto.com/439/de-AT",
           "sourceDate": null,
           "confidence": "MEDIUM",

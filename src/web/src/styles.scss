@@ -1971,3 +1971,9 @@ app-admin-tariffs .stale {
 app-admin-tariffs .stale-summary {
   color: var(--mat-sys-error);
 }
+
+.price-note {
+  margin: 2px 0;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-small);
+}

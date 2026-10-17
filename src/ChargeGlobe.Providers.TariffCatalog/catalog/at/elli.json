@@ -54,10 +54,11 @@
                   "current": "DC",
                   "pricePerKwh": 0.51,
                   "blockingFeePerMinute": 0.1,
-                  "blockingAfterMinutes": 60
+                  "blockingAfterMinutes": 60,
+                  "blockingStartTime": "06:00",
+                  "blockingEndTime": "22:00"
                 }
-              ],
-              "notes": "Blockiergebühr nur 6–22 Uhr."
+              ]
             },
             {
               "kind": "ROAMING",
@@ -96,10 +97,11 @@
                   "current": "DC",
                   "pricePerKwh": 0.41,
                   "blockingFeePerMinute": 0.1,
-                  "blockingAfterMinutes": 60
+                  "blockingAfterMinutes": 60,
+                  "blockingStartTime": "06:00",
+                  "blockingEndTime": "22:00"
                 }
-              ],
-              "notes": "Blockiergebühr nur 6–22 Uhr."
+              ]
             },
             {
               "kind": "ROAMING",
@@ -152,7 +154,9 @@
                   "current": "AC",
                   "pricePerKwh": 0.59,
                   "blockingFeePerMinute": 0.07,
-                  "blockingAfterMinutes": 210
+                  "blockingAfterMinutes": 210,
+                  "blockingStartTime": "08:00",
+                  "blockingEndTime": "23:00"
                 },
                 {
                   "current": "DC",
@@ -173,7 +177,9 @@
                   "current": "AC",
                   "pricePerKwh": 0.69,
                   "blockingFeePerMinute": 0.07,
-                  "blockingAfterMinutes": 210
+                  "blockingAfterMinutes": 210,
+                  "blockingStartTime": "08:00",
+                  "blockingEndTime": "23:00"
                 },
                 {
                   "current": "DC",
@@ -184,9 +190,9 @@
               ]
             }
           ],
-          "notes": "AC-Blockiergebühr nur 8–23 Uhr.",
+          "notes": null,
           "sourceUrl": "https://www.elli.eco/de/privatkunden/produkte/ladetarife?country=AT",
-          "sourceDate": null,
+          "sourceDate": "2026-07-03",
           "confidence": "MEDIUM",
           "checkedOn": "2026-10-17"
         }

@@ -53,9 +53,21 @@ public static class TestTariffs
         Emp("secret", null, new { kind = "ROAMING", pricing = "UNKNOWN" }),
     ];
 
+    /// <summary>The network of TST with a price hint and a site at Stephansplatz (the Ring, 900 m away, gets the network's page).</summary>
+    public static readonly object Network = new
+    {
+        key = "test-network",
+        name = "Test Network",
+        country = "AT",
+        operators = new[] { "AT*TST" },
+        priceNote = "Preise je nach Tageszeit",
+        priceUrl = "https://example.org/preise",
+        sites = new[] { new { name = "Stephansplatz", latitude = 48.2086, longitude = 16.3732, url = "https://example.org/stephansplatz" } },
+    };
+
     public static async Task ImportAsync(HttpClient admin, string source, object[] emps, object[]? networks = null)
     {
-        var response = await admin.PutAsJsonAsync($"/api/v1/tariff-sources/{source}/catalog", new { networks = networks ?? [new { key = "test-network", name = "Test Network", country = "AT", operators = new[] { "AT*TST" } }], emps });
+        var response = await admin.PutAsJsonAsync($"/api/v1/tariff-sources/{source}/catalog", new { networks = networks ?? [Network], emps });
         Assert.True(response.StatusCode == HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
     }
 }
