@@ -167,6 +167,14 @@ public class TariffCatalogServiceTests
         Assert.Equal((null, 0.59m), (Match("charge-myhyundai", "smart", "DE*ION")!.Zone.MarkupPercent, Match("charge-myhyundai", "smart", "DE*ION")!.Zone.MarkupSessionFee));
         Assert.Equal((TariffZoneKind.OPERATOR, 0.42m), Of(Match("elli", "ionity-ultra", "DE*IOY", TariffCurrent.DC, 350)));
         Assert.Equal(TariffPricing.UNKNOWN, Match("audi-charging", "pro", "IT*ENX", TariffCurrent.DC, 150)!.Zone.Pricing);
+        // Porsche by country of charging, its base tariff; Mobilize IONITY per country; CUPRA without Austrian prices.
+        Assert.Equal((TariffZoneKind.ROAMING, 0.59m), Of(Match("porsche-charging", "plus", "DE*ION", TariffCurrent.DC, 150)));
+        Assert.Equal((TariffZoneKind.OPERATOR, 0.39m), Of(Match("porsche-charging", "plus", "IT*IOY", TariffCurrent.DC, 350)));
+        Assert.Equal((TariffZoneKind.ROAMING, 0.59m), Of(Match("porsche-charging", "service", "AT*VIE")));
+        Assert.Equal(TariffPricing.UNKNOWN, Match("porsche-charging", "service", "CZ*PRE")!.Zone.Pricing);
+        Assert.Equal((TariffZoneKind.OPERATOR, 0.54m), Of(Match("mobilize-charge-pass", "intense", "IT*IOY", TariffCurrent.DC, 350)));
+        Assert.Equal((TariffZoneKind.OPERATOR, 0.784m), Of(Match("mobilize-charge-pass", "basic", "AT*IOY", TariffCurrent.DC, 350)));
+        Assert.Equal(TariffPricing.UNKNOWN, Match("cupra-charging", "ionity-pro", "AT*IOY", TariffCurrent.DC, 350)!.Zone.Pricing);
     }
 
     private static async Task WaitUntilAsync(Func<bool> condition, string expectation)

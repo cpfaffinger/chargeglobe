@@ -18,19 +18,6 @@
           ],
           "zones": [
             {
-              "kind": "OPERATOR",
-              "networks": [
-                "ionity"
-              ],
-              "prices": [
-                {
-                  "current": "DC",
-                  "pricePerKwh": 0.39
-                }
-              ],
-              "notes": "Preferred: IONITY, Porsche-Standorte; ohne Blockiergebühr."
-            },
-            {
               "kind": "ROAMING",
               "excludedNetworks": [
                 "tesla"
@@ -51,10 +38,1251 @@
                   "blockingFeePerMinute": 0.2,
                   "blockingAfterMinutes": 60
                 }
+              ],
+              "countries": [
+                "AT"
               ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39
+                }
+              ],
+              "notes": "Preferred: IONITY, Porsche-Standorte; ohne Blockiergebühr.",
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.39,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 360
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.59,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "BE"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39
+                }
+              ],
+              "notes": "Preferred: IONITY, Porsche-Standorte; ohne Blockiergebühr.",
+              "countries": [
+                "BE"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.3,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 360
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.46,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "BG"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.4
+                }
+              ],
+              "notes": "Preferred: IONITY, Porsche-Standorte; ohne Blockiergebühr.",
+              "countries": [
+                "BG"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.44,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 360
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.64,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "CY"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39
+                }
+              ],
+              "notes": "Preferred: IONITY, Porsche-Standorte; ohne Blockiergebühr.",
+              "countries": [
+                "CY"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.44,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 360
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.59,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "DE"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39
+                }
+              ],
+              "notes": "Preferred: IONITY, Porsche-Standorte; ohne Blockiergebühr.",
+              "countries": [
+                "DE"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.39,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 360
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.59,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "EE"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39
+                }
+              ],
+              "notes": "Preferred: IONITY, Porsche-Standorte; ohne Blockiergebühr.",
+              "countries": [
+                "EE"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.24,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 360
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.44,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "ES"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39
+                }
+              ],
+              "notes": "Preferred: IONITY, Porsche-Standorte; ohne Blockiergebühr.",
+              "countries": [
+                "ES"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.29,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 360
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.49,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "FI"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39
+                }
+              ],
+              "notes": "Preferred: IONITY, Porsche-Standorte; ohne Blockiergebühr.",
+              "countries": [
+                "FI"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.19,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 360
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.44,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "FR"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39
+                }
+              ],
+              "notes": "Preferred: IONITY, Porsche-Standorte; ohne Blockiergebühr.",
+              "countries": [
+                "FR"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.34,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 360
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.54,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "HR"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39
+                }
+              ],
+              "notes": "Preferred: IONITY, Porsche-Standorte; ohne Blockiergebühr.",
+              "countries": [
+                "HR"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.64,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 360
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.84,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "IE"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39
+                }
+              ],
+              "notes": "Preferred: IONITY, Porsche-Standorte; ohne Blockiergebühr.",
+              "countries": [
+                "IE"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.49,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 360
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.69,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "IT"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39
+                }
+              ],
+              "notes": "Preferred: IONITY, Porsche-Standorte; ohne Blockiergebühr.",
+              "countries": [
+                "IT"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.19,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 360
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.44,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "LT"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39
+                }
+              ],
+              "notes": "Preferred: IONITY, Porsche-Standorte; ohne Blockiergebühr.",
+              "countries": [
+                "LT"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.39,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 360
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.59,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "LU"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39
+                }
+              ],
+              "notes": "Preferred: IONITY, Porsche-Standorte; ohne Blockiergebühr.",
+              "countries": [
+                "LU"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.39,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 360
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.59,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "LV"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39
+                }
+              ],
+              "notes": "Preferred: IONITY, Porsche-Standorte; ohne Blockiergebühr.",
+              "countries": [
+                "LV"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.39,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 360
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.59,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "NL"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39
+                }
+              ],
+              "notes": "Preferred: IONITY, Porsche-Standorte; ohne Blockiergebühr.",
+              "countries": [
+                "NL"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.19,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 360
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.44,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "PT"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39
+                }
+              ],
+              "notes": "Preferred: IONITY, Porsche-Standorte; ohne Blockiergebühr.",
+              "countries": [
+                "PT"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.39,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 360
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.59,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "SI"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39
+                }
+              ],
+              "notes": "Preferred: IONITY, Porsche-Standorte; ohne Blockiergebühr.",
+              "countries": [
+                "SI"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.39,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 360
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.59,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "SK"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39
+                }
+              ],
+              "notes": "Preferred: IONITY, Porsche-Standorte; ohne Blockiergebühr.",
+              "countries": [
+                "SK"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Länder mit anderer Währung (CH, CZ, DK, GB, HU, NO, PL, RO, SE): Preise in Landeswährung, nicht abgebildet.",
+              "pricing": "UNKNOWN"
             }
           ],
-          "notes": "Blockierregeln für AC (8–24 Uhr, höchstens 500 Minuten) gelten bis 31.12.2026.",
+          "notes": "Preise je Land der Ladestation. Blockierregeln für AC in Österreich (8–24 Uhr, höchstens 500 Minuten) gelten bis 31.12.2026.",
+          "sourceUrl": "https://ask.porsche.com/at/de-AT/charging-service-price-list/",
+          "sourceDate": "2026-10-10",
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
+        },
+        {
+          "key": "service",
+          "name": "Porsche Charging Service",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Porsche-Elektro- oder Hybridfahrzeug, ohne Grundgebühr.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.59,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.79,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.49
+                }
+              ],
+              "notes": "Preferred: IONITY, Porsche-Standorte; ohne Blockiergebühr.",
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.49,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.69,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "BE"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.46,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.61,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "BG"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.59,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.79,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "CY"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.54,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.74,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "DE"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.49
+                }
+              ],
+              "notes": "Preferred: IONITY, Porsche-Standorte; ohne Blockiergebühr.",
+              "countries": [
+                "DE"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.54,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.74,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "EE"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.39,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.59,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "ES"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.49,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.69,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "FI"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.34,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.54,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "FR"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.54,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.74,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "HR"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.79,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.99,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "IE"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.69,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.89,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "IT"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.49
+                }
+              ],
+              "notes": "Preferred: IONITY, Porsche-Standorte; ohne Blockiergebühr.",
+              "countries": [
+                "IT"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.39,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.59,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "LT"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.59,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.79,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "LU"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.54,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.74,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "LV"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.54,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.74,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "NL"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.34,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.54,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "PT"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.59,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.79,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "SI"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.59,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.79,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "countries": [
+                "SK"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Länder mit anderer Währung (CH, CZ, DK, GB, HU, NO, PL, RO, SE): Preise in Landeswährung, nicht abgebildet.",
+              "pricing": "UNKNOWN"
+            }
+          ],
+          "notes": "Preise je Land der Ladestation; Blockiergebühr AC ab der 241., DC ab der 61. Minute.",
           "sourceUrl": "https://ask.porsche.com/at/de-AT/charging-service-price-list/",
           "sourceDate": "2026-10-10",
           "confidence": "HIGH",
