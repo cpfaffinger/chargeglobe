@@ -81,13 +81,15 @@ public class PricesTests(IntegrationFactory factory) : IClassFixture<Integration
     private static decimal Number(JsonElement element, string name) => element.GetProperty(name).GetDecimal();
 
     [Fact]
-    public async Task The_ad_hoc_price_comes_with_the_cost_of_30_kWh_in_40_minutes()
+    public async Task The_ad_hoc_price_comes_with_the_cost_of_30_kWh_as_long_as_it_takes_at_the_EVSE()
     {
         var body = await PricesAsync(Available);
 
         var data = body.GetProperty("data");
         Assert.Equal((Available, "AD_HOC"), (data.GetProperty("evseId").GetString(), data.GetProperty("tariffKind").GetString()));
-        Assert.Equal((30m, 40), (Number(data.GetProperty("example"), "kwh"), data.GetProperty("example").GetProperty("minutes").GetInt32()));
+        // 22 kW AC, limited by the 11 kW of the example car: 30 kWh in 164 minutes.
+        var example = data.GetProperty("example");
+        Assert.Equal((30m, 164, 11m, "VEHICLE"), (Number(example, "kwh"), example.GetProperty("minutes").GetInt32(), Number(example, "powerKw"), example.GetProperty("basis").GetString()));
         var current = data.GetProperty("current");
         var price = current.GetProperty("price");
         Assert.Equal(("econtrol", "EUR", false), (price.GetProperty("source").GetString(), price.GetProperty("currency").GetString(), price.GetProperty("freeOfCharge").GetBoolean()));
@@ -100,8 +102,10 @@ public class PricesTests(IntegrationFactory factory) : IClassFixture<Integration
         Assert.Equal(JsonValueKind.Null, period.GetProperty("to").ValueKind);
         Assert.Equal("Datenquelle: Ladestellenverzeichnis der E-Control (ladestellen.at)", body.GetProperty("meta").GetProperty("attribution")[0].GetProperty("text").GetString());
 
-        // Fee, energy, time; blocking from minute 45 does not apply to 40 minutes.
-        Assert.Equal(20.70m, Number((await PricesAsync(Fast)).GetProperty("data").GetProperty("current").GetProperty("price"), "exampleCost"));
+        // 150 kW DC: 30 / 150 h × 1.3 = 16 minutes; blocking from minute 45 does not apply.
+        var fast = (await PricesAsync(Fast)).GetProperty("data");
+        Assert.Equal(16, fast.GetProperty("example").GetProperty("minutes").GetInt32());
+        Assert.Equal(20.70m, Number(fast.GetProperty("current").GetProperty("price"), "exampleCost"));
     }
 
     [Fact]
@@ -113,8 +117,8 @@ public class PricesTests(IntegrationFactory factory) : IClassFixture<Integration
         Assert.Equal([0.59m, 0.69m], history.Select(period => Number(period.GetProperty("price"), "pricePerKwh")));
         Assert.Equal(history[1].GetProperty("from").GetDateTimeOffset(), history[0].GetProperty("to").GetDateTimeOffset());
         Assert.Equal(JsonValueKind.Null, history[1].GetProperty("to").ValueKind);
-        // 0.50 + 30 × 0.69 + 40 × 0.02
-        Assert.Equal(22.00m, Number(data.GetProperty("current").GetProperty("price"), "exampleCost"));
+        // 0.50 + 30 × 0.69 + 164 × 0.02
+        Assert.Equal(24.48m, Number(data.GetProperty("current").GetProperty("price"), "exampleCost"));
         var observations = await factory.WithDbAsync(db => db.PriceObservations.CountAsync());
         Assert.Equal(5, observations);
 
@@ -130,6 +134,9 @@ public class PricesTests(IntegrationFactory factory) : IClassFixture<Integration
 
         var free = (await PricesAsync(surrogate.ToString())).GetProperty("data").GetProperty("current").GetProperty("price");
         Assert.True(free.GetProperty("freeOfCharge").GetBoolean());
+        // 3.7 kW: the EVSE limits, 30 kWh take 487 minutes.
+        var slow = (await PricesAsync(surrogate.ToString())).GetProperty("data").GetProperty("example");
+        Assert.Equal((487, 3.7m, "EVSE"), (slow.GetProperty("minutes").GetInt32(), Number(slow, "powerKw"), slow.GetProperty("basis").GetString()));
         Assert.Equal(0m, Number(free, "exampleCost"));
 
         var location = await factory.WithDbAsync(db => db.Locations.Select(item => item.Id).FirstAsync());

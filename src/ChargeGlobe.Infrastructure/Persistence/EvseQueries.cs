@@ -114,6 +114,8 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             .Where(price => price.EvseId == id && price.TariffKind == TariffKind.AD_HOC)
             .OrderByDescending(price => price.ObservedAt)
             .FirstOrDefaultAsync(cancellationToken);
+        var evse = await TariffTargets(db.Evses.Where(item => item.Id == id)).SingleAsync(cancellationToken);
+        var example = PriceScenario.From(config).At(evse.Current, evse.MaxPowerKw);
         // Prices change rarely: all observations of the EVSE, turned into periods per source.
         var observations = await db.PriceObservations.AsNoTracking()
             .Where(observation => observation.EvseId == id && observation.TariffKind == TariffKind.AD_HOC)
@@ -125,14 +127,13 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             {
                 var list = source.ToList();
                 return list.Select((observation, index) => new PricePeriod(
-                    View(observation.SourceKey, observation.Components), observation.Time, index + 1 < list.Count ? list[index + 1].Time : null));
+                    View(observation.SourceKey, observation.Components, example), observation.Time, index + 1 < list.Count ? list[index + 1].Time : null));
             })
             .Where(period => period.From < to && (period.To is null || period.To > from))
             .OrderBy(period => period.From)
             .ToList();
-        var evse = await TariffTargets(db.Evses.Where(item => item.Id == id)).SingleAsync(cancellationToken);
         var catalog = await CurrentCatalogAsync(cancellationToken);
-        var prices = EmpPrices(catalog, evse, PriceExample.Kwh, PriceExample.Minutes).ToList();
+        var prices = EmpPrices(catalog, evse, example).ToList();
         var unavailable = catalog.Plans
             .Where(row => prices.All(price => price.TariffId != row.Plan.Id))
             .OrderBy(row => row.Name, StringComparer.Ordinal)
@@ -140,15 +141,19 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             .Select(row => new EmpUnavailable(row.Key, row.Name, row.Plan.Key, row.Plan.Name))
             .ToList();
         return new EvsePrices(
-            current is null ? null : new CurrentPrice(View(current.SourceKey, current.Components), current.Since, current.ObservedAt),
+            example,
+            current is null ? null : new CurrentPrice(View(current.SourceKey, current.Components, example), current.Since, current.ObservedAt),
             history,
             prices,
             unavailable);
     }
     public async Task<LocationPricesPage> LocationPricesAsync(
-        IReadOnlyList<Guid> locationIds, decimal kwh, int minutes, IReadOnlyCollection<string>? cards, CancellationToken cancellationToken)
+        IReadOnlyList<Guid> locationIds, decimal? kwh, int? minutes, IReadOnlyCollection<string>? cards, CancellationToken cancellationToken)
     {
         var ids = locationIds.Distinct().ToList();
+        var scenario = PriceScenario.From(config);
+        scenario = scenario with { Kwh = kwh ?? scenario.Kwh };
+        SessionExample Session(TariffTarget evse) => minutes is { } given ? SessionExample.Requested(scenario.Kwh, given) : scenario.At(evse.Current, evse.MaxPowerKw);
         // Three batch queries for all locations: their EVSEs, the ad-hoc prices of these, the tariffs valid now.
         var evses = await TariffTargets(db.Evses.Where(evse => ids.Contains(evse.LocationId) && evse.Lifecycle == Lifecycle.ACTIVE))
             .ToListAsync(cancellationToken);
@@ -168,16 +173,18 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             var here = byLocation[id].OrderBy(evse => evse.EvseId, StringComparer.Ordinal).ToList();
             var cheapestAdHoc = here
                 .Where(evse => adHoc.ContainsKey(evse.Id))
-                .Select(evse => (evse.EvseId, Price: adHoc[evse.Id].Components))
-                .Select(item => new LocationAdHocPrice(item.Price.CostOf(kwh, minutes), item.Price.Currency, item.EvseId))
+                .Select(evse => (evse.EvseId, Price: adHoc[evse.Id].Components, Session: Session(evse)))
+                .Select(item => new LocationAdHocPrice(item.Price.CostOf(item.Session.Kwh, item.Session.Minutes), item.Price.Currency, item.EvseId, item.Session.Minutes))
                 .OrderBy(price => price.Cost)
                 .FirstOrDefault();
             var cheapestCard = here
-                .Select(evse => (evse.EvseId, Card: EmpPrices(tariffs, evse, kwh, minutes).FirstOrDefault()))
+                .Select(evse => (evse.EvseId, Session: Session(evse), Evse: evse))
+                .Select(item => (item.EvseId, item.Session, Card: EmpPrices(tariffs, item.Evse, item.Session).FirstOrDefault()))
                 .Where(item => item.Card is not null)
                 .OrderBy(item => item.Card!.Price.ExampleCost)
                 .Select(item => new LocationCardPrice(
-                    item.Card!.Emp, item.Card.EmpName, item.Card.TariffId, item.Card.Tariff, item.Card.Price.ExampleCost, item.Card.Price.Currency, item.EvseId))
+                    item.Card!.Emp, item.Card.EmpName, item.Card.TariffId, item.Card.Tariff, item.Card.Price.ExampleCost, item.Card.Price.Currency, item.EvseId,
+                    item.Session.Minutes))
                 .FirstOrDefault();
             return new LocationPrices(id, cheapestAdHoc, cheapestCard);
         }).ToList();
@@ -188,7 +195,7 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             .OrderBy(source => source.Key)
             .Select(source => new SourceAttribution(source.Key, source.AttributionText, source.License))
             .ToListAsync(cancellationToken);
-        return new LocationPricesPage(locations, attribution);
+        return new LocationPricesPage(scenario.Kwh, locations, attribution);
     }
 
     /// <summary>What decides which tariffs apply at an EVSE and with which price element.</summary>
@@ -244,7 +251,7 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
     /// partner network, roaming if the EVSE accepts other cards) and the price element for its current and power,
     /// cheapest session first.
     /// </summary>
-    private static IEnumerable<EmpPrice> EmpPrices(CurrentCatalog catalog, TariffTarget evse, decimal kwh, int minutes) =>
+    private static IEnumerable<EmpPrice> EmpPrices(CurrentCatalog catalog, TariffTarget evse, SessionExample example) =>
         catalog.Plans
             .Select(row => (Row: row, Match: row.Plan.MatchAt(evse.OperatorId, evse.Roaming, evse.Current, evse.MaxPowerKw, catalog.Members)))
             .Where(item => item.Match is not null)
@@ -256,7 +263,7 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
                 item.Row.Plan.Name,
                 item.Match!.Zone.Kind.ToString(),
                 item.Row.Plan.MonthlyFee,
-                View($"emp:{item.Row.Key}", item.Match.Price.Components(item.Row.Plan.Currency), kwh, minutes),
+                View($"emp:{item.Row.Key}", item.Match.Price.Components(item.Row.Plan.Currency), example),
                 item.Row.Plan.SourceUrl,
                 item.Row.Plan.SourceDate,
                 item.Row.Plan.Confidence.ToString()))
@@ -264,9 +271,9 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             .ThenBy(price => price.EmpName, StringComparer.Ordinal)
             .ThenBy(price => price.Tariff, StringComparer.Ordinal);
 
-    private static PriceView View(string source, PriceComponents price, decimal kwh = PriceExample.Kwh, int minutes = PriceExample.Minutes) =>
+    private static PriceView View(string source, PriceComponents price, SessionExample example) =>
         new(source, price.Currency, price.PricePerKwh, price.PricePerMinute, price.SessionFee, price.BlockingFeePerMinute,
-            price.BlockingAfterMinutes, price.FreeOfCharge, price.CostOf(kwh, minutes));
+            price.BlockingAfterMinutes, price.FreeOfCharge, price.CostOf(example.Kwh, example.Minutes));
 
     public async Task<IReadOnlyList<StatusInterval>> StatusHistoryAsync(
         Guid id, DateTimeOffset from, DateTimeOffset to, string? source, CancellationToken cancellationToken)

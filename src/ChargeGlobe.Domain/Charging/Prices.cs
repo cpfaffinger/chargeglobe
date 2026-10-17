@@ -43,6 +43,36 @@ public sealed record PriceComponents(
     }
 }
 
+/// <summary>The example session at one EVSE that makes prices comparable.</summary>
+/// <param name="Kwh">Energy charged.</param>
+/// <param name="Minutes">Duration from plug-in to unplug.</param>
+/// <param name="PowerKw">Charging power assumed for the duration; null if the caller gave the duration.</param>
+/// <param name="Basis">What sets the duration: <c>EVSE</c> (its power is below the vehicle's), <c>VEHICLE</c> (the power of the vehicle) or <c>REQUEST</c> (given by the caller).</param>
+public sealed record SessionExample(decimal Kwh, int Minutes, decimal? PowerKw, string Basis)
+{
+    public const string ByEvse = "EVSE";
+    public const string ByVehicle = "VEHICLE";
+    public const string ByRequest = "REQUEST";
+
+    public static SessionExample Requested(decimal kwh, int minutes) => new(kwh, minutes, null, ByRequest);
+}
+
+/// <summary>
+/// How long a typical car takes for <see cref="Kwh"/> at an EVSE: at the lower of the power of the EVSE and of the
+/// vehicle (AC on board charger, DC peak), with DC stretched by <see cref="DcTaperFactor"/> because the power falls with
+/// the state of charge. An EVSE without known power charges at the vehicle's power.
+/// </summary>
+public sealed record ChargingScenario(decimal Kwh, decimal VehicleAcKw, decimal VehicleDcKw, decimal DcTaperFactor)
+{
+    public SessionExample At(TariffCurrent current, decimal? evseKw)
+    {
+        var vehicle = current == TariffCurrent.DC ? VehicleDcKw : VehicleAcKw;
+        var (power, basis) = evseKw is { } kw && kw > 0 && kw < vehicle ? (kw, SessionExample.ByEvse) : (vehicle, SessionExample.ByVehicle);
+        var minutes = Kwh / power * 60 * (current == TariffCurrent.DC ? DcTaperFactor : 1);
+        return new SessionExample(Kwh, Math.Max(1, (int)Math.Ceiling(minutes)), power, basis);
+    }
+}
+
 /// <summary>A price of an EVSE as observed when it changed (TimescaleDB hypertable <c>price_observation</c>).</summary>
 public sealed class PriceObservation
 {

@@ -17,6 +17,7 @@ const GROUPS: { prefix: string; title: string; summary: string }[] = [
   { prefix: 'map', title: 'Karte', summary: 'Kartenstil hell und dunkel, Start-Ausschnitt, Status-Alter' },
   { prefix: 'auth', title: 'Anmeldung', summary: 'Rate-Limit der Anmeldung' },
   { prefix: 'ingest', title: 'Ingest', summary: 'Wiederholungen und Aufbewahrung' },
+  { prefix: 'price', title: 'Preise', summary: 'Beispielrechnung: Energie und Ladeleistung des Beispielautos' },
 ];
 
 interface Row {

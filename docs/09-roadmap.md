@@ -47,7 +47,7 @@
 - [x] Betreiber-Filter als Liste aus der Datenbank (`GET /operators`, nach Zahl der Standorte, mit Suche), Leistungsbereich mit Minimum und Maximum, Farben freier Stationen nach freier Leistung (bis 22, 23–149, ab 150 kW)
 - [x] Kartenoptionen je Browser: Umkreis und Zoomstufe des Zusammenfassens (Cluster) mit „Auf Standard zurücksetzen“, wirksam ohne Neuladen
 - [x] Favoriten (angemeldet): Stern in Infokarte, Standort-Seite und Liste, Seite `/favorites` mit aktuellem Status (jede Minute), `GET/PUT/DELETE /me/favorites`
-- [x] Ad-hoc-Preise aus E-Control speichern: mit den Register-Seiten des Inventars (kein zusätzlicher Request), `evse_price_current` und `price_observation` nur bei Änderung, `GET /evses/{evseId}/prices` mit Verlauf und Beispielrechnung 30 kWh / 40 min, Anzeige in Infokarte und Ladepunkt-Seite
+- [x] Ad-hoc-Preise aus E-Control speichern: mit den Register-Seiten des Inventars (kein zusätzlicher Request), `evse_price_current` und `price_observation` nur bei Änderung, `GET /evses/{evseId}/prices` mit Verlauf und Beispielrechnung (30 kWh, Dauer je Ladepunkt aus Leistung und Beispielauto), Anzeige in Infokarte und Ladepunkt-Seite
 - [x] Lebenszyklus: Standorte und EVSEs, die zwei gezählte Inventarläufe jeder Quelle nicht mehr melden (`lifecycle.missing_runs`), werden `REMOVED`, wieder gemeldete `ACTIVE`; Favoriten zeigen „Nicht mehr gemeldet“
 - [x] Angular: Standort-Detailseite `/locations/:id` (angemeldet, `evse:read`) mit Status-Timeline je EVSE und Heatmap Wochentag × Stunde, Link „Details“ in der Infokarte
 - [x] Ersteinrichtung: Setup-Assistent `/setup` bei leerer Instanz (erster Admin mit Setup-Token aus dem API-Log, danach Datenquelle E-Control und SMTP), `GET /setup`, `POST /setup/admin`; Registrierung bis dahin geschlossen

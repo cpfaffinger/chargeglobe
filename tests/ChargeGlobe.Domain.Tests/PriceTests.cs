@@ -49,4 +49,20 @@ public class PriceTests
         Assert.Throws<ArgumentException>(() => PriceObservation.Create(evseId, " ", TariffKind.AD_HOC, Price, At));
         Assert.Throws<ArgumentException>(() => EvsePriceCurrent.Create(evseId, "econtrol", TariffKind.AD_HOC, Price with { Currency = "" }, At));
     }
+
+    [Fact]
+    public void The_example_session_lasts_as_long_as_the_energy_takes_at_the_lower_power()
+    {
+        var scenario = new ChargingScenario(30, 11, 150, 1.3m);
+
+        Assert.Equal(new SessionExample(30, 164, 11, SessionExample.ByVehicle), scenario.At(TariffCurrent.AC, 22));
+        Assert.Equal(new SessionExample(30, 164, 11, SessionExample.ByVehicle), scenario.At(TariffCurrent.AC, null));
+        Assert.Equal(new SessionExample(30, 487, 3.7m, SessionExample.ByEvse), scenario.At(TariffCurrent.AC, 3.7m));
+        // DC: the power falls with the state of charge (× 1.3); 300 kW are limited by the car.
+        Assert.Equal(new SessionExample(30, 47, 50, SessionExample.ByEvse), scenario.At(TariffCurrent.DC, 50));
+        Assert.Equal(new SessionExample(30, 16, 150, SessionExample.ByVehicle), scenario.At(TariffCurrent.DC, 300));
+        Assert.Equal(new SessionExample(30, 16, 150, SessionExample.ByVehicle), scenario.At(TariffCurrent.DC, 0));
+        Assert.Equal(1, new ChargingScenario(0.1m, 11, 150, 1).At(TariffCurrent.AC, 22).Minutes);
+        Assert.Equal(new SessionExample(10, 20, null, SessionExample.ByRequest), SessionExample.Requested(10, 20));
+    }
 }

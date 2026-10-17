@@ -74,7 +74,7 @@ public class LocationPricesTests(IntegrationFactory factory) : IClassFixture<Int
          item.GetProperty("cheapestCard").GetProperty("evseId").GetString()!);
 
     [Fact]
-    public async Task Every_location_gets_its_cheapest_ad_hoc_price_and_card_for_30_kWh_in_40_minutes()
+    public async Task Every_location_gets_its_cheapest_ad_hoc_price_and_card_for_30_kWh_as_long_as_it_takes()
     {
         var unknown = Guid.NewGuid();
         var body = await PricesAsync(new { locationIds = new[] { _ring, _stephansplatz, unknown, _ring } });
@@ -99,7 +99,9 @@ public class LocationPricesTests(IntegrationFactory factory) : IClassFixture<Int
         Assert.Equal(JsonValueKind.Null, data[2].GetProperty("cheapestCard").ValueKind);
 
         var meta = body.GetProperty("meta");
-        Assert.Equal((30m, 40), (meta.GetProperty("session").GetProperty("kwh").GetDecimal(), meta.GetProperty("session").GetProperty("minutes").GetInt32()));
+        Assert.Equal((30m, JsonValueKind.Null), (meta.GetProperty("session").GetProperty("kwh").GetDecimal(), meta.GetProperty("session").GetProperty("minutes").ValueKind));
+        // The duration of each EVSE: 3.7 kW at the Ring (487 min), the 11 kW of the car at Stephansplatz (164 min).
+        Assert.Equal((487, 164), (data[0].GetProperty("adHoc").GetProperty("minutes").GetInt32(), data[1].GetProperty("cheapestCard").GetProperty("minutes").GetInt32()));
         Assert.Equal("econtrol", Assert.Single(meta.GetProperty("attribution").EnumerateArray()).GetProperty("source").GetString());
     }
 
@@ -110,6 +112,7 @@ public class LocationPricesTests(IntegrationFactory factory) : IClassFixture<Int
         var shorter = (await PricesAsync(new { locationIds = new[] { _stephansplatz }, energyKwh = 10, durationMinutes = 20 })).GetProperty("data")[0];
         Assert.Equal((5.90m, "AT*TST*ETEST0001*1"), AdHoc(shorter));
         Assert.Equal(("own", 3.00m, "AT*TST*ETEST0001*1"), Card(shorter));
+        Assert.Equal(20, shorter.GetProperty("adHoc").GetProperty("minutes").GetInt32());
 
         // Only roaming and everywhere: at the Ring the roaming card works only at the DC EVSE (1 + 30 × 0.60).
         var cards = (await PricesAsync(new { locationIds = new[] { _stephansplatz, _ring }, cards = new[] { "roam", "every" } })).GetProperty("data");

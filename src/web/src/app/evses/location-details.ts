@@ -22,7 +22,7 @@ import { Segment, combine, faultSource, sourceName, statusOf, timeline } from '.
 import { OccupancyHeatmap, StatusTimeline } from './status-charts';
 import { CardsStore } from '../preferences/cards.store';
 import { ZONE_LABELS, ZoneKind } from '../tariffs/tariffs.service';
-import { EmpPrice, EvsePricesResponse, money, priceParts } from './prices';
+import { EmpPrice, EvsePricesResponse, money, priceParts, sessionText } from './prices';
 import { AVAILABILITY, busyText, tokenColor } from '../map/availability';
 import { connectorLabel, formatLabel } from './labels';
 import { LocationSummary } from '../map/locations.service';
@@ -217,7 +217,7 @@ type LoadState = 'loading' | 'error' | 'ready';
                     @if (pricing.current; as current) {
                       <p class="price">
                         Ad-hoc: {{ parts(current.price).join(' · ') }}
-                        <span class="price-example">· {{ example }}: {{ money(current.price.exampleCost, current.price.currency) }}</span>
+                        <span class="price-example">· {{ session(pricing.example) }}: {{ money(current.price.exampleCost, current.price.currency) }}</span>
                       </p>
                     } @else {
                       <p class="price price-state">Kein Ad-hoc-Preis bekannt.</p>
@@ -226,14 +226,14 @@ type LoadState = 'loading' | 'error' | 'ready';
                     @if (own) {
                       <p class="price own-card">
                         deine günstigste Karte: {{ own.empName }} ({{ own.tariff }})
-                        <span class="price-example">· {{ example }}: {{ money(own.price.exampleCost, own.price.currency) }}</span>
+                        <span class="price-example">· {{ session(pricing.example) }}: {{ money(own.price.exampleCost, own.price.currency) }}</span>
                       </p>
                     }
                     @if (pricing.emps[0]; as card) {
                       @if (card !== own) {
                         <p class="price cheapest-card">
                           günstigste Karte: {{ card.empName }} ({{ card.tariff }})
-                          <span class="price-example">· {{ example }}: {{ money(card.price.exampleCost, card.price.currency) }}</span>
+                          <span class="price-example">· {{ session(pricing.example) }}: {{ money(card.price.exampleCost, card.price.currency) }}</span>
                         </p>
                       }
                     }
@@ -257,7 +257,7 @@ type LoadState = 'loading' | 'error' | 'ready';
                           <p class="unavailable">Hier nicht nutzbar: {{ unavailableText(pricing) }}</p>
                         }
                         <p class="tariff-note">
-                          {{ example }} je Tarif; Grundgebühren kommen dazu. Preise nach den Preisblättern der Anbieter, Stand je Tarif
+                          {{ session(pricing.example) }} je Tarif; Grundgebühren kommen dazu. Preise nach den Preisblättern der Anbieter, Stand je Tarif
                           unter Tarife.
                         </p>
                       </details>
@@ -443,7 +443,7 @@ export class LocationDetails {
   /** The ad-hoc price per EVSE needs price:read. */
   protected readonly prices = this.auth.hasPermission('price:read');
   private readonly cards = inject(CardsStore);
-  protected readonly example = '30 kWh in 40 min';
+  protected readonly session = sessionText;
   protected readonly parts = priceParts;
   protected readonly money = money;
 
