@@ -17,7 +17,8 @@ namespace ChargeGlobe.IntegrationTests;
 public class PriceQualityTests(IntegrationFactory factory) : IClassFixture<IntegrationFactory>, IAsyncLifetime
 {
     private const string Cheap = "AT*TST*ETEST0001*1";
-    private const string Zero = "AT*TST*ETEST0001*2";
+    // The second EVSE of the fixture under another operator ID, so that two operators are listed.
+    private const string Zero = "AT*TS2*ETEST0001*2";
     private const string Fast = "AT*TST*ETEST0002*DC1";
 
     private string _accessToken = null!;
@@ -40,7 +41,7 @@ public class PriceQualityTests(IntegrationFactory factory) : IClassFixture<Integ
                 Evses = [.. location.Evses.Select(evse => evse.EvseId switch
                 {
                     Cheap => evse with { AdHocPrice = evse.AdHocPrice! with { PricePerKwh = 0.005m } },
-                    Zero => evse with { AdHocPrice = evse.AdHocPrice! with { PricePerKwh = 0m, PricePerMinute = 0m, SessionFee = 0m } },
+                    "AT*TST*ETEST0001*2" => evse with { EvseId = Zero, AdHocPrice = evse.AdHocPrice! with { PricePerKwh = 0m, PricePerMinute = 0m, SessionFee = 0m } },
                     _ => evse,
                 })],
             });
@@ -102,11 +103,12 @@ public class PriceQualityTests(IntegrationFactory factory) : IClassFixture<Integ
         var data = await DataAsync("/api/v1/admin/prices/implausible");
 
         Assert.Equal((0.05m, 2.00m, 2), (data.GetProperty("minKwh").GetDecimal(), data.GetProperty("maxKwh").GetDecimal(), data.GetProperty("evses").GetInt32()));
-        var tst = Assert.Single(data.GetProperty("operators").EnumerateArray());
-        Assert.Equal(("AT*TST", 2), (tst.GetProperty("operatorId").GetString(), tst.GetProperty("evses").GetInt32()));
+        // As many EVSEs each: by operator ID.
+        var operators = data.GetProperty("operators").EnumerateArray().ToList();
+        Assert.Equal([("AT*TS2", 1), ("AT*TST", 1)], operators.Select(item => (item.GetProperty("operatorId").GetString(), item.GetProperty("evses").GetInt32())));
         Assert.Equal(
             [0m, 0.005m],
-            tst.GetProperty("examples").EnumerateArray().Select(sample => sample.GetProperty("pricePerKwh").GetDecimal()).Order());
-        Assert.True(tst.GetProperty("lastObservedAt").GetDateTimeOffset() > DateTimeOffset.UtcNow.AddDays(-1));
+            operators.Select(item => item.GetProperty("examples")[0].GetProperty("pricePerKwh").GetDecimal()));
+        Assert.True(operators[1].GetProperty("lastObservedAt").GetDateTimeOffset() > DateTimeOffset.UtcNow.AddDays(-1));
     }
 }

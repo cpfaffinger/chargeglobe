@@ -31,7 +31,7 @@ describe('PriceQualityService', () => {
     http.expectOne('/api/v1/admin/prices/implausible').flush({ data: RESULT });
 
     expect((await result).evses).toBe(20);
-    expect(sampleText({ pricePerKwh: 0.005, pricePerMinute: 0.2, sessionFee: 0.5, evses: 1 })).toBe('0,005 €/kWh · 0,20 €/min · Start 0,50 €');
+    expect(sampleText({ pricePerKwh: 0.005, pricePerMinute: 0.2, sessionFee: 0.5, evses: 1 }).replace(/\u00a0/g, ' ')).toBe('0,005 €/kWh · 0,20 €/min · Start 0,50 €');
     expect(sampleText({ pricePerKwh: 0, pricePerMinute: null, sessionFee: 0, evses: 1 })).toBe('nichts berechnet');
     http.verify();
   });

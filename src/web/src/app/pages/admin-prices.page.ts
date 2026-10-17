@@ -1,4 +1,4 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { attempt } from '../auth/problem';
@@ -12,7 +12,7 @@ import { ImplausiblePrices, PriceQualityService, PriceSample, sampleText } from 
  * most frequent of these prices. The prices themselves come from the sources; the page only shows them.
  */
 @Component({
-  imports: [AppIcon, AppLoading, DatePipe, DecimalPipe, MatButtonModule],
+  imports: [AppIcon, AppLoading, DatePipe, MatButtonModule],
   selector: 'app-admin-prices',
   template: `
     <h1>Ad-hoc-Preise</h1>
@@ -31,7 +31,7 @@ import { ImplausiblePrices, PriceQualityService, PriceSample, sampleText } from 
     }
     @if (result(); as data) {
       <p id="prices-summary">
-        Spanne {{ data.minKwh | number: '1.2-3' : 'de-DE' }}–{{ data.maxKwh | number: '1.2-2' : 'de-DE' }} €/kWh:
+        Spanne {{ amount(data.minKwh) }}–{{ amount(data.maxKwh) }} €/kWh:
         <strong>{{ data.evses }}</strong> {{ data.evses === 1 ? 'Ladepunkt' : 'Ladepunkte' }} bei {{ data.operators.length }}
         {{ data.operators.length === 1 ? 'Betreiber' : 'Betreibern' }} · Stand {{ data.at | date: 'dd.MM.yyyy HH:mm' }}
       </p>
@@ -81,6 +81,10 @@ export class AdminPricesPage {
 
   protected load(): Promise<void> {
     return attempt(this.loading, this.errors, async () => this.result.set(await this.service.implausible()));
+  }
+
+  protected amount(value: number): string {
+    return new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 3 }).format(value);
   }
 
   protected describe(sample: PriceSample): string {
