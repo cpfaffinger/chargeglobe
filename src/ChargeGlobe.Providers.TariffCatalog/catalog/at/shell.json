@@ -34,9 +34,19 @@
                   "sessionFee": 0.35
                 }
               ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Fremdnetze zum Preis des Betreibers (laut Shell ab 0,54 €/kWh AC, 0,74 €/kWh DC) plus 0,35 € je Ladevorgang.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupSessionFee": 0.35
             }
           ],
-          "notes": "Fremdnetze ab 0,54 (AC) bzw. 0,74 €/kWh (DC) je nach Betreiber, zuzüglich 0,35 € je Ladevorgang (nicht abgebildet).",
+          "notes": null,
           "sourceUrl": "https://www.shell.at/laden/ladetarife-fuer-ihr-elektroauto.html",
           "sourceDate": null,
           "confidence": "MEDIUM"

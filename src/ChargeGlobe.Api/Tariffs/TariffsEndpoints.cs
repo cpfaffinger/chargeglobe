@@ -43,8 +43,8 @@ public static class TariffsEndpoints
         null,
         ["AT"],
         [
-            new ZoneView("HOME", ["evn"], [], [], [], [new PriceElementView("AC", null, 0.45m, null, null, 0.10m, 240), new PriceElementView("DC", null, 0.65m, null, null, 0.20m, 60)], null),
-            new ZoneView("ROAMING", [], [], [], ["AT*TSL"], [new PriceElementView("AC", null, 0.59m, null, null, null, null), new PriceElementView("DC", 100, 0.89m, null, null, null, null)], null),
+            new ZoneView("HOME", ["evn"], [], [], [], [new PriceElementView("AC", null, 0.45m, null, null, 0.10m, 240), new PriceElementView("DC", null, 0.65m, null, null, 0.20m, 60)], null, "FIXED", null, null),
+            new ZoneView("ROAMING", [], [], [], ["AT*TSL"], [new PriceElementView("AC", null, 0.59m, null, null, null, null), new PriceElementView("DC", 100, 0.89m, null, null, null, null)], null, "FIXED", null, null),
         ],
         null,
         "https://www.evn.at/laden",
@@ -91,7 +91,10 @@ public static class TariffsEndpoints
                 "OPERATOR (special prices of single operators), HOME (own stations of the provider), PARTNER (partner " +
                 "networks), ROAMING (every other operator, only at EVSEs that accept cards of other providers; " +
                 "`excludedNetworks`/`excludedOperators` are left out). Within the zone the price element with the current " +
-                "(AC/DC) and the highest `minKw` the EVSE reaches applies. Amounts in `currency` incl. VAT: `pricePerKwh`, " +
+                "(AC/DC) and the highest `minKw` the EVSE reaches applies. A zone with `pricing` OPERATOR_AD_HOC has no prices " +
+                "of its own: it charges the ad-hoc price of the EVSE (from the register) with `markupPercent` on every amount " +
+                "and `markupSessionFee` per session (providers that pass on the operator's price, e.g. Electroverse); " +
+                "`pricing` FIXED uses the price elements. Amounts in `currency` incl. VAT: `pricePerKwh`, " +
                 "`pricePerMinute`, `sessionFee`, `blockingFeePerMinute` from minute `blockingAfterMinutes`. The price at one " +
                 "EVSE: `getEvsePrices`.")
             .Produces<TariffsResponse>()
@@ -107,7 +110,7 @@ public static class TariffsEndpoints
                 "not `tariff-catalog`, the curated catalog of the repository) in the body: `networks[]` (`key`, `name`, " +
                 "`country`, `operators`) and `emps[]` (`key`, `name`, `website`, `country`, `tariffs[]` with `key`, `name`, " +
                 "`currency`, `monthlyFee`, `prerequisites`, `markets`, `zones[]`, `notes`, `sourceUrl`, `sourceDate`, " +
-                "`confidence`; zones as in `listTariffs`). Idempotent: an unchanged tariff stays, a changed one becomes a new " +
+                "`confidence`; zones as in `listTariffs`, `pricing` optional, default FIXED). Idempotent: an unchanged tariff stays, a changed one becomes a new " +
                 "version, a tariff of the source that is missing ends. The whole document is validated first; 422 lists " +
                 "every issue and nothing is imported. Recorded in the audit log as `tariff.import`.")
             .Produces<CatalogImportResponse>()

@@ -1,0 +1,71 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "maingau",
+      "name": "MAINGAU Autostrom",
+      "website": "https://www.maingau-energie.de/e-mobilitaet/autostrom",
+      "country": "DE",
+      "tariffs": [
+        {
+          "key": "autostrom",
+          "name": "MAINGAU Autostrom",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Kostenlose Registrierung (deutscher Anbieter, deutsche USt), App oder Karte.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "ROAMING",
+              "networks": [
+                "allego"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.82,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 180
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.82,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "Hochpreis-Betreiber."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.72,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 180
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.72,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "Standardpreis für alle übrigen Ladepunkte in Europa; Blockiergebühr max. 12 € je Ladevorgang."
+            }
+          ],
+          "notes": "Ob in Österreich wohnende Kunden abschließen können, ist nicht angegeben. Energiekunden von MAINGAU zahlen 10 ct/kWh weniger.",
+          "sourceUrl": "https://www.maingau-energie.de/e-mobilitaet/autostrom",
+          "sourceDate": "2026-07-01",
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}

@@ -21,6 +21,7 @@ public sealed record PriceElementView(
     int? BlockingAfterMinutes);
 
 /// <param name="Kind"><c>OPERATOR</c>, <c>HOME</c>, <c>PARTNER</c> or <c>ROAMING</c>.</param>
+/// <param name="Pricing"><c>FIXED</c> (the prices) or <c>OPERATOR_AD_HOC</c> (the ad-hoc price of the EVSE with the markups).</param>
 public sealed record ZoneView(
     string Kind,
     IReadOnlyList<string> Networks,
@@ -28,7 +29,10 @@ public sealed record ZoneView(
     IReadOnlyList<string> ExcludedNetworks,
     IReadOnlyList<string> ExcludedOperators,
     IReadOnlyList<PriceElementView> Prices,
-    string? Notes);
+    string? Notes,
+    string Pricing,
+    decimal? MarkupPercent,
+    decimal? MarkupSessionFee);
 
 /// <summary>One version of a tariff of an EMP with its zones; amounts in <paramref name="Currency"/> incl. VAT.</summary>
 /// <param name="Emp">Key of the EMP.</param>

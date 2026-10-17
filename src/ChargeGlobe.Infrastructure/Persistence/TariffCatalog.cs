@@ -21,6 +21,11 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, TimeP
     /// <summary>Highest amount of a price component; protects the comparison from typos such as 45 instead of 0.45.</summary>
     public const decimal MaxAmount = 1000;
 
+    /// <summary>Range of the markup on the operator's price: discounts up to half, commissions up to the double.</summary>
+    public const decimal MinMarkupPercent = -50;
+
+    public const decimal MaxMarkupPercent = 100;
+
     public async Task<IReadOnlyList<EmpView>> EmpsAsync(CancellationToken cancellationToken) =>
         await db.Emps.AsNoTracking()
             .OrderBy(emp => emp.Name)
@@ -177,7 +182,14 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, TimeP
                     Require(networks.All(networkKeys.Contains), $"{z}: unknown networks {string.Join(", ", networks.Where(key => !networkKeys.Contains(key)))}.");
                     Require((zone.Operators ?? []).Concat(zone.ExcludedOperators ?? []).All(IsOperator), $"{z}: operators must be IDs such as AT*EVN.");
                     Require(kind == TariffZoneKind.ROAMING || (zone.Networks ?? []).Count + (zone.Operators ?? []).Count > 0, $"{z}: the zone must name networks or operators.");
-                    Require(zone.Prices is { Count: > 0 }, $"{z}: at least one price is required.");
+                    var pricing = TariffPricing.FIXED;
+                    Require(zone.Pricing is null || Enum.TryParse(zone.Pricing, false, out pricing), $"{z}: the pricing must be FIXED or OPERATOR_AD_HOC.");
+                    var byOperator = pricing == TariffPricing.OPERATOR_AD_HOC;
+                    Require(byOperator || zone.Prices is { Count: > 0 }, $"{z}: at least one price is required.");
+                    Require(!byOperator || zone.Prices is null or { Count: 0 }, $"{z}: a zone with the operator's price has no prices of its own.");
+                    Require(byOperator || zone.MarkupPercent is null && zone.MarkupSessionFee is null, $"{z}: markups need the pricing OPERATOR_AD_HOC.");
+                    Require(zone.MarkupPercent is null or (>= MinMarkupPercent and <= MaxMarkupPercent), $"{z}: markupPercent must lie between {MinMarkupPercent} and {MaxMarkupPercent}.");
+                    Require(zone.MarkupSessionFee is null or (>= 0 and <= MaxAmount), $"{z}: markupSessionFee must lie between 0 and {MaxAmount}.");
                     foreach (var price in zone.Prices ?? [])
                     {
                         Require(Enum.TryParse<TariffCurrent>(price.Current, false, out _), $"{z}: the current must be AC or DC.");
@@ -223,10 +235,13 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, TimeP
                 [.. (zone.Operators ?? []).Select(id => id.Trim().ToUpperInvariant())],
                 zone.ExcludedNetworks ?? [],
                 [.. (zone.ExcludedOperators ?? []).Select(id => id.Trim().ToUpperInvariant())],
-                [.. zone.Prices.Select(price => new TariffPriceElement(
+                [.. (zone.Prices ?? []).Select(price => new TariffPriceElement(
                     Enum.Parse<TariffCurrent>(price.Current), price.MinKw, price.PricePerKwh, price.PricePerMinute, price.SessionFee,
                     price.BlockingFeePerMinute, price.BlockingAfterMinutes))],
-                zone.Notes))],
+                zone.Notes,
+                zone.Pricing is null ? TariffPricing.FIXED : Enum.Parse<TariffPricing>(zone.Pricing),
+                zone.MarkupPercent,
+                zone.MarkupSessionFee))],
             record.Notes,
             record.SourceUrl,
             record.SourceDate,
@@ -251,7 +266,10 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, TimeP
                 [.. zone.Prices.Select(price => new PriceElementView(
                     price.Current.ToString(), price.MinKw, price.PricePerKwh, price.PricePerMinute, price.SessionFee,
                     price.BlockingFeePerMinute, price.BlockingAfterMinutes))],
-                zone.Notes))],
+                zone.Notes,
+                zone.Pricing.ToString(),
+                zone.MarkupPercent,
+                zone.MarkupSessionFee))],
             plan.Notes,
             plan.SourceUrl,
             plan.SourceDate,

@@ -116,6 +116,7 @@ public class TariffsTests(IntegrationFactory factory)
         var zones = basic.GetProperty("zones").EnumerateArray().ToList();
         Assert.Equal([network], zones[0].GetProperty("networks").EnumerateArray().Select(item => item.GetString()));
         Assert.Equal(["AT*TSL"], zones[1].GetProperty("excludedOperators").EnumerateArray().Select(item => item.GetString()));
+        Assert.Equal(("FIXED", JsonValueKind.Null), (zones[1].GetProperty("pricing").GetString(), zones[1].GetProperty("markupPercent").ValueKind));
         Assert.Equal((100m, 0.89m), (zones[1].GetProperty("prices")[1].GetProperty("minKw").GetDecimal(), zones[1].GetProperty("prices")[1].GetProperty("pricePerKwh").GetDecimal()));
         Assert.Equal(4.95m, tariffs[1].GetProperty("monthlyFee").GetDecimal());
 
@@ -202,6 +203,11 @@ public class TariffsTests(IntegrationFactory factory)
         { "zone.prices=", "at least one price" },
         { "tariff.zones=", "at least one zone" },
         { "duplicate.tariff=basic", "tariff 'basic': the key is used twice" },
+        { "zone.pricing=PER_MINUTE", "the pricing must be FIXED or OPERATOR_AD_HOC" },
+        { "zone.pricing=OPERATOR_AD_HOC", "a zone with the operator's price has no prices of its own" },
+        { "zone.markupPercent=5", "markups need the pricing OPERATOR_AD_HOC" },
+        { "operator.markupPercent=150", "markupPercent must lie between -50 and 100" },
+        { "operator.markupSessionFee=-1", "markupSessionFee must lie between 0 and 1000" },
     };
 
     [Theory]
@@ -219,6 +225,14 @@ public class TariffsTests(IntegrationFactory factory)
         var issues = problem.GetProperty("errors").GetProperty("catalog").EnumerateArray().Select(item => item.GetString()!).ToList();
         Assert.True(issues.Any(item => item.Contains(issue)), string.Join(" | ", issues));
         Assert.Empty(await TariffsAsync(admin, $"?emp={emp}"));
+    }
+
+    /// <summary>Turns the zone into one at the operator's price.</summary>
+    private static JsonObject OperatorPriced(JsonObject zone)
+    {
+        zone["pricing"] = "OPERATOR_AD_HOC";
+        zone["prices"] = new JsonArray();
+        return zone;
     }
 
     /// <summary>Changes one value of <see cref="Catalog"/>: "part.property=value", an empty value is an empty list or null.</summary>
@@ -241,6 +255,7 @@ public class TariffsTests(IntegrationFactory factory)
             "emp" => emp,
             "zone" => home,
             "roaming" => tariff["zones"]![1]!.AsObject(),
+            "operator" => OperatorPriced(tariff["zones"]![1]!.AsObject()),
             "price" => home["prices"]![0]!.AsObject(),
             "duplicate" => null,
             _ => tariff,
@@ -255,7 +270,7 @@ public class TariffsTests(IntegrationFactory factory)
         {
             "operators" or "excludedOperators" or "networks" or "markets" => value == "" ? new JsonArray() : new JsonArray(value),
             "prices" or "zones" => new JsonArray(),
-            "monthlyFee" or "minKw" or "blockingAfterMinutes" or "pricePerKwh" => value == "" ? null : JsonValue.Create(decimal.Parse(value, System.Globalization.CultureInfo.InvariantCulture)),
+            "monthlyFee" or "minKw" or "blockingAfterMinutes" or "pricePerKwh" or "markupPercent" or "markupSessionFee" => value == "" ? null : JsonValue.Create(decimal.Parse(value, System.Globalization.CultureInfo.InvariantCulture)),
             _ => value,
         };
     }

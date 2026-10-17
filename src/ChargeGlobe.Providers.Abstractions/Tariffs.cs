@@ -62,14 +62,21 @@ public sealed record TariffRecord(
 /// <param name="Kind"><c>OPERATOR</c>, <c>HOME</c>, <c>PARTNER</c> or <c>ROAMING</c>.</param>
 /// <param name="Networks">Keys of the networks the zone covers; for ROAMING none means every operator.</param>
 /// <param name="Operators">Operator IDs the zone covers besides the networks.</param>
+/// <param name="Prices">The price elements; empty for <c>OPERATOR_AD_HOC</c>.</param>
+/// <param name="Pricing"><c>FIXED</c> (default: the price elements) or <c>OPERATOR_AD_HOC</c> (the ad-hoc price of the EVSE).</param>
+/// <param name="MarkupPercent">With <c>OPERATOR_AD_HOC</c>: percent on the ad-hoc price, −10 for 10 % off.</param>
+/// <param name="MarkupSessionFee">With <c>OPERATOR_AD_HOC</c>: fee of the provider per session on top.</param>
 public sealed record ZoneRecord(
     string Kind,
     IReadOnlyList<string>? Networks,
     IReadOnlyList<string>? Operators,
     IReadOnlyList<string>? ExcludedNetworks,
     IReadOnlyList<string>? ExcludedOperators,
-    IReadOnlyList<PriceRecord> Prices,
-    string? Notes);
+    IReadOnlyList<PriceRecord>? Prices,
+    string? Notes,
+    string? Pricing = null,
+    decimal? MarkupPercent = null,
+    decimal? MarkupSessionFee = null);
 
 /// <param name="Current"><c>AC</c> or <c>DC</c>.</param>
 /// <param name="MinKw">The price applies from this maximum power of the EVSE on (HPC stages); null for any.</param>

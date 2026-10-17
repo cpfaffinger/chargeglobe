@@ -66,8 +66,9 @@
 - [x] Routing: Compose-Service `routing` (Valhalla 3.9.1, OSM-Extrakt Österreich, Profil `routing`), `IRoutingEngine`, `POST /routes`, „Route hierher“ in der Infokarte mit Routenlinie auf der Karte
 - [ ] Routing-Extrakt automatisch aktualisieren (monatlich; Bau außerhalb des Live-Hosts)
 - [x] EMP-Tarife als Netze, Zonen und Katalog ([ADR-0013](adr/0013-ladetarife-netze-zonen-katalog.md)): Tabellen `emp`, `charging_network`, `tariff_plan` (versioniert, Zonen als `jsonb`), `ITariffSource` + Import (`PUT /tariff-sources/{source}/catalog`, Worker alle 6 h), `GET /emps`, `/networks`, `/tariffs`; Vergleich je Ladepunkt mit Zone und „hier nicht nutzbar“, Tabelle aller Karten in der Infokarte, Katalogansicht `/admin/tariffs`
-- [x] Kuratierter Tarifkatalog Österreich: 26 Anbieter, 36 Netze, rund 50 Tarife ([07](07-bestandsanalyse-apps-at.md), „Tarife der Anbieter“)
-- [ ] Zonen mit dem Preis des jeweiligen Betreibers (Electroverse, Plugsurfing, Monta), Zeitfenster und Deckel, Auslandspreise; Tesla-Standortpreise als eigene Quelle
+- [x] Kuratierter Tarifkatalog Österreich: 32 Anbieter, 36 Netze, 62 Tarife ([07](07-bestandsanalyse-apps-at.md), „Tarife der Anbieter“)
+- [x] Zonen mit dem Preis des Betreibers (`pricing` `OPERATOR_AD_HOC`, Aufschlag in % und je Ladevorgang, „Preis unbekannt“ ohne Ad-hoc-Preis): Electroverse, Plugsurfing, Chargemap, MB.CHARGE, BMW Charging, Elli, Wels Strom, Shell
+- [ ] Zeitfenster und Deckel, Auslandspreise; Tesla-Standortpreise als eigene Quelle
 - [ ] Tarifkatalog regelmäßig prüfen (Stand je Tarif älter als 6 Monate melden), Preisblatt-Scraper als `ITariffSource` für die großen Anbieter
 
 ### Phase 2 – Preise & Tier-1/2-Quellen

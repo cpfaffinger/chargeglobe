@@ -86,7 +86,7 @@ public class TariffCatalogServiceTests
             return plan.MatchAt(operatorId, true, current, power, key => networks.GetValueOrDefault(key) ?? []);
         }
 
-        static (TariffZoneKind, decimal?) Of(TariffMatch? match) => (match!.Zone.Kind, match.Price.PricePerKwh);
+        static (TariffZoneKind, decimal?) Of(TariffMatch? match) => (match!.Zone.Kind, match.Price!.PricePerKwh);
 
         // EVN: home network, the dearer partner network of every other operator, not at Tesla; Drive Easy only at EVN.
         Assert.Equal((TariffZoneKind.HOME, 0.45m), Of(Match("evn", "drive-smart", "AT*EVN")));
@@ -105,9 +105,15 @@ public class TariffCatalogServiceTests
         Assert.Null(Match("tiwag", "tiwag-mobil", "AT*EGG"));
         // Salzburg AG: the PLUS partners per kWh before the per-minute roaming.
         Assert.Equal((TariffZoneKind.ROAMING, 0.89m), Of(Match("salzburg-ag", "stromladen-easy", "AT*IOY", TariffCurrent.DC, 300)));
-        Assert.Equal(0.931m, Match("salzburg-ag", "stromladen-easy", "AT*EVN", TariffCurrent.DC, 150)!.Price.PricePerMinute);
+        Assert.Equal(0.931m, Match("salzburg-ag", "stromladen-easy", "AT*EVN", TariffCurrent.DC, 150)!.Price!.PricePerMinute);
         // SMATRICS and VERBUND share the network; Elli prices IONITY as a single operator.
         Assert.Equal((TariffZoneKind.HOME, 0.49m), Of(Match("verbund", "v-go-basic", "AT*SME", TariffCurrent.DC, 150)));
+        // Providers passing on the operator's price: no price element, the markup of the zone.
+        var electroverse = Match("octopus-electroverse", "electroverse", "AT*EVN")!;
+        Assert.Equal((TariffPricing.OPERATOR_AD_HOC, null), (electroverse.Zone.Pricing, electroverse.Price));
+        Assert.Equal(10m, Match("chargemap", "pass", "AT*VIE")!.Zone.MarkupPercent);
+        Assert.Equal((TariffZoneKind.OPERATOR, 0.49m), Of(Match("mercedes-charge", "public-m", "AT*IOY", TariffCurrent.DC, 350)));
+        Assert.Equal(-10m, Match("mercedes-charge", "public-m", "AT*LAG", TariffCurrent.DC, 150)!.Zone.MarkupPercent);
         Assert.Equal((TariffZoneKind.OPERATOR, 0.46m), Of(Match("elli", "premium", "AT*IOY", TariffCurrent.DC, 350)));
     }
 

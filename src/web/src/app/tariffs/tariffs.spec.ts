@@ -33,6 +33,9 @@ function tariff(overrides: Partial<Tariff> = {}): Tariff {
           { current: 'DC', minKw: 150, pricePerKwh: 0.49, pricePerMinute: null, sessionFee: null, blockingFeePerMinute: 0.5, blockingAfterMinutes: null },
         ],
         notes: null,
+        pricing: 'FIXED',
+        markupPercent: null,
+        markupSessionFee: null,
       },
       {
         kind: 'ROAMING',
@@ -42,6 +45,9 @@ function tariff(overrides: Partial<Tariff> = {}): Tariff {
         excludedOperators: ['AT*XYZ'],
         prices: [{ current: 'DC', minKw: null, pricePerKwh: null, pricePerMinute: 0.5, sessionFee: 1, blockingFeePerMinute: null, blockingAfterMinutes: null }],
         notes: null,
+        pricing: 'FIXED',
+        markupPercent: null,
+        markupSessionFee: null,
       },
       {
         kind: 'PARTNER',
@@ -51,6 +57,21 @@ function tariff(overrides: Partial<Tariff> = {}): Tariff {
         excludedOperators: [],
         prices: [{ current: 'AC', minKw: null, pricePerKwh: 0.54, pricePerMinute: null, sessionFee: null, blockingFeePerMinute: null, blockingAfterMinutes: null }],
         notes: null,
+        pricing: 'FIXED',
+        markupPercent: null,
+        markupSessionFee: null,
+      },
+      {
+        kind: 'ROAMING',
+        networks: [],
+        operators: [],
+        excludedNetworks: [],
+        excludedOperators: [],
+        prices: [],
+        notes: null,
+        pricing: 'OPERATOR_AD_HOC',
+        markupPercent: -10,
+        markupSessionFee: 0.39,
       },
     ],
     notes: 'Preisgarantie bis 31.12.2026.',
@@ -117,12 +138,17 @@ describe('AdminTariffsPage', () => {
         notes: null,
         sourceDate: null,
         confidence: 'LOW',
-        zones: [{ ...tariff().zones[0], excludedNetworks: [] }],
+        zones: [{ ...tariff().zones[0], excludedNetworks: [] }, { ...tariff().zones[3], markupPercent: null, markupSessionFee: null }],
       }),
       tariff({ id: 't-3', emp: 'oeamtc', key: 'epower', name: 'ePower', confidence: 'MEDIUM' }),
     ]);
     TestBed.configureTestingModule({ providers: [{ provide: TariffsService, useValue: service }] });
   });
+
+  /** The roaming zone of drive-easy turned into one at the operator's price without markups. */
+  function easyOperatorPrice(): string | undefined {
+    return text(root().querySelector<HTMLElement>('[data-tariff="drive-easy"]')!, 'tbody tr:nth-child(2) td:nth-child(4)');
+  }
 
   it('shows per provider its tariffs with zones, prices and source', async () => {
     await render();
@@ -140,7 +166,9 @@ describe('AdminTariffsPage', () => {
     expect(meta).toContain('Stand 01.07.2026 (aus dem Preisblatt)');
     expect(smart.querySelector<HTMLAnchorElement>('.tariff-meta a')!.href).toBe('https://www.evn.at/preise.pdf');
     const rows = Array.from(smart.querySelectorAll('tbody tr'));
-    expect(rows.map((row) => text(row, 'td:nth-child(1)'))).toEqual(['Heimnetz', 'Roaming', 'Partnernetz']);
+    expect(rows.map((row) => text(row, 'td:nth-child(1)'))).toEqual(['Heimnetz', 'Roaming', 'Partnernetz', 'Roaming']);
+    // At the operator's price: the markups instead of prices.
+    expect(text(rows[3], 'td:nth-child(3)')).toBe('Preis des Betreibers −10 % + 0,39 € je Ladevorgang');
     expect(text(rows[0], '.covers')).toBe('EVN');
     expect(text(rows[0], 'td:nth-child(3)')).toBe('0,45 €/kWh, Blockieren 0,10 €/min ab Min. 240');
     expect(text(rows[0], 'td:nth-child(4)')).toBe('0,47 €/kWh · ab 150 kW 0,49 €/kWh, Blockieren 0,50 €/min');
@@ -148,6 +176,7 @@ describe('AdminTariffsPage', () => {
     expect(text(rows[1], 'td:nth-child(3)')).toBe('–');
     expect(text(rows[1], 'td:nth-child(4)')).toBe('0,50 €/min, Start 1,00 €');
     expect(text(rows[2], '.covers')).toBe('unknown, AT*IOY');
+    expect(easyOperatorPrice()).toBe('Preis des Betreibers');
     expect(text(smart, 'p.muted')).toBe('Preisgarantie bis 31.12.2026.');
 
     const easy = root().querySelector<HTMLElement>('[data-tariff="drive-easy"]')!;

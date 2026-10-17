@@ -773,7 +773,7 @@ describe('LocationDetails with prices', () => {
     ...overrides,
   });
   const prices = (current: EvsePricesResponse['data']['current'], emps: EmpPrice[] = []): EvsePricesResponse => ({
-    data: { id: 'e', evseId: 'e', tariffKind: 'AD_HOC', from: '', to: '', example: { kwh: 30, minutes: 40, powerKw: null, basis: 'REQUEST' }, current, history: [], emps, unavailable: [] },
+    data: { id: 'e', evseId: 'e', tariffKind: 'AD_HOC', from: '', to: '', example: { kwh: 30, minutes: 40, powerKw: null, basis: 'REQUEST' }, current, history: [], emps, unavailable: [], priceUnknown: [] },
     meta: { attribution: [] },
   });
 
@@ -815,6 +815,7 @@ describe('LocationDetails with prices', () => {
       tariff: 'Basic',
       tariffKey: 'basic',
       zone: 'ROAMING',
+      pricing: 'FIXED',
       sourceUrl: 'https://example.org/preise',
       sourceDate: null,
       confidence: 'HIGH',
@@ -846,6 +847,7 @@ describe('LocationDetails with prices', () => {
       tariffKey: 'basic',
       tariff: 'Basic',
       zone,
+      pricing: 'FIXED',
       monthlyFee,
       price: priceView({ source: `emp:${emp}`, exampleCost }),
       sourceUrl: 'https://example.org/preise',
@@ -857,7 +859,8 @@ describe('LocationDetails with prices', () => {
     await settle();
     http.expectOne('/api/v1/locations/loc-1').flush({ data: { park: [], location: locationSummary(), evses: [evse()] }, meta: { attribution: [] } });
     await settle();
-    const response = prices(null, [card('own', 'HOME', 9, 4.9), card('roam', 'ROAMING', 13, null)]);
+    const response = prices(null, [card('own', 'HOME', 9, 4.9), { ...card('roam', 'ROAMING', 13, null), pricing: 'OPERATOR_AD_HOC' }]);
+    response.data.priceUnknown = [{ emp: 'plugsurfing', empName: 'Plugsurfing', tariffKey: 'pay-per-use', tariff: 'Plugsurfing', zone: 'ROAMING' }];
     response.data.unavailable = [
       { emp: 'tesla', empName: 'Tesla', tariffKey: 'supercharging', tariff: 'Supercharging' },
       { emp: 'evn', empName: 'EVN', tariffKey: 'drive-easy', tariff: '#Drive Easy' },
@@ -869,10 +872,11 @@ describe('LocationDetails with prices', () => {
     const rows = Array.from(root().querySelectorAll('.tariff-table tr'));
     expect(rows.map((row) => [text(row, 'th'), text(row, '.zone'), text(row, '.price-example'), text(row, '.monthly'), row.classList.contains('own')])).toEqual([
       ['OWN · Basic', 'Heimnetz', '9,00 €', '+ 4,90 €/Monat', true],
-      ['ROAM · Basic', 'Roaming', '13,00 €', '', false],
+      ['ROAM · Basic', 'Roaming, Betreiberpreis', '13,00 €', '', false],
     ]);
     expect(rows[0].querySelector('.zone-home')).not.toBeNull();
     expect(text(root(), '.unavailable')).toBe('Hier nicht nutzbar: Tesla · Supercharging, EVN · #Drive Easy');
+    expect(text(root(), '.price-unknown')).toBe('Zum Preis des Betreibers, hier unbekannt: Plugsurfing · Plugsurfing');
   });
 
   it('names the cheapest own card and the cheapest card overall if it is another one', async () => {
@@ -884,6 +888,7 @@ describe('LocationDetails with prices', () => {
       tariff: 'Basic',
       tariffKey: 'basic',
       zone: 'ROAMING',
+      pricing: 'FIXED',
       sourceUrl: 'https://example.org/preise',
       sourceDate: null,
       confidence: 'HIGH',
@@ -954,6 +959,7 @@ describe('price texts', () => {
       tariff: tariffId,
       tariffKey: 'basic',
       zone: 'ROAMING',
+      pricing: 'FIXED',
       sourceUrl: 'https://example.org/preise',
       sourceDate: null,
       confidence: 'HIGH',
@@ -971,6 +977,7 @@ describe('price texts', () => {
       history: [],
       emps,
       unavailable: [],
+      priceUnknown: [],
     });
     const adHoc = { price: view(13), since: '', observedAt: '' };
 

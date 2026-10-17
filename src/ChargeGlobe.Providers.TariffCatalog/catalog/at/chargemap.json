@@ -1,0 +1,65 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "chargemap",
+      "name": "Chargemap Pass",
+      "website": "https://chargemap.com/pass",
+      "country": "FR",
+      "tariffs": [
+        {
+          "key": "pass",
+          "name": "Chargemap Pass",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Karte einmalig 19,90 € (Aktion 14,90 €), ohne Abo.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Preis des Betreibers plus 10 % Provision je Ladevorgang.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPercent": 10
+            }
+          ],
+          "notes": "Partnerrabatte bis 50 % an einzelnen Stationen (Filter „Stationen im Angebot“) sind nicht abgebildet.",
+          "sourceUrl": "https://support.chargemap.com/l/en/article/5sesv0pxmo-chargemap-boost-subscription",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "boost",
+          "name": "Chargemap Pass + Boost",
+          "currency": "EUR",
+          "monthlyFee": 8.99,
+          "prerequisites": "Boost-Abo 8,99 €/Monat (im Jahresabo 6,49 €/Monat).",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Preis des Betreibers ohne Provision; bei „Super Partners“ bis 10 % Rabatt.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPercent": 0
+            }
+          ],
+          "notes": null,
+          "sourceUrl": "https://support.chargemap.com/l/en/article/5sesv0pxmo-chargemap-boost-subscription",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}

@@ -8,6 +8,114 @@
       "country": "AT",
       "tariffs": [
         {
+          "key": "base",
+          "name": "Elli Base",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Elli-App, Karte gratis, monatlich kündbar, Kreditkarte.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Preis des Betreibers mit Elli-Aufschlag (nicht veröffentlicht) plus 0,39 € je Ladevorgang.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupSessionFee": 0.39
+            }
+          ],
+          "notes": "Der Aufschlag von Elli auf den Betreiberpreis ist nicht veröffentlicht; abgebildet ist der Betreiberpreis plus Transaktionsgebühr.",
+          "sourceUrl": "https://www.elli.eco/de/privatkunden/produkte/ladetarife?country=AT",
+          "sourceDate": null,
+          "confidence": "LOW"
+        },
+        {
+          "key": "ionity-boost",
+          "name": "Elli IONITY Boost",
+          "currency": "EUR",
+          "monthlyFee": 5.99,
+          "prerequisites": "Elli-App, monatlich kündbar, Plug & Charge.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.51,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "Blockiergebühr nur 6–22 Uhr."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Übrige Betreiber zum Betreiberpreis mit Elli-Aufschlag plus 0,39 € je Ladevorgang.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupSessionFee": 0.39
+            }
+          ],
+          "notes": null,
+          "sourceUrl": "https://www.elli.eco/de/privatkunden/produkte/ladetarife?country=AT",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "ionity-ultra",
+          "name": "Elli IONITY Ultra",
+          "currency": "EUR",
+          "monthlyFee": 11.99,
+          "prerequisites": "Elli-App, monatlich kündbar, Plug & Charge.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.41,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "Blockiergebühr nur 6–22 Uhr."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Übrige Betreiber zum Betreiberpreis mit Elli-Aufschlag plus 0,39 € je Ladevorgang.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupSessionFee": 0.39
+            }
+          ],
+          "notes": null,
+          "sourceUrl": "https://www.elli.eco/de/privatkunden/produkte/ladetarife?country=AT",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        },
+        {
           "key": "premium",
           "name": "Elli Premium",
           "currency": "EUR",
@@ -73,7 +181,7 @@
               ]
             }
           ],
-          "notes": "AC-Blockiergebühr nur 8–23 Uhr. Die Tarife Base, IONITY Boost und Ultra (Aufschlag auf den Betreiberpreis) sind nicht abgebildet.",
+          "notes": "AC-Blockiergebühr nur 8–23 Uhr.",
           "sourceUrl": "https://www.elli.eco/de/privatkunden/produkte/ladetarife?country=AT",
           "sourceDate": null,
           "confidence": "MEDIUM"

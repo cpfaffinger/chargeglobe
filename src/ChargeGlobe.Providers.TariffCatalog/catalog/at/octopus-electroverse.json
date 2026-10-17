@@ -1,0 +1,38 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "octopus-electroverse",
+      "name": "Octopus Electroverse",
+      "website": "https://electroverse.com/de-AT",
+      "country": "GB",
+      "tariffs": [
+        {
+          "key": "electroverse",
+          "name": "Electroverse",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Kostenlose App und Electrokarte, ohne Grundgebühr und Transaktionsgebühr.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Preis des jeweiligen Betreibers, teils mit Electroverse-Rabatt; angezeigt in der App.",
+              "pricing": "OPERATOR_AD_HOC"
+            }
+          ],
+          "notes": "Ob ein Betreiber erreichbar ist und welche Rabatte gelten, zeigt nur die App; Idle-Gebühren sind die des Betreibers.",
+          "sourceUrl": "https://electroverse.com/de-AT",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}

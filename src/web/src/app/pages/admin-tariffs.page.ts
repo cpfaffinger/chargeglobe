@@ -131,6 +131,15 @@ export class AdminTariffsPage {
 
   /** The elements of one current, e.g. "0,59 €/kWh · ab 150 kW 0,79 €/kWh"; "–" without. */
   protected pricesOf(zone: Zone, current: PriceElement['current'], currency: string): string {
+    if (zone.pricing === 'OPERATOR_AD_HOC') {
+      return [
+        'Preis des Betreibers',
+        zone.markupPercent ? `${zone.markupPercent > 0 ? '+' : '−'}${Math.abs(zone.markupPercent).toLocaleString('de-DE')} %` : null,
+        zone.markupSessionFee ? `+ ${money(zone.markupSessionFee, currency)} je Ladevorgang` : null,
+      ]
+        .filter((part) => part !== null)
+        .join(' ');
+    }
     const parts = zone.prices
       .filter((price) => price.current === current)
       .map((price) => {

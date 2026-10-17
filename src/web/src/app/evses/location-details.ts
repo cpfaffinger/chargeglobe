@@ -21,8 +21,7 @@ import {
 import { Segment, combine, faultSource, sourceName, statusOf, timeline } from './status';
 import { OccupancyHeatmap, StatusTimeline } from './status-charts';
 import { CardsStore } from '../preferences/cards.store';
-import { ZONE_LABELS, ZoneKind } from '../tariffs/tariffs.service';
-import { EmpPrice, EvsePricesResponse, money, priceParts, sessionText } from './prices';
+import { EmpPrice, EmpUnavailable, EvsePricesResponse, money, priceParts, sessionText, zoneText } from './prices';
 import { AVAILABILITY, busyText, tokenColor } from '../map/availability';
 import { connectorLabel, formatLabel } from './labels';
 import { LocationSummary } from '../map/locations.service';
@@ -237,7 +236,7 @@ type LoadState = 'loading' | 'error' | 'ready';
                         </p>
                       }
                     }
-                    @if (pricing.emps.length > 0 || pricing.unavailable.length > 0) {
+                    @if (pricing.emps.length > 0 || pricing.unavailable.length > 0 || pricing.priceUnknown.length > 0) {
                       <details class="all-tariffs">
                         <summary>Alle Ladekarten und Apps ({{ pricing.emps.length }})</summary>
                         <table class="tariff-table">
@@ -245,7 +244,7 @@ type LoadState = 'loading' | 'error' | 'ready';
                             @for (card of pricing.emps; track card.tariffId) {
                               <tr [class.own]="isOwn(card)">
                                 <th scope="row">{{ card.empName }} · {{ card.tariff }}</th>
-                                <td><span [class]="'zone zone-' + card.zone.toLowerCase()">{{ zoneLabel(card.zone) }}</span></td>
+                                <td><span [class]="'zone zone-' + card.zone.toLowerCase()">{{ zoneLabel(card) }}</span></td>
                                 <td>{{ parts(card.price).join(' · ') }}</td>
                                 <td class="price-example">{{ money(card.price.exampleCost, card.price.currency) }}</td>
                                 <td class="monthly">{{ card.monthlyFee ? '+ ' + money(card.monthlyFee, card.price.currency) + '/Monat' : '' }}</td>
@@ -253,8 +252,11 @@ type LoadState = 'loading' | 'error' | 'ready';
                             }
                           </tbody>
                         </table>
+                        @if (pricing.priceUnknown.length > 0) {
+                          <p class="price-unknown">Zum Preis des Betreibers, hier unbekannt: {{ names(pricing.priceUnknown) }}</p>
+                        }
                         @if (pricing.unavailable.length > 0) {
-                          <p class="unavailable">Hier nicht nutzbar: {{ unavailableText(pricing) }}</p>
+                          <p class="unavailable">Hier nicht nutzbar: {{ names(pricing.unavailable) }}</p>
                         }
                         <p class="tariff-note">
                           {{ session(pricing.example) }} je Tarif; Grundgebühren kommen dazu. Preise nach den Preisblättern der Anbieter, Stand je Tarif
@@ -452,17 +454,15 @@ export class LocationDetails {
   protected readonly statusOf = statusOf;
   protected readonly faultSource = faultSource;
 
-  protected zoneLabel(zone: ZoneKind): string {
-    return ZONE_LABELS[zone];
-  }
+  protected readonly zoneLabel = zoneText;
 
   protected isOwn(card: EmpPrice): boolean {
     return this.cards.cards().includes(card.emp);
   }
 
   /** "EVN · Basic, Tesla · Supercharging". */
-  protected unavailableText(pricing: EvsePricesResponse['data']): string {
-    return pricing.unavailable.map((tariff) => `${tariff.empName} · ${tariff.tariff}`).join(', ');
+  protected names(tariffs: EmpUnavailable[]): string {
+    return tariffs.map((tariff) => `${tariff.empName} · ${tariff.tariff}`).join(', ');
   }
   protected readonly sourceName = sourceName;
   protected readonly busy = busyText;
