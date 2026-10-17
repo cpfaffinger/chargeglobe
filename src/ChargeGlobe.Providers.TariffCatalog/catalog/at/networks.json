@@ -15,7 +15,14 @@
       "operators": [
         "AT*VIE",
         "AT*VNA",
-        "AT*VES",
+        "AT*VES"
+      ]
+    },
+    {
+      "key": "ella",
+      "name": "ella",
+      "country": "AT",
+      "operators": [
         "AT*ELA"
       ]
     },

@@ -25,19 +25,19 @@
               "prices": [
                 {
                   "current": "AC",
-                  "pricePerKwh": 0.59,
+                  "pricePerKwh": 0.49,
                   "sessionFee": 1.8
                 },
                 {
                   "current": "DC",
-                  "pricePerKwh": 0.83,
+                  "pricePerKwh": 0.69,
                   "sessionFee": 1.8
                 }
               ],
-              "notes": "Zutrittsgebühr 1,80 € je Ladung; Variante mit Blockiergebühr 0,04 €/min ab Minute 300."
+              "notes": "Zugangsgebühr 1,80 € je Ladung; an einzelnen stark genutzten Standorten 2 €/h ab der 5. Stunde."
             }
           ],
-          "notes": "Aus dem Tarifkalkulator der E-Control; ob die Zutrittsgebühr netto oder brutto ist, ist offen.",
+          "notes": "Preisblatt ohne USt-Angabe; als Verbraucherpreise brutto angenommen.",
           "sourceUrl": "https://www.ladetarif.at/api/products/375",
           "sourceDate": "2024-02-01",
           "confidence": "LOW"

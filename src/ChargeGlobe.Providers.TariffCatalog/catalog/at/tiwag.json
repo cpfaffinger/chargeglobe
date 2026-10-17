@@ -11,7 +11,7 @@
           "key": "tiwag-mobil",
           "name": "TIWAG mobil",
           "currency": "EUR",
-          "monthlyFee": null,
+          "monthlyFee": 0,
           "prerequisites": "Nur für TIWAG-Kunden (Kunden- und Vertragskontonummer), SEPA-Lastschrift; Karte kostenlos.",
           "markets": [
             "AT"

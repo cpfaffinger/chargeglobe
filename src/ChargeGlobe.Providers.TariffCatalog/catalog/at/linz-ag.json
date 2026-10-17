@@ -79,7 +79,7 @@
           ],
           "notes": null,
           "sourceUrl": "https://www.linzag.at/media/dokumente/e_mobilitaet_1/agb_tarife/ladetarife.pdf",
-          "sourceDate": "2023-03-15",
+          "sourceDate": "2025-03-04",
           "confidence": "HIGH"
         },
         {
@@ -154,7 +154,82 @@
           ],
           "notes": null,
           "sourceUrl": "https://www.linzag.at/media/dokumente/e_mobilitaet_1/agb_tarife/ladetarife.pdf",
-          "sourceDate": "2023-03-15",
+          "sourceDate": "2025-03-04",
+          "confidence": "HIGH"
+        },
+        {
+          "key": "partner",
+          "name": "StromMOBIL PARTNER",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Nur für Mitglieder und Beschäftigte von Partnerunternehmen der LINZ AG; bis zu zwei Karten ohne Bearbeitungsgebühr.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "linz-ag"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.51,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.61,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 90
+                },
+                {
+                  "current": "DC",
+                  "minKw": 201,
+                  "pricePerKwh": 0.86,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 90
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla",
+                "moon",
+                "chargepoint",
+                "lidl",
+                "energie-klagenfurt"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.51,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.61,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 90
+                },
+                {
+                  "current": "DC",
+                  "minKw": 201,
+                  "pricePerKwh": 0.86,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 90
+                }
+              ],
+              "notes": "Ein Preis bei allen Roaming-Partnern; ausgenommen sind Betreiber, die nicht auf der Partnerliste stehen."
+            }
+          ],
+          "notes": null,
+          "sourceUrl": "https://www.linzag.at/media/dokumente/e_mobilitaet_1/agb_tarife/ladetarife.pdf",
+          "sourceDate": "2025-03-04",
           "confidence": "HIGH"
         }
       ]

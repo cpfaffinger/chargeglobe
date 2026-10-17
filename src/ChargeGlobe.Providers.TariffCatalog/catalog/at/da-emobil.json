@@ -11,8 +11,8 @@
           "key": "ladekarte",
           "name": "da emobil Ladekarte/App",
           "currency": "EUR",
-          "monthlyFee": null,
-          "prerequisites": "Antrag per Formular; Grundgebühr nicht angegeben.",
+          "monthlyFee": 0,
+          "prerequisites": "Antrag per Formular; Karte 10 € einmalig, ohne Grundgebühr.",
           "markets": [
             "AT"
           ],
