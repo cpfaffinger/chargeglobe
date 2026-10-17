@@ -250,7 +250,8 @@ public class SecondSourceTests(IntegrationFactory factory) : IClassFixture<Integ
     [Fact]
     public async Task Candidates_of_one_source_that_form_a_charging_park_take_the_nearest_instead_of_a_conflict()
     {
-        // Two facilities of one operator 6 m apart (the register lists every charging station on its own).
+        // Two facilities of one operator 6 m apart (the register lists every charging station on its own); the sites come
+        // from a source of their own, so that the open conflicts of this test stay out of the suggestion tests for ocm.
         var facility = Read("econtrol", "search-wien.expected.json")[0] with { OperatorName = "Stadtwerke Test GmbH", OperatorId = null, Evses = [] };
         await IngestAsync("register", [
             facility with { ExternalId = "park-1", Coordinates = new GeoPoint(48.30, 16.50) },
@@ -258,9 +259,9 @@ public class SecondSourceTests(IntegrationFactory factory) : IClassFixture<Integ
         ]);
         var site = Ocm().Single(item => item.ExternalId == "104") with { OperatorName = "Stadtwerke Test", ExternalId = "park-site", Coordinates = new GeoPoint(48.30001, 16.50) };
 
-        await IngestAsync("ocm", [site]);
+        await IngestAsync("map", [site]);
 
-        var record = await RecordAsync("ocm", "park-site");
+        var record = await RecordAsync("map", "park-site");
         Assert.Equal(((await RecordAsync("register", "park-1")).EntityId, MatchMethod.GEO_OPERATOR, IngestProcessor.GeoParkConfidence), (record.EntityId, record.MatchMethod, record.MatchConfidence));
         Assert.DoesNotContain(
             await factory.WithDbAsync(db => db.SourceConflicts.Where(item => item.Attribute == "identity").ToListAsync()),
@@ -273,23 +274,23 @@ public class SecondSourceTests(IntegrationFactory factory) : IClassFixture<Integ
             far with { ExternalId = "far-2", Coordinates = new GeoPoint(48.31035, 16.51) },
         ]);
         var farSite = site with { OperatorName = "Energie Test", ExternalId = "far-site", Coordinates = new GeoPoint(48.31017, 16.51) };
-        await IngestAsync("ocm", [farSite]);
+        await IngestAsync("map", [farSite]);
         Assert.Contains(
             await factory.WithDbAsync(db => db.SourceConflicts.Where(item => item.Attribute == "identity").ToListAsync()),
             item => item.Values.Contains("far-site"));
         var park = Guid.NewGuid();
         await factory.WithDbAsync(db => db.Database.ExecuteSqlAsync(
             $"UPDATE location SET park_id = {park} WHERE id IN (SELECT entity_id FROM source_record WHERE source_key = 'register' AND external_id IN ('far-1', 'far-2'))"));
-        await IngestAsync("ocm", [farSite with { ExternalId = "far-site-2" }]);
+        await IngestAsync("map", [farSite with { ExternalId = "far-site-2" }]);
         // The nearest of the park wins: far-1 lies 19 m from the site, far-2 20 m.
-        var parked = await RecordAsync("ocm", "far-site-2");
+        var parked = await RecordAsync("map", "far-site-2");
         Assert.Equal(((await RecordAsync("register", "far-1")).EntityId, IngestProcessor.GeoParkConfidence), (parked.EntityId, parked.MatchConfidence));
 
         // Two sources 67 m apart (too far to match each other), a site 33 m from both: a conflict as before.
         var mixed = facility with { OperatorName = "Mixed Test GmbH" };
         await IngestAsync("register", [mixed with { ExternalId = "mixed-1", Coordinates = new GeoPoint(48.32, 16.52) }]);
         await IngestAsync("register-2", [mixed with { ExternalId = "mixed-2", Coordinates = new GeoPoint(48.3206, 16.52) }]);
-        await IngestAsync("ocm", [site with { OperatorName = "Mixed Test", ExternalId = "mixed-site", Coordinates = new GeoPoint(48.3203, 16.52) }]);
+        await IngestAsync("map", [site with { OperatorName = "Mixed Test", ExternalId = "mixed-site", Coordinates = new GeoPoint(48.3203, 16.52) }]);
         Assert.Contains(
             await factory.WithDbAsync(db => db.SourceConflicts.Where(item => item.Attribute == "identity").ToListAsync()),
             item => item.Values.Contains("mixed-site"));
