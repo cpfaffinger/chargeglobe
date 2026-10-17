@@ -405,8 +405,9 @@ public class IngestJobsTests
         var worker = new IngestWorkerService(services.GetRequiredService<IServiceScopeFactory>(), new JobOptions(JobRole.Worker, "worker-1"), time, logger);
 
         await worker.StartAsync(CancellationToken.None);
-        await WaitUntilAsync(() => queue.Purges == 1, "first cycle");
-        Assert.Equal((0, 4), (queue.Pending, queue.Processed));
+        // The audit retention runs after the ingest purge and logs last.
+        await WaitUntilAsync(() => logger.Messages.Contains("Audit retention removed 2 entr(ies)"), "first cycle");
+        Assert.Equal((0, 4, 1), (queue.Pending, queue.Processed, queue.Purges));
         Assert.Contains("Ingest retention removed 7 row(s)", logger.Messages);
         Assert.Contains("Audit retention removed 2 entr(ies)", logger.Messages);
         Assert.Equal(("ingest-retention", "worker-1"), (leases.Job, leases.Instance));
