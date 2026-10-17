@@ -27,13 +27,15 @@
                   "current": "AC",
                   "pricePerKwh": 0.82,
                   "blockingFeePerMinute": 0.1,
-                  "blockingAfterMinutes": 180
+                  "blockingAfterMinutes": 180,
+                  "maxBlockingFee": 12
                 },
                 {
                   "current": "DC",
                   "pricePerKwh": 0.82,
                   "blockingFeePerMinute": 0.1,
-                  "blockingAfterMinutes": 60
+                  "blockingAfterMinutes": 60,
+                  "maxBlockingFee": 12
                 }
               ],
               "notes": "Hochpreis-Betreiber."
@@ -48,16 +50,18 @@
                   "current": "AC",
                   "pricePerKwh": 0.72,
                   "blockingFeePerMinute": 0.1,
-                  "blockingAfterMinutes": 180
+                  "blockingAfterMinutes": 180,
+                  "maxBlockingFee": 12
                 },
                 {
                   "current": "DC",
                   "pricePerKwh": 0.72,
                   "blockingFeePerMinute": 0.1,
-                  "blockingAfterMinutes": 60
+                  "blockingAfterMinutes": 60,
+                  "maxBlockingFee": 12
                 }
               ],
-              "notes": "Standardpreis für alle übrigen Ladepunkte in Europa; Blockiergebühr max. 12 € je Ladevorgang."
+              "notes": "Standardpreis für alle übrigen Ladepunkte in Europa."
             }
           ],
           "notes": "In Österreich wohnende Kunden können nicht abschließen; für deutsche Kunden auch in Österreich gültig. Energiekunden von MAINGAU zahlen 10 ct/kWh weniger.",

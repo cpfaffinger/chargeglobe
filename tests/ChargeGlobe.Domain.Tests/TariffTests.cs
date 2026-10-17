@@ -144,5 +144,28 @@ public class TariffTests
         Assert.Same(free, zone.MarkUp(free));
     }
 
+    [Fact]
+    public void A_price_with_a_time_window_applies_to_sessions_starting_in_it()
+    {
+        var day = new TariffPriceElement(TariffCurrent.AC, null, null, 0.084m, null, null, null);
+        var night = day with { PricePerMinute = 0.069m, StartTime = new TimeOnly(22, 0), EndTime = new TimeOnly(8, 0) };
+        var lunch = day with { PricePerMinute = 0.05m, StartTime = new TimeOnly(12, 0), EndTime = new TimeOnly(13, 0) };
+        var fast = new TariffPriceElement(TariffCurrent.AC, 11.1m, null, 0.42m, null, null, null);
+        var zone = Zone(TariffZoneKind.HOME, ["evn"], [], day, night, lunch, fast);
+
+        Assert.Equal(0.069m, zone.PriceFor(TariffCurrent.AC, 11, new TimeOnly(23, 30))!.PricePerMinute);
+        Assert.Equal(0.069m, zone.PriceFor(TariffCurrent.AC, 11, new TimeOnly(7, 59))!.PricePerMinute);
+        Assert.Equal(0.084m, zone.PriceFor(TariffCurrent.AC, 11, new TimeOnly(8, 0))!.PricePerMinute);
+        Assert.Equal(0.05m, zone.PriceFor(TariffCurrent.AC, 11, new TimeOnly(12, 30))!.PricePerMinute);
+        Assert.Equal(0.084m, zone.PriceFor(TariffCurrent.AC, 11, null)!.PricePerMinute);
+        // The power stage decides first; a stage with a window only has no price outside of it.
+        Assert.Equal(0.42m, zone.PriceFor(TariffCurrent.AC, 22, new TimeOnly(23, 30))!.PricePerMinute);
+        Assert.Null(Zone(TariffZoneKind.HOME, ["evn"], [], night).PriceFor(TariffCurrent.AC, 11, new TimeOnly(12, 0)));
+        Assert.Equal(0.069m, Plan(Zone(TariffZoneKind.HOME, ["evn"], [], day, night)).MatchAt("AT*EVN", true, TariffCurrent.AC, 11, Members, new TimeOnly(1, 0))!.Price!.PricePerMinute);
+
+        var capped = new TariffPriceElement(TariffCurrent.AC, null, 0.45m, null, null, 0.50m, 30, MaxBlockingFee: 30, BlockingFrom: TariffBlockingFrom.CHARGING_END);
+        Assert.Equal((30m, TariffBlockingFrom.CHARGING_END), (capped.Components("EUR").BlockingFeeMax, capped.Components("EUR").BlockingFrom));
+    }
+
     private static (TariffZoneKind, decimal?) Of(TariffMatch? match) => (match!.Zone.Kind, match.Price!.PricePerKwh);
 }

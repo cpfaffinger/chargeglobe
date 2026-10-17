@@ -30,13 +30,19 @@
                   "blockingAfterMinutes": 180
                 },
                 {
+                  "current": "AC",
+                  "pricePerKwh": 0.47,
+                  "startTime": "19:00",
+                  "endTime": "06:00"
+                },
+                {
                   "current": "DC",
                   "pricePerKwh": 0.98,
                   "blockingFeePerMinute": 0.08,
                   "blockingAfterMinutes": 60
                 }
               ],
-              "notes": "STW emobil Nacht (Start 19–6 Uhr, AC bis 22 kW): 0,47 €/kWh ohne Blockiergebühr."
+              "notes": "STW emobil Nacht: Start 19–6 Uhr an AC bis 22 kW 0,47 €/kWh ohne Blockiergebühr."
             }
           ],
           "notes": "Nur an Stationen der Stadtwerke Klagenfurt.",

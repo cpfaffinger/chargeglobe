@@ -65,4 +65,14 @@ public class PriceTests
         Assert.Equal(1, new ChargingScenario(0.1m, 11, 150, 1).At(TariffCurrent.AC, 22).Minutes);
         Assert.Equal(new SessionExample(10, 20, null, SessionExample.ByRequest), SessionExample.Requested(10, 20));
     }
+
+    [Fact]
+    public void A_capped_blocking_fee_or_one_from_the_end_of_charging_costs_less()
+    {
+        var price = new PriceComponents("EUR", 0.45m, null, null, 0.50m, 30, false);
+        Assert.Equal(13.50m + 67.00m, price.CostOf(30, 164));
+        Assert.Equal(13.50m + 30m, (price with { BlockingFeeMax = 30 }).CostOf(30, 164));
+        // Counted from the end of charging: the example unplugs then and pays none.
+        Assert.Equal(13.50m, (price with { BlockingFrom = TariffBlockingFrom.CHARGING_END }).CostOf(30, 164));
+    }
 }

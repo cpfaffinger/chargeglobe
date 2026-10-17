@@ -27,13 +27,15 @@
                   "current": "AC",
                   "pricePerKwh": 0.43,
                   "blockingFeePerMinute": 0.05,
-                  "blockingAfterMinutes": 300
+                  "blockingAfterMinutes": 300,
+                  "maxBlockingFee": 25
                 },
                 {
                   "current": "DC",
                   "pricePerKwh": 0.43,
                   "blockingFeePerMinute": 0.05,
-                  "blockingAfterMinutes": 180
+                  "blockingAfterMinutes": 180,
+                  "maxBlockingFee": 25
                 }
               ]
             },
@@ -47,19 +49,21 @@
                   "current": "AC",
                   "pricePerKwh": 0.7,
                   "blockingFeePerMinute": 0.05,
-                  "blockingAfterMinutes": 300
+                  "blockingAfterMinutes": 300,
+                  "maxBlockingFee": 25
                 },
                 {
                   "current": "DC",
                   "pricePerKwh": 0.7,
                   "blockingFeePerMinute": 0.05,
-                  "blockingAfterMinutes": 180
+                  "blockingAfterMinutes": 180,
+                  "maxBlockingFee": 25
                 }
               ],
               "notes": "Partnernetz (Roaming): alle anderen Stationen mit Fremdkarten-Annahme."
             }
           ],
-          "notes": "Standzeitzuschlag nach 5 h (City/Spot), 12 h (Parking) bzw. 3 h (DC), max. 25 € je Ladevorgang, nachts 22–8 Uhr an City/Spot frei. Die kWh-Preise werden am 1.4. und 1.10. angepasst.",
+          "notes": "Standzeitzuschlag nach 5 h (City/Spot), 12 h (Parking) bzw. 3 h (DC), nachts 22–8 Uhr an City/Spot frei. Die kWh-Preise werden am 1.4. und 1.10. angepasst.",
           "sourceUrl": "https://dokumente.wienenergie.at/link/tarifblatt-tanke-kwh-go-smart-pro/",
           "sourceDate": "2026-10-01",
           "confidence": "HIGH"
@@ -84,13 +88,15 @@
                   "current": "AC",
                   "pricePerKwh": 0.4,
                   "blockingFeePerMinute": 0.05,
-                  "blockingAfterMinutes": 300
+                  "blockingAfterMinutes": 300,
+                  "maxBlockingFee": 25
                 },
                 {
                   "current": "DC",
                   "pricePerKwh": 0.4,
                   "blockingFeePerMinute": 0.05,
-                  "blockingAfterMinutes": 180
+                  "blockingAfterMinutes": 180,
+                  "maxBlockingFee": 25
                 }
               ]
             },
@@ -104,19 +110,21 @@
                   "current": "AC",
                   "pricePerKwh": 0.7,
                   "blockingFeePerMinute": 0.05,
-                  "blockingAfterMinutes": 300
+                  "blockingAfterMinutes": 300,
+                  "maxBlockingFee": 25
                 },
                 {
                   "current": "DC",
                   "pricePerKwh": 0.7,
                   "blockingFeePerMinute": 0.05,
-                  "blockingAfterMinutes": 180
+                  "blockingAfterMinutes": 180,
+                  "maxBlockingFee": 25
                 }
               ],
               "notes": "Partnernetz (Roaming): alle anderen Stationen mit Fremdkarten-Annahme."
             }
           ],
-          "notes": "Standzeitzuschlag nach 5 h (City/Spot), 12 h (Parking) bzw. 3 h (DC), max. 25 € je Ladevorgang, nachts 22–8 Uhr an City/Spot frei. Die kWh-Preise werden am 1.4. und 1.10. angepasst.",
+          "notes": "Standzeitzuschlag nach 5 h (City/Spot), 12 h (Parking) bzw. 3 h (DC), nachts 22–8 Uhr an City/Spot frei. Die kWh-Preise werden am 1.4. und 1.10. angepasst.",
           "sourceUrl": "https://dokumente.wienenergie.at/link/tarifblatt-tanke-kwh-go-smart-pro/",
           "sourceDate": "2026-10-01",
           "confidence": "HIGH"
@@ -141,13 +149,15 @@
                   "current": "AC",
                   "pricePerKwh": 0.36,
                   "blockingFeePerMinute": 0.05,
-                  "blockingAfterMinutes": 300
+                  "blockingAfterMinutes": 300,
+                  "maxBlockingFee": 25
                 },
                 {
                   "current": "DC",
                   "pricePerKwh": 0.36,
                   "blockingFeePerMinute": 0.05,
-                  "blockingAfterMinutes": 180
+                  "blockingAfterMinutes": 180,
+                  "maxBlockingFee": 25
                 }
               ]
             },
@@ -161,19 +171,21 @@
                   "current": "AC",
                   "pricePerKwh": 0.7,
                   "blockingFeePerMinute": 0.05,
-                  "blockingAfterMinutes": 300
+                  "blockingAfterMinutes": 300,
+                  "maxBlockingFee": 25
                 },
                 {
                   "current": "DC",
                   "pricePerKwh": 0.7,
                   "blockingFeePerMinute": 0.05,
-                  "blockingAfterMinutes": 180
+                  "blockingAfterMinutes": 180,
+                  "maxBlockingFee": 25
                 }
               ],
               "notes": "Partnernetz (Roaming): alle anderen Stationen mit Fremdkarten-Annahme."
             }
           ],
-          "notes": "Standzeitzuschlag nach 5 h (City/Spot), 12 h (Parking) bzw. 3 h (DC), max. 25 € je Ladevorgang, nachts 22–8 Uhr an City/Spot frei. Die kWh-Preise werden am 1.4. und 1.10. angepasst.",
+          "notes": "Standzeitzuschlag nach 5 h (City/Spot), 12 h (Parking) bzw. 3 h (DC), nachts 22–8 Uhr an City/Spot frei. Die kWh-Preise werden am 1.4. und 1.10. angepasst.",
           "sourceUrl": "https://dokumente.wienenergie.at/link/tarifblatt-tanke-kwh-go-smart-pro/",
           "sourceDate": "2026-10-01",
           "confidence": "HIGH"
@@ -200,6 +212,12 @@
                 },
                 {
                   "current": "AC",
+                  "pricePerMinute": 0.069,
+                  "startTime": "22:00",
+                  "endTime": "08:00"
+                },
+                {
+                  "current": "AC",
                   "minKw": 11.1,
                   "pricePerMinute": 0.42
                 },
@@ -213,7 +231,7 @@
                   "pricePerMinute": 1.69
                 }
               ],
-              "notes": "Nachts (22–8 Uhr) bis 11 kW 0,069 €/min."
+              "notes": "Bis 11 kW tagsüber 0,084, nachts (22–8 Uhr) 0,069 €/min."
             },
             {
               "kind": "ROAMING",

@@ -12,6 +12,10 @@ export interface PriceView {
   freeOfCharge: boolean;
   /** Cost of the example session (data.example). */
   exampleCost: number;
+  /** Highest blocking fee of a session. */
+  blockingFeeMax?: number | null;
+  /** CHARGING_END: blockingAfterMinutes count from the end of charging. */
+  blockingFrom?: 'SESSION_START' | 'CHARGING_END';
 }
 
 /** Price of a charging card or app at the EVSE (data.emps of GET /api/v1/evses/{evseId}/prices). */
@@ -137,8 +141,10 @@ export function priceParts(price: PriceView): string[] {
     parts.push(`Startgebühr ${money(price.sessionFee, price.currency)}`);
   }
   if (price.blockingFeePerMinute) {
-    const from = price.blockingAfterMinutes === null ? '' : ` ab Minute ${price.blockingAfterMinutes}`;
-    parts.push(`Blockiergebühr ${money(price.blockingFeePerMinute, price.currency)}/min${from}`);
+    const end = price.blockingFrom === 'CHARGING_END' ? ' nach Ladeende' : '';
+    const from = price.blockingAfterMinutes === null ? '' : ` ab Minute ${price.blockingAfterMinutes}${end}`;
+    const cap = price.blockingFeeMax ? `, max. ${money(price.blockingFeeMax, price.currency)}` : '';
+    parts.push(`Blockiergebühr ${money(price.blockingFeePerMinute, price.currency)}/min${from}${cap}`);
   }
   return parts.length > 0 ? parts : ['keine Angaben'];
 }

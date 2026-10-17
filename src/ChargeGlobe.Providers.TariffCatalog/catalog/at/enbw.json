@@ -27,16 +27,18 @@
                   "current": "AC",
                   "pricePerKwh": 0.56,
                   "blockingFeePerMinute": 0.1,
-                  "blockingAfterMinutes": 240
+                  "blockingAfterMinutes": 240,
+                  "maxBlockingFee": 12
                 },
                 {
                   "current": "DC",
                   "pricePerKwh": 0.56,
                   "blockingFeePerMinute": 0.1,
-                  "blockingAfterMinutes": 240
+                  "blockingAfterMinutes": 240,
+                  "maxBlockingFee": 12
                 }
               ],
-              "notes": "EnBW-Preis an SMATRICS EnBW; Blockiergebühr max. 12 €."
+              "notes": "EnBW-Preis an SMATRICS EnBW."
             },
             {
               "kind": "ROAMING",
@@ -73,16 +75,18 @@
                   "current": "AC",
                   "pricePerKwh": 0.46,
                   "blockingFeePerMinute": 0.1,
-                  "blockingAfterMinutes": 240
+                  "blockingAfterMinutes": 240,
+                  "maxBlockingFee": 12
                 },
                 {
                   "current": "DC",
                   "pricePerKwh": 0.46,
                   "blockingFeePerMinute": 0.1,
-                  "blockingAfterMinutes": 240
+                  "blockingAfterMinutes": 240,
+                  "maxBlockingFee": 12
                 }
               ],
-              "notes": "EnBW-Preis an SMATRICS EnBW; Blockiergebühr max. 12 €."
+              "notes": "EnBW-Preis an SMATRICS EnBW."
             },
             {
               "kind": "ROAMING",
@@ -119,16 +123,18 @@
                   "current": "AC",
                   "pricePerKwh": 0.39,
                   "blockingFeePerMinute": 0.1,
-                  "blockingAfterMinutes": 240
+                  "blockingAfterMinutes": 240,
+                  "maxBlockingFee": 12
                 },
                 {
                   "current": "DC",
                   "pricePerKwh": 0.39,
                   "blockingFeePerMinute": 0.1,
-                  "blockingAfterMinutes": 240
+                  "blockingAfterMinutes": 240,
+                  "maxBlockingFee": 12
                 }
               ],
-              "notes": "EnBW-Preis an SMATRICS EnBW; Blockiergebühr max. 12 €."
+              "notes": "EnBW-Preis an SMATRICS EnBW."
             },
             {
               "kind": "ROAMING",

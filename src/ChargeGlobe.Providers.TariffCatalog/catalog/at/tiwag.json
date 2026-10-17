@@ -31,7 +31,8 @@
                   "current": "DC",
                   "pricePerKwh": 0.56,
                   "blockingFeePerMinute": 0.1,
-                  "blockingAfterMinutes": 60
+                  "blockingAfterMinutes": 60,
+                  "maxBlockingFee": 30
                 }
               ]
             },
@@ -376,7 +377,7 @@
               ]
             }
           ],
-          "notes": "Roaming mit eigenem Preis je Betreiber (Liste Stand 26.6.2026); nicht gelistete Betreiber (u. a. Tesla, Energie Graz, OMV, Shell, Lidl) sind nicht nutzbar. Blockiergebühr DC im TIWAG-Netz max. 30 €.",
+          "notes": "Roaming mit eigenem Preis je Betreiber (Liste Stand 26.6.2026); nicht gelistete Betreiber (u. a. Tesla, Energie Graz, OMV, Shell, Lidl) sind nicht nutzbar.",
           "sourceUrl": "https://www.tiwag.at/uploads/tx_bh/2241/produktblatt_tiwag_mobil.pdf",
           "sourceDate": "2025-06-02",
           "confidence": "HIGH"

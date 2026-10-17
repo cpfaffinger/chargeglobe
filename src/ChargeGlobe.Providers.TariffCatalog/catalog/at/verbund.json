@@ -27,20 +27,23 @@
                   "current": "AC",
                   "pricePerKwh": 0.49,
                   "blockingFeePerMinute": 0.1,
-                  "blockingAfterMinutes": 480
+                  "blockingAfterMinutes": 480,
+                  "maxBlockingFee": 18
                 },
                 {
                   "current": "DC",
                   "pricePerKwh": 0.49,
                   "blockingFeePerMinute": 0.2,
-                  "blockingAfterMinutes": 180
+                  "blockingAfterMinutes": 180,
+                  "maxBlockingFee": 36
                 },
                 {
                   "current": "DC",
                   "minKw": 80,
                   "pricePerKwh": 0.49,
                   "blockingFeePerMinute": 0.2,
-                  "blockingAfterMinutes": 60
+                  "blockingAfterMinutes": 60,
+                  "maxBlockingFee": 36
                 }
               ]
             },
@@ -54,20 +57,23 @@
                   "current": "AC",
                   "pricePerKwh": 0.49,
                   "blockingFeePerMinute": 0.1,
-                  "blockingAfterMinutes": 480
+                  "blockingAfterMinutes": 480,
+                  "maxBlockingFee": 18
                 },
                 {
                   "current": "DC",
                   "pricePerKwh": 0.49,
                   "blockingFeePerMinute": 0.2,
-                  "blockingAfterMinutes": 180
+                  "blockingAfterMinutes": 180,
+                  "maxBlockingFee": 36
                 },
                 {
                   "current": "DC",
                   "minKw": 80,
                   "pricePerKwh": 0.49,
                   "blockingFeePerMinute": 0.2,
-                  "blockingAfterMinutes": 60
+                  "blockingAfterMinutes": 60,
+                  "maxBlockingFee": 36
                 }
               ],
               "notes": "Partnernetze (u. a. VERBUND, ÖBB) zum Heimnetzpreis."
@@ -82,26 +88,29 @@
                   "current": "AC",
                   "pricePerKwh": 0.79,
                   "blockingFeePerMinute": 0.1,
-                  "blockingAfterMinutes": 480
+                  "blockingAfterMinutes": 480,
+                  "maxBlockingFee": 18
                 },
                 {
                   "current": "DC",
                   "pricePerKwh": 0.79,
                   "blockingFeePerMinute": 0.2,
-                  "blockingAfterMinutes": 180
+                  "blockingAfterMinutes": 180,
+                  "maxBlockingFee": 36
                 },
                 {
                   "current": "DC",
                   "minKw": 80,
                   "pricePerKwh": 0.79,
                   "blockingFeePerMinute": 0.2,
-                  "blockingAfterMinutes": 60
+                  "blockingAfterMinutes": 60,
+                  "maxBlockingFee": 36
                 }
               ],
               "notes": "Roaming in AT, DE, IT, HR, SK, SI und CZ."
             }
           ],
-          "notes": "Einführungspreis bis Jänner 2027; ab 1.2.2027 Heimnetz 0,55, Roaming 0,89 €/kWh. Blockiergebühr max. 18 € (AC) bzw. 36 € (DC).",
+          "notes": "Einführungspreis bis Jänner 2027; ab 1.2.2027 Heimnetz 0,55, Roaming 0,89 €/kWh.",
           "sourceUrl": "https://www.verbund.com/de/privat/e-mobilitaet/v-go-app",
           "sourceDate": null,
           "confidence": "HIGH"
@@ -126,20 +135,23 @@
                   "current": "AC",
                   "pricePerKwh": 0.35,
                   "blockingFeePerMinute": 0.1,
-                  "blockingAfterMinutes": 480
+                  "blockingAfterMinutes": 480,
+                  "maxBlockingFee": 18
                 },
                 {
                   "current": "DC",
                   "pricePerKwh": 0.35,
                   "blockingFeePerMinute": 0.2,
-                  "blockingAfterMinutes": 180
+                  "blockingAfterMinutes": 180,
+                  "maxBlockingFee": 36
                 },
                 {
                   "current": "DC",
                   "minKw": 80,
                   "pricePerKwh": 0.35,
                   "blockingFeePerMinute": 0.2,
-                  "blockingAfterMinutes": 60
+                  "blockingAfterMinutes": 60,
+                  "maxBlockingFee": 36
                 }
               ]
             },
@@ -153,20 +165,23 @@
                   "current": "AC",
                   "pricePerKwh": 0.35,
                   "blockingFeePerMinute": 0.1,
-                  "blockingAfterMinutes": 480
+                  "blockingAfterMinutes": 480,
+                  "maxBlockingFee": 18
                 },
                 {
                   "current": "DC",
                   "pricePerKwh": 0.35,
                   "blockingFeePerMinute": 0.2,
-                  "blockingAfterMinutes": 180
+                  "blockingAfterMinutes": 180,
+                  "maxBlockingFee": 36
                 },
                 {
                   "current": "DC",
                   "minKw": 80,
                   "pricePerKwh": 0.35,
                   "blockingFeePerMinute": 0.2,
-                  "blockingAfterMinutes": 60
+                  "blockingAfterMinutes": 60,
+                  "maxBlockingFee": 36
                 }
               ],
               "notes": "Partnernetze (u. a. VERBUND, ÖBB) zum Heimnetzpreis."
@@ -181,26 +196,29 @@
                   "current": "AC",
                   "pricePerKwh": 0.69,
                   "blockingFeePerMinute": 0.1,
-                  "blockingAfterMinutes": 480
+                  "blockingAfterMinutes": 480,
+                  "maxBlockingFee": 18
                 },
                 {
                   "current": "DC",
                   "pricePerKwh": 0.69,
                   "blockingFeePerMinute": 0.2,
-                  "blockingAfterMinutes": 180
+                  "blockingAfterMinutes": 180,
+                  "maxBlockingFee": 36
                 },
                 {
                   "current": "DC",
                   "minKw": 80,
                   "pricePerKwh": 0.69,
                   "blockingFeePerMinute": 0.2,
-                  "blockingAfterMinutes": 60
+                  "blockingAfterMinutes": 60,
+                  "maxBlockingFee": 36
                 }
               ],
               "notes": "Roaming in AT, DE, IT, HR, SK, SI und CZ."
             }
           ],
-          "notes": "Einführungspreis bis Jänner 2027; ab 1.2.2027 11,99 €/Monat, Heimnetz 0,39, Roaming 0,79 €/kWh. Blockiergebühr max. 18 € (AC) bzw. 36 € (DC).",
+          "notes": "Einführungspreis bis Jänner 2027; ab 1.2.2027 11,99 €/Monat, Heimnetz 0,39, Roaming 0,79 €/kWh.",
           "sourceUrl": "https://www.verbund.com/de/privat/e-mobilitaet/v-go-app",
           "sourceDate": null,
           "confidence": "HIGH"

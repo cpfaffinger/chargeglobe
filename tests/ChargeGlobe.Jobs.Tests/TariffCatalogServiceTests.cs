@@ -120,6 +120,13 @@ public class TariffCatalogServiceTests
         // Energie Graz with both operator IDs, the session fee of Kia on the operator's price.
         Assert.Equal((TariffZoneKind.HOME, 0.53m), Of(Match("energie-graz", "charge-public", "AT*6D6")));
         Assert.Equal(0.59m, Match("kia-charge", "easy", "AT*VIE")!.Zone.MarkupSessionFee);
+        // Restrictions: the night price of Wien Energie ZEIT, the blocking fee of EVN from the end of charging, capped.
+        var zeit = snapshot.Emps.Single(item => item.Key == "wien-energie").Tariffs.Single(item => item.Key == "tanke-zeit");
+        var zeitPlan = TariffPlan.Create(Guid.CreateVersion7(), CuratedTariffCatalog.SourceKey, Catalog.ContentOf(zeit), "hash", T0);
+        Assert.Equal(0.069m, zeitPlan.MatchAt("AT*VIE", true, TariffCurrent.AC, 11, key => networks.GetValueOrDefault(key) ?? [], new TimeOnly(23, 0))!.Price!.PricePerMinute);
+        Assert.Equal(0.084m, zeitPlan.MatchAt("AT*VIE", true, TariffCurrent.AC, 11, key => networks.GetValueOrDefault(key) ?? [], new TimeOnly(12, 0))!.Price!.PricePerMinute);
+        var evnHome = Match("evn", "drive-smart", "AT*EVN")!.Price!;
+        Assert.Equal((TariffBlockingFrom.CHARGING_END, 30m), (evnHome.BlockingFrom, evnHome.MaxBlockingFee));
         Assert.Equal((TariffZoneKind.OPERATOR, 0.46m), Of(Match("elli", "premium", "AT*IOY", TariffCurrent.DC, 350)));
     }
 

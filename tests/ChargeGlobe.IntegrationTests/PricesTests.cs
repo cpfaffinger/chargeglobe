@@ -172,6 +172,7 @@ public class PricesTests(IntegrationFactory factory) : IClassFixture<Integration
         var own = available.GetProperty("data").GetProperty("emps")[0];
         Assert.Equal(("OWN", "Tarif", "tarif", 5m), (own.GetProperty("empName").GetString(), own.GetProperty("tariff").GetString(), own.GetProperty("tariffKey").GetString(), own.GetProperty("monthlyFee").GetDecimal()));
         Assert.Equal(("emp:own", 0.30m), (own.GetProperty("price").GetProperty("source").GetString(), own.GetProperty("price").GetProperty("pricePerKwh").GetDecimal()));
+        Assert.Equal((JsonValueKind.Null, "SESSION_START"), (own.GetProperty("price").GetProperty("blockingFeeMax").ValueKind, own.GetProperty("price").GetProperty("blockingFrom").GetString()));
         Assert.Equal(("https://example.org/own", "2026-10-01", "HIGH"), (own.GetProperty("sourceUrl").GetString(), own.GetProperty("sourceDate").GetString(), own.GetProperty("confidence").GetString()));
         Assert.NotEqual(Guid.Empty, own.GetProperty("tariffId").GetGuid());
         Assert.Equal(17.70m, available.GetProperty("data").GetProperty("current").GetProperty("price").GetProperty("exampleCost").GetDecimal());

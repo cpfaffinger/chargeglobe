@@ -933,6 +933,9 @@ describe('price texts', () => {
     };
     expect(priceParts(base)).toEqual(nbsp(['0,59 €/kWh', '0,02 €/min', 'Startgebühr 0,50 €', 'Blockiergebühr 0,10 €/min']));
     expect(priceParts({ ...base, freeOfCharge: true })).toEqual(['kostenlos']);
+    expect(priceParts({ ...base, pricePerMinute: null, sessionFee: null, blockingFeePerMinute: 0.5, blockingAfterMinutes: 30, blockingFrom: 'CHARGING_END', blockingFeeMax: 30 })).toEqual(
+      nbsp(['0,59 €/kWh', 'Blockiergebühr 0,50 €/min ab Minute 30 nach Ladeende, max. 30,00 €']),
+    );
     expect(priceParts({ ...base, pricePerKwh: null, pricePerMinute: null, sessionFee: null, blockingFeePerMinute: null })).toEqual(['keine Angaben']);
     expect(money(0.1234, 'EUR')).toBe('0,1234\u00a0€');
     expect(money(19, 'EUR')).toBe('19,00\u00a0€');

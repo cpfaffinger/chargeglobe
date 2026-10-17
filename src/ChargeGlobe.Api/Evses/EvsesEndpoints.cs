@@ -80,7 +80,7 @@ public static class EvsesEndpoints
 
     private static DateTimeOffset At(string value) => DateTimeOffset.Parse(value, CultureInfo.InvariantCulture);
 
-    private static readonly PriceView ExamplePrice = new("econtrol", "EUR", 0.59m, null, 0m, 0.10m, 240, false, 17.70m);
+    private static readonly PriceView ExamplePrice = new("econtrol", "EUR", 0.59m, null, 0m, 0.10m, 240, false, 17.70m, null, "SESSION_START");
 
     public static IEndpointRouteBuilder MapEvsesEndpoints(this IEndpointRouteBuilder endpoints)
     {
@@ -159,7 +159,9 @@ public static class EvsesEndpoints
                 "that overlap [`from`, `to`) (ISO 8601, defaults: `to` = now, `from` = `to` minus 90 days, at most 366 days), " +
                 "oldest first, not clipped (`to: null` = still valid). Each price has `source`, `currency`, `pricePerKwh`, " +
                 "`pricePerMinute`, `sessionFee`, `blockingFeePerMinute` with `blockingAfterMinutes` (minute of the session from " +
-                "which it applies), `freeOfCharge` (amounts null if the source does not tell) and `exampleCost`: the cost of " +
+                "which it applies), `blockingFeeMax` (cap per session), `blockingFrom` (SESSION_START, or CHARGING_END: the free " +
+                "minutes count from the end of charging, so the example session that unplugs at the end pays none), " +
+                "`freeOfCharge` (amounts null if the source does not tell) and `exampleCost`: the cost of " +
                 "the example session `example` at this EVSE, unknown parts counted as 0. `example` has `kwh` (setting " +
                 "price.example_kwh, default 30), `minutes` (how long that takes here: at the lower of the power of the EVSE " +
                 "and of the example car, default AC 11 kW and DC 150 kW peak with DC time × 1.3, rounded up), `powerKw` " +
@@ -194,11 +196,11 @@ public static class EvsesEndpoints
                         [
                             new EmpPrice(
                                 "wien-energie", "Wien Energie", Guid.Parse("01990a3e-7c00-7a10-9b2c-3d4e5f6a7b8c"), "tanke-basis", "TANKE Basis", "HOME", "FIXED", null,
-                                new PriceView("emp:wien-energie", "EUR", 0.45m, null, null, 0.10m, 120, false, 13.50m),
+                                new PriceView("emp:wien-energie", "EUR", 0.45m, null, null, 0.10m, 120, false, 13.50m, 25m, "SESSION_START"),
                                 "https://www.wienenergie.at/privat/produkte/e-mobilitaet/", new DateOnly(2026, 7, 1), "HIGH"),
                             new EmpPrice(
                                 "oeamtc", "ÖAMTC ePower", Guid.Parse("01990a3e-7c00-7a10-9b2c-3d4e5f6a7b8d"), "mitglied", "Mitglied", "ROAMING", "FIXED", null,
-                                new PriceView("emp:oeamtc", "EUR", 0.55m, null, null, null, null, false, 16.50m),
+                                new PriceView("emp:oeamtc", "EUR", 0.55m, null, null, null, null, false, 16.50m, null, "SESSION_START"),
                                 "https://www.oeamtc.at/epower", new DateOnly(2026, 4, 1), "MEDIUM"),
                         ],
                         [new EmpUnavailable("tesla", "Tesla", "supercharging", "Supercharging")],

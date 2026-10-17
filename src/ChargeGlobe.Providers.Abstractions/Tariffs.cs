@@ -80,6 +80,9 @@ public sealed record ZoneRecord(
 
 /// <param name="Current"><c>AC</c> or <c>DC</c>.</param>
 /// <param name="MinKw">The price applies from this maximum power of the EVSE on (HPC stages); null for any.</param>
+/// <param name="StartTime">With <paramref name="EndTime"/>: local time window "HH:mm" of the session start, e.g. 22:00–08:00 for a night price.</param>
+/// <param name="MaxBlockingFee">Highest blocking fee of a session.</param>
+/// <param name="BlockingFrom"><c>SESSION_START</c> (default) or <c>CHARGING_END</c>: from when <paramref name="BlockingAfterMinutes"/> count.</param>
 public sealed record PriceRecord(
     string Current,
     decimal? MinKw,
@@ -87,4 +90,8 @@ public sealed record PriceRecord(
     decimal? PricePerMinute,
     decimal? SessionFee,
     decimal? BlockingFeePerMinute,
-    int? BlockingAfterMinutes);
+    int? BlockingAfterMinutes,
+    string? StartTime = null,
+    string? EndTime = null,
+    decimal? MaxBlockingFee = null,
+    string? BlockingFrom = null);

@@ -151,10 +151,14 @@ export class AdminTariffsPage {
           price.pricePerMinute ? `${money(price.pricePerMinute, currency)}/min` : null,
           price.sessionFee ? `Start ${money(price.sessionFee, currency)}` : null,
           price.blockingFeePerMinute
-            ? `Blockieren ${money(price.blockingFeePerMinute, currency)}/min${price.blockingAfterMinutes !== null ? ` ab Min. ${price.blockingAfterMinutes}` : ''}`
+            ? `Blockieren ${money(price.blockingFeePerMinute, currency)}/min` +
+              (price.blockingAfterMinutes !== null ? ` ab Min. ${price.blockingAfterMinutes}` : '') +
+              (price.blockingFrom === 'CHARGING_END' ? ' nach Ladeende' : '') +
+              (price.maxBlockingFee ? ` (max. ${money(price.maxBlockingFee, currency)})` : '')
             : null,
         ].filter((piece) => piece !== null);
-        return `${price.minKw ? `ab ${price.minKw} kW ` : ''}${pieces.join(', ')}`;
+        const window = price.startTime ? `${price.startTime}–${price.endTime} Uhr ` : '';
+        return `${window}${price.minKw ? `ab ${price.minKw} kW ` : ''}${pieces.join(', ')}`;
       });
     return parts.length > 0 ? parts.join(' · ') : '–';
   }
