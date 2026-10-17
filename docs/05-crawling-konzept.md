@@ -111,10 +111,10 @@ Preise sind fachlich der schwierigste Teil, weil Apps sie unterschiedlich zeigen
 
 | Situation | Umgang |
 |---|---|
-| App zeigt vollständigen Tarif am Ladepunkt (kWh, min ab X, Session, Blockiergebühr) | `ProviderPrice` mit `TariffElements` → `tariff` wird automatisch angelegt/versioniert |
+| App zeigt vollständigen Tarif am Ladepunkt (kWh, min ab X, Session, Blockiergebühr) | `ProviderPrice` mit `TariffElements` → Preis je Ladepunkt (`tariff_kind` `EMP`, vorgesehen) |
 | App zeigt nur „ab 0,59 €/kWh“ | flache `price_observation`; Tarif bleibt `null`; Vergleichsrechnung nur für kWh-Anteil, im UI als „unvollständig“ markiert |
-| EMP hat Flat-Tarif unabhängig vom Ladepunkt (z. B. ein Preis für alle AC-Punkte eines CPO-Netzes) | ein `tariff` je (EMP × CPO × Leistungsklasse), Assignment über Regeln statt pro EVSE |
-| Preis nur in PDF/Website | manuelle Pflege im Admin (Tarif-Editor), `verified_by=MANUAL`, mit Quelle-URL und Datum |
+| EMP hat Tarif unabhängig vom Ladepunkt (Heimnetz, Partnernetz, Roaming, Preis je Betreiber) | Tarif mit Zonen über Betreiber-IDs im Tarifkatalog ([ADR-0013](adr/0013-ladetarife-netze-zonen-katalog.md)), Zuordnung über Regeln statt pro EVSE |
+| Preis nur in PDF/Website | kuratierte Katalogdatei je Anbieter (`src/ChargeGlobe.Providers.TariffCatalog/catalog/<land>/<emp>.json`) mit Quell-URL, Stand und Vertrauensstufe; später Preisblatt-Scraper als `ITariffSource` |
 | Ad-hoc-Preis per AFIR im NAP/Verzeichnis | Tier 0, höchste Präzedenz für Ad-hoc |
 
 Poll-Frequenz: Preise ändern sich selten, aber zu Monatsanfang gehäuft → 1×/Tag je EVSE, zusätzlich am 1. und 2. jedes Monats 3×/Tag.

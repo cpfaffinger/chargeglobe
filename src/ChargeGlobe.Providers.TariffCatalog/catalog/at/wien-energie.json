@@ -1,0 +1,253 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "wien-energie",
+      "name": "Wien Energie",
+      "website": "https://www.wienenergie.at/privat/produkte/e-mobilitaet/tanke-tarife/",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "tanke-kwh-go",
+          "name": "Tanke kWh GO",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Ladekarte oder Tanke-App, Karte 9,90 € einmalig, Vertrag bis 30.9.2027; kein Wien-Energie-Stromvertrag nötig.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "wien-energie"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.43,
+                  "blockingFeePerMinute": 0.05,
+                  "blockingAfterMinutes": 300
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.43,
+                  "blockingFeePerMinute": 0.05,
+                  "blockingAfterMinutes": 180
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.7,
+                  "blockingFeePerMinute": 0.05,
+                  "blockingAfterMinutes": 300
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.7,
+                  "blockingFeePerMinute": 0.05,
+                  "blockingAfterMinutes": 180
+                }
+              ],
+              "notes": "Partnernetz (Roaming): alle anderen Stationen mit Fremdkarten-Annahme."
+            }
+          ],
+          "notes": "Standzeitzuschlag nach 5 h (City/Spot), 12 h (Parking) bzw. 3 h (DC), max. 25 € je Ladevorgang, nachts 22–8 Uhr an City/Spot frei. Die kWh-Preise werden am 1.4. und 1.10. angepasst.",
+          "sourceUrl": "https://dokumente.wienenergie.at/link/tarifblatt-tanke-kwh-go-smart-pro/",
+          "sourceDate": "2026-10-01",
+          "confidence": "HIGH"
+        },
+        {
+          "key": "tanke-kwh-smart",
+          "name": "Tanke kWh SMART",
+          "currency": "EUR",
+          "monthlyFee": 5.9,
+          "prerequisites": "Ladekarte oder Tanke-App, Karte 9,90 € einmalig, Vertrag bis 30.9.2027; kein Wien-Energie-Stromvertrag nötig.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "wien-energie"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.4,
+                  "blockingFeePerMinute": 0.05,
+                  "blockingAfterMinutes": 300
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.4,
+                  "blockingFeePerMinute": 0.05,
+                  "blockingAfterMinutes": 180
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.7,
+                  "blockingFeePerMinute": 0.05,
+                  "blockingAfterMinutes": 300
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.7,
+                  "blockingFeePerMinute": 0.05,
+                  "blockingAfterMinutes": 180
+                }
+              ],
+              "notes": "Partnernetz (Roaming): alle anderen Stationen mit Fremdkarten-Annahme."
+            }
+          ],
+          "notes": "Standzeitzuschlag nach 5 h (City/Spot), 12 h (Parking) bzw. 3 h (DC), max. 25 € je Ladevorgang, nachts 22–8 Uhr an City/Spot frei. Die kWh-Preise werden am 1.4. und 1.10. angepasst.",
+          "sourceUrl": "https://dokumente.wienenergie.at/link/tarifblatt-tanke-kwh-go-smart-pro/",
+          "sourceDate": "2026-10-01",
+          "confidence": "HIGH"
+        },
+        {
+          "key": "tanke-kwh-pro",
+          "name": "Tanke kWh PRO",
+          "currency": "EUR",
+          "monthlyFee": 29.9,
+          "prerequisites": "Ladekarte oder Tanke-App, Karte 9,90 € einmalig, Vertrag bis 30.9.2027; kein Wien-Energie-Stromvertrag nötig.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "wien-energie"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.36,
+                  "blockingFeePerMinute": 0.05,
+                  "blockingAfterMinutes": 300
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.36,
+                  "blockingFeePerMinute": 0.05,
+                  "blockingAfterMinutes": 180
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.7,
+                  "blockingFeePerMinute": 0.05,
+                  "blockingAfterMinutes": 300
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.7,
+                  "blockingFeePerMinute": 0.05,
+                  "blockingAfterMinutes": 180
+                }
+              ],
+              "notes": "Partnernetz (Roaming): alle anderen Stationen mit Fremdkarten-Annahme."
+            }
+          ],
+          "notes": "Standzeitzuschlag nach 5 h (City/Spot), 12 h (Parking) bzw. 3 h (DC), max. 25 € je Ladevorgang, nachts 22–8 Uhr an City/Spot frei. Die kWh-Preise werden am 1.4. und 1.10. angepasst.",
+          "sourceUrl": "https://dokumente.wienenergie.at/link/tarifblatt-tanke-kwh-go-smart-pro/",
+          "sourceDate": "2026-10-01",
+          "confidence": "HIGH"
+        },
+        {
+          "key": "tanke-zeit",
+          "name": "Tanke ZEIT",
+          "currency": "EUR",
+          "monthlyFee": 4.9,
+          "prerequisites": "Ladekarte oder Tanke-App, Karte 9,90 € einmalig, Vertrag bis 30.9.2027; kein Wien-Energie-Stromvertrag nötig.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "wien-energie"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerMinute": 0.084
+                },
+                {
+                  "current": "AC",
+                  "minKw": 11.1,
+                  "pricePerMinute": 0.42
+                },
+                {
+                  "current": "DC",
+                  "pricePerMinute": 0.42
+                },
+                {
+                  "current": "DC",
+                  "minKw": 50.1,
+                  "pricePerMinute": 1.69
+                }
+              ],
+              "notes": "Nachts (22–8 Uhr) bis 11 kW 0,069 €/min."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerMinute": 0.129
+                },
+                {
+                  "current": "AC",
+                  "minKw": 11.1,
+                  "pricePerMinute": 0.749
+                },
+                {
+                  "current": "DC",
+                  "pricePerMinute": 0.749
+                },
+                {
+                  "current": "DC",
+                  "minKw": 50.1,
+                  "pricePerMinute": 1.999
+                }
+              ]
+            }
+          ],
+          "notes": "Abrechnung je Minute vom Anstecken bis zum Abstecken nach der Leistung des Ladepunkts; keine Standzeitzuschläge.",
+          "sourceUrl": "https://dokumente.wienenergie.at/link/tarifblatt-tanke-zeit/",
+          "sourceDate": "2026-04-01",
+          "confidence": "HIGH"
+        }
+      ]
+    }
+  ]
+}

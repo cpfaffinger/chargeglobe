@@ -1,0 +1,199 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "kelag",
+      "name": "Kelag",
+      "website": "https://www.kelag.at/privatkunden/laden-unterwegs.htm",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "estart",
+          "name": "Kelag eStart",
+          "currency": "EUR",
+          "monthlyFee": 1.98,
+          "prerequisites": "Kelag Mobility App, ohne Bindung; mit Kelag-Stromliefervertrag 0,99 €/Monat.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "kelag"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.5,
+                  "sessionFee": 0.99,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.6,
+                  "sessionFee": 0.99,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 60
+                }
+              ]
+            }
+          ],
+          "notes": "Nur an Kelag-Stationen. Blockiergebühr an Kelag-Stationen max. 12 € je Ladevorgang.",
+          "sourceUrl": "https://www.kelag.at/media/tarife/Kelag_eStart.pdf",
+          "sourceDate": "2026-06-01",
+          "confidence": "HIGH"
+        },
+        {
+          "key": "eplus",
+          "name": "Kelag ePlus",
+          "currency": "EUR",
+          "monthlyFee": 9.98,
+          "prerequisites": "Kelag Mobility App, ohne Bindung; mit Kelag-Stromliefervertrag 4,99 €/Monat.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "kelag"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.45,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.55,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 60
+                }
+              ]
+            },
+            {
+              "kind": "PARTNER",
+              "networks": [
+                "linz-ag",
+                "burgenland-energie",
+                "omv",
+                "electra",
+                "oeamtc",
+                "energie-ag",
+                "smatrics",
+                "e-laden-tirol",
+                "salzburg-ag",
+                "energie-steiermark",
+                "enio",
+                "tiwag",
+                "evn",
+                "vkw",
+                "wien-energie",
+                "aae",
+                "stromquelle",
+                "tulln-energie"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.6,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.7,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "Benanntes Partnernetz; ohne Deckelung der Blockiergebühr."
+            }
+          ],
+          "notes": "Blockiergebühr an Kelag-Stationen max. 12 € je Ladevorgang.",
+          "sourceUrl": "https://www.kelag.at/media/tarife/Kelag_ePlus.pdf",
+          "sourceDate": "2026-06-01",
+          "confidence": "HIGH"
+        },
+        {
+          "key": "emax",
+          "name": "Kelag eMax",
+          "currency": "EUR",
+          "monthlyFee": 19.98,
+          "prerequisites": "Kelag Mobility App, ohne Bindung; mit Kelag-Stromliefervertrag 9,99 €/Monat.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "kelag"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.4,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.5,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 60
+                }
+              ]
+            },
+            {
+              "kind": "PARTNER",
+              "networks": [
+                "linz-ag",
+                "burgenland-energie",
+                "omv",
+                "electra",
+                "oeamtc",
+                "energie-ag",
+                "smatrics",
+                "e-laden-tirol",
+                "salzburg-ag",
+                "energie-steiermark",
+                "enio",
+                "tiwag",
+                "evn",
+                "vkw",
+                "wien-energie",
+                "aae",
+                "stromquelle",
+                "tulln-energie"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.6,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.7,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "Benanntes Partnernetz; ohne Deckelung der Blockiergebühr."
+            }
+          ],
+          "notes": "Blockiergebühr an Kelag-Stationen max. 12 € je Ladevorgang.",
+          "sourceUrl": "https://www.kelag.at/media/tarife/Kelag_eMax.pdf",
+          "sourceDate": "2026-06-01",
+          "confidence": "HIGH"
+        }
+      ]
+    }
+  ]
+}

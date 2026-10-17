@@ -159,6 +159,41 @@ Der Adapter liest sie über `IProviderSettings` (Implementierung `ConfigProvider
 
 Änderungen gelten ohne Neustart in allen Crawler-/Worker-Instanzen.
 
+## Tarifquellen (`ITariffSource`)
+
+Tarife der Ladekarten und Apps hängen an Betreibern, nicht an Ladepunkten ([ADR-0013](adr/0013-ladetarife-netze-zonen-katalog.md)); sie kommen deshalb nicht über die Ladepunkt-Interfaces, sondern über einen eigenen, ebenso quellneutralen Vertrag in `Providers.Abstractions/Tariffs.cs`:
+
+```csharp
+public interface ITariffSource
+{
+    string Key { get; }                                    // z. B. "tariff-catalog"; gehört zu Netzen und Tarifversionen
+    Task<TariffCatalogSnapshot> FetchAsync(CancellationToken ct);   // der ganze Katalog der Quelle
+}
+
+public sealed record TariffCatalogSnapshot(IReadOnlyList<NetworkRecord> Networks, IReadOnlyList<EmpRecord> Emps);
+public sealed record NetworkRecord(string Key, string Name, string Country, IReadOnlyList<string> Operators);   // AT*VIE …
+public sealed record EmpRecord(string Key, string Name, string? Website, string Country, IReadOnlyList<TariffRecord> Tariffs);
+public sealed record TariffRecord(string Key, string Name, string Currency, decimal? MonthlyFee, string? Prerequisites,
+    IReadOnlyList<string> Markets, IReadOnlyList<ZoneRecord> Zones, string? Notes, string SourceUrl, DateOnly? SourceDate,
+    string Confidence);                                    // HIGH | MEDIUM | LOW
+public sealed record ZoneRecord(string Kind, IReadOnlyList<string>? Networks, IReadOnlyList<string>? Operators,
+    IReadOnlyList<string>? ExcludedNetworks, IReadOnlyList<string>? ExcludedOperators,
+    IReadOnlyList<PriceRecord> Prices, string? Notes);     // Kind: OPERATOR | HOME | PARTNER | ROAMING
+public sealed record PriceRecord(string Current, decimal? MinKw, decimal? PricePerKwh, decimal? PricePerMinute,
+    decimal? SessionFee, decimal? BlockingFeePerMinute, int? BlockingAfterMinutes);   // Current: AC | DC
+```
+
+- Eine Quelle liefert immer ihren **ganzen** Katalog; der Import (`ITariffCatalog.ImportAsync`) prüft ihn vollständig und übernimmt ihn je Quelle atomar (neue Versionen nur bei geändertem Inhalt, fehlende Tarife enden). Quellformate (Preisblatt-PDF, HTML-Tabelle, OCPI `Tariff`) werden im Adapter in diese Records übersetzt, nie in der Domain.
+- Betreiber stehen als Betreiber-IDs des EVSE-ID-Präfixes (`AT*EVN`), nicht als interne Ids: Damit gilt ein Tarif sofort für neue Ladepunkte und ist unabhängig von der Inventarquelle.
+- Netzschlüssel sind global eindeutig und gehören einer Quelle; eine zweite Quelle verweist auf sie, statt sie neu anzulegen.
+- Umgesetzt: der **kuratierte Katalog** (`ChargeGlobe.Providers.TariffCatalog`, JSON-Dateien unter `catalog/<land>/` als Embedded Resources, `networks.json` und je Anbieter `<emp>.json`), registriert mit `services.AddCuratedTariffCatalog()` in der Worker-Rolle; `TariffCatalogService` übernimmt alle registrierten Quellen beim Start und alle 6 h. Quellen außerhalb des Repos schicken dasselbe JSON an `PUT /api/v1/tariff-sources/{source}/catalog`.
+
+Checkliste „Tarif oder Anbieter ergänzen“:
+1. Preisblatt oder Tarifseite des Anbieters lesen; Stand (gültig ab), Grundgebühr, Voraussetzungen, Heim-, Partner- und Roamingpreise je AC/DC/HPC, Blockiergebühr und Partner- bzw. Roamingliste notieren.
+2. Betreiber-IDs der Netze aus den Daten prüfen (`select operator_id, name from operator`, EVSE-ID-Präfixe); fehlende Netze in `catalog/<land>/networks.json` ergänzen.
+3. Datei `catalog/<land>/<emp>.json` anlegen oder ändern: je Tarif `sourceUrl`, `sourceDate`, `confidence` (`HIGH` nur bei Werten direkt aus dem Preisblatt), Blockiergebühr „ab der 241. Minute“ als `blockingAfterMinutes: 240`, Leistungsklassen „bis 11 kW“/„über 11 kW“ als Stufen `minKw` (über 11 kW → `11.1`), Nicht-Abbildbares als `notes`.
+4. `dotnet test tests/ChargeGlobe.Jobs.Tests --filter TariffCatalog` prüft alle Dateien mit den Regeln des Imports und Stichproben der Zuordnung; nach dem Deploy meldet der Worker `Tariff catalog tariff-catalog: … tariffs … new, … changed …`.
+
 ## Checkliste „neuen Provider anbinden“
 
 1. Quelle in [07](07-bestandsanalyse-apps-at.md) / [08](08-datenquellen-und-recht.md) dokumentieren (Endpunkte, Auth, Lizenz, Rate-Limit, Capabilities).

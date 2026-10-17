@@ -1,134 +1,264 @@
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using ChargeGlobe.Application.Identity;
 using ChargeGlobe.Application.Tariffs;
 using ChargeGlobe.Domain.Charging;
 using ChargeGlobe.Infrastructure.Identity;
+using ChargeGlobe.Providers.Abstractions;
 using Microsoft.EntityFrameworkCore;
 
 namespace ChargeGlobe.Infrastructure.Persistence;
 
-/// <summary>EMPs and tariffs in <c>emp</c> and <c>tariff</c>; changes are recorded in the audit log.</summary>
-public sealed class TariffCatalog(AppDbContext db, AuditLog audit) : ITariffCatalog
+/// <summary>
+/// Providers, networks and tariff versions in <c>emp</c>, <c>charging_network</c> and <c>tariff_plan</c>. An import is
+/// one transaction per source: validate everything, then upsert networks and providers, open new tariff versions and end
+/// the replaced or vanished ones.
+/// </summary>
+public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, TimeProvider timeProvider) : ITariffCatalog
 {
+    /// <summary>Highest amount of a price component; protects the comparison from typos such as 45 instead of 0.45.</summary>
+    public const decimal MaxAmount = 1000;
+
     public async Task<IReadOnlyList<EmpView>> EmpsAsync(CancellationToken cancellationToken) =>
         await db.Emps.AsNoTracking()
             .OrderBy(emp => emp.Name)
             .ThenBy(emp => emp.Key)
-            .Select(emp => new EmpView(emp.Key, emp.Name, emp.Website, db.Tariffs.Count(tariff => tariff.EmpId == emp.Id)))
+            .Select(emp => new EmpView(emp.Key, emp.Name, emp.Website, emp.Country, db.TariffPlans.Count(plan => plan.EmpId == emp.Id && plan.ValidTo == null)))
             .ToListAsync(cancellationToken);
 
-    public async Task<(EmpView Emp, bool Created)> PutEmpAsync(string key, EmpInput input, Actor actor, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<NetworkView>> NetworksAsync(CancellationToken cancellationToken) =>
+        (await db.ChargingNetworks.AsNoTracking().OrderBy(network => network.Key).ToListAsync(cancellationToken))
+        .Select(network => new NetworkView(network.Key, network.Name, network.Country, network.Operators))
+        .ToList();
+
+    public async Task<IReadOnlyList<TariffView>> TariffsAsync(string? emp, bool history, CancellationToken cancellationToken)
     {
-        var emp = await db.Emps.FirstOrDefaultAsync(item => item.Key == key, cancellationToken);
-        var created = emp is null;
-        if (emp is null)
-        {
-            emp = Emp.Create(key, input.Name, input.Website);
-            db.Emps.Add(emp);
-        }
-        else
-        {
-            emp.Update(input.Name, input.Website);
-        }
-
-        if (db.ChangeTracker.HasChanges())
-        {
-            audit.Record(created ? "emp.create" : "emp.update", $"emp:{key}", actor);
-            await db.SaveChangesAsync(cancellationToken);
-        }
-
-        var tariffs = await db.Tariffs.CountAsync(tariff => tariff.EmpId == emp.Id, cancellationToken);
-        return (new EmpView(emp.Key, emp.Name, emp.Website, tariffs), created);
-    }
-
-    public async Task<EmpDeleteOutcome> DeleteEmpAsync(string key, Actor actor, CancellationToken cancellationToken)
-    {
-        var emp = await db.Emps.FirstOrDefaultAsync(item => item.Key == key, cancellationToken);
-        if (emp is null)
-        {
-            return EmpDeleteOutcome.NotFound;
-        }
-
-        if (await db.Tariffs.AnyAsync(tariff => tariff.EmpId == emp.Id, cancellationToken))
-        {
-            return EmpDeleteOutcome.HasTariffs;
-        }
-
-        db.Emps.Remove(emp);
-        audit.Record("emp.delete", $"emp:{key}", actor);
-        await db.SaveChangesAsync(cancellationToken);
-        return EmpDeleteOutcome.Deleted;
-    }
-
-    public async Task<IReadOnlyList<TariffView>> TariffsAsync(string? emp, CancellationToken cancellationToken)
-    {
-        var rows = await db.Tariffs.AsNoTracking()
-            .Join(db.Emps, tariff => tariff.EmpId, item => item.Id, (tariff, item) => new { Tariff = tariff, item.Key })
+        var rows = await db.TariffPlans.AsNoTracking()
+            .Where(plan => history || plan.ValidTo == null)
+            .Join(db.Emps, plan => plan.EmpId, item => item.Id, (plan, item) => new { Plan = plan, item.Key, item.Name })
             .Where(row => emp == null || row.Key == emp)
-            .OrderBy(row => row.Key)
-            .ThenBy(row => row.Tariff.Name)
-            .ThenBy(row => row.Tariff.ValidFrom)
             .ToListAsync(cancellationToken);
-        return [.. rows.Select(row => View(row.Tariff, row.Key))];
+        return [.. rows
+            .OrderBy(row => row.Key, StringComparer.Ordinal)
+            .ThenBy(row => row.Plan.Key, StringComparer.Ordinal)
+            .ThenByDescending(row => row.Plan.ValidFrom)
+            .Select(row => View(row.Plan, row.Key, row.Name))];
     }
 
-    public async Task<TariffResult> PutTariffAsync(TariffView tariff, Actor actor, CancellationToken cancellationToken)
+    public async Task<CatalogImportResult> ImportAsync(string sourceKey, TariffCatalogSnapshot snapshot, Actor? actor, CancellationToken cancellationToken)
     {
-        var emp = await db.Emps.AsNoTracking().FirstOrDefaultAsync(item => item.Key == tariff.Emp, cancellationToken);
-        if (emp is null)
+        var known = await db.ChargingNetworks.AsNoTracking()
+            .Where(network => network.SourceKey != sourceKey)
+            .Select(network => network.Key)
+            .ToListAsync(cancellationToken);
+        var issues = Validate(snapshot, known);
+        if (issues.Count > 0)
         {
-            return new TariffResult(TariffOutcome.UnknownEmp, null);
+            return new CatalogImportResult(0, 0, 0, 0, 0, 0, issues);
         }
 
-        List<Guid> operators = [.. tariff.OperatorIds.Distinct()];
-        if (await db.Operators.CountAsync(item => operators.Contains(item.Id), cancellationToken) != operators.Count)
+        var now = timeProvider.GetUtcNow();
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        var networks = await db.ChargingNetworks.Where(network => network.SourceKey == sourceKey).ToDictionaryAsync(network => network.Key, cancellationToken);
+        foreach (var record in snapshot.Networks)
         {
-            return new TariffResult(TariffOutcome.UnknownOperator, null);
+            if (networks.Remove(record.Key, out var network))
+            {
+                network.Update(record.Name, record.Country, record.Operators, sourceKey);
+            }
+            else
+            {
+                db.ChargingNetworks.Add(ChargingNetwork.Create(record.Key, record.Name, record.Country, record.Operators, sourceKey));
+            }
         }
 
-        var values = new Tariff.Values(
-            tariff.Name, tariff.Currency, Microseconds(tariff.ValidFrom), tariff.ValidTo is { } to ? Microseconds(to) : null,
-            tariff.PricePerKwhAc, tariff.PricePerKwhDc, tariff.PricePerMinute, tariff.SessionFee, tariff.BlockingFeePerMinute,
-            tariff.BlockingAfterMinutes, tariff.MonthlyFee, tariff.RoamingOnly, operators);
-        var stored = await db.Tariffs.FirstOrDefaultAsync(item => item.Id == tariff.Id, cancellationToken);
-        var created = stored is null;
-        if (stored is null)
+        // Networks the source no longer lists go; zones that name them cover nothing.
+        db.ChargingNetworks.RemoveRange(networks.Values);
+
+        List<string> empKeys = [.. snapshot.Emps.Select(emp => emp.Key)];
+        var emps = await db.Emps.Where(emp => empKeys.Contains(emp.Key)).ToDictionaryAsync(emp => emp.Key, cancellationToken);
+        var open = await db.TariffPlans.Where(plan => plan.SourceKey == sourceKey && plan.ValidTo == null).ToListAsync(cancellationToken);
+        var (created, changed, unchanged) = (0, 0, 0);
+        var seen = new HashSet<Guid>();
+        foreach (var record in snapshot.Emps)
         {
-            stored = Tariff.Create(tariff.Id, emp.Id, values);
-            db.Tariffs.Add(stored);
-        }
-        else
-        {
-            stored.Update(emp.Id, values);
+            if (emps.TryGetValue(record.Key, out var emp))
+            {
+                emp.Update(record.Name, record.Website, record.Country);
+            }
+            else
+            {
+                emp = Emp.Create(record.Key, record.Name, record.Website, record.Country);
+                db.Emps.Add(emp);
+            }
+
+            foreach (var tariff in record.Tariffs)
+            {
+                var content = ContentOf(tariff);
+                var hash = Hash(content);
+                var current = open.FirstOrDefault(plan => plan.EmpId == emp.Id && plan.Key == tariff.Key);
+                if (current is not null)
+                {
+                    seen.Add(current.Id);
+                    if (current.ContentHash == hash)
+                    {
+                        unchanged++;
+                        continue;
+                    }
+
+                    current.Close(now);
+                    changed++;
+                }
+                else
+                {
+                    created++;
+                }
+
+                db.TariffPlans.Add(TariffPlan.Create(emp.Id, sourceKey, content, hash, now));
+            }
         }
 
-        if (db.ChangeTracker.HasChanges())
+        var vanished = open.Where(plan => !seen.Contains(plan.Id)).ToList();
+        vanished.ForEach(plan => plan.Close(now));
+        if (actor is not null)
         {
-            audit.Record(created ? "tariff.create" : "tariff.update", $"tariff:{tariff.Id}", actor);
-            await db.SaveChangesAsync(cancellationToken);
+            audit.Record("tariff.import", $"tariff-source:{sourceKey}", actor);
         }
 
-        return new TariffResult(created ? TariffOutcome.Created : TariffOutcome.Updated, View(stored, emp.Key));
-    }
-
-    public async Task<bool> DeleteTariffAsync(Guid id, Actor actor, CancellationToken cancellationToken)
-    {
-        var tariff = await db.Tariffs.FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
-        if (tariff is null)
-        {
-            return false;
-        }
-
-        db.Tariffs.Remove(tariff);
-        audit.Record("tariff.delete", $"tariff:{id}", actor);
         await db.SaveChangesAsync(cancellationToken);
-        return true;
+        await transaction.CommitAsync(cancellationToken);
+        return new CatalogImportResult(snapshot.Networks.Count, snapshot.Emps.Count, created, changed, vanished.Count, unchanged, []);
     }
 
-    internal static TariffView View(Tariff tariff, string emp) =>
-        new(tariff.Id, emp, tariff.Name, tariff.Currency, tariff.ValidFrom, tariff.ValidTo, tariff.PricePerKwhAc, tariff.PricePerKwhDc,
-            tariff.PricePerMinute, tariff.SessionFee, tariff.BlockingFeePerMinute, tariff.BlockingAfterMinutes, tariff.MonthlyFee,
-            tariff.RoamingOnly, tariff.OperatorIds);
+    /// <summary>Every rule of the catalog format; the messages name the record (docs/06, "Tarife").</summary>
+    public static List<string> Validate(TariffCatalogSnapshot snapshot, IReadOnlyCollection<string> otherNetworks)
+    {
+        var issues = new List<string>();
+        var networkKeys = new HashSet<string>(otherNetworks, StringComparer.Ordinal);
+        foreach (var network in snapshot.Networks)
+        {
+            var where = $"network '{network.Key}'";
+            Require(Emp.IsKey(network.Key), $"{where}: the key must have 2 to 40 lower-case letters, digits or '-'.");
+            Require(networkKeys.Add(network.Key), $"{where}: the key is used twice.");
+            Require(!string.IsNullOrWhiteSpace(network.Name), $"{where}: a name is required.");
+            Require(IsCountry(network.Country), $"{where}: the country must be ISO 3166-1 alpha-2, e.g. AT.");
+            Require(network.Operators is { Count: > 0 } operators && operators.All(IsOperator), $"{where}: operators must be IDs such as AT*EVN.");
+        }
 
-    /// <summary>Postgres keeps microseconds: an equal second PUT finds no change, and the answer equals a later read.</summary>
-    private static DateTimeOffset Microseconds(DateTimeOffset value) => value.AddTicks(-(value.Ticks % 10));
+        var empKeys = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var emp in snapshot.Emps)
+        {
+            var where = $"emp '{emp.Key}'";
+            Require(Emp.IsKey(emp.Key), $"{where}: the key must have 2 to 40 lower-case letters, digits or '-'.");
+            Require(empKeys.Add(emp.Key), $"{where}: the key is used twice.");
+            Require(!string.IsNullOrWhiteSpace(emp.Name), $"{where}: a name is required.");
+            Require(IsCountry(emp.Country), $"{where}: the country must be ISO 3166-1 alpha-2.");
+            var tariffKeys = new HashSet<string>(StringComparer.Ordinal);
+            Require(emp.Tariffs is not null, $"{where}: tariffs are required (may be empty).");
+            foreach (var tariff in emp.Tariffs ?? [])
+            {
+                var at = $"{where}, tariff '{tariff.Key}'";
+                Require(Emp.IsKey(tariff.Key), $"{at}: the key must have 2 to 40 lower-case letters, digits or '-'.");
+                Require(tariffKeys.Add(tariff.Key), $"{at}: the key is used twice.");
+                Require(!string.IsNullOrWhiteSpace(tariff.Name), $"{at}: a name is required.");
+                Require(tariff.Currency is not null && CurrencyPattern().IsMatch(tariff.Currency), $"{at}: the currency must be ISO 4217, e.g. EUR.");
+                Require(tariff.MonthlyFee is null or (>= 0 and <= MaxAmount), $"{at}: the monthly fee must lie between 0 and {MaxAmount}.");
+                Require(tariff.Markets is { Count: > 0 } markets && markets.All(IsCountry), $"{at}: markets must be countries such as AT.");
+                Require(Uri.TryCreate(tariff.SourceUrl, UriKind.Absolute, out var url) && url.Scheme is "https" or "http", $"{at}: the source must be an http(s) URL.");
+                Require(Enum.TryParse<TariffConfidence>(tariff.Confidence, false, out _), $"{at}: the confidence must be HIGH, MEDIUM or LOW.");
+                Require(tariff.Zones is { Count: > 0 }, $"{at}: at least one zone is required.");
+                foreach (var zone in tariff.Zones ?? [])
+                {
+                    var z = $"{at}, zone {zone.Kind}";
+                    Require(Enum.TryParse<TariffZoneKind>(zone.Kind, false, out var kind), $"{z}: the kind must be OPERATOR, HOME, PARTNER or ROAMING.");
+                    var networks = (zone.Networks ?? []).Concat(zone.ExcludedNetworks ?? []).ToList();
+                    Require(networks.All(networkKeys.Contains), $"{z}: unknown networks {string.Join(", ", networks.Where(key => !networkKeys.Contains(key)))}.");
+                    Require((zone.Operators ?? []).Concat(zone.ExcludedOperators ?? []).All(IsOperator), $"{z}: operators must be IDs such as AT*EVN.");
+                    Require(kind == TariffZoneKind.ROAMING || (zone.Networks ?? []).Count + (zone.Operators ?? []).Count > 0, $"{z}: the zone must name networks or operators.");
+                    Require(zone.Prices is { Count: > 0 }, $"{z}: at least one price is required.");
+                    foreach (var price in zone.Prices ?? [])
+                    {
+                        Require(Enum.TryParse<TariffCurrent>(price.Current, false, out _), $"{z}: the current must be AC or DC.");
+                        Require((price.PricePerKwh ?? price.PricePerMinute ?? price.SessionFee) is not null, $"{z}: a price needs pricePerKwh, pricePerMinute or sessionFee.");
+                        Require(price.MinKw is null or > 0, $"{z}: minKw must be above 0.");
+                        Require(price.BlockingAfterMinutes is null or >= 0, $"{z}: blockingAfterMinutes must not be negative.");
+                        Require(
+                            new[] { price.PricePerKwh, price.PricePerMinute, price.SessionFee, price.BlockingFeePerMinute }.All(amount => amount is null or (>= 0 and <= MaxAmount)),
+                            $"{z}: amounts must lie between 0 and {MaxAmount}.");
+                    }
+                }
+            }
+        }
+
+        return issues;
+
+        void Require(bool valid, string message)
+        {
+            if (!valid)
+            {
+                issues.Add(message);
+            }
+        }
+    }
+
+    /// <summary>An operator ID in any case, as the import stores it upper-case.</summary>
+    private static bool IsOperator(string? value) => value is not null && ChargingNetwork.IsOperatorId(value.Trim().ToUpperInvariant());
+
+    private static bool IsCountry(string? value) => value is { Length: 2 } && value.All(char.IsAsciiLetterUpper);
+
+    /// <summary>The domain content of a tariff record of a source.</summary>
+    public static TariffPlan.Content ContentOf(TariffRecord record) =>
+        new(
+            record.Key,
+            record.Name.Trim(),
+            record.Currency,
+            record.MonthlyFee,
+            record.Prerequisites,
+            record.Markets,
+            [.. record.Zones.Select(zone => new TariffZone(
+                Enum.Parse<TariffZoneKind>(zone.Kind),
+                zone.Networks ?? [],
+                [.. (zone.Operators ?? []).Select(id => id.Trim().ToUpperInvariant())],
+                zone.ExcludedNetworks ?? [],
+                [.. (zone.ExcludedOperators ?? []).Select(id => id.Trim().ToUpperInvariant())],
+                [.. zone.Prices.Select(price => new TariffPriceElement(
+                    Enum.Parse<TariffCurrent>(price.Current), price.MinKw, price.PricePerKwh, price.PricePerMinute, price.SessionFee,
+                    price.BlockingFeePerMinute, price.BlockingAfterMinutes))],
+                zone.Notes))],
+            record.Notes,
+            record.SourceUrl,
+            record.SourceDate,
+            Enum.Parse<TariffConfidence>(record.Confidence));
+
+    private static string Hash(TariffPlan.Content content) =>
+        Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(content, TariffCatalogSnapshot.Json))));
+
+    private static TariffView View(TariffPlan plan, string emp, string empName) =>
+        new(
+            plan.Id,
+            emp,
+            empName,
+            plan.Key,
+            plan.Name,
+            plan.Currency,
+            plan.MonthlyFee,
+            plan.Prerequisites,
+            plan.Markets,
+            [.. plan.Zones.Select(zone => new ZoneView(
+                zone.Kind.ToString(), zone.Networks, zone.Operators, zone.ExcludedNetworks, zone.ExcludedOperators,
+                [.. zone.Prices.Select(price => new PriceElementView(
+                    price.Current.ToString(), price.MinKw, price.PricePerKwh, price.PricePerMinute, price.SessionFee,
+                    price.BlockingFeePerMinute, price.BlockingAfterMinutes))],
+                zone.Notes))],
+            plan.Notes,
+            plan.SourceUrl,
+            plan.SourceDate,
+            plan.Confidence.ToString(),
+            plan.ValidFrom,
+            plan.ValidTo);
+
+    [GeneratedRegex("^[A-Z]{3}$")]
+    private static partial Regex CurrencyPattern();
 }

@@ -1,0 +1,387 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "tiwag",
+      "name": "TIWAG (TIWAG mobil)",
+      "website": "https://www.tiwag.at/mobilitaet",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "tiwag-mobil",
+          "name": "TIWAG mobil",
+          "currency": "EUR",
+          "monthlyFee": null,
+          "prerequisites": "Nur für TIWAG-Kunden (Kunden- und Vertragskontonummer), SEPA-Lastschrift; Karte kostenlos.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "tiwag"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.36
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.56,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 60
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "networks": [
+                "enio",
+                "strombox"
+              ],
+              "prices": [
+                {
+                  "blockingAfterMinutes": 240,
+                  "blockingFeePerMinute": 0.12,
+                  "current": "AC",
+                  "pricePerKwh": 0.54
+                },
+                {
+                  "blockingAfterMinutes": 120,
+                  "blockingFeePerMinute": 0.12,
+                  "current": "DC",
+                  "pricePerKwh": 0.84
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "networks": [
+                "oeamtc"
+              ],
+              "prices": [
+                {
+                  "blockingAfterMinutes": 240,
+                  "blockingFeePerMinute": 0.12,
+                  "current": "AC",
+                  "pricePerKwh": 0.54
+                },
+                {
+                  "blockingAfterMinutes": 60,
+                  "blockingFeePerMinute": 0.12,
+                  "current": "DC",
+                  "pricePerKwh": 0.72
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "networks": [
+                "tulln-energie"
+              ],
+              "prices": [
+                {
+                  "blockingAfterMinutes": 240,
+                  "blockingFeePerMinute": 0.12,
+                  "current": "AC",
+                  "pricePerKwh": 0.54
+                },
+                {
+                  "blockingAfterMinutes": 120,
+                  "blockingFeePerMinute": 0.12,
+                  "current": "DC",
+                  "pricePerKwh": 0.78
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "operators": [
+                "AT*SMA"
+              ],
+              "prices": [
+                {
+                  "blockingAfterMinutes": 240,
+                  "blockingFeePerMinute": 0.12,
+                  "current": "AC",
+                  "pricePerKwh": 0.6
+                },
+                {
+                  "blockingAfterMinutes": 60,
+                  "blockingFeePerMinute": 0.18,
+                  "current": "DC",
+                  "pricePerKwh": 0.78
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "blockingAfterMinutes": 60,
+                  "blockingFeePerMinute": 0.12,
+                  "current": "AC",
+                  "pricePerKwh": 0.6
+                },
+                {
+                  "blockingAfterMinutes": 60,
+                  "blockingFeePerMinute": 0.12,
+                  "current": "DC",
+                  "pricePerKwh": 0.78
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "networks": [
+                "aae"
+              ],
+              "prices": [
+                {
+                  "blockingAfterMinutes": 240,
+                  "blockingFeePerMinute": 0.12,
+                  "current": "AC",
+                  "pricePerKwh": 0.66
+                },
+                {
+                  "blockingAfterMinutes": 60,
+                  "blockingFeePerMinute": 0.18,
+                  "current": "DC",
+                  "pricePerKwh": 0.78
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "networks": [
+                "da-emobil",
+                "linz-ag",
+                "vkw"
+              ],
+              "prices": [
+                {
+                  "blockingAfterMinutes": 240,
+                  "blockingFeePerMinute": 0.12,
+                  "current": "AC",
+                  "pricePerKwh": 0.66
+                },
+                {
+                  "blockingAfterMinutes": 60,
+                  "blockingFeePerMinute": 0.12,
+                  "current": "DC",
+                  "pricePerKwh": 0.78
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "networks": [
+                "e-laden-tirol"
+              ],
+              "prices": [
+                {
+                  "blockingAfterMinutes": 240,
+                  "blockingFeePerMinute": 0.12,
+                  "current": "AC",
+                  "pricePerKwh": 0.66
+                },
+                {
+                  "blockingAfterMinutes": 45,
+                  "blockingFeePerMinute": 0.12,
+                  "current": "DC",
+                  "pricePerKwh": 0.78
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "networks": [
+                "energie-ag"
+              ],
+              "prices": [
+                {
+                  "blockingAfterMinutes": 180,
+                  "blockingFeePerMinute": 0.12,
+                  "current": "AC",
+                  "pricePerKwh": 0.66
+                },
+                {
+                  "blockingAfterMinutes": 60,
+                  "blockingFeePerMinute": 0.12,
+                  "current": "DC",
+                  "pricePerKwh": 0.9
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "networks": [
+                "energie-steiermark",
+                "wien-energie"
+              ],
+              "prices": [
+                {
+                  "blockingAfterMinutes": 180,
+                  "blockingFeePerMinute": 0.12,
+                  "current": "AC",
+                  "pricePerKwh": 0.66
+                },
+                {
+                  "blockingAfterMinutes": 60,
+                  "blockingFeePerMinute": 0.12,
+                  "current": "DC",
+                  "pricePerKwh": 0.78
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "networks": [
+                "evn"
+              ],
+              "prices": [
+                {
+                  "blockingAfterMinutes": 180,
+                  "blockingFeePerMinute": 0.18,
+                  "current": "AC",
+                  "pricePerKwh": 0.66
+                },
+                {
+                  "blockingAfterMinutes": 60,
+                  "blockingFeePerMinute": 0.18,
+                  "current": "DC",
+                  "pricePerKwh": 0.78
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "networks": [
+                "stadtwerke-kufstein"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.66
+                },
+                {
+                  "blockingAfterMinutes": 60,
+                  "blockingFeePerMinute": 0.18,
+                  "current": "DC",
+                  "pricePerKwh": 0.78
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "networks": [
+                "electra"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.72
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "networks": [
+                "mercedes-hpc"
+              ],
+              "prices": [
+                {
+                  "blockingAfterMinutes": 30,
+                  "blockingFeePerMinute": 0.24,
+                  "current": "DC",
+                  "pricePerKwh": 0.72
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "networks": [
+                "salzburg-ag"
+              ],
+              "prices": [
+                {
+                  "blockingAfterMinutes": 180,
+                  "blockingFeePerMinute": 0.12,
+                  "current": "AC",
+                  "pricePerKwh": 0.72
+                },
+                {
+                  "blockingAfterMinutes": 60,
+                  "blockingFeePerMinute": 0.12,
+                  "current": "DC",
+                  "pricePerKwh": 0.84
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "networks": [
+                "kelag"
+              ],
+              "prices": [
+                {
+                  "blockingAfterMinutes": 180,
+                  "blockingFeePerMinute": 0.12,
+                  "current": "AC",
+                  "pricePerKwh": 0.78
+                },
+                {
+                  "blockingAfterMinutes": 60,
+                  "blockingFeePerMinute": 0.12,
+                  "current": "DC",
+                  "pricePerKwh": 0.78
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "networks": [
+                "burgenland-energie"
+              ],
+              "prices": [
+                {
+                  "blockingAfterMinutes": 120,
+                  "blockingFeePerMinute": 0.12,
+                  "current": "AC",
+                  "pricePerKwh": 0.84
+                },
+                {
+                  "blockingAfterMinutes": 60,
+                  "blockingFeePerMinute": 0.12,
+                  "current": "DC",
+                  "pricePerKwh": 0.84
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "networks": [
+                "mer"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.84
+                }
+              ]
+            }
+          ],
+          "notes": "Roaming mit eigenem Preis je Betreiber (Liste Stand 26.6.2026); nicht gelistete Betreiber (u. a. Tesla, Energie Graz, OMV, Shell, Lidl) sind nicht nutzbar. Blockiergebühr DC im TIWAG-Netz max. 30 €.",
+          "sourceUrl": "https://www.tiwag.at/uploads/tx_bh/2241/produktblatt_tiwag_mobil.pdf",
+          "sourceDate": "2025-06-02",
+          "confidence": "HIGH"
+        }
+      ]
+    }
+  ]
+}

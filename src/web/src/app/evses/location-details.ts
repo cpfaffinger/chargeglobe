@@ -21,6 +21,7 @@ import {
 import { Segment, combine, faultSource, sourceName, statusOf, timeline } from './status';
 import { OccupancyHeatmap, StatusTimeline } from './status-charts';
 import { CardsStore } from '../preferences/cards.store';
+import { ZONE_LABELS, ZoneKind } from '../tariffs/tariffs.service';
 import { EmpPrice, EvsePricesResponse, money, priceParts } from './prices';
 import { AVAILABILITY, busyText, tokenColor } from '../map/availability';
 import { connectorLabel, formatLabel } from './labels';
@@ -236,6 +237,31 @@ type LoadState = 'loading' | 'error' | 'ready';
                         </p>
                       }
                     }
+                    @if (pricing.emps.length > 0 || pricing.unavailable.length > 0) {
+                      <details class="all-tariffs">
+                        <summary>Alle Ladekarten und Apps ({{ pricing.emps.length }})</summary>
+                        <table class="tariff-table">
+                          <tbody>
+                            @for (card of pricing.emps; track card.tariffId) {
+                              <tr [class.own]="isOwn(card)">
+                                <th scope="row">{{ card.empName }} · {{ card.tariff }}</th>
+                                <td><span [class]="'zone zone-' + card.zone.toLowerCase()">{{ zoneLabel(card.zone) }}</span></td>
+                                <td>{{ parts(card.price).join(' · ') }}</td>
+                                <td class="price-example">{{ money(card.price.exampleCost, card.price.currency) }}</td>
+                                <td class="monthly">{{ card.monthlyFee ? '+ ' + money(card.monthlyFee, card.price.currency) + '/Monat' : '' }}</td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                        @if (pricing.unavailable.length > 0) {
+                          <p class="unavailable">Hier nicht nutzbar: {{ unavailableText(pricing) }}</p>
+                        }
+                        <p class="tariff-note">
+                          {{ example }} je Tarif; Grundgebühren kommen dazu. Preise nach den Preisblättern der Anbieter, Stand je Tarif
+                          unter Tarife.
+                        </p>
+                      </details>
+                    }
                   }
                 }
               }
@@ -425,6 +451,19 @@ export class LocationDetails {
   protected readonly occupancyWeeks = OCCUPANCY_WEEKS;
   protected readonly statusOf = statusOf;
   protected readonly faultSource = faultSource;
+
+  protected zoneLabel(zone: ZoneKind): string {
+    return ZONE_LABELS[zone];
+  }
+
+  protected isOwn(card: EmpPrice): boolean {
+    return this.cards.cards().includes(card.emp);
+  }
+
+  /** "EVN · Basic, Tesla · Supercharging". */
+  protected unavailableText(pricing: EvsePricesResponse['data']): string {
+    return pricing.unavailable.map((tariff) => `${tariff.empName} · ${tariff.tariff}`).join(', ');
+  }
   protected readonly sourceName = sourceName;
   protected readonly busy = busyText;
   protected readonly availabilityColor = (key: keyof typeof AVAILABILITY) => tokenColor(AVAILABILITY[key].token);

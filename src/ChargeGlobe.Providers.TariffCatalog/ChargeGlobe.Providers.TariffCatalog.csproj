@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.13" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ChargeGlobe.Providers.Abstractions\ChargeGlobe.Providers.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The curated catalog (docs/adr/0013): one file per provider and country, reviewed like code. -->
+    <EmbeddedResource Include="catalog\**\*.json" LogicalName="tariff-catalog/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+</Project>

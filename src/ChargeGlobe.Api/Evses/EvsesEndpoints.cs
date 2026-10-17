@@ -56,7 +56,8 @@ public sealed record EvsePricesData(
     PriceExampleSession Example,
     CurrentPrice? Current,
     IReadOnlyList<PricePeriod> History,
-    IReadOnlyList<EmpPrice> Emps);
+    IReadOnlyList<EmpPrice> Emps,
+    IReadOnlyList<EmpUnavailable> Unavailable);
 
 public sealed record EvsePricesResponse(EvsePricesData Data, AttributionMeta Meta);
 
@@ -162,10 +163,12 @@ public static class EvsesEndpoints
                 "`pricePerMinute`, `sessionFee`, `blockingFeePerMinute` with `blockingAfterMinutes` (minute of the session from " +
                 "which it applies), `freeOfCharge` (amounts null if the source does not tell) and `exampleCost`: the cost of " +
                 "charging 30 kWh in 40 minutes (`example`), unknown parts counted as 0. `emps` compares charging cards and " +
-                "apps: per EMP tariff valid now that applies at the EVSE (`listTariffs`: own network by `operatorIds`, " +
-                "otherwise `roamingOnly` needs `roaming` = true at the EVSE) `emp` (key), `empName`, `tariffId`, `tariff`, " +
-                "`monthlyFee` (not part of the example) and `price` (source `emp:<key>`, energy price for DC if the EVSE or " +
-                "a connector is DC, otherwise AC), sorted by `price.exampleCost`; empty if no tariff applies. 422 for " +
+                "apps: per tariff valid now that applies at the EVSE (rules in `listTariffs`: the zone of the operator part of " +
+                "the EVSE-ID, then the price element for its current – DC if the EVSE or a connector is DC – and its maximum " +
+                "power) `emp` (key), `empName`, `tariffId`, `tariffKey`, `tariff`, `zone` (OPERATOR, HOME, PARTNER or " +
+                "ROAMING), `monthlyFee` (not part of the example), `price` (source `emp:<key>`), `sourceUrl`, `sourceDate` " +
+                "(\"Stand\" of the provider) and `confidence`, sorted by `price.exampleCost`. `unavailable` lists the tariffs " +
+                "valid now that cannot be used at the EVSE (operator not covered or no cards of other providers). 422 for " +
                 "invalid or too long ranges; 404 for an unknown EVSE. `meta.attribution` names the sources.")
             .Produces<EvsePricesResponse>()
             .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
@@ -187,12 +190,15 @@ public static class EvsesEndpoints
                         ],
                         [
                             new EmpPrice(
-                                "smatrics", "SMATRICS", Guid.Parse("01990a3e-7c00-7a10-9b2c-3d4e5f6a7b8c"), "Basic", null,
-                                new PriceView("emp:smatrics", "EUR", 0.45m, null, null, 0.10m, 120, false, 13.50m)),
+                                "wien-energie", "Wien Energie", Guid.Parse("01990a3e-7c00-7a10-9b2c-3d4e5f6a7b8c"), "tanke-basis", "TANKE Basis", "HOME", null,
+                                new PriceView("emp:wien-energie", "EUR", 0.45m, null, null, 0.10m, 120, false, 13.50m),
+                                "https://www.wienenergie.at/privat/produkte/e-mobilitaet/", new DateOnly(2026, 7, 1), "HIGH"),
                             new EmpPrice(
-                                "oeamtc", "ÖAMTC ePower", Guid.Parse("01990a3e-7c00-7a10-9b2c-3d4e5f6a7b8d"), "Standard", 4.90m,
-                                new PriceView("emp:oeamtc", "EUR", 0.55m, null, null, null, null, false, 16.50m)),
-                        ]),
+                                "oeamtc", "ÖAMTC ePower", Guid.Parse("01990a3e-7c00-7a10-9b2c-3d4e5f6a7b8d"), "mitglied", "Mitglied", "ROAMING", null,
+                                new PriceView("emp:oeamtc", "EUR", 0.55m, null, null, null, null, false, 16.50m),
+                                "https://www.oeamtc.at/epower", new DateOnly(2026, 4, 1), "MEDIUM"),
+                        ],
+                        [new EmpUnavailable("tesla", "Tesla", "supercharging", "Supercharging")]),
                     ExampleMeta));
 
         evses.MapGet("/{evseId}/status/history", GetStatusHistoryAsync)
@@ -317,7 +323,7 @@ public static class EvsesEndpoints
         return Results.Ok(new EvsePricesResponse(
             new EvsePricesData(
                 evse.Id, evse.EvseId, nameof(TariffKind.AD_HOC), start.Value, end.Value, new PriceExampleSession(PriceExample.Kwh, PriceExample.Minutes),
-                prices.Current, prices.History, prices.Emps),
+                prices.Current, prices.History, prices.Emps, prices.Unavailable),
             new AttributionMeta(await queries.AttributionAsync(evse.Id, cancellationToken))));
     }
 

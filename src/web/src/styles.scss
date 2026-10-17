@@ -969,6 +969,58 @@ app-location-detail {
 }
 
 // Charging stations, EVSEs and connectors of a location.
+app-location-details .all-tariffs {
+  margin: 6px 0 0;
+}
+
+app-location-details .all-tariffs summary {
+  cursor: pointer;
+  color: var(--mat-sys-primary);
+}
+
+app-location-details .tariff-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 4px 0;
+  font: var(--mat-sys-body-small);
+}
+
+app-location-details .tariff-table th,
+app-location-details .tariff-table td {
+  padding: 3px 6px 3px 0;
+  text-align: left;
+  vertical-align: top;
+  font-weight: normal;
+}
+
+app-location-details .tariff-table tr.own th {
+  font-weight: 600;
+}
+
+app-location-details .zone {
+  padding: 0 6px;
+  border-radius: 8px;
+  white-space: nowrap;
+  background: var(--mat-sys-surface-container-high);
+}
+
+app-location-details .zone-home {
+  background: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+}
+
+app-location-details .zone-partner {
+  background: var(--mat-sys-tertiary-container);
+  color: var(--mat-sys-on-tertiary-container);
+}
+
+app-location-details .unavailable,
+app-location-details .tariff-note {
+  margin: 2px 0;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-small);
+}
+
 app-location-details .brief-fault {
   display: flex;
   align-items: flex-start;

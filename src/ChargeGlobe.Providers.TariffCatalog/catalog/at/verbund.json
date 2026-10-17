@@ -1,0 +1,211 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "verbund",
+      "name": "VERBUND (V-Go)",
+      "website": "https://www.verbund.com/de/privat/e-mobilitaet/v-go-app",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "v-go-basic",
+          "name": "V-GO BASIC",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Nur App (V-Go), Kreditkarte, ohne Bindung; Vertragspartner ist SMATRICS.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "smatrics"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.49,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 480
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.49,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 180
+                },
+                {
+                  "current": "DC",
+                  "minKw": 80,
+                  "pricePerKwh": 0.49,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ]
+            },
+            {
+              "kind": "PARTNER",
+              "networks": [
+                "oebb"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.49,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 480
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.49,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 180
+                },
+                {
+                  "current": "DC",
+                  "minKw": 80,
+                  "pricePerKwh": 0.49,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "Partnernetze (u. a. VERBUND, ÖBB) zum Heimnetzpreis."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.79,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 480
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.79,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 180
+                },
+                {
+                  "current": "DC",
+                  "minKw": 80,
+                  "pricePerKwh": 0.79,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "Roaming in AT, DE, IT, HR, SK, SI und CZ."
+            }
+          ],
+          "notes": "Einführungspreis bis Jänner 2027; ab 1.2.2027 Heimnetz 0,55, Roaming 0,89 €/kWh. Blockiergebühr max. 18 € (AC) bzw. 36 € (DC).",
+          "sourceUrl": "https://www.verbund.com/de/privat/e-mobilitaet/v-go-app",
+          "sourceDate": null,
+          "confidence": "HIGH"
+        },
+        {
+          "key": "v-go-premium",
+          "name": "V-GO PREMIUM",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Nur App (V-Go), 12 Monate Bindung; Grundgebühr regulär 11,99 €/Monat, im Einführungszeitraum erlassen.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "smatrics"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.35,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 480
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.35,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 180
+                },
+                {
+                  "current": "DC",
+                  "minKw": 80,
+                  "pricePerKwh": 0.35,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ]
+            },
+            {
+              "kind": "PARTNER",
+              "networks": [
+                "oebb"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.35,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 480
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.35,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 180
+                },
+                {
+                  "current": "DC",
+                  "minKw": 80,
+                  "pricePerKwh": 0.35,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "Partnernetze (u. a. VERBUND, ÖBB) zum Heimnetzpreis."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.69,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 480
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.69,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 180
+                },
+                {
+                  "current": "DC",
+                  "minKw": 80,
+                  "pricePerKwh": 0.69,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "Roaming in AT, DE, IT, HR, SK, SI und CZ."
+            }
+          ],
+          "notes": "Einführungspreis bis Jänner 2027; ab 1.2.2027 11,99 €/Monat, Heimnetz 0,39, Roaming 0,79 €/kWh. Blockiergebühr max. 18 € (AC) bzw. 36 € (DC).",
+          "sourceUrl": "https://www.verbund.com/de/privat/e-mobilitaet/v-go-app",
+          "sourceDate": null,
+          "confidence": "HIGH"
+        }
+      ]
+    }
+  ]
+}

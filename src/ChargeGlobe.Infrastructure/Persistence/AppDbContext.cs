@@ -26,7 +26,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<Emp> Emps => Set<Emp>();
 
-    public DbSet<Tariff> Tariffs => Set<Tariff>();
+    public DbSet<ChargingNetwork> ChargingNetworks => Set<ChargingNetwork>();
+
+    public DbSet<TariffPlan> TariffPlans => Set<TariffPlan>();
 
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
 

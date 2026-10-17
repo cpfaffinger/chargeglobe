@@ -1,0 +1,97 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "ionity",
+      "name": "IONITY",
+      "website": "https://www.ionity.eu/subscriptions",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "app",
+          "name": "IONITY App",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "IONITY-App mit Zahlungsmittel, ohne Abo.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.66
+                }
+              ]
+            }
+          ],
+          "notes": "Mindestpreis laut IONITY für Österreich; an der Station kann der Preis höher sein. Nur an IONITY-Stationen.",
+          "sourceUrl": "https://www.ionity.eu/subscriptions",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "motion",
+          "name": "IONITY Motion",
+          "currency": "EUR",
+          "monthlyFee": 5.99,
+          "prerequisites": "Abo in der IONITY-App, monatlich kündbar.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.51
+                }
+              ]
+            }
+          ],
+          "notes": "Mindestpreis laut IONITY für Österreich; an der Station kann der Preis höher sein. Nur an IONITY-Stationen.",
+          "sourceUrl": "https://www.ionity.eu/subscriptions",
+          "sourceDate": "2026-07-01",
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "power",
+          "name": "IONITY Power",
+          "currency": "EUR",
+          "monthlyFee": 11.99,
+          "prerequisites": "Abo in der IONITY-App, monatlich kündbar.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.41
+                }
+              ]
+            }
+          ],
+          "notes": "Mindestpreis laut IONITY für Österreich; an der Station kann der Preis höher sein. Nur an IONITY-Stationen.",
+          "sourceUrl": "https://www.ionity.eu/subscriptions",
+          "sourceDate": "2026-07-01",
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}

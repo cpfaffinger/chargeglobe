@@ -1,0 +1,97 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "electra",
+      "name": "Electra",
+      "website": "https://www.go-electra.com/de/price/",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "app",
+          "name": "Electra App",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Electra-App, ohne Abo.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "electra"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.54
+                }
+              ]
+            }
+          ],
+          "notes": "Blockiergebühr 0,40 €/min nur ab 80 % Ladestand an voll belegten Stationen (nicht abgebildet).",
+          "sourceUrl": "https://www.electrive.net/2026/05/19/electra-halbiert-abo-preis-und-senkt-kwh-tarif/",
+          "sourceDate": "2026-05-18",
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "essential",
+          "name": "Electra+ Essential",
+          "currency": "EUR",
+          "monthlyFee": 1.99,
+          "prerequisites": "Abo in der Electra-App.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "electra"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.44
+                }
+              ]
+            }
+          ],
+          "notes": "Blockiergebühr 0,40 €/min nur ab 80 % Ladestand an voll belegten Stationen (nicht abgebildet).",
+          "sourceUrl": "https://www.electrive.net/2026/05/19/electra-halbiert-abo-preis-und-senkt-kwh-tarif/",
+          "sourceDate": "2026-05-18",
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "smart",
+          "name": "Electra+ Smart",
+          "currency": "EUR",
+          "monthlyFee": 4.99,
+          "prerequisites": "Abo in der Electra-App, ohne Bindung.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "electra"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.34
+                }
+              ]
+            }
+          ],
+          "notes": "Blockiergebühr 0,40 €/min nur ab 80 % Ladestand an voll belegten Stationen (nicht abgebildet).",
+          "sourceUrl": "https://www.electrive.net/2026/05/19/electra-halbiert-abo-preis-und-senkt-kwh-tarif/",
+          "sourceDate": "2026-05-18",
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}

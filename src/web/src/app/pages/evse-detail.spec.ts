@@ -398,7 +398,7 @@ describe('EvseDetailPage with prices', () => {
     history: EvsePricesResponse['data']['history'],
     emps: EmpPrice[] = [],
   ): EvsePricesResponse => ({
-    data: { id: 'e-1', evseId: 'AT*VIE*E1234*1', tariffKind: 'AD_HOC', from: '', to: '', example: { kwh: 30, minutes: 40 }, current, history, emps },
+    data: { id: 'e-1', evseId: 'AT*VIE*E1234*1', tariffKind: 'AD_HOC', from: '', to: '', example: { kwh: 30, minutes: 40 }, current, history, emps, unavailable: [] },
     meta: { attribution: [] },
   });
 
@@ -461,6 +461,11 @@ describe('EvseDetailPage with prices', () => {
       empName,
       tariffId,
       tariff: 'Basic',
+      tariffKey: 'basic',
+      zone: 'ROAMING',
+      sourceUrl: 'https://example.org/preise',
+      sourceDate: null,
+      confidence: 'HIGH',
       monthlyFee,
       price: price({ source: `emp:${tariffId}`, pricePerKwh: 0.45, pricePerMinute: null, sessionFee: null, exampleCost }),
     });
@@ -474,7 +479,7 @@ describe('EvseDetailPage with prices', () => {
     );
 
     const rows = Array.from(page().querySelectorAll('#price-comparison tbody tr'));
-    expect(rows.map((row) => text(row, 'td:first-child'))).toEqual(['SMATRICS · Basic günstigste', 'Ad-hoc (ohne Vertrag)', 'ÖAMTC · Basic deine Karte']);
+    expect(rows.map((row) => text(row, 'td:first-child'))).toEqual(['SMATRICS · Basic (Roaming) günstigste', 'Ad-hoc (ohne Vertrag)', 'ÖAMTC · Basic (Roaming) deine Karte']);
     expect(rows.map((row) => row.classList.contains('cheapest'))).toEqual([true, false, false]);
     expect(rows.map((row) => row.classList.contains('own'))).toEqual([false, false, true]);
     expect(rows.map((row) => text(row, 'td:nth-child(3)'))).toEqual(['–', '–', '4,90 €']);

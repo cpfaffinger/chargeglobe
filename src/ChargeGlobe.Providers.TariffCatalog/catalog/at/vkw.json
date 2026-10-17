@@ -1,0 +1,79 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "vkw",
+      "name": "illwerke vkw (VLOTTE)",
+      "website": "https://www.vkw.at/ladetarife",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "public-privat",
+          "name": "PUBLIC Privat",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Nur für Kunden aus Vorarlberg und dem Allgäu; Karte 10 € einmalig, ohne Bindung.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "vkw"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.448,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.478,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 45
+                }
+              ],
+              "notes": "Sonderrabatt 0,072 €/kWh bis 31.3.2027 (regulär AC 0,52, DC 0,55 €/kWh)."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla",
+                "ionity",
+                "omv",
+                "shell",
+                "mer",
+                "enio",
+                "lidl",
+                "moon",
+                "chargepoint"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.66,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.85,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 45
+                }
+              ],
+              "notes": "An Roaming-Stationen mit Minutenabrechnung: AC 0,12 €/min, DC 0,55 €/min (ab 80 kW 1,30 €/min). Ausgenommen: nicht gelistete Betreiber."
+            }
+          ],
+          "notes": null,
+          "sourceUrl": "https://www.vkw.at/ladetarife",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}

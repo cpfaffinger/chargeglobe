@@ -51,7 +51,7 @@ Außerhalb Scope, aber relevant für Phase 2: **da emobil** (Tirol, Operator-ID 
 |---|---|---|---|---|
 | **P0** | E-Control-API | alles für AT: Inventar, EVSE-IDs, Status, Ad-hoc-Preis | gering (dokumentierte JSON-API) | API-Key, Terms |
 | **P1** | Tesla (`cua-api` + Guest-GraphQL) | Stall-Status, Ad-hoc- und Mitgliedspreise je Standort | gering–mittel (Endpunkte in evmap dokumentiert, anonym) | anonym; ToS prüfen |
-| **P1** | ÖAMTC ePower | wichtigster EMP-Tarif in AT (Mitglied/Nichtmitglied, Partnernetz, Blockiergebühren) – Tarif ist **netzweit**, nicht je Ladepunkt → manuell pflegbar; Roamingpartner-Liste als PDF | gering (Tarif-Editor) bis mittel (Web-Karte analysieren) | Tarif: öffentlich; Status: Web-Karte |
+| **P1** | ÖAMTC ePower | wichtigster EMP-Tarif in AT (Mitglied/Nichtmitglied, Partnernetz, Blockiergebühren) – Tarif ist **netzweit**, nicht je Ladepunkt → Katalogdatei mit Partnerliste als Zone; Roamingpartner-Liste als PDF | gering (Katalog) bis mittel (Web-Karte analysieren) | Tarif: öffentlich; Status: Web-Karte |
 | **P1** | Electroverse | Roamingpreise vieler AT-CPOs an einem Ort → beste Quelle für „Preis je Ladepunkt je EMP“ | mittel (Web-Karte electroverse.com/map per DevTools analysieren) | anonym? [U] |
 | **P1** | SMATRICS-Web-Karte | Status/Preise für SMATRICS, SMATRICS EnBW, ÖBB P&R, Verbund-Heimnetz | mittel | anonym? [U] |
 | **P2** | EVN, Wien Energie, Linz AG, Energie AG, MOON, IONITY, Lidl | EMP-Tarife (netzweit, manuell oder Preisblatt-Scrape), Status als Zweitquelle | gering (Tarif) / mittel (Karten) | Web-Karten, PDFs |
@@ -118,7 +118,7 @@ GET https://app.chargecloud.de/emobility:ocpi/{operatorId}/app/2.0/locations?lat
 - Größter CPO Österreichs: > 3.850 eigene Ladepunkte, + 600 bei XXXLutz; Schnelllader bei Spar/Hofer/ASFINAG Roggendorf; Roamingpartner von ÖAMTC, Salzburg AG, DKV. [V]
 - App „EVN Drive“ (vormals „Autoladen 2.0“), AGB nennen autoladen.at als Stationsliste [U]. Backend und Operator-ID nicht belegt (vermutlich `AT*EVN`, über E-Control-Daten verifizierbar).
 - Tarife 07/2026 [V, PDF]: Drive Easy 0 €/Monat, 0,54 €/kWh AC/DC/HPC im EVN-Netz; Drive Smart 4,95 €/Monat, 0,45 €/kWh AC; Standgebühr ab 30 min nach Ladeende 0,50 €/min (Deckel 30/60 €). Ad-hoc „Charge & Pay“ (03/2025: 0,5417 AC / 0,6250 DC).
-- **Für chargeglobe:** Tarif netzweit → Tarif-Editor; Status via E-Control; Web-Karte später per DevTools prüfen.
+- **Für chargeglobe:** Tarif netzweit → Tarifkatalog (`catalog/at/evn.json`); Status via E-Control; Web-Karte später per DevTools prüfen.
 
 ### Wien Energie Tanke
 - > 3.000 öffentliche Ladestellen in/um Wien; Stadt Wien ~1.200 22-kW-Punkte im Straßenraum. Übernahme von ella (02/2026). Partner: SMATRICS, IONITY, ENIO. [V]
@@ -176,10 +176,30 @@ GET https://app.chargecloud.de/emobility:ocpi/{operatorId}/app/2.0/locations?lat
 - **Ladefuchs**: nur DE, Daten von Chargeprice.
 - **ladetarif.at** (E-Control): einzige offizielle AT-Tarifdatenbank, von Anbietern selbst gepflegt (22 Anbieter, 44 Produkte); keine dokumentierte API; Nutzung mit E-Control klären – wäre die beste Quelle für netzweite EMP-Tarife.
 
+## Tarife der Anbieter (Katalog 10/2026)
+
+Erhoben am 17.10.2026 aus Preisblättern und Tarifseiten, abgelegt im kuratierten Tarifkatalog (`src/ChargeGlobe.Providers.TariffCatalog/catalog/at/`, Modell [ADR-0013](adr/0013-ladetarife-netze-zonen-katalog.md)); je Tarif stehen dort Quelle, Stand und Vertrauensstufe.
+
+| Muster | Anbieter | Abbildung |
+|---|---|---|
+| Heimnetz + ein Preis für alle anderen Stationen | EVN #Drive Smart („Partnerladenetz“ = Roaming in AT, DE, IT, HR, SI), Wien Energie Tanke, Energie Steiermark, SMATRICS Charge & Roam, VERBUND V-Go, OMV eMotion, Elli Premium | `HOME` + offene `ROAMING`-Zone |
+| ein Preis überall | LINZ AG StromMOBIL (eigene Stationen und alle gelisteten Roaming-Partner), EVN eMobil (Bestand) | `HOME` + `ROAMING` mit gleichem Preis, nicht gelistete Betreiber ausgeschlossen |
+| benannte Partnerliste, kein weiteres Roaming | ÖAMTC ePower (27 Netze inkl. IONITY, Mer, Lidl), Kelag ePlus/eMax, IKB, Energie AG (Partner je Minute) | `HOME` + `PARTNER` mit Netzliste |
+| Roamingpreis je Betreiber | da emobil, TIWAG mobil | je Preisgruppe eine `ROAMING`-Zone mit Netzen; nicht gelistete Betreiber nicht nutzbar |
+| Roaming je Minute, Ausnahmen je kWh | Salzburg AG (PLUS-Partner IONITY, Shell, Mer, OMV je kWh), Burgenland Energie (benannte Partner je Minute) | benannte `ROAMING`-Zone vor der offenen |
+| nur eigenes Netz | EVN #Drive Easy, Kelag eStart, Energie Klagenfurt, Stadtwerke Kufstein, Wels Strom, IONITY, Shell, Mer, Electra, Allego, Lidl | nur `HOME` |
+
+Befunde:
+- **BEÖ**: kein gemeinsamer Partnerpreis der Landesenergieversorger; der Zugang läuft über Hubject/intercharge, jeder Anbieter bepreist die anderen in seiner eigenen Partner- oder Roamingzone (immer über dem Heimnetz). Nur IKB hat einen Partnerpreis für fast alle BEÖ-Mitglieder.
+- **Betreiber-weite Gültigkeit bestätigt**: Kein Anbieter unterscheidet innerhalb eines Partner- oder Roaming-Betreibers nach Standort; ein Betreiber in der Zone gilt für alle seine Ladepunkte. Ausnahmen sind Leistungsstufen (HPC ab 75/150/201 kW) und Sonderstandorte (da emobil „Alte Hauptpost“, Salzburg AG Parkgaragen-Partner) – als Hinweis vermerkt.
+- **Tesla** (`AT*TSL`): Preise je Standort und Tageszeit (0,35–0,65 €/kWh für Fremdmarken auf den öffentlichen Standortseiten), keine österreichische Ladekarte listet Supercharger als Roaming-Partner → in offenen Roamingzonen ausgeschlossen; eigener Adapter für die Standortpreise vorgesehen.
+- **Nicht im Katalog**: Anbieter mit Betreiberpreis (Octopus Electroverse, Plugsurfing, Chargemap, Monta-Roaming von Wels Strom, MB.CHARGE/BMW Flex, Elli Base, Shell-Roaming „ab“-Preise), EnBW mobility+ (Österreich-Preise unklar), Maingau (deutsche USt), Energie Graz (Preisblatt hinter einer Bot-Abfrage), MOON und ENIO (Preise je Standortbetreiber, Ad-hoc aus der E-Control), Tesla.
+- **Präfixe ohne Bestätigung**: Burgenland Energie `AT*EBM` (BE Solution), Wels Strom `AT*LNK`/`AT*WSG`; Leikermoser `AT*LME` ist noch in keinen Daten.
+
 ## Nächste Schritte aus der Bestandsanalyse
 
 1. E-Control: Key liegt vor, Adapter `ChargeGlobe.Providers.EControl` existiert ([Endpunkt-Notiz](endpunkte/econtrol.md)). Offen: Swagger ist auch mit Key nicht lesbar, Bulk-Endpunkt und Status-Aktualisierungsrate unbekannt; Operator-IDs aller Scope-Betreiber aus den Daten ziehen.
-2. Tarif-Editor mit den oben belegten Tarifen befüllen (EVN, Wien Energie, ÖAMTC, SMATRICS, Linz AG, Energie AG, Lidl, Tesla-Mitgliedschaft); Zuordnung über Operator-ID + Leistungsklasse.
+2. Tarifkatalog aktuell halten (Stand je Tarif, Preisänderungen meist zum 1.1., 1.4., 1.7. und 1.10.); offene Lücken siehe „Tarife der Anbieter (Katalog 10/2026)“.
 3. Tesla-Adapter auf Basis der evmap-Endpunkte (cua-api + Guest-GraphQL) mit Fixtures.
 4. Netzwerkanalyse (DevTools) der Web-Karten: Electroverse, ÖAMTC, SMATRICS/ÖBB, Energie AG (CIRRANTiC), EnBW – jeweils Endpunkt-Notiz nach Vorlage in 05, Capabilities, ToS.
 5. Erst danach entscheiden, ob App-Analysen (Tier 2) überhaupt nötig sind; Kandidaten wären EVN Drive und Wien Energie Tanke, falls deren Web-Karten keine Preise je Ladepunkt liefern.

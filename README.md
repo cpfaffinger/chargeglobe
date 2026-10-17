@@ -61,6 +61,7 @@ chargeglobe/
 │  ├─ ChargeGlobe.Providers.Abstractions/  # Provider-Vertrag (ACL): Descriptor, Quell-Interfaces, Ingest-Modell, Status-Mapping
 │  ├─ ChargeGlobe.Providers.EControl/  # Adapter E-Control-Ladestellenverzeichnis (offizielle API mit Key)
 │  ├─ ChargeGlobe.Providers.OpenChargeMap/  # Adapter Open Charge Map (Inventar, CC BY 4.0, API-Key)
+│  ├─ ChargeGlobe.Providers.TariffCatalog/  # kuratierter Tarifkatalog (catalog/<land>/*.json: Netze, Anbieter, Tarife mit Zonen; ADR-0013)
 │  ├─ ChargeGlobe.Providers.*/   # (geplant) weitere Adapter (Osm, Evn, …)
 │  ├─ ChargeGlobe.Api/           # ASP.NET Core Minimal API (Karte, EVSE-Detail/Historie/Belegung, Konto, Einstellungen, Mail), OpenAPI 3.1, Auth (JWT + API-Keys), Permission-Prüfung, Rate Limiting
 │  ├─ ChargeGlobe.Jobs/          # ein Host für beide Rollen (--role crawler|worker), Image chargeglobe-jobs, skalierbar

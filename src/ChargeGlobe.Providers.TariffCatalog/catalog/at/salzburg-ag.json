@@ -1,0 +1,193 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "salzburg-ag",
+      "name": "Salzburg AG (Stromladen)",
+      "website": "https://www.salzburg-ag.at/unterwegs-laden",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "stromladen-easy",
+          "name": "Stromladen EASY",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Stromladen-App kostenlos oder Karte 19,90 € einmalig, ohne Bindung.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "salzburg-ag"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.5,
+                  "blockingFeePerMinute": 0.15,
+                  "blockingAfterMinutes": 360
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.58,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 120
+                },
+                {
+                  "current": "DC",
+                  "minKw": 75,
+                  "pricePerKwh": 0.58,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 60
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "networks": [
+                "ionity",
+                "shell",
+                "mer",
+                "omv"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.89
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.89
+                }
+              ],
+              "notes": "PLUS-Roamingpartner, je kWh."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerMinute": 0.12
+                },
+                {
+                  "current": "AC",
+                  "minKw": 11.1,
+                  "pricePerMinute": 0.19
+                },
+                {
+                  "current": "DC",
+                  "pricePerMinute": 0.715
+                },
+                {
+                  "current": "DC",
+                  "minKw": 50.1,
+                  "pricePerMinute": 0.931
+                }
+              ],
+              "notes": "Roaming in ganz Österreich je Minute nach der Leistung des Ladepunkts."
+            }
+          ],
+          "notes": "Standgebühr max. 24 €; Charge&Sleep: AC-Start 20–5 Uhr ohne Standgebühr. Partner-Stationen in Parkgaragen mit eigenen Preisen (nicht abgebildet).",
+          "sourceUrl": "https://www.salzburg-ag.at/content/dam/web18/dokumente/e-mobilit%C3%A4t/Produktblatt_Stromladen_Ladetarife.pdf",
+          "sourceDate": "2026-07-01",
+          "confidence": "HIGH"
+        },
+        {
+          "key": "stromladen-pro",
+          "name": "Stromladen PRO",
+          "currency": "EUR",
+          "monthlyFee": 4.99,
+          "prerequisites": "3 Monate Mindestlaufzeit; Grundgebühr entfällt mit aktivem Salzburg-AG-Vertrag.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "salzburg-ag"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.45,
+                  "blockingFeePerMinute": 0.15,
+                  "blockingAfterMinutes": 360
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.52,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 120
+                },
+                {
+                  "current": "DC",
+                  "minKw": 75,
+                  "pricePerKwh": 0.52,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 60
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "networks": [
+                "ionity",
+                "shell",
+                "mer",
+                "omv"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.89
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.89
+                }
+              ],
+              "notes": "PLUS-Roamingpartner, je kWh."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerMinute": 0.12
+                },
+                {
+                  "current": "AC",
+                  "minKw": 11.1,
+                  "pricePerMinute": 0.19
+                },
+                {
+                  "current": "DC",
+                  "pricePerMinute": 0.715
+                },
+                {
+                  "current": "DC",
+                  "minKw": 50.1,
+                  "pricePerMinute": 0.931
+                }
+              ],
+              "notes": "Roaming in ganz Österreich je Minute nach der Leistung des Ladepunkts."
+            }
+          ],
+          "notes": "Standgebühr max. 24 €; Charge&Sleep: AC-Start 20–5 Uhr ohne Standgebühr. Partner-Stationen in Parkgaragen mit eigenen Preisen (nicht abgebildet).",
+          "sourceUrl": "https://www.salzburg-ag.at/content/dam/web18/dokumente/e-mobilit%C3%A4t/Produktblatt_Stromladen_Ladetarife.pdf",
+          "sourceDate": "2026-07-01",
+          "confidence": "HIGH"
+        }
+      ]
+    }
+  ]
+}

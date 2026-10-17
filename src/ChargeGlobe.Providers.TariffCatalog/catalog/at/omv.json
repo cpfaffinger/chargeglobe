@@ -1,0 +1,131 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "omv",
+      "name": "OMV eMotion",
+      "website": "https://www.omv.at/de/mobilitaet/e-mobilitaet/omv-emotion-tarife",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "premium",
+          "name": "Premium",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "OMV-eMotion-App.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "omv"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.56,
+                  "blockingFeePerMinute": 0.07,
+                  "blockingAfterMinutes": 120
+                },
+                {
+                  "current": "DC",
+                  "minKw": 150,
+                  "pricePerKwh": 0.65,
+                  "blockingFeePerMinute": 0.07,
+                  "blockingAfterMinutes": 120
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.79
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.89
+                },
+                {
+                  "current": "DC",
+                  "minKw": 150,
+                  "pricePerKwh": 0.99
+                }
+              ],
+              "notes": "Partnernetz in Österreich (u. a. SMATRICS, Wien Energie, IONITY)."
+            }
+          ],
+          "notes": "Kein AC-Preis im eigenen Netz veröffentlicht.",
+          "sourceUrl": "https://www.omv.at/de/mobilitaet/e-mobilitaet/omv-emotion-tarife",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "premium-plus",
+          "name": "Premium Plus",
+          "currency": "EUR",
+          "monthlyFee": 3.99,
+          "prerequisites": "Abo in der OMV-eMotion-App.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "omv"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.52,
+                  "blockingFeePerMinute": 0.07,
+                  "blockingAfterMinutes": 120
+                },
+                {
+                  "current": "DC",
+                  "minKw": 150,
+                  "pricePerKwh": 0.59,
+                  "blockingFeePerMinute": 0.07,
+                  "blockingAfterMinutes": 120
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.69
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.79
+                },
+                {
+                  "current": "DC",
+                  "minKw": 150,
+                  "pricePerKwh": 0.89
+                }
+              ],
+              "notes": "Partnernetz in Österreich (u. a. SMATRICS, Wien Energie, IONITY)."
+            }
+          ],
+          "notes": "Kein AC-Preis im eigenen Netz veröffentlicht.",
+          "sourceUrl": "https://www.omv.at/de/mobilitaet/e-mobilitaet/omv-emotion-tarife",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}

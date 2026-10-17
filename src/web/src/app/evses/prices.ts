@@ -1,3 +1,5 @@
+import { ZONE_LABELS, ZoneKind } from '../tariffs/tariffs.service';
+
 /** Price components of GET /api/v1/evses/{evseId}/prices; amounts null if the source does not tell. */
 export interface PriceView {
   source: string;
@@ -17,10 +19,25 @@ export interface EmpPrice {
   emp: string;
   empName: string;
   tariffId: string;
+  tariffKey: string;
   tariff: string;
+  /** Where the EVSE lies for the tariff: special price of its operator, home or partner network, roaming. */
+  zone: ZoneKind;
   /** Base fee per month of the card, not part of exampleCost. */
   monthlyFee: number | null;
   price: PriceView;
+  sourceUrl: string;
+  /** "Stand" of the provider (ISO date). */
+  sourceDate: string | null;
+  confidence: 'HIGH' | 'MEDIUM' | 'LOW';
+}
+
+/** A tariff valid now that cannot be used at the EVSE. */
+export interface EmpUnavailable {
+  emp: string;
+  empName: string;
+  tariffKey: string;
+  tariff: string;
 }
 
 export interface EvsePricesResponse {
@@ -35,6 +52,8 @@ export interface EvsePricesResponse {
     history: { price: PriceView; from: string; to: string | null }[];
     /** The cards and apps that apply at the EVSE, cheapest example first. */
     emps: EmpPrice[];
+    /** Tariffs that cannot be used at the EVSE. */
+    unavailable: EmpUnavailable[];
   };
   meta: { attribution: { source: string; text: string; license: string }[] };
 }
@@ -64,7 +83,7 @@ export function comparison(data: EvsePricesResponse['data'], cards: readonly str
     ...(data.current ? [{ key: 'ad-hoc', label: 'Ad-hoc (ohne Vertrag)', price: data.current.price, monthlyFee: null, own: false }] : []),
     ...data.emps.map((emp) => ({
       key: emp.tariffId,
-      label: `${emp.empName} · ${emp.tariff}`,
+      label: `${emp.empName} · ${emp.tariff} (${ZONE_LABELS[emp.zone]})`,
       price: emp.price,
       monthlyFee: emp.monthlyFee,
       own: cards.includes(emp.emp),

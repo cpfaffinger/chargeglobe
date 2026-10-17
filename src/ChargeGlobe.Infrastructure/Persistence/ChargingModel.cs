@@ -27,6 +27,17 @@ internal static class ChargingModel
         methods => methods.Select(method => method.ToString()).ToArray(),
         names => names.Select(name => Enum.Parse<AuthMethod>(name)).ToList());
 
+    /// <summary>Zones of a tariff version as jsonb (enums as names); versions are written once and read whole.</summary>
+    private static readonly ValueConverter<List<TariffZone>, string> ZonesConverter = new(
+        zones => System.Text.Json.JsonSerializer.Serialize(zones, ChargeGlobe.Providers.Abstractions.TariffCatalogSnapshot.Json),
+        json => System.Text.Json.JsonSerializer.Deserialize<List<TariffZone>>(json, ChargeGlobe.Providers.Abstractions.TariffCatalogSnapshot.Json)!);
+
+    private static readonly ValueComparer<List<TariffZone>> ZonesComparer = new(
+        (left, right) => System.Text.Json.JsonSerializer.Serialize(left, ChargeGlobe.Providers.Abstractions.TariffCatalogSnapshot.Json)
+            == System.Text.Json.JsonSerializer.Serialize(right, ChargeGlobe.Providers.Abstractions.TariffCatalogSnapshot.Json),
+        zones => zones.Count,
+        zones => zones.ToList());
+
     private static readonly ValueComparer<IReadOnlyList<AuthMethod>> AuthMethodsComparer = new(
         (left, right) => left!.SequenceEqual(right!),
         methods => methods.Aggregate(0, (hash, method) => HashCode.Combine(hash, method)),
@@ -45,6 +56,7 @@ internal static class ChargingModel
         builder.Properties<SourceTier>().HaveConversion<string>();
         builder.Properties<EntityType>().HaveConversion<string>();
         builder.Properties<TariffKind>().HaveConversion<string>();
+        builder.Properties<TariffConfidence>().HaveConversion<string>();
         builder.Properties<MatchMethod>().HaveConversion<string>();
     }
 
@@ -180,21 +192,28 @@ internal static class ChargingModel
         {
             entity.ToTable("emp");
             entity.HasIndex(emp => emp.Key).IsUnique();
+            entity.Property(emp => emp.Country).HasMaxLength(2);
         });
 
-        builder.Entity<Tariff>(entity =>
+        builder.Entity<ChargingNetwork>(entity =>
         {
-            entity.ToTable("tariff");
-            entity.HasOne<Emp>().WithMany().HasForeignKey(tariff => tariff.EmpId).OnDelete(DeleteBehavior.Restrict);
-            entity.Property(tariff => tariff.Currency).HasMaxLength(3);
-            entity.Property(tariff => tariff.PricePerKwhAc).HasPrecision(10, 4);
-            entity.Property(tariff => tariff.PricePerKwhDc).HasPrecision(10, 4);
-            entity.Property(tariff => tariff.PricePerMinute).HasPrecision(10, 4);
-            entity.Property(tariff => tariff.SessionFee).HasPrecision(10, 2);
-            entity.Property(tariff => tariff.BlockingFeePerMinute).HasPrecision(10, 4);
-            entity.Property(tariff => tariff.MonthlyFee).HasPrecision(10, 2);
-            // Empty: the tariff is not limited to operators.
-            entity.Property(tariff => tariff.OperatorIds).HasColumnType("uuid[]");
+            entity.ToTable("charging_network");
+            entity.HasIndex(network => network.Key).IsUnique();
+            entity.Property(network => network.Country).HasMaxLength(2);
+            entity.Property(network => network.Operators).HasColumnType("text[]");
+        });
+
+        builder.Entity<TariffPlan>(entity =>
+        {
+            entity.ToTable("tariff_plan");
+            entity.HasOne<Emp>().WithMany().HasForeignKey(plan => plan.EmpId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(plan => new { plan.EmpId, plan.Key, plan.ValidFrom }).IsUnique();
+            // The current versions, read for every price comparison.
+            entity.HasIndex(plan => plan.SourceKey).HasFilter("valid_to IS NULL").HasDatabaseName("IX_tariff_plan_open");
+            entity.Property(plan => plan.Currency).HasMaxLength(3);
+            entity.Property(plan => plan.MonthlyFee).HasPrecision(10, 2);
+            entity.Property(plan => plan.Markets).HasColumnType("text[]");
+            entity.Property(plan => plan.Zones).HasConversion(ZonesConverter, ZonesComparer).HasColumnType("jsonb");
         });
     }
 
