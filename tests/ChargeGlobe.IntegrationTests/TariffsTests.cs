@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using ChargeGlobe.Domain.Charging;
 using Microsoft.EntityFrameworkCore;
 
 namespace ChargeGlobe.IntegrationTests;
@@ -136,6 +137,16 @@ public class TariffsTests(IntegrationFactory factory)
     }
 
     [Fact]
+    public async Task The_zones_of_a_version_are_compared_by_their_content()
+    {
+        var comparer = await factory.WithDbAsync(db => Task.FromResult(db.Model.FindEntityType(typeof(TariffPlan))!.FindProperty(nameof(TariffPlan.Zones))!.GetValueComparer()));
+        List<TariffZone> zones = [new(TariffZoneKind.HOME, ["evn"], [], [], [], [new(TariffCurrent.AC, null, 0.45m, null, null, null, null)], null)];
+
+        Assert.True(comparer.Equals(zones, comparer.Snapshot(zones)));
+        Assert.Equal(1, comparer.GetHashCode(zones));
+    }
+
+    [Fact]
     public async Task A_network_key_belongs_to_one_source()
     {
         var admin = await AdminAsync();
@@ -190,7 +201,7 @@ public class TariffsTests(IntegrationFactory factory)
         { "price.pricePerKwh=", "needs pricePerKwh, pricePerMinute or sessionFee" },
         { "zone.prices=", "at least one price" },
         { "tariff.zones=", "at least one zone" },
-        { "duplicate=tariff", "tariff 'basic': the key is used twice" },
+        { "duplicate.tariff=basic", "tariff 'basic': the key is used twice" },
     };
 
     [Theory]
