@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace ChargeGlobe.Domain.Charging;
 
 #pragma warning disable CA1707 // Identifiers should not contain underscores: names as stored in the text columns.
@@ -28,8 +30,9 @@ public sealed record PriceComponents(
     decimal? BlockingFeePerMinute,
     int? BlockingAfterMinutes,
     bool FreeOfCharge,
-    decimal? BlockingFeeMax = null,
-    TariffBlockingFrom BlockingFrom = TariffBlockingFrom.SESSION_START)
+    // Left out of serialized prices when unset (ingest batches, replay fixtures of the sources).
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] decimal? BlockingFeeMax = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] TariffBlockingFrom BlockingFrom = TariffBlockingFrom.SESSION_START)
 {
     /// <summary>
     /// Cost of a session with <paramref name="kwh"/> charged in <paramref name="minutes"/> and unplugged at the end of
