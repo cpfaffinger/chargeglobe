@@ -56,13 +56,42 @@ internal static class BNetzA
             return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(bytes) };
         });
 
-    public static BNetzAClient Client(StubHandler handler) =>
-        new(new HttpClient(handler) { BaseAddress = BNetzAClient.BaseAddress }, new FakeTimeProvider(Now));
+    public static BNetzAClient Client(StubHandler handler, string? tempDirectory = null) =>
+        new(new HttpClient(handler) { BaseAddress = BNetzAClient.BaseAddress }, new FakeTimeProvider(Now), tempDirectory);
 
-    public static (BNetzAProvider Provider, ListLogger<BNetzAProvider> Logger) Provider(StubHandler handler)
+    public static (BNetzAProvider Provider, ListLogger<BNetzAProvider> Logger) Provider(StubHandler handler, string? tempDirectory = null)
     {
         var logger = new ListLogger<BNetzAProvider>();
-        return (new BNetzAProvider(Client(handler), BNetzAMapper.CreateDefault(), new FakeTimeProvider(Now), logger), logger);
+        return (new BNetzAProvider(Client(handler, tempDirectory), BNetzAMapper.CreateDefault(), new FakeTimeProvider(Now), logger), logger);
+    }
+
+    /// <summary>An empty directory of this test for the temporary copy of the file.</summary>
+    public static string TempDirectory() => Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), $"bnetza-test-{Guid.NewGuid():N}")).FullName;
+
+    /// <summary>A body whose stream fails while it is read.</summary>
+    public sealed class BrokenStream : Stream
+    {
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+        public override void Flush()
+        {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) => throw new IOException("connection reset");
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
 
     public static FacilityRow Row(string id = "1000001", string status = "In Betrieb", string? latitude = "52,5", string? longitude = "13,4", params PointRow[] points) =>
@@ -74,7 +103,7 @@ internal static class BNetzA
 
 /// <summary>
 /// Replay test (docs/04, rule 7): <c>fixtures/bnetza/ladesaeulenregister-auszug.csv</c> is the head of the real CSV of
-/// 2026-09-01 (CC BY 4.0) with twelve facilities picked for their variety; the ingest model must equal
+/// 2026-09-01 (CC BY 4.0) with fifteen facilities picked for their variety (three pairs share a position); the ingest model must equal
 /// <c>ladesaeulenregister-auszug.expected.json</c>. After an intended mapping change, run once with <c>UPDATE_FIXTURES=1</c>.
 /// </summary>
 public class BNetzAReplayTests
@@ -101,7 +130,7 @@ public class BNetzAReplayTests
         Assert.Equal(
             [
                 $"Bundesnetzagentur register: reading {BNetzA.CsvUrl}",
-                "Bundesnetzagentur register read: 12 facilities, 0 outside the box, 0 skipped",
+                "Bundesnetzagentur register read: 15 facilities, 0 outside the box, 12 sites, 0 skipped",
             ],
             logger.Messages);
     }
@@ -139,8 +168,17 @@ public class BNetzAReplayTests
         Assert.All(maintenance.Evses, evse => Assert.Equal((EvseStatus.INOPERATIVE, "In Wartung"), (evse.Status, evse.StatusRaw)));
         Assert.Equal((ConnectorStandard.IEC_62196_T2_COMBO, ConnectorFormat.CABLE, PowerType.DC, 22m), (maintenance.Evses[1].Connectors[0].Standard, maintenance.Evses[1].Connectors[0].Format, maintenance.Evses[1].PowerType, maintenance.Evses[1].MaxPowerKw));
 
-        // Restricted opening hours become the days with their times; the site name and the street with its number are kept.
+        // Two facilities of one operator at one position are one site with two charging stations; the first names it.
         var restricted = locations["1150299"];
+        Assert.Equal(["1150299/LP1", "1150299/LP2", "1150300/LP1", "1150300/LP2"], restricted.Evses.Select(evse => evse.ExternalId));
+        Assert.Equal(["1150299", "1150299", "1150300", "1150300"], restricted.Evses.Select(evse => evse.StationExternalId));
+        Assert.False(locations.ContainsKey("1150300"));
+        Assert.Equal(JsonValueKind.Array, restricted.Raw.ValueKind);
+        Assert.Equal(2, restricted.Raw.GetArrayLength());
+        Assert.Equal(4, locations["1103322"].Evses.Count);
+        Assert.Equal(12, locations["1117446"].Evses.Count);
+        Assert.Equal("1081024", eon.Evses[0].StationExternalId);
+        // Restricted opening hours become the days with their times; the site name and the street with its number are kept.
         Assert.Equal(("BIM", "Alt-Friedrichsfelde 60"), (restricted.Name, restricted.Address!.Street));
         Assert.Equal(
             (false, "Montag 05:30-22:00; Dienstag 05:30-22:00; Mittwoch 05:30-22:00; Donnerstag 05:30-22:00; Freitag 05:30-22:00; Samstag 06:00-14:00"),
@@ -162,7 +200,7 @@ public class BNetzAReplayTests
 
         // Serial numbers and short codes in the EVSE-ID column are no EVSE-IDs; payment cards with and without terminal.
         var circleK = locations["1103322"];
-        Assert.Equal(["1103322/LP1", "1103322/LP2"], circleK.Evses.Select(evse => evse.ExternalId));
+        Assert.Equal(["1103322/LP1", "1103322/LP2", "1103804/LP1", "1103804/LP2"], circleK.Evses.Select(evse => evse.ExternalId));
         Assert.Equal(
             [AuthMethod.RFID_READER, AuthMethod.WEBSITE, AuthMethod.CREDIT_CARD_PAYABLE, AuthMethod.DEBIT_CARD_PAYABLE, AuthMethod.CONTACTLESS_CARD_SUPPORT, AuthMethod.CHIP_CARD_SUPPORT],
             circleK.Evses[0].AuthMethods);
@@ -176,7 +214,7 @@ public class BNetzAReplayTests
 
         // "Nur für Kunden/Besucher" is restricted access; six points fill all columns.
         Assert.Equal((AccessType.RESTRICTED, "DEMDSE012465"), (locations["1149893"].Access, locations["1149893"].Evses[0].ExternalId));
-        Assert.Equal(6, locations["1117446"].Evses.Count);
+        Assert.Equal(12, locations["1117446"].Evses.Count);
         Assert.Equal("Q1 P+R Sanierung S-Bahn Parkhaus Echterdingen", locations["1117446"].Name);
     }
 
@@ -221,12 +259,15 @@ public class BNetzAAdapterTests
     [Fact]
     public async Task A_box_keeps_the_facilities_inside_it()
     {
-        var (provider, logger) = BNetzA.Provider(BNetzA.Handler());
+        var temp = BNetzA.TempDirectory();
+        var (provider, logger) = BNetzA.Provider(BNetzA.Handler(), temp);
 
         var locations = await provider.FetchInventoryAsync(new InventoryQuery(BNetzA.Berlin, null, null), CancellationToken.None).ToListAsync();
 
         Assert.Equal(["1081024", "1018030", "1150299", "1030313", "1043033", "1149893"], locations.Select(location => location.ExternalId));
-        Assert.Contains("Bundesnetzagentur register read: 12 facilities, 6 outside the box, 0 skipped", logger.Messages);
+        Assert.Contains("Bundesnetzagentur register read: 15 facilities, 8 outside the box, 6 sites, 0 skipped", logger.Messages);
+        // The temporary copy of the file is gone.
+        Assert.Empty(Directory.GetFiles(temp));
     }
 
     [Fact]
@@ -252,11 +293,55 @@ public class BNetzAAdapterTests
         Assert.DoesNotContain(locations, location => location.ExternalId is "1081024" or "1018030");
         Assert.Contains("Bundesnetzagentur record 1081024: Facility without valid coordinates.", logger.Messages);
         Assert.Contains("Bundesnetzagentur record 1018030: Facility without valid coordinates.", logger.Messages);
-        Assert.Contains("Bundesnetzagentur register read: 12 facilities, 0 outside the box, 2 skipped", logger.Messages);
+        Assert.Contains("Bundesnetzagentur register read: 15 facilities, 0 outside the box, 10 sites, 2 skipped", logger.Messages);
         // With a box, a facility without a position is outside it.
         var (boxed, boxedLogger) = BNetzA.Provider(BNetzA.Handler(Encoding.UTF8.GetBytes(csv)));
         Assert.Equal(4, (await boxed.FetchInventoryAsync(new InventoryQuery(BNetzA.Berlin, null, null), CancellationToken.None).ToListAsync()).Count);
-        Assert.Contains("Bundesnetzagentur register read: 12 facilities, 7 outside the box, 1 skipped", boxedLogger.Messages);
+        Assert.Contains("Bundesnetzagentur register read: 15 facilities, 9 outside the box, 4 sites, 1 skipped", boxedLogger.Messages);
+    }
+
+    [Fact]
+    public void Facilities_at_one_position_are_split_by_operator_and_the_first_one_names_the_site()
+    {
+        var mapper = BNetzAMapper.CreateDefault();
+        var raw = BNetzA.Raw;
+        var a1 = BNetzA.Row("1000002") with { Operator = "Stadtwerke Test GmbH", SiteName = null, Parking = null, OpeningHours = "Keine Angabe" };
+        var a2 = BNetzA.Row("1000001") with { Operator = "Stadtwerke Test", SiteName = "Parkhaus Mitte", Parking = "Keine Beschränkung", OpeningHours = "247" };
+        var b = BNetzA.Row("1000003") with { Operator = "Energie Test AG" };
+        var none1 = BNetzA.Row("1000004") with { Operator = null };
+        var none2 = BNetzA.Row("1000005") with { Operator = null };
+
+        var sites = BNetzAMapper.Sites([(a1, raw), (b, raw), (none1, raw), (a2, raw), (none2, raw)]);
+
+        Assert.Equal([["1000001", "1000002"], ["1000003"], ["1000004", "1000005"]], sites.Select(site => site.Select(facility => facility.Row.Id).ToList()));
+        var site = mapper.ToLocation(sites[0], BNetzA.Now, [])!;
+        // The first facility names the site; what it lacks comes from the next ones.
+        var first = sites[0][0].Row with { SiteName = null, Parking = null, OpeningHours = "Keine Angabe" };
+        var merged = mapper.ToLocation([(first, raw), sites[0][1]], BNetzA.Now, [])!;
+        Assert.Equal(("1000001", "Parkhaus Mitte", AccessType.PUBLIC, true, "Stadtwerke Test"), (site.ExternalId, site.Name, site.Access, site.OpeningTimes!.TwentyFourSeven, site.OperatorName));
+        Assert.Equal((null, null, null), (merged.Name, merged.Access, merged.OpeningTimes));
+        Assert.Null(BNetzAMapper.SiteKey(BNetzA.Row(latitude: "0,0", longitude: "0,0")));
+        Assert.Equal("52.5,13.4", BNetzAMapper.SiteKey(BNetzA.Row()));
+        Assert.Equal("52.123457,13.4", BNetzAMapper.SiteKey(BNetzA.Row(latitude: "52,1234567")));
+    }
+
+    [Fact]
+    public async Task A_failed_download_leaves_no_temporary_file()
+    {
+        var temp = BNetzA.TempDirectory();
+        var rejected = BNetzA.Client(BNetzA.Handler(csvStatus: HttpStatusCode.ServiceUnavailable), temp);
+        var broken = BNetzA.Client(new StubHandler(request => request.RequestUri!.Host == "www.bundesnetzagentur.de"
+            ? new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(BNetzA.Page) }
+            : new HttpResponseMessage(HttpStatusCode.OK) { Content = new StreamContent(new BNetzA.BrokenStream()) }), temp);
+
+        await Assert.ThrowsAsync<ProviderHttpException>(() => rejected.DownloadCsvAsync(new Uri(BNetzA.CsvUrl), CancellationToken.None));
+        await Assert.ThrowsAsync<IOException>(() => broken.DownloadCsvAsync(new Uri(BNetzA.CsvUrl), CancellationToken.None));
+
+        Assert.Empty(Directory.GetFiles(temp));
+        var path = await BNetzA.Client(BNetzA.Handler(), temp).DownloadCsvAsync(new Uri(BNetzA.CsvUrl), CancellationToken.None);
+        Assert.StartsWith(temp, path, StringComparison.Ordinal);
+        Assert.Equal(BNetzA.Fixture("ladesaeulenregister-auszug.csv").Length, new FileInfo(path).Length);
+        File.Delete(path);
     }
 
     [Fact]
