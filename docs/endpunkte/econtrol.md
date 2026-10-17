@@ -150,3 +150,7 @@ Abbildung (`EControlMapper.AdHocPrice` → `ProviderEvseSnapshot.AdHocPrice` als
 - Requests laufen durch zwei Budgets: 40/min je Prozess im Adapter und clusterweit `provider.request_budget_per_hour` in `provider_rate_budget`. Wie viele Abfragepunkte die vier Startregionen brauchen und wie frisch der Status damit ist, zeigen `/admin/crawler` und `crawler_run`.
 - Erneuerungsrate der DATEX-Status-Publikation: Abrufe um 16:49 und 17:00 UTC lieferten beide den Stand von 14:42 UTC.
 - Inaktive Stationen werden übersprungen; ein früher aktiver Standort bleibt dadurch aktiv, bis es eine Lebenszyklus-Logik für Standorte gibt, die eine Quelle nicht mehr meldet.
+
+## Fehler im Register melden
+
+Die Preise und Daten pflegt jeder Ladepunktbetreiber selbst im Ladestellenverzeichnis. chargeglobe korrigiert sie nicht, sondern markiert unplausible Ad-hoc-Preise und bereitet eine Meldung vor (`/admin/prices`: CSV je Ladepunkt mit vermutlich gemeintem Preis, Mail-Entwurf je Betreiber, [05](../05-crawling-konzept.md#plausibilität-der-ad-hoc-preise)). Gemeldet wird von Hand: an den Betreiber oder an die E-Control über die Kontaktmöglichkeiten auf ladestellen.at; die App verschickt nichts.

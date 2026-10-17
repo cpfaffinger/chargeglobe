@@ -13,13 +13,15 @@ public static class PricePlausibility
 /// <summary>One price that occurs at implausible EVSEs of an operator.</summary>
 /// <param name="Evses">EVSEs of the operator with this price.</param>
 /// <param name="Reason"><c>NO_AMOUNT</c>, <c>BELOW_MIN</c> or <c>ABOVE_MAX</c>.</param>
-public sealed record PriceSample(decimal? PricePerKwh, decimal? PricePerMinute, decimal? SessionFee, int Evses, string Reason);
+/// <param name="IntendedPricePerKwh">The energy price probably meant (×100 or ÷100 within the bounds); null if none fits.</param>
+public sealed record PriceSample(decimal? PricePerKwh, decimal? PricePerMinute, decimal? SessionFee, int Evses, string Reason, decimal? IntendedPricePerKwh = null);
 
 /// <summary>One active EVSE with an implausible newest ad-hoc price, a row of the report for the source or the operator.</summary>
 /// <param name="EvseId">EVSE-ID as displayed, for EVSEs without one the surrogate.</param>
 /// <param name="Reason"><c>NO_AMOUNT</c>, <c>BELOW_MIN</c> or <c>ABOVE_MAX</c>.</param>
 /// <param name="Source">Key of the source that reported the price.</param>
 /// <param name="ObservedAt">When the source last reported it.</param>
+/// <param name="IntendedPricePerKwh">The energy price probably meant (×100 or ÷100 within the bounds); null if none fits.</param>
 public sealed record ImplausibleEvse(
     string? OperatorId,
     string? OperatorName,
@@ -32,7 +34,8 @@ public sealed record ImplausibleEvse(
     decimal? SessionFee,
     decimal? BlockingFeePerMinute,
     string Source,
-    DateTimeOffset ObservedAt);
+    DateTimeOffset ObservedAt,
+    decimal? IntendedPricePerKwh = null);
 
 /// <summary>The implausible ad-hoc prices of one operator.</summary>
 /// <param name="OperatorId">Country and party of the EVSE-ID (<c>AT*F9B</c>), for surrogates the operator's; null if unknown.</param>

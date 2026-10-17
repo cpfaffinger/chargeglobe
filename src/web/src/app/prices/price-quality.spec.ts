@@ -19,7 +19,7 @@ const RESULT: ImplausiblePrices = {
       operatorId: 'AT*F9B',
       name: 'CAS Immobilien GmbH',
       evses: 16,
-      examples: [{ pricePerKwh: 0.005, pricePerMinute: null, sessionFee: null, evses: 16, reason: 'BELOW_MIN' }],
+      examples: [{ pricePerKwh: 0.005, pricePerMinute: null, sessionFee: null, evses: 16, reason: 'BELOW_MIN', intendedPricePerKwh: 0.5 }],
       lastObservedAt: '2026-10-17T07:30:00Z',
     },
     { operatorId: null, name: null, evses: 4, examples: [{ pricePerKwh: 0, pricePerMinute: 0, sessionFee: 0, evses: 4, reason: 'NO_AMOUNT' }], lastObservedAt: '2026-10-16T07:30:00Z' },
@@ -95,11 +95,42 @@ describe('AdminPricesPage', () => {
     const rows = Array.from(root().querySelectorAll('#implausible tbody tr'));
     expect(rows.map((row) => text(row, 'td:first-child'))).toEqual(['AT*F9B · CAS Immobilien GmbH', 'unbekannt']);
     expect(rows.map((row) => text(row, 'td:nth-child(2)'))).toEqual(['16', '4']);
-    expect(text(rows[0], 'td:nth-child(3)')).toBe('0,005 €/kWh – unter der Spanne (16)');
+    expect(text(rows[0], 'td:nth-child(3)')).toBe('0,005 €/kWh – unter der Spanne, vermutlich 0,50 €/kWh (16)');
     expect(text(rows[1], 'td:nth-child(3)')).toBe('nichts berechnet – kein Preis gemeldet (4)');
     expect(text(root(), '#prices-reasons')).toBe('kein Preis gemeldet: 4 · unter der Spanne: 16 · über der Spanne: 0');
     expect(root().querySelector('#export')).toBeNull();
     expect(root().querySelector('#no-implausible')).toBeNull();
+  });
+
+  it('opens a mail draft per operator to copy, sending nothing', async () => {
+    service.implausible.and.resolveTo(RESULT);
+    const write = spyOn(navigator.clipboard, 'writeText').and.resolveTo();
+    await render();
+
+    const toggle = () => root().querySelector<HTMLButtonElement>('[data-operator="AT*F9B"] .draft-toggle')!;
+    toggle().click();
+    await fixture.whenStable();
+    const raw = root().querySelector<HTMLTextAreaElement>('.mail-draft')!.value;
+    const draft = raw.replace(/\u00a0/g, ' ');
+    expect(draft).toContain('Betreff: Ad-hoc-Preise im Ladestellenverzeichnis – CAS Immobilien GmbH (AT*F9B)');
+    expect(draft).toContain('für 16 Ladepunkte von CAS Immobilien GmbH (AT*F9B)');
+    expect(draft).toContain('- 0,005 €/kWh – unter der Spanne, vermutlich 0,50 €/kWh (16 Ladepunkte)');
+    expect(toggle().textContent!.trim()).toBe('Entwurf schließen');
+
+    root().querySelector<HTMLButtonElement>('.copy-draft')!.click();
+    await flush();
+    await fixture.whenStable();
+    expect(write).toHaveBeenCalledWith(raw);
+    expect(text(root(), '.copied')).toBe('kopiert');
+
+    // Another operator's draft (one EVSE, without name), then closed again.
+    root().querySelectorAll<HTMLButtonElement>('.draft-toggle')[1].click();
+    await fixture.whenStable();
+    expect(root().querySelector<HTMLTextAreaElement>('.mail-draft')!.value).toContain('für 4 Ladepunkte von Betreiber Ad-hoc-Preise');
+    expect(root().querySelector('.copied')).toBeNull();
+    root().querySelectorAll<HTMLButtonElement>('.draft-toggle')[1].click();
+    await fixture.whenStable();
+    expect(root().querySelector('.mail-draft')).toBeNull();
   });
 
   it('says when every price is plausible, reloads and reports errors', async () => {

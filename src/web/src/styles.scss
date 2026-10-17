@@ -1980,6 +1980,13 @@ app-admin-tariffs .stale-summary {
   color: var(--mat-sys-error);
 }
 
+app-admin-prices .mail-draft {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  font: var(--mat-sys-body-small);
+}
+
 .price-implausible {
   color: var(--mat-sys-error);
 }
