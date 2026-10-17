@@ -31,7 +31,8 @@ public class TariffsTests(IntegrationFactory factory)
     {
         var tariffs = new JsonArray(Tariff("basic", " Basic ", null,
             new { kind = "HOME", networks = new[] { network }, prices = new object[] { new { current = "AC", pricePerKwh = basic, blockingFeePerMinute = 0.10m, blockingAfterMinutes = 240, maxBlockingFee = 30m, blockingFrom = "CHARGING_END" }, new { current = "DC", pricePerKwh = 0.65m } } },
-            new { kind = "ROAMING", excludedOperators = new[] { "at*tsl" }, prices = new object[] { new { current = "AC", pricePerKwh = 0.59m }, new { current = "DC", minKw = 100, pricePerKwh = 0.89m }, new { current = "AC", pricePerKwh = 0.49m, startTime = "22:00", endTime = "08:00" }, new { current = "AC", pricePerKwh = 0.39m, days = new[] { 7, 6 }, blockingFeePerMinute = 0.07m, blockingAfterMinutes = 210, blockingStartTime = "08:00", blockingEndTime = "23:00", maxBlockingMinutes = 500 } }, notes = "Partnerladenetz" }));
+            new { kind = "ROAMING", excludedOperators = new[] { "at*tsl" }, prices = new object[] { new { current = "AC", pricePerKwh = 0.59m }, new { current = "DC", minKw = 100, pricePerKwh = 0.89m }, new { current = "AC", pricePerKwh = 0.49m, startTime = "22:00", endTime = "08:00" }, new { current = "AC", pricePerKwh = 0.39m, days = new[] { 7, 6 }, blockingFeePerMinute = 0.07m, blockingAfterMinutes = 210, blockingStartTime = "08:00", blockingEndTime = "23:00", maxBlockingMinutes = 500 } }, notes = "Partnerladenetz" },
+            new { kind = "ROAMING", countries = new[] { "IT", "DE", "IT" }, currents = new[] { "AC" }, prices = new object[] { new { current = "AC", pricePerKwh = 0.69m } } }));
         if (withPlus)
         {
             tariffs.Add(Tariff("plus", "Plus", 4.95m, new { kind = "OPERATOR", operators = new[] { "AT*IOY" }, prices = new object[] { new { current = "DC", pricePerMinute = 0.5m, sessionFee = 1m } } }));
@@ -122,6 +123,9 @@ public class TariffsTests(IntegrationFactory factory)
         Assert.Equal([network], zones[0].GetProperty("networks").EnumerateArray().Select(item => item.GetString()));
         Assert.Equal(["AT*TSL"], zones[1].GetProperty("excludedOperators").EnumerateArray().Select(item => item.GetString()));
         Assert.Equal(("FIXED", JsonValueKind.Null), (zones[1].GetProperty("pricing").GetString(), zones[1].GetProperty("markupPercent").ValueKind));
+        Assert.Equal(JsonValueKind.Null, zones[1].GetProperty("countries").ValueKind);
+        Assert.Equal(["DE", "IT"], zones[2].GetProperty("countries").EnumerateArray().Select(item => item.GetString()));
+        Assert.Equal(["AC"], zones[2].GetProperty("currents").EnumerateArray().Select(item => item.GetString()));
         var home = zones[0].GetProperty("prices")[0];
         Assert.Equal((30m, "CHARGING_END", JsonValueKind.Null), (home.GetProperty("maxBlockingFee").GetDecimal(), home.GetProperty("blockingFrom").GetString(), home.GetProperty("startTime").ValueKind));
         var night = zones[1].GetProperty("prices")[2];
@@ -275,6 +279,8 @@ public class TariffsTests(IntegrationFactory factory)
         { "network.sites=bad", "sites need a priceNote" },
         { "zone.currents=HPC", "currents must be AC and/or DC" },
         { "zone.currents=", "currents must be AC and/or DC" },
+        { "roaming.countries=de", "countries must be ISO 3166-1 alpha-2 codes" },
+        { "roaming.countries=", "countries must be ISO 3166-1 alpha-2 codes" },
         { "zone.pricing=PER_MINUTE", "the pricing must be FIXED, OPERATOR_AD_HOC or UNKNOWN" },
         { "zone.pricing=OPERATOR_AD_HOC", "a zone with the operator's or an unknown price has no prices of its own" },
         { "zone.pricing=UNKNOWN", "a zone with the operator's or an unknown price has no prices of its own" },
@@ -344,7 +350,7 @@ public class TariffsTests(IntegrationFactory factory)
         {
             "sites" => new JsonArray(JsonSerializer.SerializeToNode(new { name = "x", latitude = 48.2, longitude = 16.3, url = "ftp://example.org" })),
             "days" => new JsonArray(int.Parse(value, System.Globalization.CultureInfo.InvariantCulture)),
-            "operators" or "excludedOperators" or "networks" or "markets" or "currents" => value == "" ? new JsonArray() : new JsonArray(value),
+            "operators" or "excludedOperators" or "networks" or "markets" or "currents" or "countries" => value == "" ? new JsonArray() : new JsonArray(value),
             "prices" or "zones" => new JsonArray(),
             "monthlyFee" or "minKw" or "blockingAfterMinutes" or "pricePerKwh" or "markupPercent" or "markupSessionFee" or "maxBlockingFee" or "maxBlockingMinutes" => value == "" ? null : JsonValue.Create(decimal.Parse(value, System.Globalization.CultureInfo.InvariantCulture)),
             _ => value,

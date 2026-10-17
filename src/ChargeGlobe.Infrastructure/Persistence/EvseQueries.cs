@@ -208,9 +208,14 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
 
     /// <summary>What decides which tariffs apply at an EVSE and with which price element.</summary>
     /// <param name="OperatorParty">Country and party of the operator of the EVSE (or of its location), for EVSEs without EVSE-ID.</param>
+    /// <param name="LocationCountry">Country of the location; zones with countries (prices abroad) apply by it.</param>
     private sealed record TariffTarget(
-        Guid Id, Guid LocationId, string EvseId, bool HasEvseId, PowerType? PowerType, bool Dc, bool? Roaming, decimal? MaxPowerKw, string? OperatorParty)
+        Guid Id, Guid LocationId, string EvseId, bool HasEvseId, PowerType? PowerType, bool Dc, bool? Roaming, decimal? MaxPowerKw, string? OperatorParty,
+        string? LocationCountry)
     {
+        /// <summary>The country of the EVSE: of its location, else the country part of its operator ID.</summary>
+        public string? Country => LocationCountry ?? OperatorId?[..2];
+
         /// <summary>The current: DC if the EVSE or one of its connectors is DC.</summary>
         public TariffCurrent Current => PowerType == Domain.Charging.PowerType.DC || (PowerType is null && Dc) ? TariffCurrent.DC : TariffCurrent.AC;
 
@@ -246,7 +251,8 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
                 .Where(@operator => @operator.OperatorId != null
                     && @operator.Id == (item.OperatorId ?? db.Locations.Where(location => location.Id == item.LocationId).Select(location => location.OperatorId).FirstOrDefault()))
                 .Select(@operator => @operator.Country + "*" + @operator.OperatorId)
-                .FirstOrDefault()));
+                .FirstOrDefault(),
+            db.Locations.Where(location => location.Id == item.LocationId).Select(location => location.Country).FirstOrDefault()));
 
     private async Task<CurrentCatalog> CurrentCatalogAsync(CancellationToken cancellationToken)
     {
@@ -273,7 +279,7 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
         CurrentCatalog catalog, TariffTarget evse, SessionExample example, PriceComponents? adHoc)
     {
         var matches = catalog.Plans
-            .Select(row => (Row: row, Match: row.Plan.MatchAt(evse.OperatorId, evse.Roaming, evse.Current, evse.MaxPowerKw, catalog.Members, catalog.LocalTime)))
+            .Select(row => (Row: row, Match: row.Plan.MatchAt(evse.OperatorId, evse.Roaming, evse.Current, evse.MaxPowerKw, catalog.Members, catalog.LocalTime, evse.Country)))
             .Where(item => item.Match is not null)
             .Select(item => (item.Row, Zone: item.Match!.Zone, Price: item.Match.Price is { } price
                 ? price.Components(item.Row.Plan.Currency)

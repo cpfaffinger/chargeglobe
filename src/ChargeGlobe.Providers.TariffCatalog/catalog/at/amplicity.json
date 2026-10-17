@@ -1,0 +1,39 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "amplicity",
+      "name": "AMPLICITY",
+      "website": "https://amplicity.eu",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "direct",
+          "name": "AMPLICITY Direktzahlung",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Keine; QR-Code am Ladepunkt und Kreditkarte, RFID-Karten mit Monatsabrechnung auf Anfrage.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "amplicity"
+              ],
+              "prices": [],
+              "notes": "Preis je Station vom Standortbetreiber; keine Preisliste veröffentlicht.",
+              "pricing": "OPERATOR_AD_HOC"
+            }
+          ],
+          "notes": "Abrechnungsplattform der MGAtech GmbH für Standortbetreiber, vor allem in der Steiermark; einzelne Stationen auch über Octopus Electroverse.",
+          "sourceUrl": "https://amplicity.eu",
+          "sourceDate": null,
+          "confidence": "LOW",
+          "checkedOn": "2026-10-17"
+        }
+      ]
+    }
+  ]
+}

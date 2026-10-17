@@ -240,6 +240,7 @@ public sealed record TariffPriceElement(
 /// <param name="MarkupPercent">With operator pricing: percent on every amount of the ad-hoc price (−10 = 10 % off).</param>
 /// <param name="MarkupSessionFee">With operator pricing: fee of the provider per session on top.</param>
 /// <param name="Currents">The zone applies only to EVSEs of these currents (e.g. a discount of the operator's price for DC only); null for both.</param>
+/// <param name="Countries">The zone applies only to EVSEs in these countries (ISO 3166-1 alpha-2, e.g. the prices abroad of a roaming network); null for every country.</param>
 public sealed record TariffZone(
     TariffZoneKind Kind,
     IReadOnlyList<string> Networks,
@@ -252,8 +253,12 @@ public sealed record TariffZone(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] TariffPricing Pricing = TariffPricing.FIXED,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] decimal? MarkupPercent = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] decimal? MarkupSessionFee = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<TariffCurrent>? Currents = null)
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<TariffCurrent>? Currents = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<string>? Countries = null)
 {
+    /// <summary>Whether the zone applies in the country of the EVSE: always without <see cref="Countries"/>, else only in a listed one.</summary>
+    public bool AppliesIn(string? country) => Countries is null || (country is not null && Countries.Contains(country));
+
     /// <summary>
     /// The price of an operator-priced zone from the ad-hoc price of the EVSE: every amount with <see cref="MarkupPercent"/>,
     /// plus <see cref="MarkupSessionFee"/> per session. A free EVSE stays free.
@@ -427,18 +432,22 @@ public sealed class TariffPlan
 
     /// <summary>
     /// The first zone that covers the operator of the EVSE, in the order of <see cref="TariffZoneKind"/> (named operators before
-    /// the open zone of a kind), with the price for
+    /// the open zone of a kind, zones of the EVSE's country before the ones for every country), with the price for
     /// its current and power; a roaming zone only if the EVSE accepts cards of other providers. Null if the card cannot be
     /// used there or the zone has no price for the current.
     /// </summary>
+    /// <param name="country">Country of the EVSE (ISO 3166-1 alpha-2); zones limited to other countries are skipped.</param>
     public TariffMatch? MatchAt(
-        string? operatorId, bool? roaming, TariffCurrent current, decimal? maxPowerKw, Func<string, IReadOnlyCollection<string>> members, DateTime? time = null)
+        string? operatorId, bool? roaming, TariffCurrent current, decimal? maxPowerKw, Func<string, IReadOnlyCollection<string>> members, DateTime? time = null,
+        string? country = null)
     {
-        // Within a kind, zones for named networks or operators (e.g. a roaming price per operator) go before the open one.
+        // Within a kind, zones for named networks or operators (e.g. a roaming price per operator) go before the open one,
+        // and a zone for the country (e.g. the prices abroad) before the one for every country.
         var zone = Zones
-            .Where(item => (item.Kind != TariffZoneKind.ROAMING || roaming != false) && (item.Currents is null || item.Currents.Contains(current)))
+            .Where(item => (item.Kind != TariffZoneKind.ROAMING || roaming != false) && (item.Currents is null || item.Currents.Contains(current)) && item.AppliesIn(country))
             .OrderBy(item => item.Kind)
             .ThenBy(item => item.Networks.Count + item.Operators.Count == 0)
+            .ThenBy(item => item.Countries is null)
             .FirstOrDefault(item => item.Covers(operatorId, members));
         if (zone is { Pricing: not TariffPricing.FIXED })
         {

@@ -22,6 +22,9 @@
               "networks": [
                 "oeamtc"
               ],
+              "operators": [
+                "AT*FTR"
+              ],
               "prices": [
                 {
                   "current": "AC",
@@ -42,7 +45,8 @@
                   "blockingFeePerMinute": 0.1,
                   "blockingAfterMinutes": 120
                 }
-              ]
+              ],
+              "notes": "Mit den Futuregrid-Standorten im Südburgenland (im ePower-Standortverzeichnis mit Betreiber ÖAMTC)."
             },
             {
               "kind": "PARTNER",
@@ -97,9 +101,43 @@
                 }
               ],
               "notes": "Partnernetz Österreich laut Roamingpartner-Liste (Stand 1.7.2026)."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.64,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.74,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 120
+                },
+                {
+                  "current": "DC",
+                  "minKw": 150,
+                  "pricePerKwh": 0.84,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 120
+                }
+              ],
+              "notes": "Partnernetz Ausland: nur die gelisteten Roamingpartner (u. a. E.ON, IONITY, Enel X, PETROL, Lidl); die Zone gilt für alle Stationen dieser Länder.",
+              "countries": [
+                "DE",
+                "IT",
+                "HR",
+                "SI"
+              ]
             }
           ],
-          "notes": "Kein offenes Roaming: nur die gelisteten Partner (u. a. nicht Tesla, Allego, MOON, ChargePoint). Ausland: AC 0,64, DC 0,74, HPC 0,84 €/kWh.",
+          "notes": "Kein offenes Roaming in Österreich: nur die gelisteten Partner (u. a. nicht Tesla, Allego, MOON, ChargePoint).",
           "sourceUrl": "https://www.oeamtc.at/0888_26+Preisliste_ePower_regula%CC%88re+Kunden_V3.1.pdf/87.780.714",
           "sourceDate": "2026-07-01",
           "confidence": "HIGH",

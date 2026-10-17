@@ -62,6 +62,8 @@ export interface Zone {
   markupSessionFee: number | null;
   /** The zone applies only to EVSEs of these currents; null for both. */
   currents?: ('AC' | 'DC')[] | null;
+  /** The zone applies only to EVSEs in these countries (ISO 3166-1 alpha-2, prices abroad); null for every country. */
+  countries?: string[] | null;
   networks: string[];
   operators: string[];
   excludedNetworks: string[];

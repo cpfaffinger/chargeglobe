@@ -177,7 +177,9 @@ export class AdminTariffsPage {
   protected covers(zone: Zone): string {
     const names = [...zone.networks.map((key) => this.networkNames().get(key) ?? key), ...zone.operators];
     const all = names.length > 0 ? names.join(', ') : 'alle Betreiber mit Fremdkarten-Annahme';
-    const covered = zone.currents?.length ? `${all} – nur ${zone.currents.join('/')}` : all;
+    const limits = [zone.currents?.length ? `nur ${zone.currents.join('/')}` : null, zone.countries?.length ? `nur in ${zone.countries.join(', ')}` : null];
+    const shown = limits.filter((limit) => limit !== null);
+    const covered = shown.length > 0 ? `${all} – ${shown.join(', ')}` : all;
     const excluded = [...zone.excludedNetworks.map((key) => this.networkNames().get(key) ?? key), ...zone.excludedOperators];
     return excluded.length > 0 ? `${covered} (außer ${excluded.join(', ')})` : covered;
   }

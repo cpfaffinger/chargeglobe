@@ -515,7 +515,20 @@
       "name": "IONITY",
       "country": "AT",
       "operators": [
-        "AT*IOY"
+        "AT*IOY",
+        "DE*IOY",
+        "IT*IOY",
+        "SI*IOY",
+        "HR*IOY",
+        "SK*IOY"
+      ]
+    },
+    {
+      "key": "enbw-de",
+      "name": "EnBW (Deutschland)",
+      "country": "DE",
+      "operators": [
+        "DE*EBW"
       ]
     },
     {
@@ -638,6 +651,39 @@
       "country": "AT",
       "operators": [
         "AT*STB"
+      ]
+    },
+    {
+      "key": "genol",
+      "name": "GENOL Power Net (Lagerhaus)",
+      "country": "AT",
+      "operators": [
+        "AT*GNL"
+      ]
+    },
+    {
+      "key": "stadtwerke-hartberg",
+      "name": "Stadtwerke Hartberg",
+      "country": "AT",
+      "operators": [
+        "AT*EHB"
+      ]
+    },
+    {
+      "key": "smart-fuel-pass",
+      "name": "Smart Fuel Pass (Standortbetreiber)",
+      "country": "AT",
+      "operators": [
+        "AT*SFP",
+        "AT*SNL"
+      ]
+    },
+    {
+      "key": "amplicity",
+      "name": "AMPLICITY (Standortbetreiber)",
+      "country": "AT",
+      "operators": [
+        "AT*MGA"
       ]
     }
   ],

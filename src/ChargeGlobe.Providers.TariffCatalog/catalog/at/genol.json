@@ -1,0 +1,88 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "genol",
+      "name": "GENOL G+ Card",
+      "website": "https://genol-tankkarte.at/laden/",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "power",
+          "name": "GENOL Power Tarif",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "GENOL G+ Card (Tank- und Ladekarte für Firmen- und Privatkunden, keine Kartengebühr, keine Mindestlaufzeit); Antrag im Lagerhaus oder online.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "genol"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.45,
+                  "blockingFeePerMinute": 0.09,
+                  "blockingAfterMinutes": 179
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.57,
+                  "blockingFeePerMinute": 0.19,
+                  "blockingAfterMinutes": 89
+                }
+              ],
+              "notes": "GENOL Power Net an Lagerhaus-Standorten."
+            },
+            {
+              "kind": "ROAMING",
+              "networks": [
+                "smatrics",
+                "salzburg-ag",
+                "evn",
+                "e-laden-tirol",
+                "kelag",
+                "wien-energie",
+                "tiwag",
+                "oeamtc",
+                "omv",
+                "energie-steiermark",
+                "salzachsonne",
+                "linz-ag",
+                "energie-ag",
+                "ionity",
+                "da-emobil",
+                "mer",
+                "shell"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.65,
+                  "blockingFeePerMinute": 0.19,
+                  "blockingAfterMinutes": 179
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.79,
+                  "blockingFeePerMinute": 0.25,
+                  "blockingAfterMinutes": 59
+                }
+              ],
+              "notes": "Roamingpartner laut genol-tankkarte.at."
+            }
+          ],
+          "notes": "Keine Kartengebühr, Verbindungsentgelte oder Servicepauschalen.",
+          "sourceUrl": "https://genol-tankkarte.at/wp-content/uploads/2025/02/GEN_25-0011_Gplus_Card_Tarifblatt_A5_0202_ANSICHTfinal.pdf",
+          "sourceDate": "2025-02-05",
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
+        }
+      ]
+    }
+  ]
+}

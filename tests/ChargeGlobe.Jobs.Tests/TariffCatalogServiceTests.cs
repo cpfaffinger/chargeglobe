@@ -93,7 +93,7 @@ public class TariffCatalogServiceTests
         {
             var record = snapshot.Emps.Single(item => item.Key == emp).Tariffs.Single(item => item.Key == tariff);
             var plan = TariffPlan.Create(Guid.CreateVersion7(), CuratedTariffCatalog.SourceKey, Catalog.ContentOf(record), "hash", T0);
-            return plan.MatchAt(operatorId, true, current, power, key => networks.GetValueOrDefault(key) ?? []);
+            return plan.MatchAt(operatorId, true, current, power, key => networks.GetValueOrDefault(key) ?? [], country: operatorId[..2]);
         }
 
         static (TariffZoneKind, decimal?) Of(TariffMatch? match) => (match!.Zone.Kind, match.Price!.PricePerKwh);
@@ -138,6 +138,20 @@ public class TariffCatalogServiceTests
         var evnHome = Match("evn", "drive-smart", "AT*EVN")!.Price!;
         Assert.Equal((TariffBlockingFrom.CHARGING_END, 30m), (evnHome.BlockingFrom, evnHome.MaxBlockingFee));
         Assert.Equal((TariffZoneKind.OPERATOR, 0.46m), Of(Match("elli", "premium", "AT*IOY", TariffCurrent.DC, 350)));
+        // Abroad (the country of the operator ID here): EVN's partner network at the same price, Wien Energie not usable,
+        // IONITY and ÖAMTC with prices of the country, SMATRICS at EnBW in Germany at the home price.
+        Assert.Equal((TariffZoneKind.ROAMING, 0.64m), Of(Match("evn", "drive-smart", "DE*ION", TariffCurrent.DC, 50)));
+        Assert.Null(Match("evn", "drive-smart", "FR*TOT", TariffCurrent.DC, 50));
+        Assert.Null(Match("wien-energie", "tanke-kwh-go", "DE*ION"));
+        Assert.Equal((TariffZoneKind.HOME, 0.48m), Of(Match("ionity", "power", "IT*IOY", TariffCurrent.DC, 350)));
+        Assert.Equal((TariffZoneKind.HOME, 0.41m), Of(Match("ionity", "power", "AT*IOY", TariffCurrent.DC, 350)));
+        Assert.Equal((TariffZoneKind.ROAMING, 0.84m), Of(Match("oeamtc", "epower", "IT*ENX", TariffCurrent.DC, 150)));
+        Assert.Equal((TariffZoneKind.PARTNER, 0.65m), Of(Match("smatrics", "charge-and-roam", "DE*EBW", TariffCurrent.DC, 150)));
+        Assert.Equal((TariffZoneKind.ROAMING, 0.89m), Of(Match("smatrics", "charge-and-roam", "DE*ION", TariffCurrent.DC, 150)));
+        // Operators without a card before: GENOL at Lagerhaus, Futuregrid in ÖAMTC's home network, the platforms at the operator's price.
+        Assert.Equal((TariffZoneKind.HOME, 0.57m), Of(Match("genol", "power", "AT*GNL", TariffCurrent.DC, 50)));
+        Assert.Equal((TariffZoneKind.HOME, 0.44m), Of(Match("oeamtc", "epower", "AT*FTR")));
+        Assert.Equal(TariffPricing.OPERATOR_AD_HOC, Match("smart-fuel-pass", "app", "AT*SNL")!.Zone.Pricing);
     }
 
     private static async Task WaitUntilAsync(Func<bool> condition, string expectation)

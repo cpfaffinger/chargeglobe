@@ -146,7 +146,7 @@ describe('AdminTariffsPage', () => {
         confidence: 'LOW',
         stale: true,
         zones: [
-        { ...tariff().zones[0], excludedNetworks: [] },
+        { ...tariff().zones[0], excludedNetworks: [], countries: ['DE', 'IT'] },
         { ...tariff().zones[3], markupPercent: null, markupSessionFee: null },
         { ...tariff().zones[3], pricing: 'UNKNOWN', markupPercent: null, markupSessionFee: null },
       ],
@@ -188,6 +188,7 @@ describe('AdminTariffsPage', () => {
     expect(text(rows[1], 'td:nth-child(4)')).toBe('0,50 €/min, Start 1,00 €');
     expect(text(rows[2], '.covers')).toBe('unknown, AT*IOY');
     expect(easyOperatorPrice()).toBe('Preis des Betreibers');
+    expect(text(root().querySelector<HTMLElement>('[data-tariff="drive-easy"]')!, 'tbody tr:nth-child(1) .covers')).toBe('EVN – nur in DE, IT');
     expect(text(root().querySelector<HTMLElement>('[data-tariff="drive-easy"]')!, 'tbody tr:nth-child(3) td:nth-child(3)')).toBe(
       'Preis je Ladepunkt, nicht veröffentlicht',
     );

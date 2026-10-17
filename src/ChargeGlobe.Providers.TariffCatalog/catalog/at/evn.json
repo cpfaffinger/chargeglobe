@@ -82,7 +82,14 @@
                   "maxBlockingFee": 60
                 }
               ],
-              "notes": "Partnerladenetz: alle mit der Karte erreichbaren Stationen in AT, DE, IT, HR und SI."
+              "notes": "Partnerladenetz: alle mit der Karte erreichbaren Stationen in AT, DE, IT, HR und SI zum selben Preis.",
+              "countries": [
+                "AT",
+                "DE",
+                "IT",
+                "HR",
+                "SI"
+              ]
             }
           ],
           "notes": "Keine Blockiergebühr im EVN-Netz bis 3,7 kW. Preisgarantie bis 31.12.2026.",
@@ -194,7 +201,10 @@
                   "blockingAfterMinutes": 60
                 }
               ],
-              "notes": "Kein Roamingaufschlag an rund 21.000 Ladepunkten in Österreich."
+              "notes": "Kein Roamingaufschlag an rund 21.000 Ladepunkten in Österreich.",
+              "countries": [
+                "AT"
+              ]
             }
           ],
           "notes": "Preisgarantie bis 31.12.2026.",
