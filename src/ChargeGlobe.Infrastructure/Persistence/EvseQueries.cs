@@ -130,15 +130,15 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             {
                 var list = source.ToList();
                 return list.Select((observation, index) => new PricePeriod(
-                    View(observation.SourceKey, observation.Components, example, catalog.LocalTime, bounds.Accepts(observation.Components)), observation.Time,
+                    View(observation.SourceKey, observation.Components, example, catalog.LocalTime, bounds.IssueOf(observation.Components)), observation.Time,
                     index + 1 < list.Count ? list[index + 1].Time : null));
             })
             .Where(period => period.From < to && (period.To is null || period.To > from))
             .OrderBy(period => period.From)
             .ToList();
         // An implausible ad-hoc price is no base for the providers that pass it on: those tariffs come as unknown.
-        var plausible = current is null || bounds.Accepts(current.Components);
-        var (prices, unknown) = EmpPrices(catalog, evse, example, plausible ? current?.Components : null);
+        var issue = current is null ? null : bounds.IssueOf(current.Components);
+        var (prices, unknown) = EmpPrices(catalog, evse, example, issue is null ? current?.Components : null);
         var unavailable = catalog.Plans
             .Where(row => prices.All(price => price.TariffId != row.Plan.Id) && unknown.All(item => item.Plan.Id != row.Plan.Id))
             .OrderBy(row => row.Name, StringComparer.Ordinal)
@@ -152,7 +152,7 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
                 await db.Locations.Where(location => location.Id == evse.LocationId).Select(location => (GeoPoint?)location.Coordinates).SingleAsync(cancellationToken)));
         return new EvsePrices(
             example,
-            current is null ? null : new CurrentPrice(View(current.SourceKey, current.Components, example, catalog.LocalTime, plausible), current.Since, current.ObservedAt),
+            current is null ? null : new CurrentPrice(View(current.SourceKey, current.Components, example, catalog.LocalTime, issue), current.Since, current.ObservedAt),
             history,
             prices,
             unavailable,
@@ -321,11 +321,11 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
 
     private sealed record UnknownPrice(TariffPlan Plan, string Key, string Name, TariffZoneKind Zone);
 
-    private static PriceView View(string source, PriceComponents price, SessionExample example, DateTime? start, bool plausible = true) =>
+    private static PriceView View(string source, PriceComponents price, SessionExample example, DateTime? start, PriceIssue? issue = null) =>
         new(source, price.Currency, price.PricePerKwh, price.PricePerMinute, price.SessionFee, price.BlockingFeePerMinute,
             price.BlockingAfterMinutes, price.FreeOfCharge, price.CostOf(example.Kwh, example.Minutes, start), price.BlockingFeeMax, price.BlockingFrom.ToString(),
             price.BlockingStartTime?.ToString("HH:mm", CultureInfo.InvariantCulture), price.BlockingEndTime?.ToString("HH:mm", CultureInfo.InvariantCulture),
-            price.BlockingMaxMinutes, plausible);
+            price.BlockingMaxMinutes, issue is null, issue?.ToString());
 
     public async Task<IReadOnlyList<StatusInterval>> StatusHistoryAsync(
         Guid id, DateTimeOffset from, DateTimeOffset to, string? source, CancellationToken cancellationToken)

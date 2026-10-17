@@ -21,7 +21,7 @@ import {
 import { Segment, combine, faultSource, sourceName, statusOf, timeline } from './status';
 import { OccupancyHeatmap, StatusTimeline } from './status-charts';
 import { CardsStore } from '../preferences/cards.store';
-import { EmpPrice, EmpUnavailable, EvsePricesResponse, IMPLAUSIBLE, money, plausible, priceParts, sessionText, zoneText } from './prices';
+import { EmpPrice, EmpUnavailable, EvsePricesResponse, implausibleText, money, plausible, priceParts, sessionText, zoneText } from './prices';
 import { AVAILABILITY, busyText, tokenColor } from '../map/availability';
 import { connectorLabel, formatLabel } from './labels';
 import { LocationSummary } from '../map/locations.service';
@@ -219,7 +219,7 @@ type LoadState = 'loading' | 'error' | 'ready';
                         @if (isPlausible(current.price)) {
                           <span class="price-example">· {{ session(pricing.example) }}: {{ money(current.price.exampleCost, current.price.currency) }}</span>
                         } @else {
-                          <span class="price-implausible">· {{ implausible }}</span>
+                          <span class="price-implausible">· {{ implausible(current.price) }}</span>
                         }
                       </p>
                     } @else {
@@ -461,7 +461,7 @@ export class LocationDetails {
   protected readonly parts = priceParts;
   protected readonly money = money;
   protected readonly isPlausible = plausible;
-  protected readonly implausible = IMPLAUSIBLE;
+  protected readonly implausible = implausibleText;
 
   protected readonly timelineDays = TIMELINE_DAYS;
   protected readonly occupancyWeeks = OCCUPANCY_WEEKS;

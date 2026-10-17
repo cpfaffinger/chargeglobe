@@ -828,7 +828,7 @@ describe('LocationDetails with prices', () => {
     // An error of the register: the price without its cost.
     http
       .expectOne('/api/v1/evses/e-4/prices')
-      .flush(prices({ price: priceView({ pricePerKwh: 0.005, plausible: false }), since: '2026-10-01T00:00:00Z', observedAt: '2026-10-14T00:00:00Z' }));
+      .flush(prices({ price: priceView({ pricePerKwh: 0.005, plausible: false, reason: 'BELOW_MIN' }), since: '2026-10-01T00:00:00Z', observedAt: '2026-10-14T00:00:00Z' }));
     await settle();
 
     const lines = Array.from(root().querySelectorAll('.price')).map((price) => price.textContent!.replace(/\s+/g, ' ').trim());

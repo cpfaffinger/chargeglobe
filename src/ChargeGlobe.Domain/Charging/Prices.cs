@@ -11,6 +11,14 @@ public enum TariffKind
     EMP,
 }
 
+/// <summary>Why an ad-hoc price is implausible: nothing charged, or an energy price below or above the bounds.</summary>
+public enum PriceIssue
+{
+    NO_AMOUNT,
+    BELOW_MIN,
+    ABOVE_MAX,
+}
+
 #pragma warning restore CA1707
 
 /// <summary>
@@ -20,19 +28,26 @@ public enum TariffKind
 public sealed record PriceBounds(decimal MinKwh, decimal MaxKwh)
 {
     /// <summary>
-    /// Whether the price is plausible: free of charge; an energy price within the bounds; or, without energy price, a time
-    /// price or session fee (time-only prices are not judged by the bounds).
+    /// Why the price is implausible; null if it is plausible: free of charge, an energy price within the bounds, or without
+    /// energy price some other amount (time-only prices are not judged by the bounds).
     /// </summary>
-    public bool Accepts(PriceComponents price)
+    public PriceIssue? IssueOf(PriceComponents price)
     {
         if (price.FreeOfCharge)
         {
-            return true;
+            return null;
         }
 
         var kwh = price.PricePerKwh ?? 0;
-        return kwh > 0 ? kwh >= MinKwh && kwh <= MaxKwh : (price.PricePerMinute ?? 0) > 0 || (price.SessionFee ?? 0) > 0;
+        if (kwh > 0)
+        {
+            return kwh < MinKwh ? PriceIssue.BELOW_MIN : kwh > MaxKwh ? PriceIssue.ABOVE_MAX : null;
+        }
+
+        return price.HasNoAmount() ? PriceIssue.NO_AMOUNT : null;
     }
+
+    public bool Accepts(PriceComponents price) => IssueOf(price) is null;
 }
 
 /// <summary>Price components of a charging session; amounts in <see cref="Currency"/>, null if the source does not tell.</summary>
@@ -61,6 +76,10 @@ public sealed record PriceComponents(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] TimeOnly? BlockingEndTime = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? BlockingMaxMinutes = null)
 {
+    /// <summary>Not free of charge, yet no energy, time, session or blocking amount: the source tells no price.</summary>
+    public bool HasNoAmount() =>
+        !FreeOfCharge && (PricePerKwh ?? 0) == 0 && (PricePerMinute ?? 0) == 0 && (SessionFee ?? 0) == 0 && (BlockingFeePerMinute ?? 0) == 0;
+
     /// <summary>
     /// Cost of a session with <paramref name="kwh"/> charged in <paramref name="minutes"/>, starting at the local time
     /// <paramref name="start"/> and unplugged at the end of charging: session fee, energy and time price, and the blocking

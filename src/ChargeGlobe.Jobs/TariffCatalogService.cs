@@ -85,8 +85,11 @@ public sealed class TariffCatalogService(
                     logger.LogInformation("Tariff catalog: {Count} tariffs to check soon", await catalog.CheckSoonCountAsync(stoppingToken));
                     var implausible = await scope.ServiceProvider.GetRequiredService<IPriceQuality>().ImplausibleAsync(stoppingToken);
                     logger.LogInformation(
-                        "Ad-hoc prices: {Count} implausible at {Operators} operators: {List}",
+                        "Ad-hoc prices: {Count} implausible ({NoAmount} without amount, {BelowMin} below, {AboveMax} above the bounds) at {Operators} operators: {List}",
                         implausible.Evses,
+                        implausible.NoAmount,
+                        implausible.BelowMin,
+                        implausible.AboveMax,
                         implausible.Operators.Count,
                         implausible.Operators.Count == 0 ? "none" : string.Join(", ", implausible.Operators.Take(10).Select(item => $"{item.OperatorId ?? "?"} {item.Evses}")));
                     _staleLoggedOn = today;

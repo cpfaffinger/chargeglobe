@@ -23,10 +23,15 @@ export interface PriceView {
   blockingMaxMinutes?: number | null;
   /** False if the register's price is implausible (outside price.min/max_plausible_kwh, or 0 without free of charge). */
   plausible?: boolean;
+  /** Why it is implausible: no amount reported, energy price below or above the bounds; null if plausible. */
+  reason?: PriceReason | null;
 }
 
-/** Shown instead of the cost of an implausible ad-hoc price. */
-export const IMPLAUSIBLE = 'Preis laut Register vermutlich falsch';
+export type PriceReason = 'NO_AMOUNT' | 'BELOW_MIN' | 'ABOVE_MAX';
+
+/** Shown instead of the cost of an implausible ad-hoc price: "kein Preis gemeldet" or "Preis laut Register vermutlich falsch". */
+export const implausibleText = (price: Pick<PriceView, 'reason'>): string =>
+  price.reason === 'NO_AMOUNT' ? 'kein Preis gemeldet' : 'Preis laut Register vermutlich falsch';
 
 /** Whether the price may be shown with its cost (missing flag: plausible). */
 export const plausible = (price: PriceView): boolean => price.plausible !== false;

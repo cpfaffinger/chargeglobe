@@ -24,6 +24,14 @@ public class PriceTests
         Assert.False(bounds.Accepts(none));
         Assert.False(bounds.Accepts(none with { PricePerKwh = 0m, PricePerMinute = 0m, SessionFee = 0m }));
         Assert.True(bounds.Accepts(none with { FreeOfCharge = true }));
+
+        // The reason: nothing charged, below or above the bounds; a blocking fee alone is an amount.
+        Assert.Equal(
+            [PriceIssue.NO_AMOUNT, PriceIssue.BELOW_MIN, PriceIssue.ABOVE_MAX, null, null],
+            new PriceIssue?[] { bounds.IssueOf(none), bounds.IssueOf(Price with { PricePerKwh = 0.005m }), bounds.IssueOf(Price with { PricePerKwh = 2.50m }), bounds.IssueOf(Price), bounds.IssueOf(none with { BlockingFeePerMinute = 0.10m }) });
+        Assert.True(none.HasNoAmount());
+        Assert.False((none with { FreeOfCharge = true }).HasNoAmount());
+        Assert.False((none with { BlockingFeePerMinute = 0.10m }).HasNoAmount());
     }
 
     [Fact]

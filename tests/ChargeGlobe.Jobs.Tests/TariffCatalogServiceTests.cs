@@ -59,7 +59,7 @@ public class TariffCatalogServiceTests
         const string stale = "Tariff catalog: 4 tariffs older than the setting tariff.stale_months or without date";
         Assert.Equal(1, logger.Messages.Count(message => message == stale));
         Assert.Equal(1, logger.Messages.Count(message => message == "Tariff catalog: 3 tariffs to check soon"));
-        Assert.Equal(1, logger.Messages.Count(message => message == "Ad-hoc prices: 20 implausible at 2 operators: AT*F9B 16, ? 4"));
+        Assert.Equal(1, logger.Messages.Count(message => message == "Ad-hoc prices: 20 implausible (4 without amount, 16 below, 0 above the bounds) at 2 operators: AT*F9B 16, ? 4"));
 
         // The stale tariffs once a day: again after midnight (02:00), not at 08:00 of the same day.
         time.Advance(TariffCatalogService.Interval);
@@ -184,10 +184,12 @@ public class TariffCatalogServiceTests
     private sealed class PriceQualityStub : IPriceQuality
     {
         public Task<ImplausiblePrices> ImplausibleAsync(CancellationToken cancellationToken) =>
-            Task.FromResult(new ImplausiblePrices(T0, 0.05m, 2m, 20, [
+            Task.FromResult(new ImplausiblePrices(T0, 0.05m, 2m, 20, 4, 16, 0, [
                 new OperatorImplausiblePrices("AT*F9B", "CAS", 16, [], T0),
                 new OperatorImplausiblePrices(null, null, 4, [], T0),
             ]));
+
+        public Task<IReadOnlyList<ImplausibleEvse>> ImplausibleEvsesAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
     private sealed class CatalogStub : ITariffCatalog
