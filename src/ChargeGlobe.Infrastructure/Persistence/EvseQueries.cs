@@ -2,8 +2,10 @@ using System.Text.Json;
 using ChargeGlobe.Application.Evses;
 using ChargeGlobe.Application.Locations;
 using ChargeGlobe.Application.Settings;
+using ChargeGlobe.Domain;
 using ChargeGlobe.Domain.Charging;
 using ChargeGlobe.Domain.Provenance;
+using ChargeGlobe.Providers.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
@@ -294,11 +296,65 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
     public async Task<EvseSearchPage> SearchAsync(
         EvseSearchFilter filter, EvseSort sort, EvseCursor? after, int limit, CancellationToken cancellationToken)
     {
-        var byId = sort == EvseSort.EvseId;
+        var rows = await Rows(filter, sort, after, limit + 1).ToListAsync(cancellationToken);
+        var page = rows.Take(limit).ToList();
+        var last = page.LastOrDefault();
+        var next = rows.Count > limit && last is not null ? new EvseCursor(sort, KeyOf(sort, last), last.Id) : null;
+        return new EvseSearchPage([.. page.Select(Item)], next, await AttributionAsync([.. page.Select(row => row.Id)], cancellationToken));
+    }
+
+    public async IAsyncEnumerable<EvseListItem> ExportAsync(
+        EvseSearchFilter filter, EvseSort sort, int limit, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        await foreach (var row in Rows(filter, sort, null, limit).AsAsyncEnumerable().WithCancellation(cancellationToken))
+        {
+            yield return Item(row);
+        }
+    }
+
+    public async Task<IReadOnlyList<SourceAttribution>> EvseSourcesAsync(CancellationToken cancellationToken)
+    {
+        var keys = await db.SourceRecords.Where(record => record.EntityType == EntityType.EVSE).Select(record => record.SourceKey).Distinct().ToListAsync(cancellationToken);
+        return await db.Sources
+            .Where(source => keys.Contains(source.Key))
+            .OrderBy(source => source.Key)
+            .Select(source => new SourceAttribution(source.Key, source.AttributionText, source.License))
+            .ToListAsync(cancellationToken);
+    }
+
+    private static string KeyOf(EvseSort sort, EvseRow row) => sort switch
+    {
+        EvseSort.EvseId => row.EvseIdNorm,
+        EvseSort.StatusSince => row.SortSince.ToString("O", System.Globalization.CultureInfo.InvariantCulture),
+        _ => row.Distance!.Value.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+    };
+
+    private static EvseListItem Item(EvseRow row) =>
+        new(
+            row.Id,
+            row.EvseId,
+            new EvseListLocation(row.LocationId, row.LocationName, row.City, row.Region, row.ParkId, row.Latitude, row.Longitude),
+            row.StationId is { } id ? new EvseStationRef(id, row.StationLabel) : null,
+            row.Status,
+            row.StatusSince,
+            row.StatusSource,
+            row.MaxPowerKw,
+            row.Distance);
+
+    /// <summary>
+    /// One statement over the active EVSEs of active locations with their station and current status; keyset paging on the
+    /// normalized EVSE-ID (byte order, collation C), on (status since, id) or on (distance, id). The operator filter
+    /// compares the parts of the normalized EVSE-ID, so surrogates never match it; box and radius use the GiST index of
+    /// the locations.
+    /// </summary>
+    private IQueryable<EvseRow> Rows(EvseSearchFilter filter, EvseSort sort, EvseCursor? after, int take)
+    {
+        var (byId, bySince, byDistance) = (sort == EvseSort.EvseId, sort == EvseSort.StatusSince, sort == EvseSort.Distance);
         var afterKey = byId ? after?.Key : null;
-        DateTimeOffset? afterSince = !byId && after is not null
+        DateTimeOffset? afterSince = bySince && after is not null
             ? DateTimeOffset.Parse(after.Key, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.RoundtripKind)
             : null;
+        double? afterDistance = byDistance && after is not null ? double.Parse(after.Key, System.Globalization.CultureInfo.InvariantCulture) : null;
         var afterId = after?.Id ?? Guid.Empty;
         string[] statuses = [.. filter.Statuses];
         string[] connectors = [.. filter.Connector];
@@ -308,12 +364,18 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             : null;
         // With a country the prefix of the normalized EVSE-ID uses the text_pattern_ops index.
         var operatorPrefix = filter.OperatorCountry is { } country ? $"{country}{filter.OperatorParty}%" : null;
-        var rows = await db.Database.SqlQuery<EvseRow>($"""
+        var anyBox = filter.Within is null;
+        var box = filter.Within ?? new BoundingBox(-180, -90, 180, 90);
+        var hasNear = filter.Near is not null;
+        var near = filter.Near ?? new GeoPoint(0, 0);
+        return db.Database.SqlQuery<EvseRow>($"""
             SELECT e.id AS "Id", e.evse_id_display AS "EvseId", e.evse_id_norm AS "EvseIdNorm",
                    l.id AS "LocationId", l.name AS "LocationName", l.city AS "City", l.region_code AS "Region", l.park_id AS "ParkId",
+                   ST_Y(l.geom::geometry) AS "Latitude", ST_X(l.geom::geometry) AS "Longitude",
                    s.id AS "StationId", s.label AS "StationLabel",
                    coalesce(c.status, 'UNKNOWN') AS "Status", c.since AS "StatusSince", c.source_key AS "StatusSource",
-                   e.max_power_kw AS "MaxPowerKw", coalesce(c.since, {NoStatus}) AS "SortSince"
+                   e.max_power_kw AS "MaxPowerKw", coalesce(c.since, {NoStatus}) AS "SortSince",
+                   CASE WHEN {hasNear} THEN ST_Distance(l.geom, ST_SetSRID(ST_MakePoint({near.Longitude}, {near.Latitude}), 4326)::geography) END AS "Distance"
             FROM evse e
             JOIN location l ON l.id = e.location_id AND l.lifecycle = 'ACTIVE'
             LEFT JOIN charging_station s ON s.id = e.charging_station_id
@@ -330,31 +392,18 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
               AND ({filter.StatusSinceBefore}::timestamptz IS NULL OR c.since <= {filter.StatusSinceBefore}::timestamptz)
               AND ({stationId}::uuid IS NULL OR e.charging_station_id = {stationId}::uuid)
               AND ({stationLabel}::text IS NULL OR upper(translate(s.label, '*- ', '')) = {stationLabel}::text)
+              AND ({anyBox} OR l.geom && ST_MakeEnvelope({box.MinLongitude}, {box.MinLatitude}, {box.MaxLongitude}, {box.MaxLatitude}, 4326)::geography)
+              AND (NOT {hasNear} OR ST_DWithin(l.geom, ST_SetSRID(ST_MakePoint({near.Longitude}, {near.Latitude}), 4326)::geography, {filter.RadiusMeters}))
               AND ({afterKey}::text IS NULL OR e.evse_id_norm COLLATE "C" > {afterKey}::text)
               AND ({afterSince}::timestamptz IS NULL OR (coalesce(c.since, {NoStatus}), e.id) > ({afterSince}::timestamptz, {afterId}))
+              AND ({afterDistance}::float8 IS NULL
+                   OR (ST_Distance(l.geom, ST_SetSRID(ST_MakePoint({near.Longitude}, {near.Latitude}), 4326)::geography), e.id) > ({afterDistance}::float8, {afterId}))
             ORDER BY CASE WHEN {byId} THEN e.evse_id_norm COLLATE "C" END,
-                     CASE WHEN {byId} THEN NULL ELSE coalesce(c.since, {NoStatus}) END,
+                     CASE WHEN {bySince} THEN coalesce(c.since, {NoStatus}) END,
+                     CASE WHEN {byDistance} THEN ST_Distance(l.geom, ST_SetSRID(ST_MakePoint({near.Longitude}, {near.Latitude}), 4326)::geography) END,
                      e.id
-            LIMIT {limit + 1}
-            """).ToListAsync(cancellationToken);
-        var page = rows.Take(limit).ToList();
-        var last = page.LastOrDefault();
-        var next = rows.Count > limit && last is not null
-            ? new EvseCursor(sort, byId ? last.EvseIdNorm : last.SortSince.ToString("O", System.Globalization.CultureInfo.InvariantCulture), last.Id)
-            : null;
-        List<Guid> ids = [.. page.Select(row => row.Id)];
-        return new EvseSearchPage(
-            [.. page.Select(row => new EvseListItem(
-                row.Id,
-                row.EvseId,
-                new EvseListLocation(row.LocationId, row.LocationName, row.City, row.Region, row.ParkId),
-                row.StationId is { } id ? new EvseStationRef(id, row.StationLabel) : null,
-                row.Status,
-                row.StatusSince,
-                row.StatusSource,
-                row.MaxPowerKw))],
-            next,
-            await AttributionAsync(ids, cancellationToken));
+            LIMIT {take}
+            """);
     }
 
     public Task<IReadOnlyList<SourceAttribution>> AttributionAsync(Guid id, CancellationToken cancellationToken) =>
@@ -406,6 +455,12 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
         public decimal? MaxPowerKw { get; set; }
 
         public DateTimeOffset SortSince { get; set; }
+
+        public double Latitude { get; set; }
+
+        public double Longitude { get; set; }
+
+        public double? Distance { get; set; }
     }
 
     /// <summary>One row of the occupancy query; property names are the column aliases.</summary>

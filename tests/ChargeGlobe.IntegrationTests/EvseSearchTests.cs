@@ -218,4 +218,88 @@ public class EvseSearchTests(IntegrationFactory factory) : IClassFixture<Integra
 
         await (await factory.Client().GetAsync("/api/v1/evses")).AssertProblemAsync(HttpStatusCode.Unauthorized);
     }
+
+    [Fact]
+    public async Task A_box_or_a_radius_narrows_the_EVSEs_and_distance_orders_them()
+    {
+        Assert.Equal(["AT*EVN*E2453*1", "AT*EVN*E2453*2"], await IdsAsync("bbox=15.5,48.1,15.8,48.3"));
+
+        var near = (await SearchAsync("near=48.2047,15.6256&radiusMeters=1000")).GetProperty("data").EnumerateArray().ToList();
+        Assert.Equal(["AT*EVN*E2453*1", "AT*EVN*E2453*2"], near.Select(item => item.GetProperty("evseId").GetString()));
+        Assert.InRange(near[0].GetProperty("distanceMeters").GetDouble(), 50, 500);
+        Assert.Equal((48.204, 15.623), (near[0].GetProperty("location").GetProperty("latitude").GetDouble(), near[0].GetProperty("location").GetProperty("longitude").GetDouble()));
+        var plain = (await SearchAsync("limit=1")).GetProperty("data")[0];
+        Assert.Equal(JsonValueKind.Null, plain.GetProperty("distanceMeters").ValueKind);
+
+        // Tulln lies between Vienna (about 27 km) and St. Pölten (about 32 km); without radius only 5 km count.
+        var ordered = await IdsAsync("near=48.33,16.05&radiusMeters=50000&sort=distance&limit=100");
+        Assert.Equal(6, ordered.Length);
+        Assert.Equal(["AT*EVN*E2453*1", "AT*EVN*E2453*2"], ordered[4..].Order(StringComparer.Ordinal));
+        Assert.Empty(await IdsAsync("near=48.33,16.05"));
+
+        // Pages by distance follow each other without gaps.
+        var seen = new List<string>();
+        string? cursor = null;
+        do
+        {
+            var page = await SearchAsync("near=48.33,16.05&radiusMeters=50000&sort=distance&limit=4" + (cursor is null ? string.Empty : $"&cursor={Uri.EscapeDataString(cursor)}"));
+            seen.AddRange(page.GetProperty("data").EnumerateArray().Select(item => item.GetProperty("evseId").GetString()!));
+            cursor = page.GetProperty("meta").GetProperty("nextCursor").GetString();
+        }
+        while (cursor is not null);
+
+        Assert.Equal(ordered, seen);
+    }
+
+    [Theory]
+    [InlineData("bbox=1,2,3", "bbox")]
+    [InlineData("near=abc", "near")]
+    [InlineData("near=95,10", "near")]
+    [InlineData("near=48.2,16.3&bbox=16.2,48.1,16.6,48.3", "near")]
+    [InlineData("near=48.2,16.3&radiusMeters=0", "radiusMeters")]
+    [InlineData("near=48.2,16.3&radiusMeters=50001", "radiusMeters")]
+    [InlineData("sort=distance", "sort")]
+    public async Task Invalid_spatial_filters_are_rejected(string query, string field)
+    {
+        using var client = await ClientAsync();
+        var problem = await (await client.GetAsync($"/api/v1/evses?{query}")).AssertProblemAsync(HttpStatusCode.UnprocessableEntity);
+        Assert.True(problem.GetProperty("errors").TryGetProperty(field, out _), problem.GetRawText());
+    }
+
+    [Fact]
+    public async Task A_distance_cursor_needs_a_distance_as_key()
+    {
+        using var client = await ClientAsync();
+        var forged = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"Distance|far|{Guid.NewGuid()}"));
+        await (await client.GetAsync($"/api/v1/evses?near=48.2,16.3&sort=distance&cursor={Uri.EscapeDataString(forged)}")).AssertProblemAsync(HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Fact]
+    public async Task The_export_streams_the_search_as_CSV_with_the_sources_and_needs_export_read()
+    {
+        using (var user = await ClientAsync())
+        {
+            await (await user.GetAsync("/api/v1/evses/export")).AssertProblemAsync(HttpStatusCode.Forbidden);
+        }
+
+        using var admin = factory.Client((await factory.LoginAsync(IntegrationFactory.AdminEmail, IntegrationFactory.AdminPassword)).AccessToken);
+        var response = await admin.GetAsync("/api/v1/evses/export?sort=evseId");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("text/csv", response.Content.Headers.ContentType!.MediaType);
+        Assert.Equal("evses.csv", response.Content.Headers.ContentDisposition!.FileName);
+        var lines = (await response.Content.ReadAsStringAsync()).Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(line => line.TrimEnd('\r')).ToList();
+        Assert.Equal("# Sources: Datenquelle: E-Control", lines[0]);
+        Assert.Equal("evse_id,location_id,location_name,city,region,park_id,latitude,longitude,charging_station,status,status_since,status_source,max_power_kw,distance_m", lines[1]);
+        Assert.Equal(8, lines.Count);
+        var first = lines[2].Split(',');
+        Assert.Equal(("AT*EVN*E2453*1", "Rathausplatz", "St. Pölten", "AT-3", "48.204", "15.623", "AT*EVN*E2453", "OUTOFORDER", "econtrol", "22", ""), (
+            first[0], first[2], first[3], first[4], first[6], first[7], first[8], first[9], first[11], first[12], first[13]));
+        Assert.Matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$", first[10]);
+
+        var near = (await (await admin.GetAsync("/api/v1/evses/export?near=48.2047,15.6256&radiusMeters=1000&limit=1&cursor=ignored")).Content.ReadAsStringAsync())
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal(3, near.Length);
+        Assert.Matches("^\\d+$", near[2].TrimEnd('\r').Split(',')[13]);
+        await (await admin.GetAsync("/api/v1/evses/export?limit=100001")).AssertProblemAsync(HttpStatusCode.UnprocessableEntity);
+    }
 }

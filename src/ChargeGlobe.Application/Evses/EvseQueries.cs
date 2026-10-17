@@ -1,4 +1,6 @@
 using ChargeGlobe.Application.Locations;
+using ChargeGlobe.Domain;
+using ChargeGlobe.Providers.Abstractions;
 
 namespace ChargeGlobe.Application.Evses;
 
@@ -142,6 +144,9 @@ public enum EvseSort
 
     /// <summary>Longest unchanged status first; EVSEs without status last.</summary>
     StatusSince,
+
+    /// <summary>Nearest to <see cref="EvseSearchFilter.Near"/> first.</summary>
+    Distance,
 }
 
 /// <summary>Filters of the EVSE search; null or empty means "no filter". Only active EVSEs of active locations are searched.</summary>
@@ -151,6 +156,8 @@ public enum EvseSort
 /// <param name="Connector">OCPI connector standards; one connector of the EVSE with one of them is enough.</param>
 /// <param name="StatusSinceBefore">The current status began at or before this time (e.g. "out of order for over 24 h").</param>
 /// <param name="ChargingStation">Id or label of the charging station (separators and case do not matter).</param>
+/// <param name="Within">The location lies in this box.</param>
+/// <param name="Near">The location lies within <paramref name="RadiusMeters"/> of this point; the distance is returned.</param>
 public sealed record EvseSearchFilter(
     string? OperatorCountry,
     string? OperatorParty,
@@ -160,14 +167,17 @@ public sealed record EvseSearchFilter(
     decimal? MaxPowerKw,
     IReadOnlyList<string> Connector,
     DateTimeOffset? StatusSinceBefore,
-    string? ChargingStation);
+    string? ChargingStation,
+    BoundingBox? Within = null,
+    GeoPoint? Near = null,
+    int RadiusMeters = 0);
 
 /// <summary>Position after the last EVSE of a page: its sort key (normalized EVSE-ID or status since) and id.</summary>
 public sealed record EvseCursor(EvseSort Sort, string Key, Guid Id);
 
 /// <param name="Region">ISO 3166-2 code; null if none is known.</param>
 /// <param name="ParkId">Charging park of the location; null if it stands alone.</param>
-public sealed record EvseListLocation(Guid Id, string? Name, string? City, string? Region, Guid? ParkId);
+public sealed record EvseListLocation(Guid Id, string? Name, string? City, string? Region, Guid? ParkId, double Latitude, double Longitude);
 
 /// <param name="Label">Identifier of the station in the source, e.g. <c>AT*MER*E006566</c>.</param>
 public sealed record EvseStationRef(Guid Id, string? Label);
@@ -176,6 +186,7 @@ public sealed record EvseStationRef(Guid Id, string? Label);
 /// <param name="Status">Current OCPI status as stored (not replaced when stale); <c>UNKNOWN</c> without status.</param>
 /// <param name="StatusSince">Since when the EVSE has this status; null without status.</param>
 /// <param name="StatusSource">Source of the current status.</param>
+/// <param name="DistanceMeters">Distance of the location from the point of a search by distance; null otherwise.</param>
 public sealed record EvseListItem(
     Guid Id,
     string EvseId,
@@ -184,7 +195,8 @@ public sealed record EvseListItem(
     string Status,
     DateTimeOffset? StatusSince,
     string? StatusSource,
-    decimal? MaxPowerKw);
+    decimal? MaxPowerKw,
+    double? DistanceMeters = null);
 
 /// <param name="Next">Cursor of the next page; null on the last one.</param>
 public sealed record EvseSearchPage(IReadOnlyList<EvseListItem> Evses, EvseCursor? Next, IReadOnlyList<SourceAttribution> Attribution);
@@ -197,6 +209,12 @@ public interface IEvseQueries
 
     /// <summary>Active EVSEs matching the filter in the given order, at most <paramref name="limit"/>, after <paramref name="after"/>.</summary>
     Task<EvseSearchPage> SearchAsync(EvseSearchFilter filter, EvseSort sort, EvseCursor? after, int limit, CancellationToken cancellationToken);
+
+    /// <summary>As <see cref="SearchAsync"/> without paging, streamed row by row (CSV export).</summary>
+    IAsyncEnumerable<EvseListItem> ExportAsync(EvseSearchFilter filter, EvseSort sort, int limit, CancellationToken cancellationToken);
+
+    /// <summary>The sources with records of EVSEs, from the table <c>source</c>.</summary>
+    Task<IReadOnlyList<SourceAttribution>> EvseSourcesAsync(CancellationToken cancellationToken);
 
     /// <summary>Status intervals overlapping [<paramref name="from"/>, <paramref name="to"/>), oldest first.</summary>
     Task<IReadOnlyList<StatusInterval>> StatusHistoryAsync(
