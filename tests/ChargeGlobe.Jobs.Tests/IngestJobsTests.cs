@@ -398,6 +398,7 @@ public class IngestJobsTests
         var services = new ServiceCollection()
             .AddScoped<IIngestQueue>(_ => queue)
             .AddScoped<IJobLeases>(_ => leases)
+            .AddScoped<ChargeGlobe.Application.Identity.IAuditRetention>(_ => new StubAuditRetention())
             .BuildServiceProvider();
         var time = new FakeTimeProvider(T0);
         var logger = new ListLogger<IngestWorkerService>();
@@ -407,6 +408,7 @@ public class IngestJobsTests
         await WaitUntilAsync(() => queue.Purges == 1, "first cycle");
         Assert.Equal((0, 4), (queue.Pending, queue.Processed));
         Assert.Contains("Ingest retention removed 7 row(s)", logger.Messages);
+        Assert.Contains("Audit retention removed 2 entr(ies)", logger.Messages);
         Assert.Equal(("ingest-retention", "worker-1"), (leases.Job, leases.Instance));
 
         // Another worker holds the lease the next day: no purge here.
@@ -419,6 +421,11 @@ public class IngestJobsTests
         time.Advance(IngestWorkerService.Interval);
         await WaitUntilAsync(() => logger.Messages.Contains("Ingest cycle failed, retrying with the next tick: database not migrated"), "failed cycle");
         await worker.StopAsync(CancellationToken.None);
+    }
+
+    private sealed class StubAuditRetention : ChargeGlobe.Application.Identity.IAuditRetention
+    {
+        public Task<int> PurgeAsync(CancellationToken cancellationToken) => Task.FromResult(2);
     }
 
     /// <summary>Inventory and status source; every fetch sends <see cref="Requests"/> requests through a granting cluster budget.</summary>

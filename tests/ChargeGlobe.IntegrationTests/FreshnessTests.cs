@@ -95,6 +95,7 @@ public class FreshnessTests(IntegrationFactory factory) : IClassFixture<Integrat
             var db = services.GetRequiredService<AppDbContext>();
             var monitor = new CrawlerMonitor(
                 db,
+                services.GetRequiredService<Microsoft.EntityFrameworkCore.DbContextOptions<AppDbContext>>(),
                 services.GetRequiredService<IAppConfig>(),
                 new PollTileStore(db, time),
                 new ProviderBackoffStore(db, time),
