@@ -1,0 +1,325 @@
+{
+  "publicationTime": 1792108348075,
+  "publicationCreator": {
+    "country": "AT",
+    "nationalIdentifier": "E-Control"
+  },
+  "lang": "de",
+  "modelBaseVersion": "3",
+  "profileName": "ladestellen.at",
+  "profileVersion": "5.0.3",
+  "tableReference": [
+    {
+      "id": "energy-infrastructure-sites",
+      "version": "1792108238250",
+      "targetClass": "egi:EnergyInfrastructureTable"
+    }
+  ],
+  "energyInfrastructureSiteStatus": [
+    {
+      "reference": {
+        "id": "AT-TS1-EJJZ5U89RX0G",
+        "version": "1751273778618",
+        "targetClass": "egi:EnergyInfrastructureSite"
+      },
+      "lastUpdated": 1751273778618,
+      "openingStatus": {
+        "value": "CLOSED"
+      },
+      "supplementalFacilityStatus": [],
+      "energyInfrastructureStationStatus": [
+        {
+          "reference": {
+            "id": "AT-TS1-EJJZ5U89RX0G-AT*TS1*E2001*5",
+            "version": "1685080752514",
+            "targetClass": "egi:EnergyInfrastructureStation"
+          },
+          "lastUpdated": 1685080752514,
+          "supplementalFacilityStatus": [],
+          "isAvailable": false,
+          "refillPointStatus": [
+            {
+              "reference": {
+                "id": "AT-TS1-EJJZ5U89RX0G-AT*TS1*E2001*5-rp",
+                "version": "1685080752514",
+                "targetClass": "ElectricChargingPoint"
+              },
+              "lastUpdated": 1685080752514,
+              "newRates": {
+                "applicableCurrency": [],
+                "energyPricingPolicy": {
+                  "pricingPolicy": [
+                    {
+                      "value": "FREE"
+                    }
+                  ]
+                }
+              },
+              "supplementalFacilityStatus": [],
+              "status": {
+                "value": "UNKNOWN"
+              }
+            }
+          ]
+        },
+        {
+          "reference": {
+            "id": "AT-TS1-EJJZ5U89RX0G-AT*TS1*E200101*1",
+            "version": "1685058593592",
+            "targetClass": "egi:EnergyInfrastructureStation"
+          },
+          "lastUpdated": 1685058593592,
+          "supplementalFacilityStatus": [],
+          "isAvailable": false,
+          "refillPointStatus": [
+            {
+              "reference": {
+                "id": "AT-TS1-EJJZ5U89RX0G-AT*TS1*E200101*1-rp",
+                "version": "1685058593592",
+                "targetClass": "ElectricChargingPoint"
+              },
+              "lastUpdated": 1685058593592,
+              "newRates": {
+                "applicableCurrency": [],
+                "energyPricingPolicy": {
+                  "pricingPolicy": [
+                    {
+                      "value": "UNKNOWN"
+                    }
+                  ]
+                },
+                "rateLineCollection": [],
+                "id": "AT-TS1-EJJZ5U89RX0G-AT*TS1*E200101*1-rp-rateTable",
+                "version": "1685058593592"
+              },
+              "supplementalFacilityStatus": [],
+              "status": {
+                "value": "UNKNOWN"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "reference": {
+        "id": "AT-TS2-EPI001",
+        "version": "1629791120596",
+        "targetClass": "egi:EnergyInfrastructureSite"
+      },
+      "lastUpdated": 1629791120596,
+      "openingStatus": {
+        "value": "OPEN"
+      },
+      "supplementalFacilityStatus": [],
+      "energyInfrastructureStationStatus": [
+        {
+          "reference": {
+            "id": "AT-TS2-EPI001-AT*TS2*E01",
+            "version": "1762510055944",
+            "targetClass": "egi:EnergyInfrastructureStation"
+          },
+          "lastUpdated": 1762510055944,
+          "supplementalFacilityStatus": [],
+          "isAvailable": false,
+          "refillPointStatus": [
+            {
+              "reference": {
+                "id": "AT-TS2-EPI001-AT*TS2*E01-rp",
+                "version": "1762510055944",
+                "targetClass": "ElectricChargingPoint"
+              },
+              "lastUpdated": 1762510055944,
+              "newRates": {
+                "applicableCurrency": [],
+                "energyPricingPolicy": {
+                  "pricingPolicy": [
+                    {
+                      "value": "PRICE_PER_DELIVERY_UNIT"
+                    },
+                    {
+                      "value": "PRICE_PER_CHARGING_TIME"
+                    }
+                  ]
+                },
+                "rateLineCollection": [
+                  {
+                    "applicableCurrency": "Euro",
+                    "rateLine": [
+                      {
+                        "rateLineType": {
+                          "value": "PER_UNIT"
+                        },
+                        "value": 0.35,
+                        "sequence": 0
+                      }
+                    ],
+                    "collectionSequence": 0
+                  },
+                  {
+                    "applicableCurrency": "Euro",
+                    "rateLine": [
+                      {
+                        "rateLineType": {
+                          "value": "INCREMENTING_RATE"
+                        },
+                        "incrementPeriod": "PT1M",
+                        "value": 0.35,
+                        "sequence": 0
+                      }
+                    ],
+                    "collectionSequence": 1
+                  }
+                ],
+                "id": "AT-TS2-EPI001-AT*TS2*E01-rp-rateTable",
+                "version": "1762510055944"
+              },
+              "supplementalFacilityStatus": [],
+              "status": {
+                "value": "UNKNOWN"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "reference": {
+        "id": "AT-TS3-E138895",
+        "version": "1661325775641",
+        "targetClass": "egi:EnergyInfrastructureSite"
+      },
+      "lastUpdated": 1661325775641,
+      "openingStatus": {
+        "value": "OPEN"
+      },
+      "supplementalFacilityStatus": [],
+      "energyInfrastructureStationStatus": [
+        {
+          "reference": {
+            "id": "AT-TS3-E138895-AT*TS3*E1157596",
+            "version": "1661325917431",
+            "targetClass": "egi:EnergyInfrastructureStation"
+          },
+          "lastUpdated": 1661325917431,
+          "supplementalFacilityStatus": [],
+          "isAvailable": false,
+          "refillPointStatus": [
+            {
+              "reference": {
+                "id": "AT-TS3-E138895-AT*TS3*E1157596-rp",
+                "version": "1661325917431",
+                "targetClass": "ElectricChargingPoint"
+              },
+              "lastUpdated": 1661325917431,
+              "newRates": {
+                "applicableCurrency": [],
+                "energyPricingPolicy": {
+                  "pricingPolicy": [
+                    {
+                      "value": "UNKNOWN"
+                    }
+                  ]
+                },
+                "rateLineCollection": [],
+                "id": "AT-TS3-E138895-AT*TS3*E1157596-rp-rateTable",
+                "version": "1661325917431"
+              },
+              "supplementalFacilityStatus": [],
+              "status": {
+                "value": "UNKNOWN"
+              }
+            }
+          ]
+        },
+        {
+          "reference": {
+            "id": "AT-TS3-E138895-AT*TS3*E650167",
+            "version": "1661325441703",
+            "targetClass": "egi:EnergyInfrastructureStation"
+          },
+          "lastUpdated": 1661325441703,
+          "supplementalFacilityStatus": [],
+          "isAvailable": false,
+          "refillPointStatus": [
+            {
+              "reference": {
+                "id": "AT-TS3-E138895-AT*TS3*E650167-rp",
+                "version": "1661325441703",
+                "targetClass": "ElectricChargingPoint"
+              },
+              "lastUpdated": 1661325441703,
+              "newRates": {
+                "applicableCurrency": [],
+                "energyPricingPolicy": {
+                  "pricingPolicy": [
+                    {
+                      "value": "UNKNOWN"
+                    }
+                  ]
+                },
+                "rateLineCollection": [],
+                "id": "AT-TS3-E138895-AT*TS3*E650167-rp-rateTable",
+                "version": "1661325441703"
+              },
+              "supplementalFacilityStatus": [],
+              "status": {
+                "value": "UNKNOWN"
+              }
+            }
+          ]
+        },
+        {
+          "reference": {
+            "id": "AT-TS3-E138895-AT*TS3*E808407",
+            "version": "1661325384734",
+            "targetClass": "egi:EnergyInfrastructureStation"
+          },
+          "lastUpdated": 1661325384734,
+          "supplementalFacilityStatus": [],
+          "isAvailable": false,
+          "refillPointStatus": [
+            {
+              "reference": {
+                "id": "AT-TS3-E138895-AT*TS3*E808407-rp",
+                "version": "1661325384734",
+                "targetClass": "ElectricChargingPoint"
+              },
+              "lastUpdated": 1661325384734,
+              "newRates": {
+                "applicableCurrency": [],
+                "energyPricingPolicy": {
+                  "pricingPolicy": [
+                    {
+                      "value": "UNKNOWN"
+                    }
+                  ]
+                },
+                "rateLineCollection": [],
+                "id": "AT-TS3-E138895-AT*TS3*E808407-rp-rateTable",
+                "version": "1661325384734"
+              },
+              "supplementalFacilityStatus": [],
+              "status": {
+                "value": "UNKNOWN"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "reference": {
+        "id": "AT-TS4-E1",
+        "version": "1651150207141",
+        "targetClass": "egi:EnergyInfrastructureSite"
+      },
+      "lastUpdated": 1651150207141,
+      "openingStatus": {
+        "value": "OPEN"
+      },
+      "supplementalFacilityStatus": [],
+      "energyInfrastructureStationStatus": []
+    }
+  ]
+}

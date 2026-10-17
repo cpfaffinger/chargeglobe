@@ -1,0 +1,21 @@
+{
+  "activeRFIDChip": ["RFID_READER"],
+  "apps": ["APP"],
+  "calypso": ["CHIP_CARD_SUPPORT"],
+  "cashPayment": ["CASH"],
+  "creditCard": ["CREDIT_CARD_PAYABLE"],
+  "debitCard": ["DEBIT_CARD_PAYABLE"],
+  "mifareClassic": ["RFID_READER"],
+  "mifareDesfire": ["RFID_READER"],
+  "nfc": ["CONTACTLESS_CARD_SUPPORT"],
+  "overTheAir": ["APP"],
+  "phoneDialog": [],
+  "phoneSMS": [],
+  "pinpad": ["PED_TERMINAL"],
+  "plc": ["CHARGING_CONTRACT"],
+  "prepaidCard": [],
+  "rfid": ["RFID_READER"],
+  "website": ["WEBSITE"],
+  "unlimitedAccess": [],
+  "noAccess": []
+}

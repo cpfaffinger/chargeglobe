@@ -41,18 +41,26 @@ public sealed class PollScheduler(
     /// <summary>
     /// The plans a provider should have, from its capabilities, settings and descriptor: the inventory per region (one
     /// plan for all regions if the source returns everything at once); with point search one plan that recomputes the
-    /// query points hourly, otherwise a status plan per region.
+    /// query points hourly, otherwise a status plan per region (one for all regions with a bulk status publication).
     /// </summary>
     public IReadOnlyList<PollPlanSpec> PlansFor(IProvider provider)
     {
         var descriptor = provider.Descriptor;
         var scope = SettingsCatalog.ProviderScope(descriptor.Key);
-        var (regions, unknown) = RegionBounds.Parse(config.Get<string?>(SettingsCatalog.ProviderRegions, scope));
+        var (listed, unknown) = RegionBounds.Parse(config.Get<string?>(SettingsCatalog.ProviderRegions, scope));
         if (unknown.Count > 0)
         {
             logger.LogWarning("Provider {Provider}: unknown regions ignored: {Regions}", descriptor.Key, string.Join(", ", unknown));
         }
 
+        // Only the regions of the countries of the source count; an empty setting means all of them.
+        var foreign = listed.Where(region => !descriptor.Countries.Contains(RegionBounds.Country(region.Code))).ToList();
+        if (foreign.Count > 0)
+        {
+            logger.LogWarning("Provider {Provider}: regions of other countries ignored: {Regions}", descriptor.Key, string.Join(", ", foreign.Select(region => region.Code)));
+        }
+
+        var regions = listed.Count == 0 ? RegionBounds.ForCountries(descriptor.Countries) : [.. listed.Except(foreign)];
         if (regions.Count == 0)
         {
             return [];
@@ -73,7 +81,9 @@ public sealed class PollScheduler(
         }
         else if (provider is IStatusSource && Minutes(SettingsCatalog.ProviderStatusIntervalMinutes, scope, descriptor.PollDefaults.Status) is { } status)
         {
-            plans.AddRange(regions.Select(region => new PollPlanSpec(descriptor.Key, JobType.STATUS_POLL, region.Code, region.Bbox, status)));
+            plans.AddRange(descriptor.Capabilities.HasFlag(ProviderCapabilities.BulkAll)
+                ? [all with { JobType = JobType.STATUS_POLL, Interval = status }]
+                : regions.Select(region => new PollPlanSpec(descriptor.Key, JobType.STATUS_POLL, region.Code, region.Bbox, status)));
         }
 
         return plans;

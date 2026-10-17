@@ -99,8 +99,9 @@
 
 ### Phase 3 – DACH
 - [ ] Generischer **OCPI-Adapter** (zuerst für die Schweizer BFE-API, die ab November 2026 öffentlich OCPI liefert)
-- [ ] Adapter **Bundesnetzagentur** (Inventar aus CSV, später Webservice; EVSE-ID zuerst, sonst Geo + Betreiber + Stecker; Region-Seed der 16 Bundesländer; Betreiber-Seed aus der BDEW-Operator-ID-Liste) – Tier 0, ohne Zugangsdaten startbar ([10 §3](10-afir-umsetzung-eu.md))
-- [ ] Generischer **DATEX-II-Adapter** mit konfigurierbarem Profil: zuerst **MobiData BW** (`static`/`realtime`, JSON v3.5, ohne Key, DL-DE-BY 2.0), dann Mobilithek-Pull je Subscription-ID mit Client-Zertifikat; getestet an den DATEX-v3.5-Publikationen der E-Control
+- [x] Adapter **Bundesnetzagentur** `bnetza` (Inventar aus der monatlichen CSV, Link von der Seite der Ladesäulenkarte; EVSE-ID zuerst, sonst synthetischer Schlüssel und Geo-Kaskade; Region-Seed der 16 Bundesländer `regions-de.geojson`) – Tier 0, ohne Zugangsdaten ([Endpunkt-Notiz](endpunkte/bnetza.md)). Offen: tagesaktueller Webservice (Anfrage des Betreibers), Betreiber-Seed aus der BDEW-Operator-ID-Liste
+- [x] Generischer **DATEX-II-Adapter** `ChargeGlobe.Providers.DatexII` mit `DatexProfile` je Quelle: **MobiData BW** `mobidata-bw` (`static`/`realtime`, JSON v3.5 mit `offset`/`limit`, ohne Key, DL-DE-BY 2.0; Inventar, EVSE-IDs, Ad-hoc-Preise, Status in Bulk), Parser an den DATEX-v3.5-Publikationen der E-Control getestet ([Endpunkt-Notiz](endpunkte/mobidata-bw.md))
+- [ ] Mobilithek-Profil des DATEX-II-Adapters: Pull je Subscription-ID mit Client-Zertifikat, `Accept-Encoding: gzip`, `If-Modified-Since`-Delta-Pakete, Lizenz je Angebot als Einstellung ([10 §3.3](10-afir-umsetzung-eu.md)); Blockiergebühren und Zeitfenster der `energyRate` übernehmen
 - [ ] Betreiber: Mobilithek-Organisation, Maschinenzertifikat und Abonnements der `AFIR-recharging-*`-Angebote beschaffen; BNetzA-Webservice beantragen; MobiData-BW-Nutzungsbedingungen klären (Schritte in [10 §3.2](10-afir-umsetzung-eu.md))
 - [ ] Mehrsprachigkeit (de/en/it/fr) in API-Texten und Frontend
 

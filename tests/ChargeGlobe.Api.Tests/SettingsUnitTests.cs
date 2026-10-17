@@ -16,9 +16,9 @@ public class SettingsCatalogTests
     {
         Assert.Equal("provider:econtrol", SettingsCatalog.ProviderScope("econtrol"));
         Assert.Equal(["global"], SettingsCatalog.EditableScopes(SettingsCatalog.Find(SettingsCatalog.MailSmtpPort)!));
-        Assert.Equal(["provider:econtrol", "provider:ocm"], SettingsCatalog.EditableScopes(SettingsCatalog.Find(SettingsCatalog.ProviderApiKey)!));
+        Assert.Equal(["provider:econtrol", "provider:ocm", "provider:bnetza", "provider:mobidata-bw"], SettingsCatalog.EditableScopes(SettingsCatalog.Find(SettingsCatalog.ProviderApiKey)!));
         Assert.Equal(
-            ["global", "provider:econtrol", "provider:ocm"],
+            ["global", "provider:econtrol", "provider:ocm", "provider:bnetza", "provider:mobidata-bw"],
             SettingsCatalog.EditableScopes(new SettingDefinition("x.y", SettingType.Bool, false, "Test setting.") { ScopeKinds = ["global", "provider", "region"] }));
         Assert.Equal(SettingType.Secret, SettingsCatalog.Find(SettingsCatalog.ProviderApiKey)!.Type);
     }

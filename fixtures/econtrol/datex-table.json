@@ -1,0 +1,1575 @@
+{
+  "publicationTime": 1792108348075,
+  "publicationCreator": {
+    "country": "AT",
+    "nationalIdentifier": "E-Control"
+  },
+  "lang": "de",
+  "modelBaseVersion": "3",
+  "profileName": "ladestellen.at",
+  "profileVersion": "5.0.3",
+  "energyInfrastructureTable": [
+    {
+      "id": "energy-infrastructure-sites",
+      "version": "1792108238250",
+      "energyInfrastructureSite": [
+        {
+          "name": {
+            "values": {
+              "value": [
+                {
+                  "value": "Teststation 1",
+                  "lang": "de"
+                }
+              ]
+            }
+          },
+          "alias": [],
+          "lastUpdated": 1751273778618,
+          "description": {
+            "values": {
+              "value": [
+                {
+                  "value": "Beschreibung der Teststation",
+                  "lang": "de"
+                }
+              ]
+            }
+          },
+          "accessibility": [],
+          "additionalInformation": [],
+          "informationWebsite": [],
+          "photoUrl": [],
+          "photo": [],
+          "locationReference": {
+            "_LocationReferenceExtension": {
+              "facilityLocation": {
+                "timeZone": "UTC+1",
+                "address": {
+                  "postcode": "1150",
+                  "city": {
+                    "values": {
+                      "value": [
+                        {
+                          "value": "Wien",
+                          "lang": "de"
+                        }
+                      ]
+                    }
+                  },
+                  "countryCode": "AT",
+                  "addressLine": [
+                    {
+                      "type": {
+                        "value": "STREET"
+                      },
+                      "text": {
+                        "values": {
+                          "value": [
+                            {
+                              "value": "Teststraße",
+                              "lang": "de"
+                            }
+                          ]
+                        }
+                      },
+                      "order": 1
+                    },
+                    {
+                      "type": {
+                        "value": "HOUSE_NUMBER"
+                      },
+                      "text": {
+                        "values": {
+                          "value": [
+                            {
+                              "value": "33",
+                              "lang": "de"
+                            }
+                          ]
+                        }
+                      },
+                      "order": 2
+                    }
+                  ]
+                }
+              },
+              "any": []
+            },
+            "externalReferencing": [],
+            "coordinatesForDisplay": {
+              "latitude": 48.19881,
+              "longitude": 16.326618,
+              "heightCoordinate": []
+            },
+            "pointByCoordinates": {
+              "pointCoordinates": {
+                "latitude": 48.19881,
+                "longitude": 16.326618,
+                "heightCoordinate": []
+              }
+            },
+            "pointAlongLinearElement": [],
+            "alertCPoint": []
+          },
+          "owner": {
+            "lastUpdated": 1751273778618,
+            "name": {
+              "values": {
+                "value": [
+                  {
+                    "value": "Test Operator 1 GmbH",
+                    "lang": "de"
+                  }
+                ]
+              }
+            },
+            "responsibility": [],
+            "organisationUnit": [
+              {
+                "name": {
+                  "values": {
+                    "value": [
+                      {
+                        "value": "Test Operator 1 GmbH",
+                        "lang": "de"
+                      }
+                    ]
+                  }
+                },
+                "function": [],
+                "contactInformation": []
+              }
+            ],
+            "subOrganisation": [],
+            "id": "AT-Test Operator 1 GmbH",
+            "version": "1751273778618"
+          },
+          "operator": {
+            "lastUpdated": 1751273778618,
+            "name": {
+              "values": {
+                "value": [
+                  {
+                    "value": "Test Operator 1 GmbH",
+                    "lang": "de"
+                  }
+                ]
+              }
+            },
+            "description": {
+              "values": {
+                "value": [
+                  {
+                    "value": "FN 000000 x",
+                    "lang": "de"
+                  }
+                ]
+              }
+            },
+            "responsibility": [],
+            "nationalOrganisationNumber": "FN 000000 x",
+            "organisationUnit": [
+              {
+                "function": [],
+                "contactInformation": []
+              }
+            ],
+            "subOrganisation": [],
+            "id": "AT-TS1",
+            "version": "1751273778618"
+          },
+          "associatedFacility": [],
+          "applicableForVehicles": [],
+          "id": "AT-TS1-EJJZ5U89RX0G",
+          "version": "1751273778618",
+          "supplementalFacility": [],
+          "energyInfrastructureStation": [
+            {
+              "alias": [],
+              "lastUpdated": 1685080752514,
+              "accessibility": [],
+              "additionalInformation": [],
+              "informationWebsite": [],
+              "photoUrl": [],
+              "photo": [],
+              "locationReference": {
+                "externalReferencing": [],
+                "coordinatesForDisplay": {
+                  "latitude": 48.198524,
+                  "longitude": 16.32534,
+                  "heightCoordinate": []
+                },
+                "pointByCoordinates": {
+                  "pointCoordinates": {
+                    "latitude": 48.198524,
+                    "longitude": 16.32534,
+                    "heightCoordinate": []
+                  }
+                },
+                "pointAlongLinearElement": [],
+                "alertCPoint": []
+              },
+              "associatedFacility": [],
+              "applicableForVehicles": [],
+              "id": "AT-TS1-EJJZ5U89RX0G-AT*TS1*E2001*5",
+              "version": "1685080752514",
+              "supplementalFacility": [],
+              "authenticationAndIdentificationMethods": [],
+              "numberOfRefillPoints": 1,
+              "refillPoint": [
+                {
+                  "alias": [],
+                  "lastUpdated": 1685080752514,
+                  "accessibility": [],
+                  "additionalInformation": [],
+                  "informationWebsite": [],
+                  "photoUrl": [],
+                  "photo": [],
+                  "associatedFacility": [],
+                  "applicableForVehicles": [],
+                  "id": "AT-TS1-EJJZ5U89RX0G-AT*TS1*E2001*5-rp",
+                  "version": "1685080752514",
+                  "supplementalFacility": [],
+                  "deliveryUnit": {
+                    "value": "K_WH"
+                  },
+                  "usageType": [],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "IEC_62196_T_1_COMBO"
+                      },
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 15000.0
+                    },
+                    {
+                      "connectorType": {
+                        "value": "IEC_62196_T_2_COMBO"
+                      },
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 15000.0
+                    },
+                    {
+                      "connectorType": {
+                        "value": "CHADEMO"
+                      },
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 15000.0
+                    },
+                    {
+                      "connectorType": {
+                        "value": "TESLA_CONNECTOR_EUROPE"
+                      },
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 15000.0
+                    }
+                  ],
+                  "electricEnergyMix": [
+                    {
+                      "isGreenEnergy": true,
+                      "electricEnergySourceRatio": []
+                    }
+                  ],
+                  "vehicleSpace": []
+                }
+              ]
+            },
+            {
+              "alias": [],
+              "lastUpdated": 1685058593592,
+              "accessibility": [],
+              "additionalInformation": [],
+              "informationWebsite": [],
+              "photoUrl": [],
+              "photo": [],
+              "associatedFacility": [],
+              "applicableForVehicles": [],
+              "id": "AT-TS1-EJJZ5U89RX0G-AT*TS1*E200101*1",
+              "version": "1685058593592",
+              "supplementalFacility": [],
+              "authenticationAndIdentificationMethods": [
+                {
+                  "value": "CASH_PAYMENT"
+                },
+                {
+                  "value": "RFID"
+                },
+                {
+                  "value": "CREDIT_CARD"
+                },
+                {
+                  "value": "DEBIT_CARD"
+                },
+                {
+                  "value": "APPS"
+                },
+                {
+                  "value": "NFC"
+                },
+                {
+                  "value": "WEBSITE"
+                }
+              ],
+              "numberOfRefillPoints": 1,
+              "refillPoint": [
+                {
+                  "alias": [],
+                  "lastUpdated": 1685058593592,
+                  "accessibility": [],
+                  "additionalInformation": [],
+                  "informationWebsite": [],
+                  "photoUrl": [],
+                  "photo": [],
+                  "associatedFacility": [],
+                  "applicableForVehicles": [
+                    {
+                      "fuelType": [
+                        {
+                          "value": "BATTERY"
+                        }
+                      ],
+                      "vehicleType": [
+                        {
+                          "value": "CAR"
+                        },
+                        {
+                          "value": "MOTORCYCLE"
+                        },
+                        {
+                          "value": "BICYCLE"
+                        },
+                        {
+                          "value": "TWO_WHEELED_VEHICLE"
+                        },
+                        {
+                          "value": "THREE_WHEELED_VEHICLE"
+                        },
+                        {
+                          "value": "LORRY"
+                        }
+                      ],
+                      "grossWeightCharacteristic": [],
+                      "heightCharacteristic": [],
+                      "lengthCharacteristic": [],
+                      "widthCharacteristic": [],
+                      "heaviestAxleWeightCharacteristic": [],
+                      "numberOfAxlesCharacteristic": []
+                    }
+                  ],
+                  "id": "AT-TS1-EJJZ5U89RX0G-AT*TS1*E200101*1-rp",
+                  "version": "1685058593592",
+                  "supplementalFacility": [],
+                  "deliveryUnit": {
+                    "value": "K_WH"
+                  },
+                  "usageType": [
+                    {
+                      "value": "ELECTRIC_VEHICLE"
+                    },
+                    {
+                      "value": "ELECTRIC_MOTORCYCLE"
+                    },
+                    {
+                      "value": "ELECTRIC_BIKE"
+                    }
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "IEC_62196_T_1_COMBO"
+                      },
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 12000.0
+                    },
+                    {
+                      "connectorType": {
+                        "value": "IEC_62196_T_2_COMBO"
+                      },
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 12000.0
+                    },
+                    {
+                      "connectorType": {
+                        "value": "CHADEMO"
+                      },
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 12000.0
+                    },
+                    {
+                      "connectorType": {
+                        "value": "TESLA_CONNECTOR_EUROPE"
+                      },
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 12000.0
+                    },
+                    {
+                      "connectorType": {
+                        "value": "IEC_62196_T_1"
+                      },
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 12000.0
+                    },
+                    {
+                      "connectorType": {
+                        "value": "IEC_62196_T_2"
+                      },
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 12000.0
+                    },
+                    {
+                      "connectorType": {
+                        "value": "IEC_60309_X_2_SINGLE_16"
+                      },
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 12000.0
+                    },
+                    {
+                      "connectorType": {
+                        "value": "OTHER"
+                      },
+                      "otherConnector": "IEC 60309-2 einphasig 32 Ampere (single phase 32 amperes)",
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 12000.0
+                    },
+                    {
+                      "connectorType": {
+                        "value": "IEC_60309_X_2_THREE_16"
+                      },
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 12000.0
+                    },
+                    {
+                      "connectorType": {
+                        "value": "IEC_60309_X_2_THREE_32"
+                      },
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 12000.0
+                    },
+                    {
+                      "connectorType": {
+                        "value": "DOMESTIC_F"
+                      },
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 12000.0
+                    },
+                    {
+                      "connectorType": {
+                        "value": "IEC_62196_T_2"
+                      },
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 12000.0
+                    },
+                    {
+                      "connectorType": {
+                        "value": "IEC_62196_T_3_A"
+                      },
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 12000.0
+                    },
+                    {
+                      "connectorType": {
+                        "value": "OTHER"
+                      },
+                      "otherConnector": "Einphasiger Anschluss bis 16 Ampere (single phase connector up to 16 amperes)",
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 12000.0
+                    },
+                    {
+                      "connectorType": {
+                        "value": "OTHER"
+                      },
+                      "otherConnector": "Einphasiger Anschluss über 16 Ampere (single phase connector over 16 amperes)",
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 12000.0
+                    },
+                    {
+                      "connectorType": {
+                        "value": "OTHER"
+                      },
+                      "otherConnector": "Dreiphasiger Anschluss (three phase connector)",
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 12000.0
+                    },
+                    {
+                      "connectorType": {
+                        "value": "PANTOGRAPH_BOTTOM_UP"
+                      },
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 12000.0
+                    },
+                    {
+                      "connectorType": {
+                        "value": "OTHER"
+                      },
+                      "otherConnector": "Induktive Ladung (inductive charging)",
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 12000.0
+                    },
+                    {
+                      "connectorType": {
+                        "value": "OTHER"
+                      },
+                      "otherConnector": "Resonant induktive Ladung (resonant inductive charging)",
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 12000.0
+                    },
+                    {
+                      "connectorType": {
+                        "value": "OTHER"
+                      },
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 12000.0
+                    }
+                  ],
+                  "electricEnergyMix": [
+                    {
+                      "isGreenEnergy": true,
+                      "electricEnergySourceRatio": []
+                    }
+                  ],
+                  "vehicleSpace": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": {
+            "values": {
+              "value": [
+                {
+                  "value": "Test Operator 2 GmbH",
+                  "lang": "de"
+                }
+              ]
+            }
+          },
+          "alias": [],
+          "lastUpdated": 1629791120596,
+          "accessibility": [],
+          "additionalInformation": [],
+          "informationWebsite": [
+            {
+              "urlLinkAddress": "www.example.org"
+            }
+          ],
+          "photoUrl": [],
+          "photo": [],
+          "operatingHours": {
+            "lastUpdated": 1629791120596,
+            "overallPeriod": {
+              "overallStartTime": -62135424000000,
+              "validPeriod": [
+                {
+                  "recurringTimePeriodOfDay": [
+                    {
+                      "startTimeOfPeriod": 21600000,
+                      "endTimeOfPeriod": 57600000
+                    }
+                  ],
+                  "recurringDayWeekMonthPeriod": [
+                    {
+                      "applicableDay": [
+                        {
+                          "value": "MONDAY"
+                        }
+                      ],
+                      "applicableMonth": []
+                    }
+                  ],
+                  "recurringSpecialDay": []
+                },
+                {
+                  "recurringTimePeriodOfDay": [
+                    {
+                      "startTimeOfPeriod": 21600000,
+                      "endTimeOfPeriod": 57600000
+                    }
+                  ],
+                  "recurringDayWeekMonthPeriod": [
+                    {
+                      "applicableDay": [
+                        {
+                          "value": "TUESDAY"
+                        }
+                      ],
+                      "applicableMonth": []
+                    }
+                  ],
+                  "recurringSpecialDay": []
+                },
+                {
+                  "recurringTimePeriodOfDay": [
+                    {
+                      "startTimeOfPeriod": 21600000,
+                      "endTimeOfPeriod": 57600000
+                    }
+                  ],
+                  "recurringDayWeekMonthPeriod": [
+                    {
+                      "applicableDay": [
+                        {
+                          "value": "WEDNESDAY"
+                        }
+                      ],
+                      "applicableMonth": []
+                    }
+                  ],
+                  "recurringSpecialDay": []
+                },
+                {
+                  "recurringTimePeriodOfDay": [
+                    {
+                      "startTimeOfPeriod": 21600000,
+                      "endTimeOfPeriod": 57600000
+                    }
+                  ],
+                  "recurringDayWeekMonthPeriod": [
+                    {
+                      "applicableDay": [
+                        {
+                          "value": "THURSDAY"
+                        }
+                      ],
+                      "applicableMonth": []
+                    }
+                  ],
+                  "recurringSpecialDay": []
+                },
+                {
+                  "recurringTimePeriodOfDay": [
+                    {
+                      "startTimeOfPeriod": 21600000,
+                      "endTimeOfPeriod": 43200000
+                    }
+                  ],
+                  "recurringDayWeekMonthPeriod": [
+                    {
+                      "applicableDay": [
+                        {
+                          "value": "FRIDAY"
+                        }
+                      ],
+                      "applicableMonth": []
+                    }
+                  ],
+                  "recurringSpecialDay": []
+                }
+              ],
+              "exceptionPeriod": []
+            },
+            "id": "AT-TS2-EPI001-openingTimes",
+            "version": "2021-08-24T07:45:20.596512Z"
+          },
+          "locationReference": {
+            "_LocationReferenceExtension": {
+              "facilityLocation": {
+                "timeZone": "UTC+1",
+                "address": {
+                  "postcode": "8077",
+                  "city": {
+                    "values": {
+                      "value": [
+                        {
+                          "value": "Gössendorf",
+                          "lang": "de"
+                        }
+                      ]
+                    }
+                  },
+                  "countryCode": "AT",
+                  "addressLine": [
+                    {
+                      "type": {
+                        "value": "STREET"
+                      },
+                      "text": {
+                        "values": {
+                          "value": [
+                            {
+                              "value": "Teststraße",
+                              "lang": "de"
+                            }
+                          ]
+                        }
+                      },
+                      "order": 1
+                    },
+                    {
+                      "type": {
+                        "value": "HOUSE_NUMBER"
+                      },
+                      "text": {
+                        "values": {
+                          "value": [
+                            {
+                              "value": "2",
+                              "lang": "de"
+                            }
+                          ]
+                        }
+                      },
+                      "order": 2
+                    }
+                  ]
+                }
+              },
+              "any": []
+            },
+            "externalReferencing": [],
+            "coordinatesForDisplay": {
+              "latitude": 46.985703,
+              "longitude": 15.492837,
+              "heightCoordinate": []
+            },
+            "pointByCoordinates": {
+              "pointCoordinates": {
+                "latitude": 46.985703,
+                "longitude": 15.492837,
+                "heightCoordinate": []
+              }
+            },
+            "pointAlongLinearElement": [],
+            "alertCPoint": []
+          },
+          "owner": {
+            "lastUpdated": 1629791120596,
+            "name": {
+              "values": {
+                "value": [
+                  {
+                    "value": "Test Operator 2 GmbH",
+                    "lang": "de"
+                  }
+                ]
+              }
+            },
+            "responsibility": [],
+            "organisationUnit": [
+              {
+                "name": {
+                  "values": {
+                    "value": [
+                      {
+                        "value": "Test Operator 2 GmbH",
+                        "lang": "de"
+                      }
+                    ]
+                  }
+                },
+                "function": [],
+                "contactInformation": []
+              }
+            ],
+            "subOrganisation": [],
+            "id": "AT-Test Operator 2 GmbH",
+            "version": "1629791120596"
+          },
+          "operator": {
+            "lastUpdated": 1753200767620,
+            "name": {
+              "values": {
+                "value": [
+                  {
+                    "value": "Test Operator 2 GmbH",
+                    "lang": "de"
+                  }
+                ]
+              }
+            },
+            "description": {
+              "values": {
+                "value": [
+                  {
+                    "value": "FN 000000 x",
+                    "lang": "de"
+                  }
+                ]
+              }
+            },
+            "linkToGeneralInformation": "www.example.org",
+            "responsibility": [],
+            "nationalOrganisationNumber": "FN 000000 x",
+            "organisationUnit": [
+              {
+                "function": [],
+                "contactInformation": []
+              }
+            ],
+            "subOrganisation": [],
+            "id": "AT-TS2",
+            "version": "1753200767620"
+          },
+          "associatedFacility": [],
+          "applicableForVehicles": [],
+          "id": "AT-TS2-EPI001",
+          "version": "1629791120596",
+          "supplementalFacility": [],
+          "energyInfrastructureStation": [
+            {
+              "alias": [],
+              "lastUpdated": 1762510055944,
+              "accessibility": [],
+              "additionalInformation": [],
+              "informationWebsite": [],
+              "photoUrl": [],
+              "photo": [],
+              "associatedFacility": [],
+              "applicableForVehicles": [],
+              "id": "AT-TS2-EPI001-AT*TS2*E01",
+              "version": "1762510055944",
+              "supplementalFacility": [],
+              "authenticationAndIdentificationMethods": [
+                {
+                  "value": "CASH_PAYMENT"
+                }
+              ],
+              "numberOfRefillPoints": 1,
+              "refillPoint": [
+                {
+                  "alias": [],
+                  "lastUpdated": 1762510055944,
+                  "accessibility": [],
+                  "additionalInformation": [],
+                  "informationWebsite": [],
+                  "photoUrl": [],
+                  "photo": [],
+                  "associatedFacility": [],
+                  "applicableForVehicles": [
+                    {
+                      "fuelType": [
+                        {
+                          "value": "BATTERY"
+                        }
+                      ],
+                      "vehicleType": [
+                        {
+                          "value": "CAR"
+                        }
+                      ],
+                      "grossWeightCharacteristic": [
+                        {
+                          "comparisonOperator": {
+                            "value": "LESS_THAN_OR_EQUAL_TO"
+                          },
+                          "grossVehicleWeight": 3.0,
+                          "typeOfWeight": {
+                            "value": "MAXIMUM_PERMITTED"
+                          }
+                        }
+                      ],
+                      "heightCharacteristic": [
+                        {
+                          "comparisonOperator": {
+                            "value": "LESS_THAN_OR_EQUAL_TO"
+                          },
+                          "vehicleHeight": 3.0
+                        }
+                      ],
+                      "lengthCharacteristic": [
+                        {
+                          "comparisonOperator": {
+                            "value": "LESS_THAN_OR_EQUAL_TO"
+                          },
+                          "vehicleLength": 5.0
+                        }
+                      ],
+                      "widthCharacteristic": [
+                        {
+                          "comparisonOperator": {
+                            "value": "LESS_THAN_OR_EQUAL_TO"
+                          },
+                          "vehicleWidth": 3.0
+                        }
+                      ],
+                      "heaviestAxleWeightCharacteristic": [],
+                      "numberOfAxlesCharacteristic": []
+                    }
+                  ],
+                  "id": "AT-TS2-EPI001-AT*TS2*E01-rp",
+                  "version": "1762510055944",
+                  "supplementalFacility": [],
+                  "deliveryUnit": {
+                    "value": "K_WH"
+                  },
+                  "usageType": [
+                    {
+                      "value": "ELECTRIC_VEHICLE"
+                    }
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "IEC_62196_T_2"
+                      },
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 11000.0
+                    }
+                  ],
+                  "electricEnergyMix": [
+                    {
+                      "isGreenEnergy": true,
+                      "electricEnergySourceRatio": []
+                    }
+                  ],
+                  "vehicleSpace": [
+                    {
+                      "alias": [],
+                      "lastUpdated": 1762510055944,
+                      "accessibility": [],
+                      "additionalInformation": [],
+                      "informationWebsite": [],
+                      "photoUrl": [],
+                      "photo": [],
+                      "associatedFacility": [],
+                      "applicableForVehicles": [],
+                      "id": "AT-TS2-EPI001-AT*TS2*E01-rp-vehicleSpace",
+                      "supplementalFacility": [],
+                      "parkingAllowedAfterCharging": true
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": {
+            "values": {
+              "value": [
+                {
+                  "value": "Teststation 3",
+                  "lang": "de"
+                }
+              ]
+            }
+          },
+          "alias": [],
+          "lastUpdated": 1661325775641,
+          "description": {
+            "values": {
+              "value": [
+                {
+                  "value": "Beschreibung der Teststation",
+                  "lang": "de"
+                }
+              ]
+            }
+          },
+          "accessibility": [],
+          "additionalInformation": [],
+          "informationWebsite": [],
+          "photoUrl": [],
+          "photo": [],
+          "locationReference": {
+            "_LocationReferenceExtension": {
+              "facilityLocation": {
+                "timeZone": "UTC+1",
+                "address": {
+                  "postcode": "6213",
+                  "city": {
+                    "values": {
+                      "value": [
+                        {
+                          "value": "Pertisau",
+                          "lang": "de"
+                        }
+                      ]
+                    }
+                  },
+                  "countryCode": "AT",
+                  "addressLine": [
+                    {
+                      "type": {
+                        "value": "STREET"
+                      },
+                      "text": {
+                        "values": {
+                          "value": [
+                            {
+                              "value": "Teststraße",
+                              "lang": "de"
+                            }
+                          ]
+                        }
+                      },
+                      "order": 1
+                    },
+                    {
+                      "type": {
+                        "value": "HOUSE_NUMBER"
+                      },
+                      "text": {
+                        "values": {
+                          "value": [
+                            {
+                              "value": "15",
+                              "lang": "de"
+                            }
+                          ]
+                        }
+                      },
+                      "order": 2
+                    }
+                  ]
+                }
+              },
+              "any": []
+            },
+            "externalReferencing": [],
+            "coordinatesForDisplay": {
+              "latitude": 47.441338,
+              "longitude": 11.700196,
+              "heightCoordinate": []
+            },
+            "pointByCoordinates": {
+              "pointCoordinates": {
+                "latitude": 47.441338,
+                "longitude": 11.700196,
+                "heightCoordinate": []
+              }
+            },
+            "pointAlongLinearElement": [],
+            "alertCPoint": []
+          },
+          "owner": {
+            "lastUpdated": 1661325775641,
+            "name": {
+              "values": {
+                "value": [
+                  {
+                    "value": "Test Operator 3 GmbH",
+                    "lang": "de"
+                  }
+                ]
+              }
+            },
+            "responsibility": [],
+            "organisationUnit": [
+              {
+                "name": {
+                  "values": {
+                    "value": [
+                      {
+                        "value": "Test Operator 3 GmbH",
+                        "lang": "de"
+                      }
+                    ]
+                  }
+                },
+                "function": [],
+                "contactInformation": []
+              }
+            ],
+            "subOrganisation": [],
+            "id": "AT-Test Operator 3 GmbH",
+            "version": "1661325775641"
+          },
+          "operator": {
+            "lastUpdated": 1661325775641,
+            "name": {
+              "values": {
+                "value": [
+                  {
+                    "value": "Test Operator 3 GmbH",
+                    "lang": "de"
+                  }
+                ]
+              }
+            },
+            "linkToGeneralInformation": "www.example.org",
+            "responsibility": [],
+            "organisationUnit": [
+              {
+                "function": [],
+                "contactInformation": []
+              }
+            ],
+            "subOrganisation": [],
+            "id": "AT-TS3",
+            "version": "1661325775641"
+          },
+          "associatedFacility": [],
+          "applicableForVehicles": [],
+          "id": "AT-TS3-E138895",
+          "version": "1661325775641",
+          "supplementalFacility": [],
+          "energyInfrastructureStation": [
+            {
+              "alias": [],
+              "lastUpdated": 1661325917431,
+              "accessibility": [],
+              "additionalInformation": [],
+              "informationWebsite": [],
+              "photoUrl": [],
+              "photo": [],
+              "locationReference": {
+                "externalReferencing": [],
+                "coordinatesForDisplay": {
+                  "latitude": 47.441334,
+                  "longitude": 11.7001915,
+                  "heightCoordinate": []
+                },
+                "pointByCoordinates": {
+                  "pointCoordinates": {
+                    "latitude": 47.441334,
+                    "longitude": 11.7001915,
+                    "heightCoordinate": []
+                  }
+                },
+                "pointAlongLinearElement": [],
+                "alertCPoint": []
+              },
+              "associatedFacility": [],
+              "applicableForVehicles": [],
+              "id": "AT-TS3-E138895-AT*TS3*E1157596",
+              "version": "1661325917431",
+              "supplementalFacility": [],
+              "authenticationAndIdentificationMethods": [
+                {
+                  "value": "RFID"
+                },
+                {
+                  "value": "CREDIT_CARD"
+                },
+                {
+                  "value": "DEBIT_CARD"
+                },
+                {
+                  "value": "APPS"
+                },
+                {
+                  "value": "NFC"
+                }
+              ],
+              "numberOfRefillPoints": 1,
+              "refillPoint": [
+                {
+                  "alias": [],
+                  "lastUpdated": 1661325917431,
+                  "accessibility": [],
+                  "additionalInformation": [],
+                  "informationWebsite": [],
+                  "photoUrl": [],
+                  "photo": [],
+                  "associatedFacility": [],
+                  "applicableForVehicles": [
+                    {
+                      "fuelType": [
+                        {
+                          "value": "BATTERY"
+                        }
+                      ],
+                      "vehicleType": [
+                        {
+                          "value": "CAR"
+                        }
+                      ],
+                      "grossWeightCharacteristic": [],
+                      "heightCharacteristic": [],
+                      "lengthCharacteristic": [],
+                      "widthCharacteristic": [],
+                      "heaviestAxleWeightCharacteristic": [],
+                      "numberOfAxlesCharacteristic": []
+                    }
+                  ],
+                  "id": "AT-TS3-E138895-AT*TS3*E1157596-rp",
+                  "version": "1661325917431",
+                  "supplementalFacility": [],
+                  "deliveryUnit": {
+                    "value": "K_WH"
+                  },
+                  "usageType": [
+                    {
+                      "value": "ELECTRIC_VEHICLE"
+                    }
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "IEC_62196_T_2"
+                      },
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 11000.0
+                    }
+                  ],
+                  "electricEnergyMix": [
+                    {
+                      "isGreenEnergy": true,
+                      "electricEnergySourceRatio": []
+                    }
+                  ],
+                  "vehicleSpace": []
+                }
+              ]
+            },
+            {
+              "alias": [],
+              "lastUpdated": 1661325441703,
+              "accessibility": [],
+              "additionalInformation": [],
+              "informationWebsite": [],
+              "photoUrl": [],
+              "photo": [],
+              "locationReference": {
+                "externalReferencing": [],
+                "coordinatesForDisplay": {
+                  "latitude": 47.441334,
+                  "longitude": 11.7001915,
+                  "heightCoordinate": []
+                },
+                "pointByCoordinates": {
+                  "pointCoordinates": {
+                    "latitude": 47.441334,
+                    "longitude": 11.7001915,
+                    "heightCoordinate": []
+                  }
+                },
+                "pointAlongLinearElement": [],
+                "alertCPoint": []
+              },
+              "associatedFacility": [],
+              "applicableForVehicles": [],
+              "id": "AT-TS3-E138895-AT*TS3*E650167",
+              "version": "1661325441703",
+              "supplementalFacility": [],
+              "authenticationAndIdentificationMethods": [
+                {
+                  "value": "RFID"
+                },
+                {
+                  "value": "CREDIT_CARD"
+                },
+                {
+                  "value": "DEBIT_CARD"
+                },
+                {
+                  "value": "APPS"
+                },
+                {
+                  "value": "NFC"
+                }
+              ],
+              "numberOfRefillPoints": 1,
+              "refillPoint": [
+                {
+                  "alias": [],
+                  "lastUpdated": 1661325441703,
+                  "accessibility": [],
+                  "additionalInformation": [],
+                  "informationWebsite": [],
+                  "photoUrl": [],
+                  "photo": [],
+                  "associatedFacility": [],
+                  "applicableForVehicles": [
+                    {
+                      "fuelType": [
+                        {
+                          "value": "BATTERY"
+                        }
+                      ],
+                      "vehicleType": [
+                        {
+                          "value": "CAR"
+                        }
+                      ],
+                      "grossWeightCharacteristic": [],
+                      "heightCharacteristic": [],
+                      "lengthCharacteristic": [],
+                      "widthCharacteristic": [],
+                      "heaviestAxleWeightCharacteristic": [],
+                      "numberOfAxlesCharacteristic": []
+                    }
+                  ],
+                  "id": "AT-TS3-E138895-AT*TS3*E650167-rp",
+                  "version": "1661325441703",
+                  "supplementalFacility": [],
+                  "deliveryUnit": {
+                    "value": "K_WH"
+                  },
+                  "usageType": [
+                    {
+                      "value": "ELECTRIC_VEHICLE"
+                    }
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "IEC_62196_T_2"
+                      },
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 11000.0
+                    }
+                  ],
+                  "electricEnergyMix": [
+                    {
+                      "isGreenEnergy": true,
+                      "electricEnergySourceRatio": []
+                    }
+                  ],
+                  "vehicleSpace": []
+                }
+              ]
+            },
+            {
+              "alias": [],
+              "lastUpdated": 1661325384734,
+              "accessibility": [],
+              "additionalInformation": [],
+              "informationWebsite": [],
+              "photoUrl": [],
+              "photo": [],
+              "locationReference": {
+                "externalReferencing": [],
+                "coordinatesForDisplay": {
+                  "latitude": 47.441338,
+                  "longitude": 11.700196,
+                  "heightCoordinate": []
+                },
+                "pointByCoordinates": {
+                  "pointCoordinates": {
+                    "latitude": 47.441338,
+                    "longitude": 11.700196,
+                    "heightCoordinate": []
+                  }
+                },
+                "pointAlongLinearElement": [],
+                "alertCPoint": []
+              },
+              "associatedFacility": [],
+              "applicableForVehicles": [],
+              "id": "AT-TS3-E138895-AT*TS3*E808407",
+              "version": "1661325384734",
+              "supplementalFacility": [],
+              "authenticationAndIdentificationMethods": [
+                {
+                  "value": "RFID"
+                },
+                {
+                  "value": "APPS"
+                },
+                {
+                  "value": "NFC"
+                }
+              ],
+              "numberOfRefillPoints": 1,
+              "refillPoint": [
+                {
+                  "alias": [],
+                  "lastUpdated": 1661325384734,
+                  "accessibility": [],
+                  "additionalInformation": [],
+                  "informationWebsite": [],
+                  "photoUrl": [],
+                  "photo": [],
+                  "associatedFacility": [],
+                  "applicableForVehicles": [
+                    {
+                      "fuelType": [
+                        {
+                          "value": "BATTERY"
+                        }
+                      ],
+                      "vehicleType": [
+                        {
+                          "value": "CAR"
+                        }
+                      ],
+                      "grossWeightCharacteristic": [],
+                      "heightCharacteristic": [],
+                      "lengthCharacteristic": [],
+                      "widthCharacteristic": [],
+                      "heaviestAxleWeightCharacteristic": [],
+                      "numberOfAxlesCharacteristic": []
+                    }
+                  ],
+                  "id": "AT-TS3-E138895-AT*TS3*E808407-rp",
+                  "version": "1661325384734",
+                  "supplementalFacility": [],
+                  "deliveryUnit": {
+                    "value": "K_WH"
+                  },
+                  "usageType": [
+                    {
+                      "value": "ELECTRIC_VEHICLE"
+                    }
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "IEC_62196_T_2"
+                      },
+                      "countryOfDomesticSocket": [],
+                      "maxPowerAtSocket": 11000.0
+                    }
+                  ],
+                  "electricEnergyMix": [
+                    {
+                      "isGreenEnergy": true,
+                      "electricEnergySourceRatio": []
+                    }
+                  ],
+                  "vehicleSpace": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": {
+            "values": {
+              "value": [
+                {
+                  "value": "Teststation 4",
+                  "lang": "de"
+                }
+              ]
+            }
+          },
+          "alias": [],
+          "lastUpdated": 1651150207141,
+          "accessibility": [],
+          "additionalInformation": [],
+          "informationWebsite": [],
+          "photoUrl": [],
+          "photo": [],
+          "locationReference": {
+            "_LocationReferenceExtension": {
+              "facilityLocation": {
+                "timeZone": "UTC+1",
+                "address": {
+                  "postcode": "2361",
+                  "city": {
+                    "values": {
+                      "value": [
+                        {
+                          "value": "Laxenburg",
+                          "lang": "de"
+                        }
+                      ]
+                    }
+                  },
+                  "countryCode": "AT",
+                  "addressLine": [
+                    {
+                      "type": {
+                        "value": "STREET"
+                      },
+                      "text": {
+                        "values": {
+                          "value": [
+                            {
+                              "value": "Teststraße",
+                              "lang": "de"
+                            }
+                          ]
+                        }
+                      },
+                      "order": 1
+                    },
+                    {
+                      "type": {
+                        "value": "HOUSE_NUMBER"
+                      },
+                      "text": {
+                        "values": {
+                          "value": [
+                            {
+                              "value": "5",
+                              "lang": "de"
+                            }
+                          ]
+                        }
+                      },
+                      "order": 2
+                    }
+                  ]
+                }
+              },
+              "any": []
+            },
+            "externalReferencing": [],
+            "coordinatesForDisplay": {
+              "latitude": 0.0,
+              "longitude": 0.0,
+              "heightCoordinate": []
+            },
+            "pointByCoordinates": {
+              "pointCoordinates": {
+                "latitude": 0.0,
+                "longitude": 0.0,
+                "heightCoordinate": []
+              }
+            },
+            "pointAlongLinearElement": [],
+            "alertCPoint": []
+          },
+          "owner": {
+            "lastUpdated": 1651150207141,
+            "name": {
+              "values": {
+                "value": [
+                  {
+                    "value": "Test Operator 4 GmbH",
+                    "lang": "de"
+                  }
+                ]
+              }
+            },
+            "responsibility": [],
+            "organisationUnit": [
+              {
+                "name": {
+                  "values": {
+                    "value": [
+                      {
+                        "value": "Test Operator 4 GmbH",
+                        "lang": "de"
+                      }
+                    ]
+                  }
+                },
+                "function": [],
+                "contactInformation": []
+              }
+            ],
+            "subOrganisation": [],
+            "id": "AT-Test Operator 4 GmbH",
+            "version": "1651150207141"
+          },
+          "operator": {
+            "lastUpdated": 1651150207141,
+            "name": {
+              "values": {
+                "value": [
+                  {
+                    "value": "Test Operator 4 GmbH",
+                    "lang": "de"
+                  }
+                ]
+              }
+            },
+            "linkToGeneralInformation": "www.example.org",
+            "responsibility": [],
+            "organisationUnit": [
+              {
+                "function": [],
+                "contactInformation": []
+              }
+            ],
+            "subOrganisation": [],
+            "id": "AT-TS4",
+            "version": "1651150207141"
+          },
+          "associatedFacility": [],
+          "applicableForVehicles": [],
+          "id": "AT-TS4-E1",
+          "version": "1651150207141",
+          "supplementalFacility": [],
+          "energyInfrastructureStation": []
+        }
+      ]
+    }
+  ]
+}

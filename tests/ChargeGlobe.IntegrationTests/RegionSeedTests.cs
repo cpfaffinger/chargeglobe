@@ -21,7 +21,10 @@ public class RegionSeedTests(IntegrationFactory factory) : IClassFixture<Integra
         { "Salzburg", 47.8095, 13.0550, "AT-5" },
         { "Innsbruck", 47.2692, 11.4041, "AT-7" },
         { "Bregenz", 47.5031, 9.7471, "AT-8" },
-        { "München", 48.1372, 11.5756, null },
+        { "München", 48.1372, 11.5756, "DE-BY" },
+        { "Berlin, Alexanderplatz", 52.5219, 13.4132, "DE-BE" },
+        { "Bremerhaven", 53.5396, 8.5809, "DE-HB" },
+        { "Zürich", 47.3769, 8.5417, null },
     };
 
     private Task<int> SeedAsync() =>
@@ -39,7 +42,7 @@ public class RegionSeedTests(IntegrationFactory factory) : IClassFixture<Integra
     }
 
     [Fact]
-    public async Task The_API_start_seeds_the_nine_Austrian_states()
+    public async Task The_API_start_seeds_the_Austrian_and_German_states()
     {
         using var client = factory.Client();
         await client.GetAsync("/api/v1/health");
@@ -47,7 +50,11 @@ public class RegionSeedTests(IntegrationFactory factory) : IClassFixture<Integra
         var regions = await factory.WithDbAsync(db => db.Regions.OrderBy(region => region.Code).Select(region => region.Code + " " + region.Name).ToListAsync());
 
         Assert.Equal(
-            ["AT-1 Burgenland", "AT-2 Kärnten", "AT-3 Niederösterreich", "AT-4 Oberösterreich", "AT-5 Salzburg", "AT-6 Steiermark", "AT-7 Tirol", "AT-8 Vorarlberg", "AT-9 Wien"],
+            [
+                "AT-1 Burgenland", "AT-2 Kärnten", "AT-3 Niederösterreich", "AT-4 Oberösterreich", "AT-5 Salzburg", "AT-6 Steiermark", "AT-7 Tirol", "AT-8 Vorarlberg", "AT-9 Wien",
+                "DE-BB Brandenburg", "DE-BE Berlin", "DE-BW Baden-Württemberg", "DE-BY Bayern", "DE-HB Bremen", "DE-HE Hessen", "DE-HH Hamburg", "DE-MV Mecklenburg-Vorpommern",
+                "DE-NI Niedersachsen", "DE-NW Nordrhein-Westfalen", "DE-RP Rheinland-Pfalz", "DE-SH Schleswig-Holstein", "DE-SL Saarland", "DE-SN Sachsen", "DE-ST Sachsen-Anhalt", "DE-TH Thüringen",
+            ],
             regions);
         Assert.Equal(0, await SeedAsync());
     }
@@ -91,10 +98,10 @@ public class RegionSeedTests(IntegrationFactory factory) : IClassFixture<Integra
                 """)
             .ToListAsync());
 
-        Assert.Equal(RegionBounds.Austria.Keys.Order(), envelopes.Select(envelope => envelope.Code).Order());
+        Assert.Equal(RegionBounds.All.Keys.Order(), envelopes.Select(envelope => envelope.Code).Order());
         foreach (var envelope in envelopes)
         {
-            var box = RegionBounds.Austria[envelope.Code];
+            var box = RegionBounds.All[envelope.Code];
             Assert.True(
                 box.MinLongitude <= envelope.MinLongitude && box.MinLatitude <= envelope.MinLatitude
                 && box.MaxLongitude >= envelope.MaxLongitude && box.MaxLatitude >= envelope.MaxLatitude,

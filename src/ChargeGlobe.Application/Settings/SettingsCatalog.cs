@@ -67,8 +67,8 @@ public static class SettingsCatalog
     public const string AddressRefreshDays = "address.refresh_days";
     public const string AddressDownloadUrl = "address.download_url";
 
-    /// <summary>Start scope (docs/01): Vienna, Lower Austria, Upper Austria, Burgenland.</summary>
-    public const string DefaultRegions = "AT-9,AT-3,AT-4,AT-1";
+    /// <summary>Default of <see cref="ProviderRegions"/>: empty means every region of the countries of the source.</summary>
+    public const string DefaultRegions = "";
 
     /// <summary>Scope kind of the provider settings; a value is stored for <c>provider:&lt;key&gt;</c>.</summary>
     public const string ProviderScopeKind = "provider";
@@ -77,7 +77,7 @@ public static class SettingsCatalog
     /// Keys of the source adapters (<c>ProviderDescriptor.Key</c>). A new adapter adds its key here, so
     /// that its settings can be edited; a test checks this list against the registered adapters.
     /// </summary>
-    public static IReadOnlyList<string> ProviderKeys { get; } = ["econtrol", "ocm"];
+    public static IReadOnlyList<string> ProviderKeys { get; } = ["econtrol", "ocm", "bnetza", "mobidata-bw"];
 
     public static IReadOnlyList<SettingDefinition> All { get; } =
     [
@@ -200,8 +200,9 @@ public static class SettingsCatalog
             ScopeKinds = [ProviderScopeKind],
         },
         new(ProviderRegions, SettingType.String, DefaultRegions,
-            "Comma-separated ISO 3166-2 codes of the Austrian states the crawler covers for this source " +
-            "(AT-1 … AT-9). Plans of removed regions are deleted on the next scheduler cycle.")
+            "Comma-separated ISO 3166-2 codes of the states the crawler covers for this source (AT-1 … AT-9, DE-BW … DE-TH); " +
+            "empty means every state of the countries of the source. Codes of other countries are ignored. Plans of removed " +
+            "regions are deleted on the next scheduler cycle.")
         {
             ScopeKinds = [ProviderScopeKind],
         },

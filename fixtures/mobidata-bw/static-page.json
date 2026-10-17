@@ -1,0 +1,2192 @@
+{
+  "payload": {
+    "versionG": "3.5",
+    "modelBaseVersionG": "3",
+    "profileNameG": "Afir Energy Infrastructure",
+    "profileVersionG": "01-00-00",
+    "aegiEnergyInfrastructureTablePublication": {
+      "lang": "de",
+      "publicationTime": "2026-10-17T11:43:50.526159+00:00",
+      "publicationCreator": {
+        "country": "DE",
+        "nationalIdentifier": "OCPDB"
+      },
+      "energyInfrastructureTable": [
+        {
+          "idG": "1",
+          "versionG": "1",
+          "energyInfrastructureSite": [
+            {
+              "idG": "1002913",
+              "versionG": "2026-10-13T07:43:30.596692+00:00",
+              "operatingHours": {
+                "afacOpenAllHours": {}
+              },
+              "locationReference": {
+                "locPointLocation": {
+                  "locLocationExtensionG": {
+                    "FacilityLocation": {
+                      "address": {
+                        "postcode": "44532",
+                        "city": {
+                          "values": [
+                            {
+                              "lang": "de",
+                              "value": "Lünen"
+                            }
+                          ]
+                        },
+                        "countryCode": "DE",
+                        "addressLine": [
+                          {
+                            "order": 1,
+                            "type": {
+                              "value": "street"
+                            },
+                            "text": {
+                              "values": [
+                                {
+                                  "lang": "de",
+                                  "value": "Viktoriastr."
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "order": 2,
+                            "type": {
+                              "value": "houseNumber"
+                            },
+                            "text": {
+                              "values": [
+                                {
+                                  "lang": "de",
+                                  "value": "5"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                "locAreaLocation": {
+                  "coordinatesForDisplay": {
+                    "latitude": 51.608953,
+                    "longitude": 7.522998
+                  }
+                }
+              },
+              "operator": {
+                "afacAnOrganisation": {
+                  "name": {
+                    "values": [
+                      {
+                        "lang": "de",
+                        "value": "Stadtwerke Lünen Infrastrukturbau GmbH"
+                      }
+                    ]
+                  }
+                }
+              },
+              "energyInfrastructureStation": [
+                {
+                  "idG": "1002913",
+                  "versionG": "2026-10-13T07:43:30.596692+00:00",
+                  "totalMaximumPower": 22.0,
+                  "authenticationAndIdentificationMethods": [
+                    {
+                      "value": "nfc"
+                    },
+                    {
+                      "value": "debitCard"
+                    },
+                    {
+                      "value": "overTheAir"
+                    },
+                    {
+                      "value": "rfid"
+                    }
+                  ],
+                  "numberOfRefillPoints": 2,
+                  "serviceType": [
+                    {
+                      "serviceType": {
+                        "value": "unattended"
+                      }
+                    }
+                  ],
+                  "refillPoint": [
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "BNETZA*1002913*1",
+                        "versionG": "2026-10-13T07:43:30.592898+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "ac"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          400
+                        ],
+                        "availableChargingPower": [
+                          11000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "iec62196T2"
+                            },
+                            "connectorFormat": {
+                              "value": "socket"
+                            },
+                            "maxPowerAtSocket": 11000.0,
+                            "voltage": 400.0,
+                            "maximumCurrent": 32.0
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "BNETZA*1002913*2",
+                        "versionG": "2026-10-13T07:43:30.596692+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "ac"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          400
+                        ],
+                        "availableChargingPower": [
+                          11000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "iec62196T2"
+                            },
+                            "connectorFormat": {
+                              "value": "socket"
+                            },
+                            "maxPowerAtSocket": 11000.0,
+                            "voltage": 400.0,
+                            "maximumCurrent": 32.0
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "idG": "1002917",
+              "versionG": "2026-10-13T07:43:30.791172+00:00",
+              "operatingHours": {
+                "afacOpenAllHours": {}
+              },
+              "locationReference": {
+                "locPointLocation": {
+                  "locLocationExtensionG": {
+                    "FacilityLocation": {
+                      "address": {
+                        "postcode": "44534",
+                        "city": {
+                          "values": [
+                            {
+                              "lang": "de",
+                              "value": "Lünen"
+                            }
+                          ]
+                        },
+                        "countryCode": "DE",
+                        "addressLine": [
+                          {
+                            "order": 1,
+                            "type": {
+                              "value": "street"
+                            },
+                            "text": {
+                              "values": [
+                                {
+                                  "lang": "de",
+                                  "value": "Graf-Adolf-Str."
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "order": 2,
+                            "type": {
+                              "value": "houseNumber"
+                            },
+                            "text": {
+                              "values": [
+                                {
+                                  "lang": "de",
+                                  "value": "31"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                "locAreaLocation": {
+                  "coordinatesForDisplay": {
+                    "latitude": 51.616172,
+                    "longitude": 7.518306
+                  }
+                }
+              },
+              "operator": {
+                "afacAnOrganisation": {
+                  "name": {
+                    "values": [
+                      {
+                        "lang": "de",
+                        "value": "Stadtwerke Lünen Infrastrukturbau GmbH"
+                      }
+                    ]
+                  }
+                }
+              },
+              "energyInfrastructureStation": [
+                {
+                  "idG": "1002917",
+                  "versionG": "2026-10-13T07:43:30.791172+00:00",
+                  "totalMaximumPower": 72.0,
+                  "authenticationAndIdentificationMethods": [
+                    {
+                      "value": "nfc"
+                    },
+                    {
+                      "value": "debitCard"
+                    },
+                    {
+                      "value": "rfid"
+                    }
+                  ],
+                  "numberOfRefillPoints": 2,
+                  "serviceType": [
+                    {
+                      "serviceType": {
+                        "value": "unattended"
+                      }
+                    }
+                  ],
+                  "refillPoint": [
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "BNETZA*1002917*1",
+                        "versionG": "2026-10-13T07:43:30.787205+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "dc"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          400
+                        ],
+                        "availableChargingPower": [
+                          50000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "iec62196T2COMBO"
+                            },
+                            "connectorFormat": {
+                              "value": "cableMode3"
+                            },
+                            "maxPowerAtSocket": 50000.0,
+                            "voltage": 400.0,
+                            "maximumCurrent": 375.0
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "BNETZA*1002917*2",
+                        "versionG": "2026-10-13T07:43:30.791172+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "ac"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          400
+                        ],
+                        "availableChargingPower": [
+                          22000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "iec62196T2"
+                            },
+                            "connectorFormat": {
+                              "value": "socket"
+                            },
+                            "maxPowerAtSocket": 22000.0,
+                            "voltage": 400.0,
+                            "maximumCurrent": 32.0
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "idG": "1038884",
+              "versionG": "2026-10-13T07:58:41.545452+00:00",
+              "operatingHours": {
+                "afacOpenAllHours": {}
+              },
+              "locationReference": {
+                "locPointLocation": {
+                  "locLocationExtensionG": {
+                    "FacilityLocation": {
+                      "address": {
+                        "postcode": "28217",
+                        "city": {
+                          "values": [
+                            {
+                              "lang": "de",
+                              "value": "Bremen"
+                            }
+                          ]
+                        },
+                        "countryCode": "DE",
+                        "addressLine": [
+                          {
+                            "order": 1,
+                            "type": {
+                              "value": "street"
+                            },
+                            "text": {
+                              "values": [
+                                {
+                                  "lang": "de",
+                                  "value": "Marcuskaje"
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "order": 2,
+                            "type": {
+                              "value": "houseNumber"
+                            },
+                            "text": {
+                              "values": [
+                                {
+                                  "lang": "de",
+                                  "value": "1"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                "locAreaLocation": {
+                  "coordinatesForDisplay": {
+                    "latitude": 53.09434,
+                    "longitude": 8.76874
+                  }
+                }
+              },
+              "operator": {
+                "afacAnOrganisation": {
+                  "name": {
+                    "values": [
+                      {
+                        "lang": "de",
+                        "value": "Eulektro GmbH"
+                      }
+                    ]
+                  },
+                  "externalIdentifier": [
+                    {
+                      "identifier": "DE*EUL",
+                      "typeOfIdentifier": {
+                        "value": "extendedG",
+                        "extendedValueG": "operatorId"
+                      }
+                    }
+                  ]
+                }
+              },
+              "energyInfrastructureStation": [
+                {
+                  "idG": "1040978",
+                  "versionG": "2026-10-13T07:58:41.540846+00:00",
+                  "totalMaximumPower": 44.0,
+                  "authenticationAndIdentificationMethods": [
+                    {
+                      "value": "overTheAir"
+                    },
+                    {
+                      "value": "rfid"
+                    }
+                  ],
+                  "numberOfRefillPoints": 2,
+                  "serviceType": [
+                    {
+                      "serviceType": {
+                        "value": "unattended"
+                      }
+                    }
+                  ],
+                  "refillPoint": [
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "BNETZA*1040978*1",
+                        "versionG": "2026-10-13T07:58:41.538220+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "ac"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          400
+                        ],
+                        "availableChargingPower": [
+                          22000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "iec62196T2"
+                            },
+                            "connectorFormat": {
+                              "value": "socket"
+                            },
+                            "maxPowerAtSocket": 22000.0,
+                            "voltage": 400.0,
+                            "maximumCurrent": 32.0
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "BNETZA*1040978*2",
+                        "versionG": "2026-10-13T07:58:41.540846+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "ac"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          400
+                        ],
+                        "availableChargingPower": [
+                          22000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "iec62196T2"
+                            },
+                            "connectorFormat": {
+                              "value": "socket"
+                            },
+                            "maxPowerAtSocket": 22000.0,
+                            "voltage": 400.0,
+                            "maximumCurrent": 32.0
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "idG": "1038884",
+                  "versionG": "2026-10-13T07:58:41.536108+00:00",
+                  "totalMaximumPower": 70.0,
+                  "authenticationAndIdentificationMethods": [
+                    {
+                      "value": "overTheAir"
+                    },
+                    {
+                      "value": "rfid"
+                    }
+                  ],
+                  "numberOfRefillPoints": 2,
+                  "serviceType": [
+                    {
+                      "serviceType": {
+                        "value": "unattended"
+                      }
+                    }
+                  ],
+                  "refillPoint": [
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "BNETZA*1038884*1",
+                        "versionG": "2026-10-13T07:58:41.532161+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "ac"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          400
+                        ],
+                        "availableChargingPower": [
+                          22000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "iec62196T2"
+                            },
+                            "connectorFormat": {
+                              "value": "socket"
+                            },
+                            "maxPowerAtSocket": 22000.0,
+                            "voltage": 400.0,
+                            "maximumCurrent": 32.0
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "BNETZA*1038884*2",
+                        "versionG": "2026-10-13T07:58:41.536108+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "ac"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          400
+                        ],
+                        "availableChargingPower": [
+                          22000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "iec62196T2"
+                            },
+                            "connectorFormat": {
+                              "value": "socket"
+                            },
+                            "maxPowerAtSocket": 22000.0,
+                            "voltage": 400.0,
+                            "maximumCurrent": 32.0
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "idG": "1040979",
+                  "versionG": "2026-10-13T07:58:41.545452+00:00",
+                  "totalMaximumPower": 44.0,
+                  "authenticationAndIdentificationMethods": [
+                    {
+                      "value": "overTheAir"
+                    },
+                    {
+                      "value": "rfid"
+                    }
+                  ],
+                  "numberOfRefillPoints": 2,
+                  "serviceType": [
+                    {
+                      "serviceType": {
+                        "value": "unattended"
+                      }
+                    }
+                  ],
+                  "refillPoint": [
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "BNETZA*1040979*1",
+                        "versionG": "2026-10-13T07:58:41.542890+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "ac"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          400
+                        ],
+                        "availableChargingPower": [
+                          22000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "iec62196T2"
+                            },
+                            "connectorFormat": {
+                              "value": "socket"
+                            },
+                            "maxPowerAtSocket": 22000.0,
+                            "voltage": 400.0,
+                            "maximumCurrent": 32.0
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "BNETZA*1040979*2",
+                        "versionG": "2026-10-13T07:58:41.545452+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "ac"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          400
+                        ],
+                        "availableChargingPower": [
+                          22000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "iec62196T2"
+                            },
+                            "connectorFormat": {
+                              "value": "socket"
+                            },
+                            "maxPowerAtSocket": 22000.0,
+                            "voltage": 400.0,
+                            "maximumCurrent": 32.0
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "idG": "1116748",
+              "versionG": "2026-10-13T08:38:55.364119+00:00",
+              "operatingHours": {
+                "afacOpenAllHours": {}
+              },
+              "locationReference": {
+                "locPointLocation": {
+                  "locLocationExtensionG": {
+                    "FacilityLocation": {
+                      "address": {
+                        "postcode": "10623",
+                        "city": {
+                          "values": [
+                            {
+                              "lang": "de",
+                              "value": "Berlin"
+                            }
+                          ]
+                        },
+                        "countryCode": "DE",
+                        "addressLine": [
+                          {
+                            "order": 1,
+                            "type": {
+                              "value": "street"
+                            },
+                            "text": {
+                              "values": [
+                                {
+                                  "lang": "de",
+                                  "value": "Kantstr."
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "order": 2,
+                            "type": {
+                              "value": "houseNumber"
+                            },
+                            "text": {
+                              "values": [
+                                {
+                                  "lang": "de",
+                                  "value": "2"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                "locAreaLocation": {
+                  "coordinatesForDisplay": {
+                    "latitude": 52.505415,
+                    "longitude": 13.33241
+                  }
+                }
+              },
+              "operator": {
+                "afacAnOrganisation": {
+                  "name": {
+                    "values": [
+                      {
+                        "lang": "de",
+                        "value": "Park One GmbH"
+                      }
+                    ]
+                  }
+                }
+              },
+              "energyInfrastructureStation": [
+                {
+                  "idG": "1116748",
+                  "versionG": "2026-10-13T08:38:55.364119+00:00",
+                  "totalMaximumPower": 22.0,
+                  "authenticationAndIdentificationMethods": [
+                    {
+                      "value": "overTheAir"
+                    },
+                    {
+                      "value": "rfid"
+                    }
+                  ],
+                  "numberOfRefillPoints": 3,
+                  "serviceType": [
+                    {
+                      "serviceType": {
+                        "value": "unattended"
+                      }
+                    }
+                  ],
+                  "refillPoint": [
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "BNETZA*1116748*2",
+                        "versionG": "2026-10-13T08:38:55.362206+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "ac"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          400
+                        ],
+                        "availableChargingPower": [
+                          22000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "iec62196T2"
+                            },
+                            "connectorFormat": {
+                              "value": "socket"
+                            },
+                            "maxPowerAtSocket": 22000.0,
+                            "voltage": 400.0,
+                            "maximumCurrent": 32.0
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "BNETZA*1116748*1",
+                        "versionG": "2026-10-13T08:38:55.358661+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "ac"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          400
+                        ],
+                        "availableChargingPower": [
+                          22000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "iec62196T2"
+                            },
+                            "connectorFormat": {
+                              "value": "socket"
+                            },
+                            "maxPowerAtSocket": 22000.0,
+                            "voltage": 400.0,
+                            "maximumCurrent": 32.0
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "BNETZA*1116748*3",
+                        "versionG": "2026-10-13T08:38:55.364119+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "ac"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          400
+                        ],
+                        "availableChargingPower": [
+                          22000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "iec62196T2"
+                            },
+                            "connectorFormat": {
+                              "value": "socket"
+                            },
+                            "maxPowerAtSocket": 22000.0,
+                            "voltage": 400.0,
+                            "maximumCurrent": 32.0
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "idG": "800013227",
+              "versionG": "2026-10-17T11:41:16.524000+00:00",
+              "operatingHours": {
+                "afacOpenAllHours": {}
+              },
+              "locationReference": {
+                "locPointLocation": {
+                  "locLocationExtensionG": {
+                    "FacilityLocation": {
+                      "address": {
+                        "postcode": "53913",
+                        "city": {
+                          "values": [
+                            {
+                              "lang": "de",
+                              "value": "Swisttal"
+                            }
+                          ]
+                        },
+                        "countryCode": "DE",
+                        "addressLine": [
+                          {
+                            "order": 1,
+                            "type": {
+                              "value": "street"
+                            },
+                            "text": {
+                              "values": [
+                                {
+                                  "lang": "de",
+                                  "value": "Am Metternicher Weg 2, 4"
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "order": 2,
+                            "type": {
+                              "value": "houseNumber"
+                            },
+                            "text": {
+                              "values": [
+                                {
+                                  "lang": "de",
+                                  "value": "6"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                "locAreaLocation": {
+                  "coordinatesForDisplay": {
+                    "latitude": 50.7214,
+                    "longitude": 6.90617
+                  }
+                }
+              },
+              "operator": {
+                "afacAnOrganisation": {
+                  "name": {
+                    "values": [
+                      {
+                        "lang": "de",
+                        "value": "ENBW"
+                      }
+                    ]
+                  },
+                  "externalIdentifier": [
+                    {
+                      "identifier": "EBW",
+                      "typeOfIdentifier": {
+                        "value": "extendedG",
+                        "extendedValueG": "operatorId"
+                      }
+                    }
+                  ]
+                }
+              },
+              "helpdesk": {
+                "afacReferenceableOrganisation": {
+                  "idG": "HELP",
+                  "versionG": "2026-10-17T11:41:16.524000+00:00",
+                  "name": {
+                    "values": [
+                      {
+                        "lang": "de",
+                        "value": "ENBW"
+                      }
+                    ]
+                  },
+                  "organisationUnit": [
+                    {
+                      "contactInformation": [
+                        {
+                          "afacContactInformation": {
+                            "telephoneNumber": "+49 721 72 586 460"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "energyInfrastructureStation": [
+                {
+                  "idG": "14514",
+                  "versionG": "2026-10-17T10:53:45.894000+00:00",
+                  "totalMaximumPower": 200000.0,
+                  "authenticationAndIdentificationMethods": [
+                    {
+                      "value": "creditCard"
+                    },
+                    {
+                      "value": "debitCard"
+                    },
+                    {
+                      "value": "overTheAir"
+                    },
+                    {
+                      "value": "rfid"
+                    }
+                  ],
+                  "numberOfRefillPoints": 2,
+                  "userInterfaceLanguage": [
+                    "de",
+                    "en"
+                  ],
+                  "serviceType": [
+                    {
+                      "serviceType": {
+                        "value": "unattended"
+                      }
+                    }
+                  ],
+                  "refillPoint": [
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "DE*EBW*E914213*1",
+                        "versionG": "2026-10-17T10:53:45.894000+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "dc"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          1000
+                        ],
+                        "availableChargingPower": [
+                          200000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "iec62196T2COMBO"
+                            },
+                            "connectorFormat": {
+                              "value": "cableMode3"
+                            },
+                            "maxPowerAtSocket": 200000.0,
+                            "voltage": 1000.0,
+                            "maximumCurrent": 200.0
+                          }
+                        ],
+                        "electricEnergy": [
+                          {
+                            "isGreenEnergy": true,
+                            "energyRate": [
+                              {
+                                "idG": "66bc92a2d399e040daffb65c6f594315",
+                                "ratePolicy": {
+                                  "value": "adHoc"
+                                },
+                                "lastUpdated": "2026-10-16T22:00:10.242000+00:00",
+                                "applicableCurrency": [
+                                  "EUR"
+                                ],
+                                "energyPrice": [
+                                  {
+                                    "priceType": {
+                                      "value": "pricePerKWh"
+                                    },
+                                    "value": 0.66386555,
+                                    "taxIncluded": false,
+                                    "taxRate": 19.0
+                                  },
+                                  {
+                                    "priceType": {
+                                      "value": "pricePerMinute"
+                                    },
+                                    "value": 0.20168067,
+                                    "taxIncluded": false,
+                                    "taxRate": 19.0,
+                                    "timeBasedApplicability": {
+                                      "fromMinute": 30,
+                                      "toMinute": 0
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "DE*EBW*E914213*2",
+                        "versionG": "2026-10-17T09:43:10.772000+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "dc"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          1000
+                        ],
+                        "availableChargingPower": [
+                          200000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "iec62196T2COMBO"
+                            },
+                            "connectorFormat": {
+                              "value": "cableMode3"
+                            },
+                            "maxPowerAtSocket": 200000.0,
+                            "voltage": 1000.0,
+                            "maximumCurrent": 200.0
+                          }
+                        ],
+                        "electricEnergy": [
+                          {
+                            "isGreenEnergy": true,
+                            "energyRate": [
+                              {
+                                "idG": "66bc92a2d399e040daffb65c6f594315",
+                                "ratePolicy": {
+                                  "value": "adHoc"
+                                },
+                                "lastUpdated": "2026-10-16T22:00:10.242000+00:00",
+                                "applicableCurrency": [
+                                  "EUR"
+                                ],
+                                "energyPrice": [
+                                  {
+                                    "priceType": {
+                                      "value": "pricePerKWh"
+                                    },
+                                    "value": 0.66386555,
+                                    "taxIncluded": false,
+                                    "taxRate": 19.0
+                                  },
+                                  {
+                                    "priceType": {
+                                      "value": "pricePerMinute"
+                                    },
+                                    "value": 0.20168067,
+                                    "taxIncluded": false,
+                                    "taxRate": 19.0,
+                                    "timeBasedApplicability": {
+                                      "fromMinute": 30,
+                                      "toMinute": 0
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "idG": "14537",
+                  "versionG": "2026-10-17T11:41:16.524000+00:00",
+                  "totalMaximumPower": 200000.0,
+                  "authenticationAndIdentificationMethods": [
+                    {
+                      "value": "creditCard"
+                    },
+                    {
+                      "value": "debitCard"
+                    },
+                    {
+                      "value": "overTheAir"
+                    },
+                    {
+                      "value": "rfid"
+                    }
+                  ],
+                  "numberOfRefillPoints": 2,
+                  "userInterfaceLanguage": [
+                    "de",
+                    "en"
+                  ],
+                  "serviceType": [
+                    {
+                      "serviceType": {
+                        "value": "unattended"
+                      }
+                    }
+                  ],
+                  "refillPoint": [
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "DE*EBW*E914214*2",
+                        "versionG": "2026-10-17T11:41:16.524000+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "dc"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          1000
+                        ],
+                        "availableChargingPower": [
+                          200000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "iec62196T2COMBO"
+                            },
+                            "connectorFormat": {
+                              "value": "cableMode3"
+                            },
+                            "maxPowerAtSocket": 200000.0,
+                            "voltage": 1000.0,
+                            "maximumCurrent": 200.0
+                          }
+                        ],
+                        "electricEnergy": [
+                          {
+                            "isGreenEnergy": true,
+                            "energyRate": [
+                              {
+                                "idG": "66bc92a2d399e040daffb65c6f594315",
+                                "ratePolicy": {
+                                  "value": "adHoc"
+                                },
+                                "lastUpdated": "2026-10-16T22:00:10.242000+00:00",
+                                "applicableCurrency": [
+                                  "EUR"
+                                ],
+                                "energyPrice": [
+                                  {
+                                    "priceType": {
+                                      "value": "pricePerKWh"
+                                    },
+                                    "value": 0.66386555,
+                                    "taxIncluded": false,
+                                    "taxRate": 19.0
+                                  },
+                                  {
+                                    "priceType": {
+                                      "value": "pricePerMinute"
+                                    },
+                                    "value": 0.20168067,
+                                    "taxIncluded": false,
+                                    "taxRate": 19.0,
+                                    "timeBasedApplicability": {
+                                      "fromMinute": 30,
+                                      "toMinute": 0
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "DE*EBW*E914214*1",
+                        "versionG": "2026-10-17T06:51:04.647000+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "dc"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          1000
+                        ],
+                        "availableChargingPower": [
+                          200000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "iec62196T2COMBO"
+                            },
+                            "connectorFormat": {
+                              "value": "cableMode3"
+                            },
+                            "maxPowerAtSocket": 200000.0,
+                            "voltage": 1000.0,
+                            "maximumCurrent": 200.0
+                          }
+                        ],
+                        "electricEnergy": [
+                          {
+                            "isGreenEnergy": true,
+                            "energyRate": [
+                              {
+                                "idG": "66bc92a2d399e040daffb65c6f594315",
+                                "ratePolicy": {
+                                  "value": "adHoc"
+                                },
+                                "lastUpdated": "2026-10-16T22:00:10.242000+00:00",
+                                "applicableCurrency": [
+                                  "EUR"
+                                ],
+                                "energyPrice": [
+                                  {
+                                    "priceType": {
+                                      "value": "pricePerKWh"
+                                    },
+                                    "value": 0.66386555,
+                                    "taxIncluded": false,
+                                    "taxRate": 19.0
+                                  },
+                                  {
+                                    "priceType": {
+                                      "value": "pricePerMinute"
+                                    },
+                                    "value": 0.20168067,
+                                    "taxIncluded": false,
+                                    "taxRate": 19.0,
+                                    "timeBasedApplicability": {
+                                      "fromMinute": 30,
+                                      "toMinute": 0
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "idG": "CH*CCC*E50080",
+              "versionG": "2026-10-17T01:53:41.946835+00:00",
+              "additionalInformation": [
+                {
+                  "values": [
+                    {
+                      "lang": "de",
+                      "value": "MOVE - Therwil Reinacherstrasse 2"
+                    }
+                  ]
+                }
+              ],
+              "operatingHours": {
+                "afacOpenAllHours": {}
+              },
+              "locationReference": {
+                "locPointLocation": {
+                  "locLocationExtensionG": {
+                    "FacilityLocation": {
+                      "address": {
+                        "postcode": "4106",
+                        "city": {
+                          "values": [
+                            {
+                              "lang": "de",
+                              "value": "Therwil"
+                            }
+                          ]
+                        },
+                        "countryCode": "CH",
+                        "addressLine": [
+                          {
+                            "order": 1,
+                            "type": {
+                              "value": "street"
+                            },
+                            "text": {
+                              "values": [
+                                {
+                                  "lang": "de",
+                                  "value": "Reinacherstrasse"
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "order": 2,
+                            "type": {
+                              "value": "houseNumber"
+                            },
+                            "text": {
+                              "values": [
+                                {
+                                  "lang": "de",
+                                  "value": "2"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                "locAreaLocation": {
+                  "coordinatesForDisplay": {
+                    "latitude": 47.498072,
+                    "longitude": 7.558353
+                  }
+                }
+              },
+              "operator": {
+                "afacAnOrganisation": {
+                  "name": {
+                    "values": [
+                      {
+                        "lang": "de",
+                        "value": "Move"
+                      }
+                    ]
+                  }
+                }
+              },
+              "helpdesk": {
+                "afacReferenceableOrganisation": {
+                  "idG": "HELP",
+                  "versionG": "2026-10-17T01:53:41.946835+00:00",
+                  "name": {
+                    "values": [
+                      {
+                        "lang": "de",
+                        "value": "Move"
+                      }
+                    ]
+                  },
+                  "organisationUnit": [
+                    {
+                      "contactInformation": [
+                        {
+                          "afacContactInformation": {
+                            "telephoneNumber": "+41800292929"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "energyInfrastructureStation": [
+                {
+                  "idG": "CH*CCC*E50080",
+                  "versionG": "2026-10-17T01:53:41.946835+00:00",
+                  "totalMaximumPower": 44000.0,
+                  "numberOfRefillPoints": 3,
+                  "serviceType": [
+                    {
+                      "serviceType": {
+                        "value": "unattended"
+                      }
+                    }
+                  ],
+                  "refillPoint": [
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "CH*CCC*E50079",
+                        "versionG": "2026-10-17T01:53:41.946835+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "dc"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          400
+                        ],
+                        "availableChargingPower": [
+                          50000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "teslaS"
+                            },
+                            "connectorFormat": {
+                              "value": "cableMode3"
+                            },
+                            "maxPowerAtSocket": 50000.0,
+                            "voltage": 400.0,
+                            "maximumCurrent": 375.0
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "CH*CCC*E50080",
+                        "versionG": "2026-10-17T01:53:41.926925+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "dc"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          400
+                        ],
+                        "availableChargingPower": [
+                          50000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "iec62196T2COMBO"
+                            },
+                            "connectorFormat": {
+                              "value": "cableMode3"
+                            },
+                            "maxPowerAtSocket": 50000.0,
+                            "voltage": 400.0,
+                            "maximumCurrent": 375.0
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "CH*CCC*E50024",
+                        "versionG": "2026-10-17T01:53:41.931077+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "ac"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          230
+                        ],
+                        "availableChargingPower": [
+                          44000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "iec62196T2"
+                            },
+                            "connectorFormat": {
+                              "value": "socket"
+                            },
+                            "maxPowerAtSocket": 44000.0,
+                            "voltage": 230.0,
+                            "maximumCurrent": 32.0
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "idG": "Mer Germany-3914",
+              "versionG": "2026-10-17T08:16:38+00:00",
+              "additionalInformation": [
+                {
+                  "values": [
+                    {
+                      "lang": "de",
+                      "value": "Mer Germany GmbH - Mühldorf am Inn - Bahnhofsplatz 6 #1"
+                    }
+                  ]
+                }
+              ],
+              "operatingHours": {
+                "afacOpenAllHours": {}
+              },
+              "locationReference": {
+                "locPointLocation": {
+                  "locLocationExtensionG": {
+                    "FacilityLocation": {
+                      "address": {
+                        "postcode": "84453",
+                        "city": {
+                          "values": [
+                            {
+                              "lang": "de",
+                              "value": "Mühldorf am Inn"
+                            }
+                          ]
+                        },
+                        "countryCode": "DE",
+                        "addressLine": [
+                          {
+                            "order": 1,
+                            "type": {
+                              "value": "street"
+                            },
+                            "text": {
+                              "values": [
+                                {
+                                  "lang": "de",
+                                  "value": "6 Bahnhofsplatz"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                "locAreaLocation": {
+                  "coordinatesForDisplay": {
+                    "latitude": 48.2480037,
+                    "longitude": 12.5201577
+                  }
+                }
+              },
+              "owner": {
+                "afacAnOrganisation": {
+                  "name": {
+                    "values": [
+                      {
+                        "lang": "de",
+                        "value": "Mer Germany"
+                      }
+                    ]
+                  }
+                }
+              },
+              "operator": {
+                "afacAnOrganisation": {
+                  "name": {
+                    "values": [
+                      {
+                        "lang": "de",
+                        "value": "Mer Germany"
+                      }
+                    ]
+                  }
+                }
+              },
+              "energyInfrastructureStation": [
+                {
+                  "idG": "3914",
+                  "versionG": "2026-10-17T08:16:38+00:00",
+                  "totalMaximumPower": 102400.0,
+                  "authenticationAndIdentificationMethods": [
+                    {
+                      "value": "overTheAir"
+                    },
+                    {
+                      "value": "rfid"
+                    }
+                  ],
+                  "numberOfRefillPoints": 8,
+                  "serviceType": [
+                    {
+                      "serviceType": {
+                        "value": "unattended"
+                      }
+                    }
+                  ],
+                  "refillPoint": [
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "1346",
+                        "versionG": "2026-10-17T08:16:38+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "ac"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          230
+                        ],
+                        "availableChargingPower": [
+                          3600
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "domesticF"
+                            },
+                            "connectorFormat": {
+                              "value": "socket"
+                            },
+                            "maxPowerAtSocket": 3600.0,
+                            "voltage": 230.0,
+                            "maximumCurrent": 16.0
+                          }
+                        ],
+                        "electricEnergy": [
+                          {
+                            "isGreenEnergy": true,
+                            "energyRate": [
+                              {
+                                "idG": "2ee2481486f0c870315657899816ef49",
+                                "ratePolicy": {
+                                  "value": "adHoc"
+                                },
+                                "lastUpdated": "2026-10-13T16:42:34+00:00",
+                                "applicableCurrency": [
+                                  "EUR"
+                                ],
+                                "energyPrice": [
+                                  {
+                                    "priceType": {
+                                      "value": "pricePerKWh"
+                                    },
+                                    "value": 0.4874,
+                                    "taxIncluded": false,
+                                    "taxRate": 19.0,
+                                    "timeBasedApplicability": {
+                                      "fromMinute": 0
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "1353",
+                        "versionG": "2026-10-15T23:06:05+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "ac"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          230
+                        ],
+                        "availableChargingPower": [
+                          3600
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "domesticF"
+                            },
+                            "connectorFormat": {
+                              "value": "socket"
+                            },
+                            "maxPowerAtSocket": 3600.0,
+                            "voltage": 230.0,
+                            "maximumCurrent": 16.0
+                          }
+                        ],
+                        "electricEnergy": [
+                          {
+                            "isGreenEnergy": true,
+                            "energyRate": [
+                              {
+                                "idG": "2ee2481486f0c870315657899816ef49",
+                                "ratePolicy": {
+                                  "value": "adHoc"
+                                },
+                                "lastUpdated": "2026-10-13T16:42:34+00:00",
+                                "applicableCurrency": [
+                                  "EUR"
+                                ],
+                                "energyPrice": [
+                                  {
+                                    "priceType": {
+                                      "value": "pricePerKWh"
+                                    },
+                                    "value": 0.4874,
+                                    "taxIncluded": false,
+                                    "taxRate": 19.0,
+                                    "timeBasedApplicability": {
+                                      "fromMinute": 0
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "1347",
+                        "versionG": "2026-10-17T08:16:38+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "ac"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          230
+                        ],
+                        "availableChargingPower": [
+                          22000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "iec62196T2"
+                            },
+                            "connectorFormat": {
+                              "value": "socket"
+                            },
+                            "maxPowerAtSocket": 22000.0,
+                            "voltage": 230.0,
+                            "maximumCurrent": 32.0
+                          }
+                        ],
+                        "electricEnergy": [
+                          {
+                            "isGreenEnergy": true,
+                            "energyRate": [
+                              {
+                                "idG": "2ee2481486f0c870315657899816ef49",
+                                "ratePolicy": {
+                                  "value": "adHoc"
+                                },
+                                "lastUpdated": "2026-10-13T16:42:34+00:00",
+                                "applicableCurrency": [
+                                  "EUR"
+                                ],
+                                "energyPrice": [
+                                  {
+                                    "priceType": {
+                                      "value": "pricePerKWh"
+                                    },
+                                    "value": 0.4874,
+                                    "taxIncluded": false,
+                                    "taxRate": 19.0,
+                                    "timeBasedApplicability": {
+                                      "fromMinute": 0
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "1349",
+                        "versionG": "2026-10-15T23:06:05+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "ac"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          230
+                        ],
+                        "availableChargingPower": [
+                          22000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "iec62196T2"
+                            },
+                            "connectorFormat": {
+                              "value": "socket"
+                            },
+                            "maxPowerAtSocket": 22000.0,
+                            "voltage": 230.0,
+                            "maximumCurrent": 32.0
+                          }
+                        ],
+                        "electricEnergy": [
+                          {
+                            "isGreenEnergy": true,
+                            "energyRate": [
+                              {
+                                "idG": "2ee2481486f0c870315657899816ef49",
+                                "ratePolicy": {
+                                  "value": "adHoc"
+                                },
+                                "lastUpdated": "2026-10-13T16:42:34+00:00",
+                                "applicableCurrency": [
+                                  "EUR"
+                                ],
+                                "energyPrice": [
+                                  {
+                                    "priceType": {
+                                      "value": "pricePerKWh"
+                                    },
+                                    "value": 0.4874,
+                                    "taxIncluded": false,
+                                    "taxRate": 19.0,
+                                    "timeBasedApplicability": {
+                                      "fromMinute": 0
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "1351",
+                        "versionG": "2026-10-15T23:06:05+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "ac"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          230
+                        ],
+                        "availableChargingPower": [
+                          3600
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "domesticF"
+                            },
+                            "connectorFormat": {
+                              "value": "socket"
+                            },
+                            "maxPowerAtSocket": 3600.0,
+                            "voltage": 230.0,
+                            "maximumCurrent": 16.0
+                          }
+                        ],
+                        "electricEnergy": [
+                          {
+                            "isGreenEnergy": true,
+                            "energyRate": [
+                              {
+                                "idG": "2ee2481486f0c870315657899816ef49",
+                                "ratePolicy": {
+                                  "value": "adHoc"
+                                },
+                                "lastUpdated": "2026-10-13T16:42:34+00:00",
+                                "applicableCurrency": [
+                                  "EUR"
+                                ],
+                                "energyPrice": [
+                                  {
+                                    "priceType": {
+                                      "value": "pricePerKWh"
+                                    },
+                                    "value": 0.4874,
+                                    "taxIncluded": false,
+                                    "taxRate": 19.0,
+                                    "timeBasedApplicability": {
+                                      "fromMinute": 0
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "1352",
+                        "versionG": "2026-10-15T23:06:05+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "ac"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          230
+                        ],
+                        "availableChargingPower": [
+                          22000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "iec62196T2"
+                            },
+                            "connectorFormat": {
+                              "value": "socket"
+                            },
+                            "maxPowerAtSocket": 22000.0,
+                            "voltage": 230.0,
+                            "maximumCurrent": 32.0
+                          }
+                        ],
+                        "electricEnergy": [
+                          {
+                            "isGreenEnergy": true,
+                            "energyRate": [
+                              {
+                                "idG": "2ee2481486f0c870315657899816ef49",
+                                "ratePolicy": {
+                                  "value": "adHoc"
+                                },
+                                "lastUpdated": "2026-10-13T16:42:34+00:00",
+                                "applicableCurrency": [
+                                  "EUR"
+                                ],
+                                "energyPrice": [
+                                  {
+                                    "priceType": {
+                                      "value": "pricePerKWh"
+                                    },
+                                    "value": 0.4874,
+                                    "taxIncluded": false,
+                                    "taxRate": 19.0,
+                                    "timeBasedApplicability": {
+                                      "fromMinute": 0
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "1348",
+                        "versionG": "2026-10-15T23:06:05+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "ac"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          230
+                        ],
+                        "availableChargingPower": [
+                          3600
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "domesticF"
+                            },
+                            "connectorFormat": {
+                              "value": "socket"
+                            },
+                            "maxPowerAtSocket": 3600.0,
+                            "voltage": 230.0,
+                            "maximumCurrent": 16.0
+                          }
+                        ],
+                        "electricEnergy": [
+                          {
+                            "isGreenEnergy": true,
+                            "energyRate": [
+                              {
+                                "idG": "2ee2481486f0c870315657899816ef49",
+                                "ratePolicy": {
+                                  "value": "adHoc"
+                                },
+                                "lastUpdated": "2026-10-13T16:42:34+00:00",
+                                "applicableCurrency": [
+                                  "EUR"
+                                ],
+                                "energyPrice": [
+                                  {
+                                    "priceType": {
+                                      "value": "pricePerKWh"
+                                    },
+                                    "value": 0.4874,
+                                    "taxIncluded": false,
+                                    "taxRate": 19.0,
+                                    "timeBasedApplicability": {
+                                      "fromMinute": 0
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "1350",
+                        "versionG": "2026-10-15T23:06:05+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "ac"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          230
+                        ],
+                        "availableChargingPower": [
+                          22000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "iec62196T2"
+                            },
+                            "connectorFormat": {
+                              "value": "socket"
+                            },
+                            "maxPowerAtSocket": 22000.0,
+                            "voltage": 230.0,
+                            "maximumCurrent": 32.0
+                          }
+                        ],
+                        "electricEnergy": [
+                          {
+                            "isGreenEnergy": true,
+                            "energyRate": [
+                              {
+                                "idG": "2ee2481486f0c870315657899816ef49",
+                                "ratePolicy": {
+                                  "value": "adHoc"
+                                },
+                                "lastUpdated": "2026-10-13T16:42:34+00:00",
+                                "applicableCurrency": [
+                                  "EUR"
+                                ],
+                                "energyPrice": [
+                                  {
+                                    "priceType": {
+                                      "value": "pricePerKWh"
+                                    },
+                                    "value": 0.4874,
+                                    "taxIncluded": false,
+                                    "taxRate": 19.0,
+                                    "timeBasedApplicability": {
+                                      "fromMinute": 0
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

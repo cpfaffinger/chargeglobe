@@ -28,7 +28,12 @@ interface Group {
 }
 
 /** Names of the source adapters of the provider settings ("provider:econtrol"). */
-const PROVIDER_NAMES: Record<string, string> = { econtrol: 'E-Control', ocm: 'Open Charge Map' };
+const PROVIDER_NAMES: Record<string, string> = {
+  econtrol: 'E-Control',
+  ocm: 'Open Charge Map',
+  bnetza: 'Bundesnetzagentur',
+  'mobidata-bw': 'MobiData BW',
+};
 
 const keyIn = (...keys: string[]) => (row: Row) => keys.some((key) => row.setting.key === key || row.setting.key.startsWith(`${key}.`));
 const globalKeyIn = (...keys: string[]) => (row: Row) => row.scope === 'global' && keyIn(...keys)(row);

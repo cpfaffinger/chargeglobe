@@ -2,6 +2,8 @@ using ChargeGlobe.Application.Addresses;
 using ChargeGlobe.Application.Mail;
 using ChargeGlobe.Infrastructure.Addresses;
 using ChargeGlobe.Providers.Abstractions;
+using ChargeGlobe.Providers.BNetzA;
+using ChargeGlobe.Providers.DatexII;
 using ChargeGlobe.Providers.EControl;
 using ChargeGlobe.Providers.OpenChargeMap;
 using ChargeGlobe.Providers.TariffCatalog;
@@ -114,6 +116,8 @@ public static class JobServices
             services.AddSingleton<IProviderRequestBudget, ClusterRequestBudget>();
             services.AddEControlProvider();
             services.AddOpenChargeMapProvider();
+            services.AddBNetzAProvider();
+            services.AddDatexIIProvider(DatexProfiles.MobiDataBw);
             services.AddSingleton<PollJobRunner>();
             services.AddHostedService<ProviderHealthService>();
             services.AddHostedService<PollScheduler>();
