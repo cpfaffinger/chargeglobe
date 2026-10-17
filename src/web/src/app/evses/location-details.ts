@@ -21,7 +21,7 @@ import {
 import { Segment, combine, faultSource, sourceName, statusOf, timeline } from './status';
 import { OccupancyHeatmap, StatusTimeline } from './status-charts';
 import { CardsStore } from '../preferences/cards.store';
-import { EmpPrice, EmpUnavailable, EvsePricesResponse, money, priceParts, sessionText, zoneText } from './prices';
+import { EmpPrice, EmpUnavailable, EvsePricesResponse, IMPLAUSIBLE, money, plausible, priceParts, sessionText, zoneText } from './prices';
 import { AVAILABILITY, busyText, tokenColor } from '../map/availability';
 import { connectorLabel, formatLabel } from './labels';
 import { LocationSummary } from '../map/locations.service';
@@ -216,7 +216,11 @@ type LoadState = 'loading' | 'error' | 'ready';
                     @if (pricing.current; as current) {
                       <p class="price">
                         Ad-hoc: {{ parts(current.price).join(' · ') }}
-                        <span class="price-example">· {{ session(pricing.example) }}: {{ money(current.price.exampleCost, current.price.currency) }}</span>
+                        @if (isPlausible(current.price)) {
+                          <span class="price-example">· {{ session(pricing.example) }}: {{ money(current.price.exampleCost, current.price.currency) }}</span>
+                        } @else {
+                          <span class="price-implausible">· {{ implausible }}</span>
+                        }
                       </p>
                     } @else {
                       <p class="price price-state">Kein Ad-hoc-Preis bekannt.</p>
@@ -456,6 +460,8 @@ export class LocationDetails {
   protected readonly session = sessionText;
   protected readonly parts = priceParts;
   protected readonly money = money;
+  protected readonly isPlausible = plausible;
+  protected readonly implausible = IMPLAUSIBLE;
 
   protected readonly timelineDays = TIMELINE_DAYS;
   protected readonly occupancyWeeks = OCCUPANCY_WEEKS;

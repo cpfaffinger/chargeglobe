@@ -1,3 +1,4 @@
+using ChargeGlobe.Application.Evses;
 using ChargeGlobe.Application.Identity;
 using ChargeGlobe.Application.Ingest;
 using ChargeGlobe.Application.Tariffs;
@@ -24,6 +25,7 @@ public class TariffCatalogServiceTests
         var services = new ServiceCollection()
             .AddScoped<IJobLeases>(_ => leases)
             .AddScoped<ITariffCatalog>(_ => catalog)
+            .AddScoped<IPriceQuality>(_ => new PriceQualityStub())
             .BuildServiceProvider();
         var time = new FakeTimeProvider(T0);
         var logger = new IngestJobsTests.ListLogger<TariffCatalogService>();
@@ -57,6 +59,7 @@ public class TariffCatalogServiceTests
         const string stale = "Tariff catalog: 4 tariffs older than the setting tariff.stale_months or without date";
         Assert.Equal(1, logger.Messages.Count(message => message == stale));
         Assert.Equal(1, logger.Messages.Count(message => message == "Tariff catalog: 3 tariffs to check soon"));
+        Assert.Equal(1, logger.Messages.Count(message => message == "Ad-hoc prices: 20 implausible at 2 operators: AT*F9B 16, ? 4"));
 
         // The stale tariffs once a day: again after midnight (02:00), not at 08:00 of the same day.
         time.Advance(TariffCatalogService.Interval);
@@ -172,6 +175,15 @@ public class TariffCatalogServiceTests
 
         public Task<TariffCatalogSnapshot> FetchAsync(CancellationToken cancellationToken) =>
             Failure is null ? Task.FromResult(new TariffCatalogSnapshot([], [])) : Task.FromException<TariffCatalogSnapshot>(Failure);
+    }
+
+    private sealed class PriceQualityStub : IPriceQuality
+    {
+        public Task<ImplausiblePrices> ImplausibleAsync(CancellationToken cancellationToken) =>
+            Task.FromResult(new ImplausiblePrices(T0, 0.05m, 2m, 20, [
+                new OperatorImplausiblePrices("AT*F9B", "CAS", 16, [], T0),
+                new OperatorImplausiblePrices(null, null, 4, [], T0),
+            ]));
     }
 
     private sealed class CatalogStub : ITariffCatalog

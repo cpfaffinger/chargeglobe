@@ -13,6 +13,28 @@ public enum TariffKind
 
 #pragma warning restore CA1707
 
+/// <summary>
+/// Bounds of a plausible ad-hoc price: an energy price within <paramref name="MinKwh"/>–<paramref name="MaxKwh"/>, and not 0
+/// without being free of charge (errors of the register such as 0.005 €/kWh, docs/05).
+/// </summary>
+public sealed record PriceBounds(decimal MinKwh, decimal MaxKwh)
+{
+    /// <summary>
+    /// Whether the price is plausible: free of charge; an energy price within the bounds; or, without energy price, a time
+    /// price or session fee (time-only prices are not judged by the bounds).
+    /// </summary>
+    public bool Accepts(PriceComponents price)
+    {
+        if (price.FreeOfCharge)
+        {
+            return true;
+        }
+
+        var kwh = price.PricePerKwh ?? 0;
+        return kwh > 0 ? kwh >= MinKwh && kwh <= MaxKwh : (price.PricePerMinute ?? 0) > 0 || (price.SessionFee ?? 0) > 0;
+    }
+}
+
 /// <summary>Price components of a charging session; amounts in <see cref="Currency"/>, null if the source does not tell.</summary>
 /// <param name="PricePerKwh">Energy price per kWh.</param>
 /// <param name="PricePerMinute">Time price per minute of the session.</param>

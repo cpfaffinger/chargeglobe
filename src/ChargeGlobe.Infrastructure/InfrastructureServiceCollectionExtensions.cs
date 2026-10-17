@@ -57,6 +57,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<ILocationParks, LocationParks>();
         services.AddScoped<ILocationLifecycle, LocationLifecycle>();
         services.AddScoped<IEvseQueries, EvseQueries>();
+        services.AddScoped<IPriceQuality, PriceQuality>();
         services.AddScoped<ISearchQueries, SearchQueries>();
         services.AddScoped<IAddressStore, AddressStore>();
         services.AddScoped<IOperatorQueries, OperatorQueries>();

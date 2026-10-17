@@ -91,6 +91,11 @@ const pages: Routes = [
         canActivate: [requirePermission('settings:read')],
       },
       {
+        path: 'prices',
+        loadComponent: () => import('./pages/admin-prices.page').then((page) => page.AdminPricesPage),
+        canActivate: [requirePermission('jobs:read')],
+      },
+      {
         path: 'tariffs',
         loadComponent: () => import('./pages/admin-tariffs.page').then((page) => page.AdminTariffsPage),
         canActivate: [requirePermission('tariff:write')],

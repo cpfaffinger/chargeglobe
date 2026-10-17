@@ -118,6 +118,7 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
         var evse = await TariffTargets(db.Evses.Where(item => item.Id == id)).SingleAsync(cancellationToken);
         var example = PriceScenario.From(config).At(evse.Current, evse.MaxPowerKw);
         var catalog = await CurrentCatalogAsync(cancellationToken);
+        var bounds = PricePlausibility.From(config);
         // Prices change rarely: all observations of the EVSE, turned into periods per source.
         var observations = await db.PriceObservations.AsNoTracking()
             .Where(observation => observation.EvseId == id && observation.TariffKind == TariffKind.AD_HOC)
@@ -129,12 +130,15 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             {
                 var list = source.ToList();
                 return list.Select((observation, index) => new PricePeriod(
-                    View(observation.SourceKey, observation.Components, example, catalog.LocalTime), observation.Time, index + 1 < list.Count ? list[index + 1].Time : null));
+                    View(observation.SourceKey, observation.Components, example, catalog.LocalTime, bounds.Accepts(observation.Components)), observation.Time,
+                    index + 1 < list.Count ? list[index + 1].Time : null));
             })
             .Where(period => period.From < to && (period.To is null || period.To > from))
             .OrderBy(period => period.From)
             .ToList();
-        var (prices, unknown) = EmpPrices(catalog, evse, example, current?.Components);
+        // An implausible ad-hoc price is no base for the providers that pass it on: those tariffs come as unknown.
+        var plausible = current is null || bounds.Accepts(current.Components);
+        var (prices, unknown) = EmpPrices(catalog, evse, example, plausible ? current?.Components : null);
         var unavailable = catalog.Plans
             .Where(row => prices.All(price => price.TariffId != row.Plan.Id) && unknown.All(item => item.Plan.Id != row.Plan.Id))
             .OrderBy(row => row.Name, StringComparer.Ordinal)
@@ -148,7 +152,7 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
                 await db.Locations.Where(location => location.Id == evse.LocationId).Select(location => (GeoPoint?)location.Coordinates).SingleAsync(cancellationToken)));
         return new EvsePrices(
             example,
-            current is null ? null : new CurrentPrice(View(current.SourceKey, current.Components, example, catalog.LocalTime), current.Since, current.ObservedAt),
+            current is null ? null : new CurrentPrice(View(current.SourceKey, current.Components, example, catalog.LocalTime, plausible), current.Since, current.ObservedAt),
             history,
             prices,
             unavailable,
@@ -166,11 +170,15 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
         var evses = await TariffTargets(db.Evses.Where(evse => ids.Contains(evse.LocationId) && evse.Lifecycle == Lifecycle.ACTIVE))
             .ToListAsync(cancellationToken);
         var evseIds = evses.Select(evse => evse.Id).ToList();
+        // Implausible ad-hoc prices (errors of the register) take part neither as the cheapest ad-hoc price nor as base of a card.
+        var bounds = PricePlausibility.From(config);
         var adHoc = (await db.EvsePriceCurrent.AsNoTracking()
                 .Where(price => evseIds.Contains(price.EvseId) && price.TariffKind == TariffKind.AD_HOC)
                 .ToListAsync(cancellationToken))
             .GroupBy(price => price.EvseId)
-            .ToDictionary(prices => prices.Key, prices => prices.MaxBy(price => price.ObservedAt)!);
+            .Select(prices => prices.MaxBy(price => price.ObservedAt)!)
+            .Where(price => bounds.Accepts(price.Components))
+            .ToDictionary(price => price.EvseId);
         var all = await CurrentCatalogAsync(cancellationToken);
         var tariffs = all with { Plans = [.. all.Plans.Where(row => cards is null || cards.Contains(row.Key))] };
         var byLocation = evses.ToLookup(evse => evse.LocationId);
@@ -313,11 +321,11 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
 
     private sealed record UnknownPrice(TariffPlan Plan, string Key, string Name, TariffZoneKind Zone);
 
-    private static PriceView View(string source, PriceComponents price, SessionExample example, DateTime? start) =>
+    private static PriceView View(string source, PriceComponents price, SessionExample example, DateTime? start, bool plausible = true) =>
         new(source, price.Currency, price.PricePerKwh, price.PricePerMinute, price.SessionFee, price.BlockingFeePerMinute,
             price.BlockingAfterMinutes, price.FreeOfCharge, price.CostOf(example.Kwh, example.Minutes, start), price.BlockingFeeMax, price.BlockingFrom.ToString(),
             price.BlockingStartTime?.ToString("HH:mm", CultureInfo.InvariantCulture), price.BlockingEndTime?.ToString("HH:mm", CultureInfo.InvariantCulture),
-            price.BlockingMaxMinutes);
+            price.BlockingMaxMinutes, plausible);
 
     public async Task<IReadOnlyList<StatusInterval>> StatusHistoryAsync(
         Guid id, DateTimeOffset from, DateTimeOffset to, string? source, CancellationToken cancellationToken)

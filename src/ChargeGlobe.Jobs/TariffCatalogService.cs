@@ -1,3 +1,4 @@
+using ChargeGlobe.Application.Evses;
 using ChargeGlobe.Application.Ingest;
 using ChargeGlobe.Application.Tariffs;
 using ChargeGlobe.Providers.Abstractions;
@@ -7,7 +8,8 @@ namespace ChargeGlobe.Jobs;
 /// <summary>
 /// Worker role: takes over the catalog of every tariff source (<see cref="ITariffSource"/>, docs/adr/0013) at start and
 /// every <see cref="Interval"/>, in one worker at a time (job lease <c>tariff-catalog</c>, given free after the run). An
-/// unchanged catalog costs one comparison per tariff.
+/// unchanged catalog costs one comparison per tariff. Once a day it logs the stale tariffs and the implausible ad-hoc prices
+/// of the register (<see cref="IPriceQuality"/>).
 /// </summary>
 public sealed class TariffCatalogService(
     IServiceScopeFactory scopeFactory,
@@ -81,6 +83,12 @@ public sealed class TariffCatalogService(
                 {
                     logger.LogInformation("Tariff catalog: {Count} tariffs older than the setting tariff.stale_months or without date", await catalog.StaleCountAsync(stoppingToken));
                     logger.LogInformation("Tariff catalog: {Count} tariffs to check soon", await catalog.CheckSoonCountAsync(stoppingToken));
+                    var implausible = await scope.ServiceProvider.GetRequiredService<IPriceQuality>().ImplausibleAsync(stoppingToken);
+                    logger.LogInformation(
+                        "Ad-hoc prices: {Count} implausible at {Operators} operators: {List}",
+                        implausible.Evses,
+                        implausible.Operators.Count,
+                        implausible.Operators.Count == 0 ? "none" : string.Join(", ", implausible.Operators.Take(10).Select(item => $"{item.OperatorId ?? "?"} {item.Evses}")));
                     _staleLoggedOn = today;
                 }
             }

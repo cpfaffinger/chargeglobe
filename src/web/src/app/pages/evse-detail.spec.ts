@@ -456,6 +456,20 @@ describe('EvseDetailPage with prices', () => {
     expect(page().querySelector('#price-note')).toBeNull();
   });
 
+  it('says when the ad-hoc price of the register is implausible instead of its cost', async () => {
+    const wrong = price({ pricePerKwh: 0.005, pricePerMinute: null, sessionFee: null, exampleCost: 0.15, plausible: false });
+    await open(
+      prices({ price: wrong, since: '2026-09-01T06:00:00Z', observedAt: '2026-10-14T06:00:00Z' }, [
+        { price: price({ exampleCost: 19 }), from: '2026-05-01T06:00:00Z', to: '2026-09-01T06:00:00Z' },
+        { price: wrong, from: '2026-09-01T06:00:00Z', to: null },
+      ]),
+    );
+
+    expect(text(page(), '#price-example')).toBe('Preis laut Register vermutlich falsch');
+    expect(text(page(), '#price-history tbody tr:first-child td:nth-child(4)')).toBe('19,00 €');
+    expect(text(page(), '#price-history tbody tr:last-child td:nth-child(4)')).toBe('Preis laut Register vermutlich falsch');
+  });
+
   it('compares the ad-hoc price with the cards and marks the cheapest', async () => {
     const card = (tariffId: string, empName: string, monthlyFee: number | null, exampleCost: number): EmpPrice => ({
       emp: tariffId,

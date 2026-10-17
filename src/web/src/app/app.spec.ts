@@ -353,6 +353,18 @@ describe('App with its routes', () => {
       http.expectOne('/api/v1/networks').flush({ data: [] });
     });
 
+    it('opens /admin/prices with jobs:read', async () => {
+      auth.me.set(ME);
+      auth.hasPermission.and.callFake((permission) => permission === 'jobs:read');
+
+      await navigate('/admin/prices');
+
+      expect(router.url).toBe('/admin/prices');
+      expect(text(root(), 'h1')).toBe('Ad-hoc-Preise');
+      expect(root().querySelector('#admin-tab-prices')).not.toBeNull();
+      http.expectOne('/api/v1/admin/prices/implausible').flush({ data: { at: '2026-10-17T08:00:00Z', minKwh: 0.05, maxKwh: 2, evses: 0, operators: [] } });
+    });
+
     it('redirects anonymous visitors from /admin/mail to the login', async () => {
       await navigate('/admin/mail');
 

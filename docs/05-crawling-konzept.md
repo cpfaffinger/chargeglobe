@@ -118,6 +118,13 @@ Preise sind fachlich der schwierigste Teil, weil Apps sie unterschiedlich zeigen
 | Ad-hoc-Preis per AFIR im NAP/Verzeichnis | Tier 0, höchste Präzedenz für Ad-hoc |
 | Preise nur auf einer geschützten Website des Betreibers (Tesla-Standortseiten: Bot-Schutz, Kopieren zur Weitergabe untersagt) | nicht automatisiert lesen; Ad-hoc-Preis aus dem Verzeichnis verwenden, Abweichungen der Meldestelle mitteilen ([Endpunkt-Notiz Tesla](endpunkte/tesla-findus.md)) |
 
+### Plausibilität der Ad-hoc-Preise
+
+Das Register enthält Eingabefehler der Betreiber (z. B. 0,005 €/kWh, ein Preis ohne jeden Betrag, obwohl nicht kostenlos). Ein Ad-hoc-Preis gilt als **unplausibel**, wenn er nicht kostenlos ist und entweder einen Energiepreis außerhalb der Einstellungen `price.min_plausible_kwh`–`price.max_plausible_kwh` (Default 0,05–2,00 €/kWh) hat oder weder Energie- noch Zeitpreis noch Startgebühr berechnet; reine Zeitpreise misst die Spanne nicht (Regel `PriceBounds.Accepts` im Domain-Modell, dieselbe Regel in SQL in `PriceQuality`). Unplausible Preise bleiben gespeichert (die Quelle bestimmt den Preis), werden aber markiert:
+- `getEvsePrices` liefert `plausible: false` an `current.price` und den betroffenen Perioden; Karte und Detailseite zeigen „Preis laut Register vermutlich falsch“ statt der Kosten.
+- Im Preisvergleich zählen sie nicht: weder als günstigster Ad-hoc-Preis eines Standorts (`listLocationPrices`) noch als Basis eines Anbieters mit Betreiberpreis (der Tarif steht dann in `priceUnknown`).
+- Der Worker loggt einmal täglich `Ad-hoc prices: N implausible at M operators: AT*F9B 16, …` (die zehn Betreiber mit den meisten Ladepunkten), `/admin/prices` (`GET /admin/prices/implausible`, `jobs:read`) listet sie je Betreiber mit Beispielwerten und letzter Meldung. Korrigieren kann nur die Quelle; bei der E-Control meldet der Betreiber seine Preise selbst.
+
 Poll-Frequenz: Preise ändern sich selten, aber zu Monatsanfang gehäuft → 1×/Tag je EVSE, zusätzlich am 1. und 2. jedes Monats 3×/Tag.
 
 ## App-Analyse-Methodik (Tier 2)

@@ -68,6 +68,13 @@ export const ADMIN_PAGES: AdminPageLink[] = [
     category: 'Preise',
     description: 'Tarifkatalog: Ladekarten und Apps mit Heimnetz, Partnernetz und Roaming je Tarif.',
   },
+  {
+    path: 'prices',
+    label: 'Ad-hoc-Preise',
+    permission: 'jobs:read',
+    category: 'Preise',
+    description: 'Vermutlich falsche Ad-hoc-Preise im Register, je Betreiber mit Beispielen.',
+  },
 ];
 
 /** Permissions that open the administration (any one of them). */

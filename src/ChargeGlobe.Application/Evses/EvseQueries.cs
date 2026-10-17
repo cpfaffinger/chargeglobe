@@ -102,6 +102,7 @@ public static class PriceScenario
 /// <param name="BlockingStartTime">With <paramref name="BlockingEndTime"/>: blocked minutes are billed only in this local window "HH:mm".</param>
 /// <param name="BlockingMaxMinutes">Highest number of billed blocking minutes of a session.</param>
 /// <param name="ExampleCost">Cost of the example session of the EVSE (<see cref="SessionExample"/>), unknown parts counted as 0.</param>
+/// <param name="Plausible">False if the price lies outside <c>price.min_plausible_kwh</c>–<c>price.max_plausible_kwh</c> or is 0 without being free of charge (an error of the register).</param>
 public sealed record PriceView(
     string Source,
     string Currency,
@@ -116,7 +117,8 @@ public sealed record PriceView(
     string BlockingFrom,
     string? BlockingStartTime,
     string? BlockingEndTime,
-    int? BlockingMaxMinutes);
+    int? BlockingMaxMinutes,
+    bool Plausible = true);
 
 /// <param name="Since">Since when the price is as it is.</param>
 /// <param name="ObservedAt">When the source last confirmed it.</param>
