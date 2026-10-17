@@ -32,7 +32,7 @@ public class TariffsTests(IntegrationFactory factory)
         var tariffs = new JsonArray(Tariff("basic", " Basic ", null,
             new { kind = "HOME", networks = new[] { network }, prices = new object[] { new { current = "AC", pricePerKwh = basic, blockingFeePerMinute = 0.10m, blockingAfterMinutes = 240, maxBlockingFee = 30m, blockingFrom = "CHARGING_END" }, new { current = "DC", pricePerKwh = 0.65m } } },
             new { kind = "ROAMING", excludedOperators = new[] { "at*tsl" }, prices = new object[] { new { current = "AC", pricePerKwh = 0.59m }, new { current = "DC", minKw = 100, pricePerKwh = 0.89m }, new { current = "AC", pricePerKwh = 0.49m, startTime = "22:00", endTime = "08:00" }, new { current = "AC", pricePerKwh = 0.39m, days = new[] { 7, 6 }, blockingFeePerMinute = 0.07m, blockingAfterMinutes = 210, blockingStartTime = "08:00", blockingEndTime = "23:00", maxBlockingMinutes = 500 } }, notes = "Partnerladenetz" },
-            new { kind = "ROAMING", countries = new[] { "IT", "DE", "IT" }, prices = new object[] { new { current = "AC", pricePerKwh = 0.69m } } }));
+            new { kind = "ROAMING", countries = new[] { "IT", "DE", "IT" }, currents = new[] { "AC" }, prices = new object[] { new { current = "AC", pricePerKwh = 0.69m } } }));
         if (withPlus)
         {
             tariffs.Add(Tariff("plus", "Plus", 4.95m, new { kind = "OPERATOR", operators = new[] { "AT*IOY" }, prices = new object[] { new { current = "DC", pricePerMinute = 0.5m, sessionFee = 1m } } }));
@@ -125,6 +125,7 @@ public class TariffsTests(IntegrationFactory factory)
         Assert.Equal(("FIXED", JsonValueKind.Null), (zones[1].GetProperty("pricing").GetString(), zones[1].GetProperty("markupPercent").ValueKind));
         Assert.Equal(JsonValueKind.Null, zones[1].GetProperty("countries").ValueKind);
         Assert.Equal(["DE", "IT"], zones[2].GetProperty("countries").EnumerateArray().Select(item => item.GetString()));
+        Assert.Equal(["AC"], zones[2].GetProperty("currents").EnumerateArray().Select(item => item.GetString()));
         var home = zones[0].GetProperty("prices")[0];
         Assert.Equal((30m, "CHARGING_END", JsonValueKind.Null), (home.GetProperty("maxBlockingFee").GetDecimal(), home.GetProperty("blockingFrom").GetString(), home.GetProperty("startTime").ValueKind));
         var night = zones[1].GetProperty("prices")[2];
