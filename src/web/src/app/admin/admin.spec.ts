@@ -224,7 +224,8 @@ describe('AdminUsersPage', () => {
     // Nobody disables their own account.
     expect(rows()[3].querySelector('.disable')).toBeNull();
     expect(rows()[0].querySelector('.disable')).not.toBeNull();
-    expect(root().querySelectorAll('mat-select').length).toBe(4);
+    // Roles and direct permissions per account.
+    expect(root().querySelectorAll('mat-select').length).toBe(8);
     expect(text(root(), '.mat-mdc-paginator-range-label')).toBe('Seite 1 von 1 (4 Einträge)');
   });
 

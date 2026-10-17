@@ -423,6 +423,7 @@ describe('App with its routes', () => {
       expect(text(root(), 'h1')).toBe('Nutzer');
       http.expectOne('/api/v1/users?page=1&pageSize=25').flush({ data: [], meta: { total: 0, page: 1, pageSize: 25 } });
       http.expectOne('/api/v1/roles').flush({ data: [] });
+      http.expectOne('/api/v1/permissions').flush([]);
 
       await navigate('/admin/roles');
       expect(text(root(), 'h1')).toBe('Rollen');
