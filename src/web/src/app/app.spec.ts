@@ -152,6 +152,7 @@ describe('App with its routes', () => {
         'nav-admin-mail',
         'nav-admin-settings',
         'nav-admin-tariffs',
+        'nav-admin-prices',
         'nav-account',
       ]);
       expect(sheet.querySelector('#location-search')).not.toBeNull();
@@ -247,7 +248,7 @@ describe('App with its routes', () => {
       await flush();
       await fixture.whenStable();
       const items = () => Array.from(document.querySelectorAll<HTMLAnchorElement>('.mat-mdc-menu-panel a[mat-menu-item]'));
-      expect(items().map((item) => item.id)).toEqual(['admin-menu-overview', 'admin-menu-crawler', 'admin-menu-settings']);
+      expect(items().map((item) => item.id)).toEqual(['admin-menu-overview', 'admin-menu-crawler', 'admin-menu-settings', 'admin-menu-prices']);
 
       items()[2].click();
       await flush();
