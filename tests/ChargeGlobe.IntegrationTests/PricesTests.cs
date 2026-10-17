@@ -202,7 +202,7 @@ public class PricesTests(IntegrationFactory factory) : IClassFixture<Integration
         Assert.Equal(("flex", "FLEX", "tarif", "Tarif", "ROAMING"), (
             unknown.GetProperty("emp").GetString(), unknown.GetProperty("empName").GetString(), unknown.GetProperty("tariffKey").GetString(),
             unknown.GetProperty("tariff").GetString(), unknown.GetProperty("zone").GetString()));
-        Assert.Equal(["other"], Unavailable(unpriced));
+        Assert.Equal(["other"], unpriced.GetProperty("unavailable").EnumerateArray().Select(tariff => tariff.GetProperty("emp").GetString()));
         Assert.Equal("FIXED", unpriced.GetProperty("emps")[0].GetProperty("pricing").GetString());
 
         // A new catalog of the source replaces the tariff: the new price applies at once.
