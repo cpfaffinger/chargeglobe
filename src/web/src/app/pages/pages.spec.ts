@@ -315,6 +315,43 @@ describe('account pages', () => {
       expect(form.querySelector<HTMLInputElement>('input[formControlName=newPassword]')!.value).toBe('');
     });
 
+    it('deletes the own account after the password and a confirmation and explains a wrong password', async () => {
+      await open('/account');
+      http.expectOne('/api/v1/health').flush({ status: 'ok', db: 'ok' });
+      const form = page().querySelector<HTMLElement>('#account-delete')!;
+      const confirm = spyOn(window, 'confirm').and.returnValue(false);
+
+      submit(form);
+      await settle();
+      expect(form.querySelectorAll('mat-error').length).toBe(1);
+      expect(confirm).not.toHaveBeenCalled();
+
+      type(form, 'input[formControlName=password]', 'secret password');
+      submit(form);
+      await settle();
+      expect(confirm).toHaveBeenCalled();
+      expect(auth.deleteAccount).not.toHaveBeenCalled();
+
+      confirm.and.returnValue(true);
+      auth.deleteAccount.and.rejectWith(
+        new HttpErrorResponse({ status: 422, error: { title: 'Validation failed', errors: { password: ['The password is not correct.'] } } }),
+      );
+      submit(form);
+      await settle();
+      expect(text(form, '.error')).toBe('Das Passwort ist falsch.');
+
+      auth.deleteAccount.and.rejectWith(new HttpErrorResponse({ status: 409, error: { title: 'Conflict', detail: 'Last manager.' } }));
+      submit(form);
+      await settle();
+      expect(text(form, '.error')).toBe('Last manager.');
+
+      auth.deleteAccount.and.resolveTo();
+      submit(form);
+      await settle();
+      expect(auth.deleteAccount).toHaveBeenCalledWith('secret password');
+      expect(TestBed.inject(Router).url).toBe('/');
+    });
+
     it('lets users with price:read choose their own charging cards', async () => {
       auth.hasPermission.and.callFake((permission) => permission === 'price:read');
       await open('/account');

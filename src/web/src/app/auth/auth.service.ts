@@ -105,6 +105,12 @@ export class AuthService {
   }
 
   /** Changes the password of the signed-in account; the other browser sessions end. */
+  /** Deletes the own account after the password check and ends the session here. */
+  async deleteAccount(password: string): Promise<void> {
+    await firstValueFrom(this.http.delete(`${API}/me`, { body: { password } }));
+    this.clear();
+  }
+
   async changePassword(currentPassword: string, newPassword: string): Promise<void> {
     await firstValueFrom(this.http.post(`${API}/auth/password/change`, { currentPassword, newPassword }));
   }

@@ -44,6 +44,20 @@ public static class AccountEndpoints
                 [.. DefaultRoles.Bundles[DefaultRoles.User].Order()],
                 "bearer"));
 
+        api.MapDelete("/me", DeleteMeAsync)
+            .WithName("deleteMe")
+            .WithTags("Account")
+            .WithSummary("Delete the caller's own account")
+            .WithDescription(
+                "Deletes the caller's account for good with its favorites, settings, API keys and browser sessions after " +
+                "checking `password` in the body; its audit entries stay without e-mail address. Recorded as `user.delete`. " +
+                "204 on success; 422 for a missing or wrong password; 409 if it is the last enabled, approved account with " +
+                "`user:manage`. Requires an account, no specific permission.")
+            .RequirePermission(RequirePermissionAttribute.Authenticated)
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
         api.MapGet("/permissions", () => Permissions.All.Select(permission => new PermissionResponse(permission.Key, permission.Description)))
             .WithName("listPermissions")
             .WithTags("Account")
@@ -96,6 +110,24 @@ public static class AccountEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         return endpoints;
+    }
+
+    private static async Task<IResult> DeleteMeAsync(
+        [FromBody] DeleteMeRequest request, ClaimsPrincipal principal, UserAdministration administration, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(request.Password))
+        {
+            return new Validation().Require(false, "password", "Required: the password of the account.").ToResult()!;
+        }
+
+        var actor = principal.GetActor();
+        var result = await administration.DeleteSelfAsync(actor.UserId!.Value, request.Password, actor, cancellationToken);
+        return result.Outcome switch
+        {
+            AdminOutcome.Invalid => new Validation().Require(false, "password", result.Message!).ToResult()!,
+            AdminOutcome.Conflict => Results.Problem(statusCode: StatusCodes.Status409Conflict, title: "Conflict", detail: result.Message),
+            _ => Results.NoContent(),
+        };
     }
 
     private static async Task<MeResponse> GetMeAsync(

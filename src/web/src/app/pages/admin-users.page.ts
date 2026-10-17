@@ -8,7 +8,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { ActivatedRoute } from '@angular/router';
-import { AccountState, AdminService, ApiKeyInfo, RoleSummary, UserPage, UserSummary, USERS_PAGE_SIZE } from '../admin/admin.service';
+import { AccountState, AdminService, ApiKeyInfo, PermissionDefinition, RoleSummary, UserPage, UserSummary, USERS_PAGE_SIZE } from '../admin/admin.service';
 import { AuthService } from '../auth/auth.service';
 import { attempt } from '../auth/problem';
 import { AppIcon } from '../design/icon';
@@ -75,6 +75,28 @@ export const SEARCH_DEBOUNCE_MS = 300;
               }
             </td>
           </ng-container>
+          <ng-container matColumnDef="extra">
+            <th mat-header-cell *matHeaderCellDef>Zusatzrechte</th>
+            <td mat-cell *matCellDef="let user" class="extra">
+              @if (canManage) {
+                <mat-form-field subscriptSizing="dynamic" class="role-select">
+                  <mat-select
+                    multiple
+                    [value]="user.extraPermissions"
+                    placeholder="keine"
+                    [attr.aria-label]="'Zusatzrechte von ' + user.email"
+                    (selectionChange)="setPermissions(user, $event.value)"
+                  >
+                    @for (permission of permissions(); track permission.key) {
+                      <mat-option [value]="permission.key" [title]="permission.description">{{ permission.key }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              } @else {
+                {{ user.extraPermissions.join(', ') || '–' }}
+              }
+            </td>
+          </ng-container>
           <ng-container matColumnDef="createdAt">
             <th mat-header-cell *matHeaderCellDef>Angelegt</th>
             <td mat-cell *matCellDef="let user">{{ user.createdAt | date: 'dd.MM.yyyy' }}</td>
@@ -94,6 +116,9 @@ export const SEARCH_DEBOUNCE_MS = 300;
                   <button matButton type="button" class="enable" (click)="setEnabled(user, true)">Entsperren</button>
                 } @else if (user.id !== me) {
                   <button matButton type="button" class="disable" (click)="setEnabled(user, false)">Sperren</button>
+                }
+                @if (user.id !== me) {
+                  <button matButton type="button" class="delete" (click)="remove(user)">Löschen</button>
                 }
               }
             </td>
@@ -161,7 +186,7 @@ export class AdminUsersPage {
   private readonly snackBar = inject(MatSnackBar);
   private timer: ReturnType<typeof setTimeout> | undefined;
 
-  protected readonly columns = ['email', 'state', 'roles', 'createdAt', 'actions'];
+  protected readonly columns = ['email', 'state', 'roles', 'extra', 'createdAt', 'actions'];
   protected readonly pageSize = USERS_PAGE_SIZE;
   protected readonly canManage = this.auth.hasPermission('user:manage');
   protected readonly me = this.auth.me()?.id;
@@ -169,6 +194,7 @@ export class AdminUsersPage {
   protected readonly page = signal(1);
   protected readonly users = signal<UserPage | null>(null);
   protected readonly roles = signal<RoleSummary[]>([]);
+  protected readonly permissions = signal<PermissionDefinition[]>([]);
   protected readonly keysOf = signal<UserSummary | null>(null);
   protected readonly keys = signal<ApiKeyInfo[]>([]);
   protected readonly loading = signal(false);
@@ -178,6 +204,7 @@ export class AdminUsersPage {
     void this.load();
     if (this.canManage) {
       void attempt(signal(false), this.errors, async () => this.roles.set(await this.admin.roles()));
+      void attempt(signal(false), this.errors, async () => this.permissions.set(await this.admin.permissions()));
     }
     inject(DestroyRef).onDestroy(() => clearTimeout(this.timer));
   }
@@ -233,6 +260,26 @@ export class AdminUsersPage {
       this.keys.set(await this.admin.apiKeys(user.id));
       this.snackBar.open(`API-Key „${key.name}“ von ${user.email} ist widerrufen.`, 'OK', { duration: 4000 });
     });
+  }
+
+  protected setPermissions(user: UserSummary, permissions: string[]): Promise<void> {
+    return this.change(() => this.admin.setPermissions(user.id, permissions), `Zusatzrechte von ${user.email} gespeichert.`);
+  }
+
+  /** Deletes the account after a confirmation and reloads the page of the list. */
+  protected async remove(user: UserSummary): Promise<void> {
+    if (!window.confirm(`${user.email} endgültig löschen? Favoriten, Einstellungen und API-Keys des Kontos gehen verloren.`)) {
+      return;
+    }
+
+    await attempt(this.loading, this.errors, async () => {
+      await this.admin.deleteUser(user.id);
+      this.snackBar.open(`${user.email} ist gelöscht.`, 'OK', { duration: 4000 });
+      if (this.keysOf()?.id === user.id) {
+        this.keysOf.set(null);
+      }
+    });
+    await this.load();
   }
 
   protected sendConfirmation(user: UserSummary): Promise<void> {

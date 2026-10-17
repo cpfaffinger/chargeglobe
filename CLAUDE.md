@@ -140,6 +140,7 @@ docker compose exec db psql -U chargeglobe -d chargeglobe -c "select reference_d
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/users?q=example.org"   # Konten mit Status und Rollen (user:read); UI: /admin/users
 curl -k -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/roles        # Rollen mit Permissions (user:read); UI: /admin/roles
 curl -k -H "Authorization: Bearer $TOKEN" "https://localhost:5005/api/v1/audit-log?action=apikey.&limit=20"   # Audit-Log, neueste zuerst, Filter actor/action/entity/from/to, weiter mit cursor (audit:read); UI: /admin/audit
+curl -k -X PUT -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"permissions":["jobs:read"]}' https://localhost:5005/api/v1/users/<Konto-UUID>/permissions   # direkte Zusatzrechte ersetzen (user:manage); DELETE /api/v1/users/<Konto-UUID> löscht ein fremdes Konto, DELETE /api/v1/me mit {"password":…} das eigene
 curl -k -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/users/<Konto-UUID>/api-keys   # API-Keys eines Kontos ohne Key-Werte (user:read); DELETE …/api-keys/<Key-UUID> widerruft (user:manage); UI: /admin/users
 curl -k -X PUT -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/me/favorites/<Standort-UUID>   # Favorit merken (204, idempotent); DELETE entfernt
 curl -k -H "Authorization: Bearer $TOKEN" https://localhost:5005/api/v1/me/favorites   # Favoriten mit aktuellem Status; UI: /favorites

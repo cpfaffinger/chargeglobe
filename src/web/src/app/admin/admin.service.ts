@@ -14,6 +14,8 @@ export interface UserSummary {
   approvedAt: string | null;
   disabledAt: string | null;
   roles: string[];
+  /** Permissions granted directly, besides those of the roles. */
+  extraPermissions: string[];
 }
 
 export interface UserPage {
@@ -100,6 +102,15 @@ export class AdminService {
 
   async setEnabled(id: string, enabled: boolean): Promise<UserSummary> {
     return (await firstValueFrom(this.http.put<{ data: UserSummary }>(`/api/v1/users/${id}/enabled`, { enabled }))).data;
+  }
+
+  async setPermissions(id: string, permissions: string[]): Promise<UserSummary> {
+    return (await firstValueFrom(this.http.put<{ data: UserSummary }>(`/api/v1/users/${id}/permissions`, { permissions }))).data;
+  }
+
+  /** Deletes an account for good (user:manage); idempotent. */
+  async deleteUser(id: string): Promise<void> {
+    await firstValueFrom(this.http.delete(`/api/v1/users/${id}`));
   }
 
   async sendConfirmation(id: string): Promise<void> {
