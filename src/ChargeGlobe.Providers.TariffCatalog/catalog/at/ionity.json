@@ -119,7 +119,7 @@
           "name": "IONITY Motion",
           "currency": "EUR",
           "monthlyFee": 5.99,
-          "prerequisites": "Abo in der IONITY-App, monatlich kündbar.",
+          "prerequisites": "Monatsabo in der IONITY-App, ohne Mindestlaufzeit, ein Monat Kündigungsfrist.",
           "markets": [
             "AT"
           ],
@@ -132,7 +132,7 @@
               "prices": [
                 {
                   "current": "DC",
-                  "pricePerKwh": 0.51
+                  "pricePerKwh": 0.49
                 }
               ],
               "countries": [
@@ -218,15 +218,15 @@
           "notes": "Mindestpreise laut IONITY je Land der Station; an der Station kann der Preis höher sein. Nur an IONITY-Stationen. In CZ, HU und CH in Landeswährung, sonst nicht veröffentlicht.",
           "sourceUrl": "https://www.ionity.eu/subscriptions",
           "sourceDate": "2026-07-01",
-          "confidence": "MEDIUM",
+          "confidence": "HIGH",
           "checkedOn": "2026-10-17"
         },
         {
-          "key": "power",
-          "name": "IONITY Power",
+          "key": "motion-365",
+          "name": "IONITY Motion 365",
           "currency": "EUR",
-          "monthlyFee": 11.99,
-          "prerequisites": "Abo in der IONITY-App, monatlich kündbar.",
+          "monthlyFee": 5.0,
+          "prerequisites": "Jahresabo in der IONITY-App: 59,99 € für 12 Monate im Voraus, ohne automatische Verlängerung.",
           "markets": [
             "AT"
           ],
@@ -239,7 +239,114 @@
               "prices": [
                 {
                   "current": "DC",
-                  "pricePerKwh": 0.41
+                  "pricePerKwh": 0.51
+                }
+              ],
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.53
+                }
+              ],
+              "countries": [
+                "DE"
+              ]
+            },
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.63
+                }
+              ],
+              "countries": [
+                "IT"
+              ]
+            },
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.54
+                }
+              ],
+              "countries": [
+                "SI"
+              ]
+            },
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.55
+                }
+              ],
+              "countries": [
+                "HR"
+              ]
+            },
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.52
+                }
+              ],
+              "countries": [
+                "SK"
+              ]
+            }
+          ],
+          "notes": "Mindestpreise laut IONITY je Land der Station; an der Station kann der Preis höher sein. Nur an IONITY-Stationen. In CZ, HU und CH in Landeswährung, sonst nicht veröffentlicht. Grundgebühr = Jahrespreis / 12; der kWh-Preis liegt seit 1.7.2026 über dem des Monatsabos.",
+          "sourceUrl": "https://www.ionity.eu/subscriptions",
+          "sourceDate": "2026-07-01",
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
+        },
+        {
+          "key": "power",
+          "name": "IONITY Power",
+          "currency": "EUR",
+          "monthlyFee": 11.99,
+          "prerequisites": "Monatsabo in der IONITY-App, ohne Mindestlaufzeit, ein Monat Kündigungsfrist.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39
                 }
               ],
               "countries": [
@@ -325,7 +432,114 @@
           "notes": "Mindestpreise laut IONITY je Land der Station; an der Station kann der Preis höher sein. Nur an IONITY-Stationen. In CZ, HU und CH in Landeswährung, sonst nicht veröffentlicht.",
           "sourceUrl": "https://www.ionity.eu/subscriptions",
           "sourceDate": "2026-07-01",
-          "confidence": "MEDIUM",
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
+        },
+        {
+          "key": "power-365",
+          "name": "IONITY Power 365",
+          "currency": "EUR",
+          "monthlyFee": 10.0,
+          "prerequisites": "Jahresabo in der IONITY-App: 119,99 € für 12 Monate im Voraus, ohne automatische Verlängerung.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.41
+                }
+              ],
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.42
+                }
+              ],
+              "countries": [
+                "DE"
+              ]
+            },
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.5
+                }
+              ],
+              "countries": [
+                "IT"
+              ]
+            },
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.43
+                }
+              ],
+              "countries": [
+                "SI"
+              ]
+            },
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.44
+                }
+              ],
+              "countries": [
+                "HR"
+              ]
+            },
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.42
+                }
+              ],
+              "countries": [
+                "SK"
+              ]
+            }
+          ],
+          "notes": "Mindestpreise laut IONITY je Land der Station; an der Station kann der Preis höher sein. Nur an IONITY-Stationen. In CZ, HU und CH in Landeswährung, sonst nicht veröffentlicht. Grundgebühr = Jahrespreis / 12; der kWh-Preis liegt seit 1.7.2026 über dem des Monatsabos.",
+          "sourceUrl": "https://www.ionity.eu/subscriptions",
+          "sourceDate": "2026-07-01",
+          "confidence": "HIGH",
           "checkedOn": "2026-10-17"
         }
       ]

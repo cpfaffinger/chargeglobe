@@ -226,12 +226,12 @@ Das Flag `roaming` gilt je Ladepunkt: Bei KWMS, GENOL, Contipark, STROMBOX, vayl
 
 | Betreiber-ID | Betreiber | EVSEs ohne Karte | Zahlung / Ergebnis |
 |---|---|---|---|
-| `AT*BIP` | Best in Parking | 455 | Laden und Parken gemeinsam an der Garage abgerechnet, Preis nur als Aushang; keine Karte, kein Roaming |
+| `AT*BIP` | Best in Parking | 455 | Laden und Parken gemeinsam an der Garage abgerechnet, Preis nur als Aushang; keine App, keine Karte, kein Roaming (erneut geprüft 17.10.2026) |
 | `AT*SFP` | Smart Fuel Pass | 283 | App-Plattform für Standortbetreiber (QR-Code, Karte, Prepaid), Preis je Standort → neu: Anbieter `smart-fuel-pass` zum Betreiberpreis (Netz `smart-fuel-pass`) |
 | `AT*MGA` | MGAtech (AMPLICITY) | 256 | Abrechnungsplattform für Standortbetreiber (QR-Code, Kreditkarte, RFID-Abo), einzelne Stationen über Electroverse → neu: Anbieter `amplicity` zum Betreiberpreis |
 | `AT*SNL` | Sonnenladen | 132 | über die Smart-Fuel-Pass-App, registriert günstiger → im Netz `smart-fuel-pass` |
-| `AT*GBC` | Green Business Center Linz | 73 | RFID für Mieter des Bürogebäudes (vermutlich); keine öffentliche Karte |
-| `AT*C4O` | vaylens | 46 | Plattform mit Roaming je Ladepunkt; die 46 gehören einzelnen Standortbetreibern ohne Freigabe |
+| `AT*GBC` | Green Business Center Linz | 73 | RFID für Mieter des Bürogebäudes (vermutlich); keine öffentliche Karte, keine Angaben zu Laden oder Preisen gefunden |
+| `AT*C4O` | vaylens | 46 | Software für Standortbetreiber (laut Website 507 Roamingpartner, Fahrer-App „echarge“ ohne Preise); die 46 gehören einzelnen Standortbetreibern ohne Freigabe, Preis je Standort |
 | `AT*735` | Loxone Campus | 40 | nur kontaktlose Karten vor Ort, kein Preis im Register |
 | `AT*OBE` | OBERGER Energie | 38 | Kartenterminal vor Ort |
 | `AT*E61` | Schultz Gruppe | 34 | Kredit- oder Bankomatkarte am Terminal (Hochzillertal) |
@@ -240,7 +240,7 @@ Das Flag `roaming` gilt je Ladepunkt: Bei KWMS, GENOL, Contipark, STROMBOX, vayl
 | `AT*EHB` | Stadtwerke Hartberg | 29 | eigene Ladekarte, Abrechnung über AMPLICITY → neu: Anbieter `energie-hartberg` (Stromkunden 0,35, Direkt 0,45 €/kWh) |
 | `AT*STB` | STROMBOX | 23 | die 23 sind „Direct Payment only“ |
 | `AT*84N` | Steinplatte | 20 | Zahlung vor Ort (vermutlich) |
-| `AT*CTP` | Servipark (Contipark) | 20 | Flag vermutlich falsch: die Garagenseite nennt Preise anderer Anbieter „im Roaming-Verband“ |
+| `AT*CTP` | Servipark (Contipark) | 20 | Flag vermutlich falsch: laut Contipark sind die Ladepunkte „mit vielen gängigen Ladetarifanbietern kompatibel“ (Roaming), sonst Charge-Assist-App (GreenFlux) oder Direktzahlung, z. B. 0,50 €/kWh in der Altstadtgarage B Salzburg → Netz `contipark` mit Preis-Hinweis; welche Karten gehen, nennt Contipark nicht |
 | `AT*HSH` | New Energie | 18 | Zahlung vor Ort (vermutlich) |
 | `AT*EPP` | EPP | 17 | Bankomatzahlung vor Ort |
 | `AT*EFL` | Road (e-Flux) | 17 | Plattform mit Roaming je Ladepunkt; Register meldet 0,005 €/kWh (vermutlich Fehler) |
@@ -254,9 +254,19 @@ Neu abgedeckt sind damit 762 Ladepunkte (SFP, MGA, SNL, GNL, FTR, EHB): Nach dem
 - **EVN #Drive Smart**: Partnerladenetz in AT, DE, IT, HR und SI zum selben Preis; anderswo nicht freigeschaltet. #Drive Easy nur an EVN-Stationen.
 - **SMATRICS Charge & Roam(+)** und **VERBUND V-GO**: ein Roamingpreis für AT, DE, IT, HR, SK, SI und CZ; bei SMATRICS EnBW-Stationen in Deutschland (`DE*EBW`, Netz `enbw-de`) zum Heimnetzpreis. Charge Simple ohne Roaming.
 - **Wien Energie** (alle Tanke-Tarife): im Ausland nicht nutzbar (FAQ vom 10.11.2022, nichts Neueres).
-- **ÖAMTC ePower**: „Partnernetz Ausland“ in DE, IT, HR und SI zu AC 0,64, DC 0,74, HPC 0,84 €/kWh; gilt nur bei den gelisteten Partnern, die Zone deckt alle Stationen dieser Länder ab.
-- **IONITY**: Preise je Land der Station (DE, IT, SI, HR, SK in Euro; CZ, HU, CH nur in Landeswährung und nicht im Katalog); das Netz `ionity` hat die Betreiber-IDs dieser Länder. Offen: Die Abo-Seite zeigt für Österreich im Monatsabo 0,49 (Motion) bzw. 0,39 €/kWh (Power), der Katalog hat 0,51/0,41 (Listenpreis).
-- **Elli**: Tarife je Vertragsland, jeder nennt nur die Preise im eigenen Land; für österreichische Verträge sind keine Auslandspreise veröffentlicht.
+- **ÖAMTC ePower**: „Partnernetz Ausland“ in DE, IT, HR und SI zu AC 0,64, DC 0,74, HPC 0,84 €/kWh, nur bei den Partnern der Roamingpartner-Liste (PDF, 1.7.2026; die FAQ nennt noch 0,54/0,64/0,74). Abgebildet als `PARTNER`-Zone mit `countries` über eigene Netze je Land; das Partnernetz Österreich gilt nur in AT. Betreiber-IDs:
+
+  | Land | Partner (Liste) | im Katalog (Beleg) | ohne belegte ID |
+  |---|---|---|---|
+  | DE | ALDI Süd, E.ON Drive, ELECTRA, ENIO, illwerke vkw, IONITY, Lidl, MAINGAU, MER, Mercedes, reev | `DE*ALD`, `DE*EDR`, `DE*UFC`, `DE*ELD`, `DE*ETS`, `DE*VKW`, `DE*IOY`, `DE*LDL`, `DE*MEG`, `DE*MER`, `DE*MBX`, `DE*ONE` (BDEW-Liste der aktiven Betreiber-IDs) | `DE*ION` (alte IONITY-ID, noch aktiv), `DE*EON`, `DE*MBC`/`DE*AMG` |
+  | IT | E.ON Drive, ELECTRA, Enel X, EWIVA, IONITY, Lidl, Mercedes, reev, Repower, Route220 | `IT*ELC`, `IT*ENX`, `IT*ELX`, `IT*EWI`, `IT*REV`, `IT*220` (OpenStreetMap), `IT*IOY` (Schema laut IONITY) | E.ON, Lidl, Mercedes, reev |
+  | HR | Electrip Croatia, HEP, IONITY, Kaufland, Lidl, PETROL | `HR*HEP`, `HR*PET`, `HR*LDL`, `HR*KDL` (OpenStreetMap, Kaufland nur ein Punkt), `HR*IOY` | Electrip |
+  | SI | IONITY, Lidl, PETROL | `SI*LDL` (OpenStreetMap), `SI*IOY` | PETROL |
+
+  Für IT, HR und SI gibt es kein öffentliches Register der Betreiber-IDs; die Belege aus OpenStreetMap sind schwächer als die BDEW-Liste.
+- **IONITY**: Preise je Land der Station (DE, IT, SI, HR, SK in Euro; CZ, HU, CH nur in Landeswährung und nicht im Katalog); das Netz `ionity` hat die Betreiber-IDs dieser Länder. Motion und Power gibt es als Monatsabo (5,99 bzw. 11,99 €/Monat, AT 0,49 bzw. 0,39 €/kWh) und als Jahresabo „365“ (59,99 bzw. 119,99 € für 12 Monate, ohne Verlängerung; im Katalog ein Zwölftel je Monat, AT 0,51 bzw. 0,41 €/kWh): Seit 1.7.2026 ist der kWh-Preis im Jahresabo höher (die FAQ sagt noch „gleich“).
+- **Elli**: Tarife je Vertragsland, jeder nennt nur die Preise im eigenen Land; für österreichische Verträge sind keine Auslandspreise veröffentlicht (Österreich fehlt im Länder-Umschalter der Tarifseite, `?country=AT` zeigt die deutschen Preise).
+- **Abo-Varianten**: Außer IONITY bietet kein Anbieter des Katalogs ein Jahresabo mit eigenem kWh-Preis (geprüft: Elli, Kia, Hyundai, Mercedes, BMW, Polestar; nur Monatsabos). Kia und Hyundai haben IONITY-Pakete (6,99 bzw. 6,98 €/Monat mit −0,25 €/kWh, 11,99 €/Monat mit −0,35 €/kWh auf den Betreiberpreis); ein fester Abzug je kWh vom Betreiberpreis ist im Modell nicht vorgesehen (nur Prozent und Gebühr je Ladevorgang), die Pakete stehen deshalb nur als Hinweis.
 - **EnBW mobility+**: an EnBW-Stationen in Deutschland S 0,56, M 0,46, L 0,39 €/kWh, bei anderen Betreibern 0,56–0,89 €/kWh nur in der App; für Österreich keine eigene Preistabelle, die Zone bleibt `UNKNOWN`.
 
 ## Nächste Schritte aus der Bestandsanalyse

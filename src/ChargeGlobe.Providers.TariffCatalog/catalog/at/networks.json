@@ -685,6 +685,178 @@
       "operators": [
         "AT*MGA"
       ]
+    },
+    {
+      "key": "contipark",
+      "name": "Contipark",
+      "country": "AT",
+      "operators": [
+        "AT*CTP"
+      ],
+      "priceNote": "Laut Contipark nehmen die Ladepunkte gängige Ladekarten im Roaming an, auch wo das Register keine Fremdkarten meldet; es gilt der Preis des Kartenanbieters.",
+      "priceUrl": "https://www.contipark.at/de/produkte/e-auto-laden-beim-parken/"
+    },
+    {
+      "key": "aldi-sued-de",
+      "name": "ALDI SÜD (Deutschland)",
+      "country": "DE",
+      "operators": [
+        "DE*ALD"
+      ]
+    },
+    {
+      "key": "eon-drive-de",
+      "name": "E.ON Drive (Deutschland)",
+      "country": "DE",
+      "operators": [
+        "DE*EDR",
+        "DE*UFC"
+      ]
+    },
+    {
+      "key": "electra-de",
+      "name": "Electra (Deutschland)",
+      "country": "DE",
+      "operators": [
+        "DE*ELD"
+      ]
+    },
+    {
+      "key": "enio-de",
+      "name": "ENIO (Deutschland)",
+      "country": "DE",
+      "operators": [
+        "DE*ETS"
+      ]
+    },
+    {
+      "key": "vkw-de",
+      "name": "illwerke vkw (Deutschland)",
+      "country": "DE",
+      "operators": [
+        "DE*VKW"
+      ]
+    },
+    {
+      "key": "lidl-de",
+      "name": "Lidl (Deutschland)",
+      "country": "DE",
+      "operators": [
+        "DE*LDL"
+      ]
+    },
+    {
+      "key": "maingau-de",
+      "name": "MAINGAU (Deutschland)",
+      "country": "DE",
+      "operators": [
+        "DE*MEG"
+      ]
+    },
+    {
+      "key": "mer-de",
+      "name": "Mer (Deutschland)",
+      "country": "DE",
+      "operators": [
+        "DE*MER"
+      ]
+    },
+    {
+      "key": "mercedes-hpc-de",
+      "name": "Mercedes-Benz HPC (Deutschland)",
+      "country": "DE",
+      "operators": [
+        "DE*MBX"
+      ]
+    },
+    {
+      "key": "reev-de",
+      "name": "reev (Deutschland)",
+      "country": "DE",
+      "operators": [
+        "DE*ONE"
+      ]
+    },
+    {
+      "key": "electra-it",
+      "name": "Electra (Italien)",
+      "country": "IT",
+      "operators": [
+        "IT*ELC"
+      ]
+    },
+    {
+      "key": "enelx-it",
+      "name": "Enel X Way (Italien)",
+      "country": "IT",
+      "operators": [
+        "IT*ENX",
+        "IT*ELX"
+      ]
+    },
+    {
+      "key": "ewiva-it",
+      "name": "EWIVA (Italien)",
+      "country": "IT",
+      "operators": [
+        "IT*EWI"
+      ]
+    },
+    {
+      "key": "repower-it",
+      "name": "Repower (Italien)",
+      "country": "IT",
+      "operators": [
+        "IT*REV"
+      ]
+    },
+    {
+      "key": "route220-it",
+      "name": "Route220 (Italien)",
+      "country": "IT",
+      "operators": [
+        "IT*220"
+      ]
+    },
+    {
+      "key": "hep-hr",
+      "name": "HEP ELEN (Kroatien)",
+      "country": "HR",
+      "operators": [
+        "HR*HEP"
+      ]
+    },
+    {
+      "key": "petrol-hr",
+      "name": "PETROL (Kroatien)",
+      "country": "HR",
+      "operators": [
+        "HR*PET"
+      ]
+    },
+    {
+      "key": "lidl-hr",
+      "name": "Lidl (Kroatien)",
+      "country": "HR",
+      "operators": [
+        "HR*LDL"
+      ]
+    },
+    {
+      "key": "kaufland-hr",
+      "name": "Kaufland (Kroatien)",
+      "country": "HR",
+      "operators": [
+        "HR*KDL"
+      ]
+    },
+    {
+      "key": "lidl-si",
+      "name": "Lidl (Slowenien)",
+      "country": "SI",
+      "operators": [
+        "SI*LDL"
+      ]
     }
   ],
   "emps": []

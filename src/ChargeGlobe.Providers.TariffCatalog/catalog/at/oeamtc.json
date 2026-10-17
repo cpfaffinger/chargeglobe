@@ -100,12 +100,35 @@
                   "blockingAfterMinutes": 120
                 }
               ],
-              "notes": "Partnernetz Österreich laut Roamingpartner-Liste (Stand 1.7.2026)."
+              "notes": "Partnernetz Österreich laut Roamingpartner-Liste (Stand 1.7.2026).",
+              "countries": [
+                "AT"
+              ]
             },
             {
-              "kind": "ROAMING",
-              "excludedNetworks": [
-                "tesla"
+              "kind": "PARTNER",
+              "networks": [
+                "aldi-sued-de",
+                "eon-drive-de",
+                "electra-de",
+                "enio-de",
+                "vkw-de",
+                "lidl-de",
+                "maingau-de",
+                "mer-de",
+                "mercedes-hpc-de",
+                "reev-de",
+                "electra-it",
+                "enelx-it",
+                "ewiva-it",
+                "repower-it",
+                "route220-it",
+                "hep-hr",
+                "petrol-hr",
+                "lidl-hr",
+                "kaufland-hr",
+                "lidl-si",
+                "ionity"
               ],
               "prices": [
                 {
@@ -128,7 +151,7 @@
                   "blockingAfterMinutes": 120
                 }
               ],
-              "notes": "Partnernetz Ausland: nur die gelisteten Roamingpartner (u. a. E.ON, IONITY, Enel X, PETROL, Lidl); die Zone gilt für alle Stationen dieser Länder.",
+              "notes": "Partnernetz Ausland laut Roamingpartner-Liste (1.7.2026); ohne belegte Betreiber-ID nicht enthalten: Electrip (HR), E.ON, Lidl, Mercedes und reev in Italien, PETROL in Slowenien.",
               "countries": [
                 "DE",
                 "IT",
