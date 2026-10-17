@@ -36,6 +36,13 @@ public enum TariffPricing
     UNKNOWN,
 }
 
+/// <summary>From when the blocking fee of a price counts its free minutes: the start of the session or the end of charging.</summary>
+public enum TariffBlockingFrom
+{
+    SESSION_START,
+    CHARGING_END,
+}
+
 /// <summary>How sure the curated values are: read from the provider's price sheet, derived, or unclear.</summary>
 public enum TariffConfidence
 {
@@ -146,7 +153,9 @@ public sealed partial class ChargingNetwork
 /// power on (HPC stages), energy, time, session and blocking fee; amounts null if the tariff has no such part.
 /// </summary>
 /// <param name="MinKw">The element applies from this maximum power of the EVSE on; null for any power.</param>
-/// <param name="BlockingAfterMinutes">Minute of the session from which the blocking fee applies.</param>
+/// <param name="BlockingAfterMinutes">Minute from which the blocking fee applies (of the session or after the end of charging).</param>
+/// <param name="StartTime">With <paramref name="EndTime"/>: the element applies to sessions starting in this local time window (e.g. a night price 22:00–08:00); it goes before an element without window.</param>
+/// <param name="MaxBlockingFee">Highest blocking fee of a session.</param>
 public sealed record TariffPriceElement(
     TariffCurrent Current,
     decimal? MinKw,
@@ -154,10 +163,21 @@ public sealed record TariffPriceElement(
     decimal? PricePerMinute,
     decimal? SessionFee,
     decimal? BlockingFeePerMinute,
-    int? BlockingAfterMinutes)
+    int? BlockingAfterMinutes,
+    // Left out of the stored JSON when unset, so that elements without restrictions keep their content hash.
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] TimeOnly? StartTime = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] TimeOnly? EndTime = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] decimal? MaxBlockingFee = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] TariffBlockingFrom BlockingFrom = TariffBlockingFrom.SESSION_START)
 {
     public PriceComponents Components(string currency) =>
-        new(currency, PricePerKwh, PricePerMinute, SessionFee, BlockingFeePerMinute, BlockingAfterMinutes, false);
+        new(currency, PricePerKwh, PricePerMinute, SessionFee, BlockingFeePerMinute, BlockingAfterMinutes, false, MaxBlockingFee, BlockingFrom);
+
+    /// <summary>Whether a session starting at the local <paramref name="time"/> gets this element: always without window; a window may span midnight.</summary>
+    public bool AppliesAt(TimeOnly? time) =>
+        StartTime is not { } start || EndTime is not { } end
+            ? true
+            : time is { } at && (start < end ? at >= start && at < end : at >= start || at < end);
 }
 
 /// <summary>
@@ -217,15 +237,22 @@ public sealed record TariffZone(
     }
 
     /// <summary>
-    /// The element for an EVSE with this current and maximum power: the highest power stage it reaches; without a known
-    /// power the lowest stage. Null if the zone has no price for the current.
+    /// The element for an EVSE with this current and maximum power and a session starting at the local
+    /// <paramref name="time"/>: the highest power stage it reaches (without a known power the lowest), within the stage
+    /// the element whose time window holds <paramref name="time"/> before the one without window. Null if the zone has no
+    /// price for the current then.
     /// </summary>
-    public TariffPriceElement? PriceFor(TariffCurrent current, decimal? maxPowerKw)
+    public TariffPriceElement? PriceFor(TariffCurrent current, decimal? maxPowerKw, TimeOnly? time = null)
     {
-        var candidates = Prices.Where(price => price.Current == current).OrderBy(price => price.MinKw ?? 0).ToList();
-        return maxPowerKw is { } power
-            ? candidates.LastOrDefault(price => (price.MinKw ?? 0) <= power) ?? candidates.FirstOrDefault()
-            : candidates.FirstOrDefault();
+        var candidates = Prices.Where(price => price.Current == current && price.AppliesAt(time)).ToList();
+        if (candidates.Count == 0)
+        {
+            return null;
+        }
+
+        List<decimal> stages = [.. candidates.Select(price => price.MinKw ?? 0).Distinct().Order()];
+        var stage = maxPowerKw is { } power ? stages.LastOrDefault(minKw => minKw <= power, stages[0]) : stages[0];
+        return candidates.Where(price => (price.MinKw ?? 0) == stage).OrderBy(price => price.StartTime is null).First();
     }
 }
 
@@ -338,7 +365,7 @@ public sealed class TariffPlan
     /// used there or the zone has no price for the current.
     /// </summary>
     public TariffMatch? MatchAt(
-        string? operatorId, bool? roaming, TariffCurrent current, decimal? maxPowerKw, Func<string, IReadOnlyCollection<string>> members)
+        string? operatorId, bool? roaming, TariffCurrent current, decimal? maxPowerKw, Func<string, IReadOnlyCollection<string>> members, TimeOnly? time = null)
     {
         // Within a kind, zones for named networks or operators (e.g. a roaming price per operator) go before the open one.
         var zone = Zones
@@ -351,6 +378,6 @@ public sealed class TariffPlan
             return new TariffMatch(zone, null);
         }
 
-        return zone?.PriceFor(current, maxPowerKw) is { } price ? new TariffMatch(zone, price) : null;
+        return zone?.PriceFor(current, maxPowerKw, time) is { } price ? new TariffMatch(zone, price) : null;
     }
 }

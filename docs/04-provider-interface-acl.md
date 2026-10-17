@@ -182,7 +182,10 @@ public sealed record ZoneRecord(string Kind, IReadOnlyList<string>? Networks, IR
     string? Pricing = null,                                // FIXED (Default) | OPERATOR_AD_HOC (Ad-hoc-Preis des Ladepunkts) | UNKNOWN
     decimal? MarkupPercent = null, decimal? MarkupSessionFee = null);   // nur mit OPERATOR_AD_HOC
 public sealed record PriceRecord(string Current, decimal? MinKw, decimal? PricePerKwh, decimal? PricePerMinute,
-    decimal? SessionFee, decimal? BlockingFeePerMinute, int? BlockingAfterMinutes);   // Current: AC | DC
+    decimal? SessionFee, decimal? BlockingFeePerMinute, int? BlockingAfterMinutes,   // Current: AC | DC
+    string? StartTime = null, string? EndTime = null,      // Zeitfenster "HH:mm" (Ortszeit Wien), z. B. 22:00–08:00
+    decimal? MaxBlockingFee = null,                        // Deckel der Blockiergebühr je Ladevorgang
+    string? BlockingFrom = null);                          // SESSION_START (Default) | CHARGING_END
 ```
 
 - Eine Quelle liefert immer ihren **ganzen** Katalog; der Import (`ITariffCatalog.ImportAsync`) prüft ihn vollständig und übernimmt ihn je Quelle atomar (neue Versionen nur bei geändertem Inhalt, fehlende Tarife enden). Quellformate (Preisblatt-PDF, HTML-Tabelle, OCPI `Tariff`) werden im Adapter in diese Records übersetzt, nie in der Domain.
@@ -193,7 +196,7 @@ public sealed record PriceRecord(string Current, decimal? MinKw, decimal? PriceP
 Checkliste „Tarif oder Anbieter ergänzen“:
 1. Preisblatt oder Tarifseite des Anbieters lesen; Stand (gültig ab), Grundgebühr, Voraussetzungen, Heim-, Partner- und Roamingpreise je AC/DC/HPC, Blockiergebühr und Partner- bzw. Roamingliste notieren.
 2. Betreiber-IDs der Netze aus den Daten prüfen (`select operator_id, name from operator`, EVSE-ID-Präfixe); fehlende Netze in `catalog/<land>/networks.json` ergänzen.
-3. Datei `catalog/<land>/<emp>.json` anlegen oder ändern: je Tarif `sourceUrl`, `sourceDate`, `confidence` (`HIGH` nur bei Werten direkt aus dem Preisblatt), Blockiergebühr „ab der 241. Minute“ als `blockingAfterMinutes: 240`, Leistungsklassen „bis 11 kW“/„über 11 kW“ als Stufen `minKw` (über 11 kW → `11.1`), Anbieter, die den Preis des Betreibers weiterreichen, als Zone mit `pricing: "OPERATOR_AD_HOC"` (ohne `prices`, mit `markupPercent`/`markupSessionFee`), nicht veröffentlichte Preise je Ladepunkt als Zone mit `pricing: "UNKNOWN"` und der Spanne in `notes`, Nicht-Abbildbares als `notes`. Tarifschlüssel haben mindestens 2 Zeichen (`ladetarif-s`, nicht `s`).
+3. Datei `catalog/<land>/<emp>.json` anlegen oder ändern: je Tarif `sourceUrl`, `sourceDate`, `confidence` (`HIGH` nur bei Werten direkt aus dem Preisblatt), Blockiergebühr „ab der 241. Minute“ als `blockingAfterMinutes: 240` („30 min nach Ladeende“ als `30` mit `blockingFrom: "CHARGING_END"`, „max. 12 €“ als `maxBlockingFee: 12`), Nachtpreise als zweites Element mit `startTime`/`endTime`, Leistungsklassen „bis 11 kW“/„über 11 kW“ als Stufen `minKw` (über 11 kW → `11.1`), Anbieter, die den Preis des Betreibers weiterreichen, als Zone mit `pricing: "OPERATOR_AD_HOC"` (ohne `prices`, mit `markupPercent`/`markupSessionFee`), nicht veröffentlichte Preise je Ladepunkt als Zone mit `pricing: "UNKNOWN"` und der Spanne in `notes`, Nicht-Abbildbares als `notes`. Tarifschlüssel haben mindestens 2 Zeichen (`ladetarif-s`, nicht `s`).
 4. `dotnet test tests/ChargeGlobe.Jobs.Tests --filter TariffCatalog` prüft alle Dateien mit den Regeln des Imports und Stichproben der Zuordnung; nach dem Deploy meldet der Worker `Tariff catalog tariff-catalog: … tariffs … new, … changed …`.
 
 ## Checkliste „neuen Provider anbinden“

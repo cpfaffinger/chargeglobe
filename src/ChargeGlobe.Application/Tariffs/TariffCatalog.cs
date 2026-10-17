@@ -18,7 +18,11 @@ public sealed record PriceElementView(
     decimal? PricePerMinute,
     decimal? SessionFee,
     decimal? BlockingFeePerMinute,
-    int? BlockingAfterMinutes);
+    int? BlockingAfterMinutes,
+    string? StartTime,
+    string? EndTime,
+    decimal? MaxBlockingFee,
+    string BlockingFrom);
 
 /// <param name="Kind"><c>OPERATOR</c>, <c>HOME</c>, <c>PARTNER</c> or <c>ROAMING</c>.</param>
 /// <param name="Pricing"><c>FIXED</c> (the prices) or <c>OPERATOR_AD_HOC</c> (the ad-hoc price of the EVSE with the markups).</param>

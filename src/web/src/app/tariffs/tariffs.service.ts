@@ -32,6 +32,13 @@ export interface PriceElement {
   sessionFee: number | null;
   blockingFeePerMinute: number | null;
   blockingAfterMinutes: number | null;
+  /** Local time window "HH:mm" of the session start (e.g. a night price); null for any time. */
+  startTime?: string | null;
+  endTime?: string | null;
+  /** Highest blocking fee of a session. */
+  maxBlockingFee?: number | null;
+  /** CHARGING_END: blockingAfterMinutes count from the end of charging. */
+  blockingFrom?: 'SESSION_START' | 'CHARGING_END';
 }
 
 export interface Zone {

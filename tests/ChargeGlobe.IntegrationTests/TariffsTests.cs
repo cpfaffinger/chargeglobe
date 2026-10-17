@@ -26,8 +26,8 @@ public class TariffsTests(IntegrationFactory factory)
     private static JsonObject Catalog(string network, string emp, decimal basic = 0.45m, bool withPlus = true)
     {
         var tariffs = new JsonArray(Tariff("basic", " Basic ", null,
-            new { kind = "HOME", networks = new[] { network }, prices = new object[] { new { current = "AC", pricePerKwh = basic, blockingFeePerMinute = 0.10m, blockingAfterMinutes = 240 }, new { current = "DC", pricePerKwh = 0.65m } } },
-            new { kind = "ROAMING", excludedOperators = new[] { "at*tsl" }, prices = new object[] { new { current = "AC", pricePerKwh = 0.59m }, new { current = "DC", minKw = 100, pricePerKwh = 0.89m } }, notes = "Partnerladenetz" }));
+            new { kind = "HOME", networks = new[] { network }, prices = new object[] { new { current = "AC", pricePerKwh = basic, blockingFeePerMinute = 0.10m, blockingAfterMinutes = 240, maxBlockingFee = 30m, blockingFrom = "CHARGING_END" }, new { current = "DC", pricePerKwh = 0.65m } } },
+            new { kind = "ROAMING", excludedOperators = new[] { "at*tsl" }, prices = new object[] { new { current = "AC", pricePerKwh = 0.59m }, new { current = "DC", minKw = 100, pricePerKwh = 0.89m }, new { current = "AC", pricePerKwh = 0.49m, startTime = "22:00", endTime = "08:00" } }, notes = "Partnerladenetz" }));
         if (withPlus)
         {
             tariffs.Add(Tariff("plus", "Plus", 4.95m, new { kind = "OPERATOR", operators = new[] { "AT*IOY" }, prices = new object[] { new { current = "DC", pricePerMinute = 0.5m, sessionFee = 1m } } }));
@@ -117,6 +117,10 @@ public class TariffsTests(IntegrationFactory factory)
         Assert.Equal([network], zones[0].GetProperty("networks").EnumerateArray().Select(item => item.GetString()));
         Assert.Equal(["AT*TSL"], zones[1].GetProperty("excludedOperators").EnumerateArray().Select(item => item.GetString()));
         Assert.Equal(("FIXED", JsonValueKind.Null), (zones[1].GetProperty("pricing").GetString(), zones[1].GetProperty("markupPercent").ValueKind));
+        var home = zones[0].GetProperty("prices")[0];
+        Assert.Equal((30m, "CHARGING_END", JsonValueKind.Null), (home.GetProperty("maxBlockingFee").GetDecimal(), home.GetProperty("blockingFrom").GetString(), home.GetProperty("startTime").ValueKind));
+        var night = zones[1].GetProperty("prices")[2];
+        Assert.Equal(("22:00", "08:00", "SESSION_START"), (night.GetProperty("startTime").GetString(), night.GetProperty("endTime").GetString(), night.GetProperty("blockingFrom").GetString()));
         Assert.Equal((100m, 0.89m), (zones[1].GetProperty("prices")[1].GetProperty("minKw").GetDecimal(), zones[1].GetProperty("prices")[1].GetProperty("pricePerKwh").GetDecimal()));
         Assert.Equal(4.95m, tariffs[1].GetProperty("monthlyFee").GetDecimal());
 
@@ -203,6 +207,10 @@ public class TariffsTests(IntegrationFactory factory)
         { "zone.prices=", "at least one price" },
         { "tariff.zones=", "at least one zone" },
         { "duplicate.tariff=basic", "tariff 'basic': the key is used twice" },
+        { "price.startTime=22:00", "startTime and endTime come together" },
+        { "price.endTime=8 Uhr", "startTime and endTime come together" },
+        { "price2.maxBlockingFee=5", "maxBlockingFee needs a blocking fee" },
+        { "price.blockingFrom=LATER", "blockingFrom must be SESSION_START or CHARGING_END" },
         { "zone.pricing=PER_MINUTE", "the pricing must be FIXED, OPERATOR_AD_HOC or UNKNOWN" },
         { "zone.pricing=OPERATOR_AD_HOC", "a zone with the operator's or an unknown price has no prices of its own" },
         { "zone.pricing=UNKNOWN", "a zone with the operator's or an unknown price has no prices of its own" },
@@ -258,6 +266,7 @@ public class TariffsTests(IntegrationFactory factory)
             "roaming" => tariff["zones"]![1]!.AsObject(),
             "operator" => OperatorPriced(tariff["zones"]![1]!.AsObject()),
             "price" => home["prices"]![0]!.AsObject(),
+            "price2" => home["prices"]![1]!.AsObject(),
             "duplicate" => null,
             _ => tariff,
         };
@@ -271,7 +280,7 @@ public class TariffsTests(IntegrationFactory factory)
         {
             "operators" or "excludedOperators" or "networks" or "markets" => value == "" ? new JsonArray() : new JsonArray(value),
             "prices" or "zones" => new JsonArray(),
-            "monthlyFee" or "minKw" or "blockingAfterMinutes" or "pricePerKwh" or "markupPercent" or "markupSessionFee" => value == "" ? null : JsonValue.Create(decimal.Parse(value, System.Globalization.CultureInfo.InvariantCulture)),
+            "monthlyFee" or "minKw" or "blockingAfterMinutes" or "pricePerKwh" or "markupPercent" or "markupSessionFee" or "maxBlockingFee" => value == "" ? null : JsonValue.Create(decimal.Parse(value, System.Globalization.CultureInfo.InvariantCulture)),
             _ => value,
         };
     }

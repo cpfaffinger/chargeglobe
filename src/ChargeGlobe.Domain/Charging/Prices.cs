@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace ChargeGlobe.Domain.Charging;
 
 #pragma warning disable CA1707 // Identifiers should not contain underscores: names as stored in the text columns.
@@ -16,8 +18,10 @@ public enum TariffKind
 /// <param name="PricePerMinute">Time price per minute of the session.</param>
 /// <param name="SessionFee">Fixed fee per session (start fee).</param>
 /// <param name="BlockingFeePerMinute">Fee per minute once <paramref name="BlockingAfterMinutes"/> have passed.</param>
-/// <param name="BlockingAfterMinutes">Minute of the session from which the blocking fee applies.</param>
+/// <param name="BlockingAfterMinutes">Minute from which the blocking fee applies: of the session, or after the end of charging (<paramref name="BlockingFrom"/>).</param>
 /// <param name="FreeOfCharge">Charging costs nothing.</param>
+/// <param name="BlockingFeeMax">Highest blocking fee of a session; null without cap.</param>
+/// <param name="BlockingFrom">Whether <paramref name="BlockingAfterMinutes"/> counts from the start of the session or the end of charging.</param>
 public sealed record PriceComponents(
     string Currency,
     decimal? PricePerKwh,
@@ -25,11 +29,16 @@ public sealed record PriceComponents(
     decimal? SessionFee,
     decimal? BlockingFeePerMinute,
     int? BlockingAfterMinutes,
-    bool FreeOfCharge)
+    bool FreeOfCharge,
+    // Left out of serialized prices when unset (ingest batches, replay fixtures of the sources).
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] decimal? BlockingFeeMax = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] TariffBlockingFrom BlockingFrom = TariffBlockingFrom.SESSION_START)
 {
     /// <summary>
-    /// Cost of a session with <paramref name="kwh"/> charged in <paramref name="minutes"/>: session fee, energy and time
-    /// price, and the blocking fee for the minutes after <see cref="BlockingAfterMinutes"/>. Unknown parts count as 0.
+    /// Cost of a session with <paramref name="kwh"/> charged in <paramref name="minutes"/> and unplugged at the end of
+    /// charging: session fee, energy and time price, and the blocking fee for the minutes after
+    /// <see cref="BlockingAfterMinutes"/> (none if it counts from the end of charging), at most <see cref="BlockingFeeMax"/>.
+    /// Unknown parts count as 0.
     /// </summary>
     public decimal CostOf(decimal kwh, int minutes)
     {
@@ -38,8 +47,9 @@ public sealed record PriceComponents(
             return 0;
         }
 
-        var blockedMinutes = BlockingAfterMinutes is { } after ? Math.Max(0, minutes - after) : 0;
-        return (SessionFee ?? 0) + (kwh * (PricePerKwh ?? 0)) + (minutes * (PricePerMinute ?? 0)) + (blockedMinutes * (BlockingFeePerMinute ?? 0));
+        var blockedMinutes = BlockingFrom == TariffBlockingFrom.SESSION_START && BlockingAfterMinutes is { } after ? Math.Max(0, minutes - after) : 0;
+        var blocking = blockedMinutes * (BlockingFeePerMinute ?? 0);
+        return (SessionFee ?? 0) + (kwh * (PricePerKwh ?? 0)) + (minutes * (PricePerMinute ?? 0)) + Math.Min(blocking, BlockingFeeMax ?? blocking);
     }
 }
 

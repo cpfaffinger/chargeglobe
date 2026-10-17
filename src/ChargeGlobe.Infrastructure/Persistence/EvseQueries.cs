@@ -214,10 +214,14 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
     private sealed record PlanRow(TariffPlan Plan, string Key, string Name);
 
     /// <summary>The current tariff versions with their EMP and the operators of every network; few rows, used in memory.</summary>
-    private sealed record CurrentCatalog(IReadOnlyList<PlanRow> Plans, IReadOnlyDictionary<string, IReadOnlyCollection<string>> Networks)
+    /// <param name="LocalTime">Now in Europe/Vienna: the start of the example session for prices with a time window.</param>
+    private sealed record CurrentCatalog(IReadOnlyList<PlanRow> Plans, IReadOnlyDictionary<string, IReadOnlyCollection<string>> Networks, TimeOnly LocalTime)
     {
         public IReadOnlyCollection<string> Members(string network) => Networks.GetValueOrDefault(network) ?? [];
     }
+
+    /// <summary>The time zone of the time windows of the tariffs (docs/03, "Preise").</summary>
+    private static readonly TimeZoneInfo Vienna = TimeZoneInfo.FindSystemTimeZoneById("Europe/Vienna");
 
     private IQueryable<TariffTarget> TariffTargets(IQueryable<Evse> evses) =>
         evses.AsNoTracking().Select(item => new TariffTarget(
@@ -244,7 +248,7 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             .ToListAsync(cancellationToken);
         var networks = await db.ChargingNetworks.AsNoTracking().ToDictionaryAsync(
             network => network.Key, network => (IReadOnlyCollection<string>)network.Operators, cancellationToken);
-        return new CurrentCatalog(plans, networks);
+        return new CurrentCatalog(plans, networks, TimeOnly.FromDateTime(TimeZoneInfo.ConvertTime(now, Vienna).DateTime));
     }
 
     /// <summary>
@@ -257,7 +261,7 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
         CurrentCatalog catalog, TariffTarget evse, SessionExample example, PriceComponents? adHoc)
     {
         var matches = catalog.Plans
-            .Select(row => (Row: row, Match: row.Plan.MatchAt(evse.OperatorId, evse.Roaming, evse.Current, evse.MaxPowerKw, catalog.Members)))
+            .Select(row => (Row: row, Match: row.Plan.MatchAt(evse.OperatorId, evse.Roaming, evse.Current, evse.MaxPowerKw, catalog.Members, catalog.LocalTime)))
             .Where(item => item.Match is not null)
             .Select(item => (item.Row, Zone: item.Match!.Zone, Price: item.Match.Price is { } price
                 ? price.Components(item.Row.Plan.Currency)
@@ -293,7 +297,7 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
 
     private static PriceView View(string source, PriceComponents price, SessionExample example) =>
         new(source, price.Currency, price.PricePerKwh, price.PricePerMinute, price.SessionFee, price.BlockingFeePerMinute,
-            price.BlockingAfterMinutes, price.FreeOfCharge, price.CostOf(example.Kwh, example.Minutes));
+            price.BlockingAfterMinutes, price.FreeOfCharge, price.CostOf(example.Kwh, example.Minutes), price.BlockingFeeMax, price.BlockingFrom.ToString());
 
     public async Task<IReadOnlyList<StatusInterval>> StatusHistoryAsync(
         Guid id, DateTimeOffset from, DateTimeOffset to, string? source, CancellationToken cancellationToken)

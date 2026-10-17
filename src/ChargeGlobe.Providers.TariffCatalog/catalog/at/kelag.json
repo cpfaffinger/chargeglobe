@@ -28,19 +28,21 @@
                   "pricePerKwh": 0.5,
                   "sessionFee": 0.99,
                   "blockingFeePerMinute": 0.12,
-                  "blockingAfterMinutes": 240
+                  "blockingAfterMinutes": 240,
+                  "maxBlockingFee": 12
                 },
                 {
                   "current": "DC",
                   "pricePerKwh": 0.6,
                   "sessionFee": 0.99,
                   "blockingFeePerMinute": 0.12,
-                  "blockingAfterMinutes": 60
+                  "blockingAfterMinutes": 60,
+                  "maxBlockingFee": 12
                 }
               ]
             }
           ],
-          "notes": "Nur an Kelag-Stationen. Blockiergebühr an Kelag-Stationen max. 12 € je Ladevorgang.",
+          "notes": "Nur an Kelag-Stationen.",
           "sourceUrl": "https://www.kelag.at/media/tarife/Kelag_eStart.pdf",
           "sourceDate": "2026-06-01",
           "confidence": "HIGH"
@@ -65,13 +67,15 @@
                   "current": "AC",
                   "pricePerKwh": 0.45,
                   "blockingFeePerMinute": 0.12,
-                  "blockingAfterMinutes": 240
+                  "blockingAfterMinutes": 240,
+                  "maxBlockingFee": 12
                 },
                 {
                   "current": "DC",
                   "pricePerKwh": 0.55,
                   "blockingFeePerMinute": 0.12,
-                  "blockingAfterMinutes": 60
+                  "blockingAfterMinutes": 60,
+                  "maxBlockingFee": 12
                 }
               ]
             },
@@ -114,7 +118,7 @@
               "notes": "Benanntes Partnernetz; ohne Deckelung der Blockiergebühr."
             }
           ],
-          "notes": "Blockiergebühr an Kelag-Stationen max. 12 € je Ladevorgang.",
+          "notes": null,
           "sourceUrl": "https://www.kelag.at/media/tarife/Kelag_ePlus.pdf",
           "sourceDate": "2026-06-01",
           "confidence": "HIGH"
@@ -139,13 +143,15 @@
                   "current": "AC",
                   "pricePerKwh": 0.4,
                   "blockingFeePerMinute": 0.12,
-                  "blockingAfterMinutes": 240
+                  "blockingAfterMinutes": 240,
+                  "maxBlockingFee": 12
                 },
                 {
                   "current": "DC",
                   "pricePerKwh": 0.5,
                   "blockingFeePerMinute": 0.12,
-                  "blockingAfterMinutes": 60
+                  "blockingAfterMinutes": 60,
+                  "maxBlockingFee": 12
                 }
               ]
             },
@@ -188,7 +194,7 @@
               "notes": "Benanntes Partnernetz; ohne Deckelung der Blockiergebühr."
             }
           ],
-          "notes": "Blockiergebühr an Kelag-Stationen max. 12 € je Ladevorgang.",
+          "notes": null,
           "sourceUrl": "https://www.kelag.at/media/tarife/Kelag_eMax.pdf",
           "sourceDate": "2026-06-01",
           "confidence": "HIGH"

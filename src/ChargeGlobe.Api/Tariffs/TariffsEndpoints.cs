@@ -43,8 +43,8 @@ public static class TariffsEndpoints
         null,
         ["AT"],
         [
-            new ZoneView("HOME", ["evn"], [], [], [], [new PriceElementView("AC", null, 0.45m, null, null, 0.10m, 240), new PriceElementView("DC", null, 0.65m, null, null, 0.20m, 60)], null, "FIXED", null, null),
-            new ZoneView("ROAMING", [], [], [], ["AT*TSL"], [new PriceElementView("AC", null, 0.59m, null, null, null, null), new PriceElementView("DC", 100, 0.89m, null, null, null, null)], null, "FIXED", null, null),
+            new ZoneView("HOME", ["evn"], [], [], [], [new PriceElementView("AC", null, 0.45m, null, null, 0.10m, 240, null, null, 30m, "SESSION_START"), new PriceElementView("DC", null, 0.65m, null, null, 0.20m, 60, null, null, null, "SESSION_START")], null, "FIXED", null, null),
+            new ZoneView("ROAMING", [], [], [], ["AT*TSL"], [new PriceElementView("AC", null, 0.59m, null, null, null, null, null, null, null, "SESSION_START"), new PriceElementView("DC", 100, 0.89m, null, null, null, null, null, null, null, "SESSION_START")], null, "FIXED", null, null),
         ],
         null,
         "https://www.evn.at/laden",
@@ -94,7 +94,10 @@ public static class TariffsEndpoints
                 "(AC/DC) and the highest `minKw` the EVSE reaches applies. A zone with `pricing` OPERATOR_AD_HOC has no prices " +
                 "of its own: it charges the ad-hoc price of the EVSE (from the register) with `markupPercent` on every amount " +
                 "and `markupSessionFee` per session (providers that pass on the operator's price, e.g. Electroverse); " +
-                "`pricing` FIXED uses the price elements. Amounts in `currency` incl. VAT: `pricePerKwh`, " +
+                "`pricing` FIXED uses the price elements. A price element may have a local time window `startTime`–`endTime` " +
+                "(\"HH:mm\" in Europe/Vienna, may span midnight): it applies to sessions starting then and goes before the element " +
+                "without window of the same stage. `maxBlockingFee` caps the blocking fee of a session; `blockingFrom` CHARGING_END " +
+                "counts `blockingAfterMinutes` from the end of charging instead of the start of the session (SESSION_START). Amounts in `currency` incl. VAT: `pricePerKwh`, " +
                 "`pricePerMinute`, `sessionFee`, `blockingFeePerMinute` from minute `blockingAfterMinutes`. The price at one " +
                 "EVSE: `getEvsePrices`.")
             .Produces<TariffsResponse>()

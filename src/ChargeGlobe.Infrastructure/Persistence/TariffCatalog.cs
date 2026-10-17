@@ -195,6 +195,12 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, TimeP
                         Require(Enum.TryParse<TariffCurrent>(price.Current, false, out _), $"{z}: the current must be AC or DC.");
                         Require((price.PricePerKwh ?? price.PricePerMinute ?? price.SessionFee) is not null, $"{z}: a price needs pricePerKwh, pricePerMinute or sessionFee.");
                         Require(price.MinKw is null or > 0, $"{z}: minKw must be above 0.");
+                        var (start, end) = (ParseTime(price.StartTime), ParseTime(price.EndTime));
+                        Require(
+                            (price.StartTime is null && price.EndTime is null) || (start is not null && end is not null && start != end),
+                            $"{z}: startTime and endTime come together as different times HH:mm.");
+                        Require(price.MaxBlockingFee is null || (price.BlockingFeePerMinute is not null && price.MaxBlockingFee is >= 0 and <= MaxAmount), $"{z}: maxBlockingFee needs a blocking fee and lies between 0 and {MaxAmount}.");
+                        Require(price.BlockingFrom is null || Enum.TryParse<TariffBlockingFrom>(price.BlockingFrom, false, out _), $"{z}: blockingFrom must be SESSION_START or CHARGING_END.");
                         Require(price.BlockingAfterMinutes is null or >= 0, $"{z}: blockingAfterMinutes must not be negative.");
                         Require(
                             new[] { price.PricePerKwh, price.PricePerMinute, price.SessionFee, price.BlockingFeePerMinute }.All(amount => amount is null or (>= 0 and <= MaxAmount)),
@@ -218,6 +224,10 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, TimeP
     /// <summary>An operator ID in any case, as the import stores it upper-case.</summary>
     private static bool IsOperator(string? value) => value is not null && ChargingNetwork.IsOperatorId(value.Trim().ToUpperInvariant());
 
+    /// <summary>A local time "HH:mm"; null for anything else.</summary>
+    private static TimeOnly? ParseTime(string? value) =>
+        TimeOnly.TryParseExact(value, "HH:mm", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var time) ? time : null;
+
     private static bool IsCountry(string? value) => value is { Length: 2 } && value.All(char.IsAsciiLetterUpper);
 
     /// <summary>The domain content of a tariff record of a source.</summary>
@@ -237,7 +247,8 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, TimeP
                 [.. (zone.ExcludedOperators ?? []).Select(id => id.Trim().ToUpperInvariant())],
                 [.. (zone.Prices ?? []).Select(price => new TariffPriceElement(
                     Enum.Parse<TariffCurrent>(price.Current), price.MinKw, price.PricePerKwh, price.PricePerMinute, price.SessionFee,
-                    price.BlockingFeePerMinute, price.BlockingAfterMinutes))],
+                    price.BlockingFeePerMinute, price.BlockingAfterMinutes, ParseTime(price.StartTime), ParseTime(price.EndTime), price.MaxBlockingFee,
+                    price.BlockingFrom is null ? TariffBlockingFrom.SESSION_START : Enum.Parse<TariffBlockingFrom>(price.BlockingFrom)))],
                 zone.Notes,
                 zone.Pricing is null ? TariffPricing.FIXED : Enum.Parse<TariffPricing>(zone.Pricing),
                 zone.MarkupPercent,
@@ -265,7 +276,8 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, TimeP
                 zone.Kind.ToString(), zone.Networks, zone.Operators, zone.ExcludedNetworks, zone.ExcludedOperators,
                 [.. zone.Prices.Select(price => new PriceElementView(
                     price.Current.ToString(), price.MinKw, price.PricePerKwh, price.PricePerMinute, price.SessionFee,
-                    price.BlockingFeePerMinute, price.BlockingAfterMinutes))],
+                    price.BlockingFeePerMinute, price.BlockingAfterMinutes, price.StartTime?.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture),
+                    price.EndTime?.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture), price.MaxBlockingFee, price.BlockingFrom.ToString()))],
                 zone.Notes,
                 zone.Pricing.ToString(),
                 zone.MarkupPercent,

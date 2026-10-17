@@ -31,6 +31,7 @@ function tariff(overrides: Partial<Tariff> = {}): Tariff {
           { current: 'AC', minKw: null, pricePerKwh: 0.45, pricePerMinute: null, sessionFee: null, blockingFeePerMinute: 0.1, blockingAfterMinutes: 240 },
           { current: 'DC', minKw: null, pricePerKwh: 0.47, pricePerMinute: null, sessionFee: null, blockingFeePerMinute: null, blockingAfterMinutes: null },
           { current: 'DC', minKw: 150, pricePerKwh: 0.49, pricePerMinute: null, sessionFee: null, blockingFeePerMinute: 0.5, blockingAfterMinutes: null },
+          { current: 'AC', minKw: null, pricePerKwh: 0.39, pricePerMinute: null, sessionFee: null, blockingFeePerMinute: 0.5, blockingAfterMinutes: 30, startTime: '22:00', endTime: '08:00', maxBlockingFee: 30, blockingFrom: 'CHARGING_END' },
         ],
         notes: null,
         pricing: 'FIXED',
@@ -174,7 +175,7 @@ describe('AdminTariffsPage', () => {
     // At the operator's price: the markups instead of prices.
     expect(text(rows[3], 'td:nth-child(3)')).toBe('Preis des Betreibers −10 % + 0,39 € je Ladevorgang');
     expect(text(rows[0], '.covers')).toBe('EVN');
-    expect(text(rows[0], 'td:nth-child(3)')).toBe('0,45 €/kWh, Blockieren 0,10 €/min ab Min. 240');
+    expect(text(rows[0], 'td:nth-child(3)')).toBe('0,45 €/kWh, Blockieren 0,10 €/min ab Min. 240 · 22:00–08:00 Uhr 0,39 €/kWh, Blockieren 0,50 €/min ab Min. 30 nach Ladeende (max. 30,00 €)');
     expect(text(rows[0], 'td:nth-child(4)')).toBe('0,47 €/kWh · ab 150 kW 0,49 €/kWh, Blockieren 0,50 €/min');
     expect(text(rows[1], '.covers')).toBe('alle Betreiber mit Fremdkarten-Annahme (außer Tesla Supercharger, AT*XYZ)');
     expect(text(rows[1], 'td:nth-child(3)')).toBe('–');

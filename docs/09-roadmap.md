@@ -68,7 +68,8 @@
 - [x] EMP-Tarife als Netze, Zonen und Katalog ([ADR-0013](adr/0013-ladetarife-netze-zonen-katalog.md)): Tabellen `emp`, `charging_network`, `tariff_plan` (versioniert, Zonen als `jsonb`), `ITariffSource` + Import (`PUT /tariff-sources/{source}/catalog`, Worker alle 6 h), `GET /emps`, `/networks`, `/tariffs`; Vergleich je Ladepunkt mit Zone und „hier nicht nutzbar“, Tabelle aller Karten in der Infokarte, Katalogansicht `/admin/tariffs`
 - [x] Kuratierter Tarifkatalog Österreich: 50 Anbieter (Energieversorger, Roaming-Anbieter, HPC-Netze, Herstellerkarten), 36 Netze, 102 Tarife; Zonen mit nicht veröffentlichtem Preis (`UNKNOWN`) ([07](07-bestandsanalyse-apps-at.md), „Tarife der Anbieter“)
 - [x] Zonen mit dem Preis des Betreibers (`pricing` `OPERATOR_AD_HOC`, Aufschlag in % und je Ladevorgang, „Preis unbekannt“ ohne Ad-hoc-Preis): Electroverse, Plugsurfing, Chargemap, MB.CHARGE, BMW Charging, Elli, Wels Strom, Shell
-- [ ] Zeitfenster und Deckel, Auslandspreise
+- [x] Zeitfenster (Nachttarife), Deckel der Blockiergebühr, Blockiergebühr ab Ladeende (EVN, Wien Energie, SMATRICS, Salzburg AG, Kelag, TIWAG, EnBW, Maingau, Energie Klagenfurt)
+- [ ] Wochentage und Zeitfenster der Blockiergebühr, Auslandspreise
 - [x] Tesla-Preise geprüft: findus-Standortseiten nicht automatisiert (Bot-Schutz, Website-Bedingungen), Ad-hoc-Preise aus der E-Control ([Endpunkt-Notiz](endpunkte/tesla-findus.md))
 - [ ] ladetarif.at (Tarifkalkulator der E-Control) als `ITariffSource` prüfen: Produkte strukturiert, Nutzungsbedingungen klären
 - [ ] Tarifkatalog regelmäßig prüfen (Stand je Tarif älter als 6 Monate melden), Preisblatt-Scraper als `ITariffSource` für die großen Anbieter
