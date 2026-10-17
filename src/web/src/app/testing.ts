@@ -33,6 +33,7 @@ export function fakeAuth(me: Me | null = null) {
     'requestPasswordReset',
     'resetPassword',
     'changePassword',
+    'deleteAccount',
     'refresh',
     'accessToken',
     'hasPermission',

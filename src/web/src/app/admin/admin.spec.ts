@@ -19,6 +19,7 @@ function user(overrides: Partial<UserSummary> = {}): UserSummary {
     approvedAt: '2026-10-14T08:15:00Z',
     disabledAt: null,
     roles: ['User'],
+    extraPermissions: [],
     ...overrides,
   };
 }
@@ -113,6 +114,20 @@ describe('AdminService', () => {
     expect((await permissions)[0].key).toBe('evse:read');
   });
 
+  it('sets the direct permissions and deletes an account', async () => {
+    const set = service.setPermissions('u-1', ['jobs:read']);
+    const setRequest = http.expectOne('/api/v1/users/u-1/permissions');
+    expect([setRequest.request.method, setRequest.request.body]).toEqual(['PUT', { permissions: ['jobs:read'] }]);
+    setRequest.flush({ data: user({ extraPermissions: ['jobs:read'] }) });
+    expect((await set).extraPermissions).toEqual(['jobs:read']);
+
+    const deleted = service.deleteUser('u-1');
+    const deleteRequest = http.expectOne('/api/v1/users/u-1');
+    expect(deleteRequest.request.method).toBe('DELETE');
+    deleteRequest.flush(null);
+    await deleted;
+  });
+
   it('calls the API key and audit endpoints', async () => {
     const keys = service.apiKeys('u-1');
     http.expectOne('/api/v1/users/u-1/api-keys').flush([apiKey()]);
@@ -166,6 +181,13 @@ describe('AdminUsersPage', () => {
       'sendConfirmation',
       'apiKeys',
       'revokeApiKey',
+      'permissions',
+      'setPermissions',
+      'deleteUser',
+    ]);
+    service.permissions.and.resolveTo([
+      { key: 'jobs:read', description: 'Jobs' },
+      { key: 'audit:read', description: 'Audit' },
     ]);
     service.users.and.resolveTo(pageOf([]));
     service.roles.and.resolveTo([role({ name: 'Admin', fullCatalog: true }), role()]);
@@ -214,6 +236,8 @@ describe('AdminUsersPage', () => {
     expect(service.roles).not.toHaveBeenCalled();
     expect(text(rows()[0], '.roles')).toBe('Maintainer, User');
     expect(rows()[0].querySelector('button:not(.show-keys)')).toBeNull();
+    expect(service.permissions).not.toHaveBeenCalled();
+    expect(text(rows()[0], '.extra')).toBe('–');
 
     // The keys of the account are visible, but cannot be revoked.
     service.apiKeys.and.resolveTo([apiKey(), apiKey({ id: 'k-2', revokedAt: '2026-10-16T19:00:00Z' })]);
@@ -223,6 +247,49 @@ describe('AdminUsersPage', () => {
     expect(text(keys[0], 'td:last-child')).toBe('gültig');
     expect(text(keys[1], 'td:last-child')).toMatch(/^widerrufen 16\.10\.2026 \d{2}:00$/);
     expect(root().querySelector('#user-keys .revoke')).toBeNull();
+  });
+
+  it('grants direct permissions and deletes an account after a confirmation', async () => {
+    service.users.and.resolveTo(pageOf([user({ id: 'a' }), user({ id: ME.id, email: ME.email })]));
+    service.setPermissions.and.resolveTo(user({ id: 'a', extraPermissions: ['jobs:read'] }));
+    service.apiKeys.and.resolveTo([]);
+    service.deleteUser.and.resolveTo();
+    await render();
+
+    expect(rows()[1].querySelector('.delete')).toBeNull();
+    rows()[0].querySelector<HTMLElement>('.extra .mat-mdc-select-trigger')!.click();
+    await settle();
+    const options = Array.from(document.querySelectorAll<HTMLElement>('mat-option'));
+    expect(options.map((option) => option.textContent!.trim())).toEqual(['jobs:read', 'audit:read']);
+    options[0].click();
+    await settle();
+    expect(service.setPermissions).toHaveBeenCalledWith('a', ['jobs:read']);
+    expect(snackBar.open).toHaveBeenCalledWith('Zusatzrechte von bob@example.org gespeichert.', 'OK', { duration: 4000 });
+
+    rows()[0].querySelector<HTMLButtonElement>('.show-keys')!.click();
+    await settle();
+    const confirm = spyOn(window, 'confirm').and.returnValue(false);
+    rows()[0].querySelector<HTMLButtonElement>('.delete')!.click();
+    await settle();
+    expect(service.deleteUser).not.toHaveBeenCalled();
+
+    confirm.and.returnValue(true);
+    rows()[0].querySelector<HTMLButtonElement>('.delete')!.click();
+    await settle();
+    expect(service.deleteUser).toHaveBeenCalledWith('a');
+    expect(snackBar.open).toHaveBeenCalledWith('bob@example.org ist gelöscht.', 'OK', { duration: 4000 });
+    expect(root().querySelector('#user-keys')).toBeNull();
+    expect(service.users).toHaveBeenCalledTimes(2);
+
+    // Deleting an account whose keys are not open keeps the open list.
+    service.users.and.resolveTo(pageOf([user({ id: 'b' }), user({ id: 'c', email: 'carl@example.org' })]));
+    root().querySelector<HTMLButtonElement>('#reload')!.click();
+    await settle();
+    rows()[1].querySelector<HTMLButtonElement>('.show-keys')!.click();
+    await settle();
+    rows()[0].querySelector<HTMLButtonElement>('.delete')!.click();
+    await settle();
+    expect(text(root(), '#user-keys h2')).toBe('API-Keys von carl@example.org');
   });
 
   it('lists the API keys of an account without their values and revokes one', async () => {

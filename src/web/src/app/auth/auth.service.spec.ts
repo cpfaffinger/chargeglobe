@@ -142,6 +142,16 @@ describe('AuthService', () => {
     await expectAsync(changed).toBeResolved();
   });
 
+  it('deletes the own account with the password and ends the session', async () => {
+    const deleted = auth.deleteAccount('secret password');
+    const request = http.expectOne('/api/v1/me');
+    expect([request.request.method, request.request.body]).toEqual(['DELETE', { password: 'secret password' }]);
+    request.flush(null, { status: 204, statusText: 'No Content' });
+
+    await deleted;
+    expect(auth.isAuthenticated()).toBeFalse();
+  });
+
   it('sets a new password with the reset token', async () => {
     const reset = auth.resetPassword('user-1', 'token-1', 'new secret password');
     const request = http.expectOne('/api/v1/auth/password/reset');

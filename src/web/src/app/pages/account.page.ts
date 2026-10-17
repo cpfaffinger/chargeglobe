@@ -5,6 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { Router } from '@angular/router';
 import { AuthService } from '../auth/auth.service';
 import { describeError } from '../auth/problem';
 import { OwnCards } from '../preferences/own-cards';
@@ -73,6 +74,25 @@ interface HealthResponse {
         </form>
       </mat-card-content>
     </mat-card>
+    <mat-card appearance="outlined" id="account-delete">
+      <mat-card-content>
+        <h2>Konto löschen</h2>
+        <p class="muted">
+          Löscht dein Konto endgültig mit Favoriten, Einstellungen, Ladekarten und API-Keys. Das lässt sich nicht rückgängig machen.
+        </p>
+        @for (error of deleteErrors(); track error) {
+          <p class="error" role="alert">{{ error }}</p>
+        }
+        <form [formGroup]="deleteForm" (ngSubmit)="deleteAccount()">
+          <mat-form-field>
+            <mat-label>Passwort zur Bestätigung</mat-label>
+            <input matInput type="password" formControlName="password" autocomplete="current-password" required />
+            <mat-error>Bitte dein Passwort eingeben.</mat-error>
+          </mat-form-field>
+          <button matButton="outlined" type="submit" id="delete-account" [disabled]="busy()">Konto endgültig löschen</button>
+        </form>
+      </mat-card-content>
+    </mat-card>
     <section>
       <h2>Systemstatus</h2>
       <p id="api-status">API: {{ apiStatus() }}</p>
@@ -89,6 +109,9 @@ export class AccountPage {
     newPassword: ['', [Validators.required, Validators.minLength(10)]],
     repeat: ['', Validators.required],
   });
+  protected readonly deleteForm = inject(FormBuilder).nonNullable.group({ password: ['', Validators.required] });
+  protected readonly deleteErrors = signal<string[]>([]);
+  private readonly router = inject(Router);
   protected readonly busy = signal(false);
   protected readonly errors = signal<string[]>([]);
   protected readonly changed = signal(false);
@@ -116,6 +139,30 @@ export class AccountPage {
     } catch (error) {
       const wrongCurrent = error instanceof HttpErrorResponse && error.error?.errors?.currentPassword;
       this.errors.set(wrongCurrent ? ['Das aktuelle Passwort ist falsch.'] : describeError(error));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  /** Deletes the own account after a confirmation and leads to the map. */
+  protected async deleteAccount(): Promise<void> {
+    if (this.deleteForm.invalid) {
+      this.deleteForm.markAllAsTouched();
+      return;
+    }
+
+    if (!window.confirm('Dein Konto wird endgültig gelöscht. Fortfahren?')) {
+      return;
+    }
+
+    this.busy.set(true);
+    this.deleteErrors.set([]);
+    try {
+      await this.auth.deleteAccount(this.deleteForm.getRawValue().password);
+      await this.router.navigateByUrl('/');
+    } catch (error) {
+      const wrong = error instanceof HttpErrorResponse && error.error?.errors?.password;
+      this.deleteErrors.set(wrong ? ['Das Passwort ist falsch.'] : describeError(error));
     } finally {
       this.busy.set(false);
     }

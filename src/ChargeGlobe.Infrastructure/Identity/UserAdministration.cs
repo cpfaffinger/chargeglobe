@@ -23,6 +23,7 @@ public static class AccountStates
 
 /// <param name="State">One of <see cref="AccountStates"/>: disabled before unconfirmed before pending approval.</param>
 /// <param name="Roles">Role names, sorted.</param>
+/// <param name="ExtraPermissions">Permissions granted to the account directly, besides those of its roles; sorted.</param>
 public sealed record UserSummary(
     Guid Id,
     string Email,
@@ -31,7 +32,8 @@ public sealed record UserSummary(
     DateTimeOffset CreatedAt,
     DateTimeOffset? ApprovedAt,
     DateTimeOffset? DisabledAt,
-    IReadOnlyList<string> Roles);
+    IReadOnlyList<string> Roles,
+    IReadOnlyList<string> ExtraPermissions);
 
 /// <param name="Total">Accounts matching the search, across all pages.</param>
 public sealed record UserPage(IReadOnlyList<UserSummary> Users, int Total);
@@ -64,6 +66,7 @@ public sealed partial class UserAdministration(
     IEmailSender emailSender,
     AuditLog audit,
     AuthSettings settings,
+    UserManager<AppUser> userManager,
     TimeProvider timeProvider)
 {
     private const string LockoutMessage = "The change would leave no enabled, approved account with the permission user:manage.";
@@ -84,12 +87,52 @@ public sealed partial class UserAdministration(
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
-        var roles = await RolesOfAsync([.. users.Select(user => user.Id)], cancellationToken);
-        return new UserPage([.. users.Select(user => Summary(user, roles))], total);
+        Guid[] ids = [.. users.Select(user => user.Id)];
+        var roles = await RolesOfAsync(ids, cancellationToken);
+        var extra = await ExtraPermissionsOfAsync(ids, cancellationToken);
+        return new UserPage([.. users.Select(user => Summary(user, roles, extra))], total);
     }
 
     public async Task<UserSummary?> FindAsync(Guid id, CancellationToken cancellationToken) =>
-        await db.Users.FindAsync([id], cancellationToken) is { } user ? Summary(user, await RolesOfAsync([id], cancellationToken)) : null;
+        await db.Users.FindAsync([id], cancellationToken) is { } user ? await SummaryAsync(user, cancellationToken) : null;
+
+    /// <summary>Replaces the permissions granted to the account directly (besides its roles).</summary>
+    public async Task<AdminResult<UserSummary>> SetPermissionsAsync(
+        Guid id, IReadOnlyCollection<string> permissions, Actor actor, CancellationToken cancellationToken)
+    {
+        var wanted = permissions.Distinct(StringComparer.Ordinal).ToList();
+        if (wanted.Where(permission => !Permissions.IsKnown(permission)).ToList() is [_, ..] unknown)
+        {
+            return new(AdminOutcome.Invalid, Message: $"Unknown permissions: {string.Join(", ", unknown)}.");
+        }
+
+        return await ChangeAsync(id, actor, "user.permissions", async user =>
+        {
+            db.UserPermissions.RemoveRange(await db.UserPermissions.Where(permission => permission.UserId == user.Id).ToListAsync(cancellationToken));
+            db.UserPermissions.AddRange(wanted.Select(permission => new UserPermission { UserId = user.Id, Permission = permission }));
+            return null;
+        }, cancellationToken);
+    }
+
+    /// <summary>
+    /// Deletes another account with its favorites, preferences, API keys, refresh tokens, roles and direct permissions
+    /// (cascades of the database); its audit entries stay. Idempotent: an unknown id is Ok without an entry.
+    /// </summary>
+    public Task<AdminResult<bool>> DeleteAsync(Guid id, Actor actor, CancellationToken cancellationToken) =>
+        id == actor.UserId
+            ? Task.FromResult(new AdminResult<bool>(AdminOutcome.Conflict, Message: "Delete your own account with deleteMe, which asks for your password."))
+            : RemoveAsync(id, actor, cancellationToken);
+
+    /// <summary>Deletes the caller's own account after checking its password; Invalid for a wrong password.</summary>
+    public async Task<AdminResult<bool>> DeleteSelfAsync(Guid id, string password, Actor actor, CancellationToken cancellationToken)
+    {
+        if (await db.Users.FindAsync([id], cancellationToken) is not { } user || !await userManager.CheckPasswordAsync(user, password))
+        {
+            return new(AdminOutcome.Invalid, Message: "The password is not correct.");
+        }
+
+        return await RemoveAsync(id, actor, cancellationToken);
+    }
 
     public async Task<AdminResult<UserSummary>> SetRolesAsync(Guid id, IReadOnlyCollection<string> roleNames, Actor actor, CancellationToken cancellationToken)
     {
@@ -170,7 +213,7 @@ public sealed partial class UserAdministration(
         }
 
         await accounts.QueueConfirmationAsync(user, null, actor, cancellationToken);
-        return new(AdminOutcome.Ok, Summary(user, await RolesOfAsync([id], cancellationToken)));
+        return new(AdminOutcome.Ok, await SummaryAsync(user, cancellationToken));
     }
 
     public async Task<IReadOnlyList<RoleSummary>> ListRolesAsync(CancellationToken cancellationToken)
@@ -280,7 +323,29 @@ public sealed partial class UserAdministration(
         }
 
         await transaction.CommitAsync(cancellationToken);
-        return new(AdminOutcome.Ok, Summary(user, await RolesOfAsync([id], cancellationToken)));
+        return new(AdminOutcome.Ok, await SummaryAsync(user, cancellationToken));
+    }
+
+    /// <summary>Removes the account unless that leaves no manager; idempotent.</summary>
+    private async Task<AdminResult<bool>> RemoveAsync(Guid id, Actor actor, CancellationToken cancellationToken)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        if (await db.Users.FindAsync([id], cancellationToken) is not { } user)
+        {
+            return new(AdminOutcome.Ok, false);
+        }
+
+        db.Users.Remove(user);
+        audit.Record("user.delete", $"user:{id}", actor);
+        await db.SaveChangesAsync(cancellationToken);
+        if (!await AnyManagerAsync(cancellationToken))
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return new(AdminOutcome.Conflict, Message: LockoutMessage);
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+        return new(AdminOutcome.Ok, true);
     }
 
     private async Task<bool> AnyManagerAsync(CancellationToken cancellationToken)
@@ -305,7 +370,15 @@ public sealed partial class UserAdministration(
         .GroupBy(item => item.UserId)
         .ToDictionary(group => group.Key, group => group.Select(item => item.Name!).Order(StringComparer.Ordinal).ToList());
 
-    private static UserSummary Summary(AppUser user, Dictionary<Guid, List<string>> roles) =>
+    private async Task<UserSummary> SummaryAsync(AppUser user, CancellationToken cancellationToken) =>
+        Summary(user, await RolesOfAsync([user.Id], cancellationToken), await ExtraPermissionsOfAsync([user.Id], cancellationToken));
+
+    private async Task<Dictionary<Guid, List<string>>> ExtraPermissionsOfAsync(Guid[] userIds, CancellationToken cancellationToken) =>
+        (await db.UserPermissions.Where(permission => userIds.Contains(permission.UserId)).ToListAsync(cancellationToken))
+        .GroupBy(permission => permission.UserId)
+        .ToDictionary(group => group.Key, group => group.Select(permission => permission.Permission).Order(StringComparer.Ordinal).ToList());
+
+    private static UserSummary Summary(AppUser user, Dictionary<Guid, List<string>> roles, Dictionary<Guid, List<string>> extra) =>
         new(
             user.Id,
             user.Email!,
@@ -317,7 +390,8 @@ public sealed partial class UserAdministration(
             user.CreatedAt,
             user.ApprovedAt,
             user.DisabledAt,
-            roles.GetValueOrDefault(user.Id) ?? []);
+            roles.GetValueOrDefault(user.Id) ?? [],
+            extra.GetValueOrDefault(user.Id) ?? []);
 
     [GeneratedRegex(@"^[\p{L}\p{N} _-]{1,50}$")]
     private static partial Regex RoleName();

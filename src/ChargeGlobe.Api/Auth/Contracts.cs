@@ -54,6 +54,9 @@ public sealed record MeResponse(Guid Id, string Email, string[] Roles, string[] 
 
 public sealed record PermissionResponse(string Key, string Description);
 
+/// <param name="Password">The current password of the account, to confirm the deletion.</param>
+public sealed record DeleteMeRequest(string? Password);
+
 /// <param name="Name">Free label to tell keys apart, max. 100 characters.</param>
 /// <param name="Permissions">Permissions of the key; must be a subset of the caller's permissions.</param>
 /// <param name="ExpiresAt">Optional expiry (ISO 8601, in the future). Without it the key does not expire.</param>

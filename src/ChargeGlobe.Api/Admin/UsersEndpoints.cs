@@ -21,6 +21,9 @@ public sealed record SetUserApprovalRequest(bool? Approved);
 /// <param name="Enabled">False disables the account and ends its browser sessions.</param>
 public sealed record SetUserEnabledRequest(bool? Enabled);
 
+/// <param name="Permissions">Permission keys (<c>listPermissions</c>) granted to the account directly; replaces the current ones.</param>
+public sealed record SetUserPermissionsRequest(string[]? Permissions);
+
 public sealed record RolesResponse(IReadOnlyList<RoleSummary> Data);
 
 public sealed record RoleResponse(RoleSummary Data);
@@ -44,7 +47,8 @@ public static class UsersEndpoints
         ExampleTime,
         null,
         null,
-        [DefaultRoles.User]);
+        [DefaultRoles.User],
+        []);
 
     private static readonly RoleSummary ExampleRole = new(
         DefaultRoles.Maintainer, [Permissions.EvseRead, Permissions.JobsRead, Permissions.SettingsRead], 2, false, true);
@@ -116,6 +120,33 @@ public static class UsersEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .WithResponseExample(StatusCodes.Status200OK, new UserResponse(ExampleUser with { State = AccountStates.Disabled, DisabledAt = ExampleTime }));
+
+        users.MapPut("/{id:guid}/permissions", SetPermissionsAsync)
+            .RequirePermission(Permissions.UserManage)
+            .WithName("setUserPermissions")
+            .WithSummary("Replace the permissions granted to a user account directly")
+            .WithDescription(
+                "Sets the permissions the account holds besides those of its roles to `permissions` (keys from " +
+                "`listPermissions`; may be empty), shown as `extraPermissions`. Idempotent. 422 for unknown permissions; 409 if " +
+                "no enabled, approved account with `user:manage` would remain; 404 for an unknown id. New permissions apply to " +
+                "access tokens issued afterwards (at most 15 minutes) and to API keys at once.")
+            .Produces<UserResponse>()
+            .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .WithResponseExample(StatusCodes.Status200OK, new UserResponse(ExampleUser with { ExtraPermissions = [Permissions.JobsRead] }));
+
+        users.MapDelete("/{id:guid}", DeleteUserAsync)
+            .RequirePermission(Permissions.UserManage)
+            .WithName("deleteUser")
+            .WithSummary("Delete a user account")
+            .WithDescription(
+                "Deletes the account for good with its favorites, settings, API keys, browser sessions, roles and direct " +
+                "permissions; its entries in the audit log stay (without e-mail address). Recorded as `user.delete`. " +
+                "Idempotent: 204 also if there is no such account (any more). 409 for your own account (use `deleteMe`) or if " +
+                "no enabled, approved account with `user:manage` would remain.")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status409Conflict);
 
         users.MapPost("/{id:guid}/confirmation-mail", ResendConfirmationAsync)
             .RequirePermission(Permissions.UserManage)
@@ -253,6 +284,23 @@ public static class UsersEndpoints
         return result.Outcome == AdminOutcome.Ok
             ? Results.Json(new MessageResponse("The confirmation mail is queued."), statusCode: StatusCodes.Status202Accepted)
             : ToResult(result, "id", user => new UserResponse(user));
+    }
+
+    private static async Task<IResult> SetPermissionsAsync(
+        Guid id, SetUserPermissionsRequest request, ClaimsPrincipal principal, UserAdministration administration, CancellationToken cancellationToken)
+    {
+        if (request.Permissions is null)
+        {
+            return new Validation().Require(false, "permissions", "Required (may be empty).").ToResult()!;
+        }
+
+        return ToResult(await administration.SetPermissionsAsync(id, request.Permissions, principal.GetActor(), cancellationToken), "permissions", user => new UserResponse(user));
+    }
+
+    private static async Task<IResult> DeleteUserAsync(Guid id, ClaimsPrincipal principal, UserAdministration administration, CancellationToken cancellationToken)
+    {
+        var result = await administration.DeleteAsync(id, principal.GetActor(), cancellationToken);
+        return result.Outcome == AdminOutcome.Ok ? Results.NoContent() : ToResult(result, "id", _ => new object());
     }
 
     private static async Task<IResult> ListUserApiKeysAsync(
