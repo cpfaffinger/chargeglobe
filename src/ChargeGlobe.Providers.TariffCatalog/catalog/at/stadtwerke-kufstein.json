@@ -1,0 +1,81 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "stadtwerke-kufstein",
+      "name": "Stadtwerke Kufstein",
+      "website": "https://www.stwk.at/e-mobilitaet/",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "lade-start",
+          "name": "Lade START",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "App-Registrierung kostenlos, Ladeschlüssel 12 € einmalig.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "stadtwerke-kufstein"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.49
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.59,
+                  "blockingFeePerMinute": 0.06,
+                  "blockingAfterMinutes": 120
+                }
+              ]
+            }
+          ],
+          "notes": "Nur an Stationen der Stadtwerke Kufstein und ausgewiesenen Partnerstationen. Herbstaktion bis 30.11.2026: −0,04 €/kWh.",
+          "sourceUrl": "https://www.stwk.at/fileadmin/Stadtwerke/Downloads/Strom/6-Ladeinfrastruktur/2025-10-01_E-Mobilit%C3%A4ty-Ladeschl%C3%BCssel_Formular-Tarife.pdf",
+          "sourceDate": "2025-10-01",
+          "confidence": "HIGH"
+        },
+        {
+          "key": "lade-plus",
+          "name": "Lade PLUS",
+          "currency": "EUR",
+          "monthlyFee": 9.5,
+          "prerequisites": "Nur mit aktivem Strom-, Beecar- oder KufNet-Vertrag.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "stadtwerke-kufstein"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.39
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.49,
+                  "blockingFeePerMinute": 0.06,
+                  "blockingAfterMinutes": 120
+                }
+              ]
+            }
+          ],
+          "notes": "Nur an Stationen der Stadtwerke Kufstein und ausgewiesenen Partnerstationen. Herbstaktion bis 30.11.2026: −0,04 €/kWh.",
+          "sourceUrl": "https://www.stwk.at/fileadmin/Stadtwerke/Downloads/Strom/6-Ladeinfrastruktur/2025-10-01_E-Mobilit%C3%A4ty-Ladeschl%C3%BCssel_Formular-Tarife.pdf",
+          "sourceDate": "2025-10-01",
+          "confidence": "HIGH"
+        }
+      ]
+    }
+  ]
+}

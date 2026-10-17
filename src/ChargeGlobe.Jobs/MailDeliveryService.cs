@@ -4,6 +4,7 @@ using ChargeGlobe.Infrastructure.Addresses;
 using ChargeGlobe.Providers.Abstractions;
 using ChargeGlobe.Providers.EControl;
 using ChargeGlobe.Providers.OpenChargeMap;
+using ChargeGlobe.Providers.TariffCatalog;
 
 namespace ChargeGlobe.Jobs;
 
@@ -102,6 +103,8 @@ public static class JobServices
             services.AddScoped<AddressImporter>();
             services.AddHostedService<AddressImportService>();
             services.AddHostedService<LocationMaintenanceService>();
+            services.AddCuratedTariffCatalog();
+            services.AddHostedService<TariffCatalogService>();
         }
         else
         {

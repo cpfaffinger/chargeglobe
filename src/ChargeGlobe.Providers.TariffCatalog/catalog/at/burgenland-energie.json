@@ -1,0 +1,109 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "burgenland-energie",
+      "name": "Burgenland Energie",
+      "website": "https://www.burgenlandenergie.at/de/privat/e-mobilitaetstarif/",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "e-mobilitaetstarif",
+          "name": "E-Mobilitätstarif",
+          "currency": "EUR",
+          "monthlyFee": null,
+          "prerequisites": "Bessere-Energie-Ladekarte, Aktivierung 10 € je Karte; für alle offen.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "burgenland-energie"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.38,
+                  "blockingFeePerMinute": 0.15,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.53,
+                  "blockingFeePerMinute": 0.15,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "kWh-Preis an eichrechtskonformen Stationen; sonst Minutentarif (AC 0,023–0,14, DC 0,22–0,67 €/min)."
+            },
+            {
+              "kind": "ROAMING",
+              "networks": [
+                "evn",
+                "wien-energie",
+                "energie-steiermark",
+                "energie-graz",
+                "kelag",
+                "energie-ag",
+                "linz-ag",
+                "salzburg-ag",
+                "e-laden-tirol",
+                "vkw",
+                "smatrics",
+                "oeamtc",
+                "da-emobil",
+                "omv",
+                "tiwag",
+                "chargepoint",
+                "enio",
+                "stromquelle"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerMinute": 0.085
+                },
+                {
+                  "current": "AC",
+                  "minKw": 3.8,
+                  "pricePerMinute": 0.12
+                },
+                {
+                  "current": "AC",
+                  "minKw": 11.1,
+                  "pricePerMinute": 0.165
+                },
+                {
+                  "current": "AC",
+                  "minKw": 22.1,
+                  "pricePerMinute": 0.25
+                },
+                {
+                  "current": "DC",
+                  "pricePerMinute": 0.38
+                },
+                {
+                  "current": "DC",
+                  "minKw": 25.1,
+                  "pricePerMinute": 0.575
+                },
+                {
+                  "current": "DC",
+                  "minKw": 50.1,
+                  "pricePerMinute": 0.95
+                }
+              ],
+              "notes": "Roaming-Partner werden immer je Minute nach der Leistung des Ladepunkts abgerechnet."
+            }
+          ],
+          "notes": "Grundgebühr nicht angegeben. BE Destination Charger: Blockiergebühr erst ab Minute 721.",
+          "sourceUrl": "https://www.burgenlandenergie.at/de/privat/e-mobilitaetstarif/",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}

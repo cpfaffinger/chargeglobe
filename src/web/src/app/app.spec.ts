@@ -350,7 +350,7 @@ describe('App with its routes', () => {
       expect(root().querySelector('#admin-tab-tariffs')).not.toBeNull();
       http.expectOne('/api/v1/emps').flush({ data: [] });
       http.expectOne('/api/v1/tariffs').flush({ data: [] });
-      http.expectOne('/api/v1/operators?limit=100').flush({ data: [] });
+      http.expectOne('/api/v1/networks').flush({ data: [] });
     });
 
     it('redirects anonymous visitors from /admin/mail to the login', async () => {

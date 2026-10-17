@@ -1,0 +1,46 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "mer",
+      "name": "Mer Austria",
+      "website": "https://at.mer.eco/fahrerportal/wiefunktioniertes/",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "charge-me",
+          "name": "chargeME",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Registrierung in der Mer-ConnectME-App oder im Fahrerportal.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "mer"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.57
+                },
+                {
+                  "current": "DC",
+                  "minKw": 76,
+                  "pricePerKwh": 0.69
+                }
+              ]
+            }
+          ],
+          "notes": "AC-Preis auf der österreichischen Seite nicht angegeben.",
+          "sourceUrl": "https://at.mer.eco/fahrerportal/wiefunktioniertes/",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}

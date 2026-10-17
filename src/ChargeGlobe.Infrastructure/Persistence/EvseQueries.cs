@@ -130,23 +130,21 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             .Where(period => period.From < to && (period.To is null || period.To > from))
             .OrderBy(period => period.From)
             .ToList();
+        var evse = await TariffTargets(db.Evses.Where(item => item.Id == id)).SingleAsync(cancellationToken);
+        var catalog = await CurrentCatalogAsync(cancellationToken);
+        var prices = EmpPrices(catalog, evse, PriceExample.Kwh, PriceExample.Minutes).ToList();
+        var unavailable = catalog.Plans
+            .Where(row => prices.All(price => price.TariffId != row.Plan.Id))
+            .OrderBy(row => row.Name, StringComparer.Ordinal)
+            .ThenBy(row => row.Plan.Name, StringComparer.Ordinal)
+            .Select(row => new EmpUnavailable(row.Key, row.Name, row.Plan.Key, row.Plan.Name))
+            .ToList();
         return new EvsePrices(
             current is null ? null : new CurrentPrice(View(current.SourceKey, current.Components), current.Since, current.ObservedAt),
             history,
-            await EmpPricesAsync(id, cancellationToken));
+            prices,
+            unavailable);
     }
-
-    /// <summary>
-    /// The EMP tariffs valid now that apply at the EVSE (own network by operator, otherwise roaming), with the energy price
-    /// for its current type: DC if the EVSE or one of its connectors is DC, otherwise AC. There are few tariffs; they are
-    /// filtered in memory.
-    /// </summary>
-    private async Task<IReadOnlyList<EmpPrice>> EmpPricesAsync(Guid id, CancellationToken cancellationToken)
-    {
-        var evse = await TariffTargets(db.Evses.Where(item => item.Id == id)).SingleAsync(cancellationToken);
-        return [.. EmpPrices(await ValidTariffsAsync(cancellationToken), evse, PriceExample.Kwh, PriceExample.Minutes)];
-    }
-
     public async Task<LocationPricesPage> LocationPricesAsync(
         IReadOnlyList<Guid> locationIds, decimal kwh, int minutes, IReadOnlyCollection<string>? cards, CancellationToken cancellationToken)
     {
@@ -160,7 +158,8 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
                 .ToListAsync(cancellationToken))
             .GroupBy(price => price.EvseId)
             .ToDictionary(prices => prices.Key, prices => prices.MaxBy(price => price.ObservedAt)!);
-        var tariffs = (await ValidTariffsAsync(cancellationToken)).Where(row => cards is null || cards.Contains(row.Key)).ToList();
+        var all = await CurrentCatalogAsync(cancellationToken);
+        var tariffs = all with { Plans = [.. all.Plans.Where(row => cards is null || cards.Contains(row.Key))] };
         var byLocation = evses.ToLookup(evse => evse.LocationId);
 
         var locations = ids.Select(id =>
@@ -192,44 +191,75 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
         return new LocationPricesPage(locations, attribution);
     }
 
-    /// <summary>What decides which tariffs apply at an EVSE and with which energy price.</summary>
-    private sealed record TariffTarget(Guid Id, Guid LocationId, string EvseId, PowerType? PowerType, bool Dc, bool? Roaming, Guid? OperatorId)
+    /// <summary>What decides which tariffs apply at an EVSE and with which price element.</summary>
+    /// <param name="OperatorParty">Country and party of the operator of the EVSE (or of its location), for EVSEs without EVSE-ID.</param>
+    private sealed record TariffTarget(
+        Guid Id, Guid LocationId, string EvseId, bool HasEvseId, PowerType? PowerType, bool Dc, bool? Roaming, decimal? MaxPowerKw, string? OperatorParty)
     {
-        /// <summary>The current type: DC if the EVSE or one of its connectors is DC.</summary>
-        public PowerType? CurrentType => PowerType ?? (Dc ? Domain.Charging.PowerType.DC : null);
+        /// <summary>The current: DC if the EVSE or one of its connectors is DC.</summary>
+        public TariffCurrent Current => PowerType == Domain.Charging.PowerType.DC || (PowerType is null && Dc) ? TariffCurrent.DC : TariffCurrent.AC;
+
+        /// <summary>The operator part of the EVSE-ID (<c>AT*EVN</c>); for a surrogate the one of its operator, if known.</summary>
+        public string? OperatorId => HasEvseId && EvseId.Split('*') is [var country, var party, ..] ? $"{country}*{party}" : OperatorParty;
     }
 
-    private sealed record TariffRow(Tariff Tariff, string Key, string Name);
+    private sealed record PlanRow(TariffPlan Plan, string Key, string Name);
+
+    /// <summary>The current tariff versions with their EMP and the operators of every network; few rows, used in memory.</summary>
+    private sealed record CurrentCatalog(IReadOnlyList<PlanRow> Plans, IReadOnlyDictionary<string, IReadOnlyCollection<string>> Networks)
+    {
+        public IReadOnlyCollection<string> Members(string network) => Networks.GetValueOrDefault(network) ?? [];
+    }
 
     private IQueryable<TariffTarget> TariffTargets(IQueryable<Evse> evses) =>
         evses.AsNoTracking().Select(item => new TariffTarget(
             item.Id,
             item.LocationId,
             item.EvseIdDisplay,
+            item.IdentityKind == IdentityKind.EVSE_ID,
             item.PowerType,
             item.Connectors.Any(connector => connector.PowerType == PowerType.DC),
             item.Roaming,
-            item.OperatorId ?? db.Locations.Where(location => location.Id == item.LocationId).Select(location => location.OperatorId).FirstOrDefault()));
+            item.MaxPowerKw,
+            db.Operators
+                .Where(@operator => @operator.OperatorId != null
+                    && @operator.Id == (item.OperatorId ?? db.Locations.Where(location => location.Id == item.LocationId).Select(location => location.OperatorId).FirstOrDefault()))
+                .Select(@operator => @operator.Country + "*" + @operator.OperatorId)
+                .FirstOrDefault()));
 
-    /// <summary>The tariffs valid now with their EMP; there are few, they are filtered in memory.</summary>
-    private async Task<List<TariffRow>> ValidTariffsAsync(CancellationToken cancellationToken)
+    private async Task<CurrentCatalog> CurrentCatalogAsync(CancellationToken cancellationToken)
     {
         var now = timeProvider.GetUtcNow();
-        return await db.Tariffs.AsNoTracking()
-            .Where(tariff => tariff.ValidFrom <= now && (tariff.ValidTo == null || tariff.ValidTo > now))
-            .Join(db.Emps, tariff => tariff.EmpId, emp => emp.Id, (tariff, emp) => new TariffRow(tariff, emp.Key, emp.Name))
+        var plans = await db.TariffPlans.AsNoTracking()
+            .Where(plan => plan.ValidFrom <= now && (plan.ValidTo == null || plan.ValidTo > now))
+            .Join(db.Emps, plan => plan.EmpId, emp => emp.Id, (plan, emp) => new PlanRow(plan, emp.Key, emp.Name))
             .ToListAsync(cancellationToken);
+        var networks = await db.ChargingNetworks.AsNoTracking().ToDictionaryAsync(
+            network => network.Key, network => (IReadOnlyCollection<string>)network.Operators, cancellationToken);
+        return new CurrentCatalog(plans, networks);
     }
 
     /// <summary>
-    /// The tariffs that apply at the EVSE (own network by operator, otherwise roaming), with the energy price for its
-    /// current type, cheapest session first.
+    /// The tariffs that apply at the EVSE: per tariff the first zone that covers its operator (special price, home network,
+    /// partner network, roaming if the EVSE accepts other cards) and the price element for its current and power,
+    /// cheapest session first.
     /// </summary>
-    private static IEnumerable<EmpPrice> EmpPrices(IEnumerable<TariffRow> tariffs, TariffTarget evse, decimal kwh, int minutes) =>
-        tariffs
-            .Where(row => row.Tariff.AppliesTo(evse.OperatorId, evse.Roaming))
-            .Select(row => new EmpPrice(
-                row.Key, row.Name, row.Tariff.Id, row.Tariff.Name, row.Tariff.MonthlyFee, View($"emp:{row.Key}", row.Tariff.ComponentsFor(evse.CurrentType), kwh, minutes)))
+    private static IEnumerable<EmpPrice> EmpPrices(CurrentCatalog catalog, TariffTarget evse, decimal kwh, int minutes) =>
+        catalog.Plans
+            .Select(row => (Row: row, Match: row.Plan.MatchAt(evse.OperatorId, evse.Roaming, evse.Current, evse.MaxPowerKw, catalog.Members)))
+            .Where(item => item.Match is not null)
+            .Select(item => new EmpPrice(
+                item.Row.Key,
+                item.Row.Name,
+                item.Row.Plan.Id,
+                item.Row.Plan.Key,
+                item.Row.Plan.Name,
+                item.Match!.Zone.Kind.ToString(),
+                item.Row.Plan.MonthlyFee,
+                View($"emp:{item.Row.Key}", item.Match.Price.Components(item.Row.Plan.Currency), kwh, minutes),
+                item.Row.Plan.SourceUrl,
+                item.Row.Plan.SourceDate,
+                item.Row.Plan.Confidence.ToString()))
             .OrderBy(price => price.Price.ExampleCost)
             .ThenBy(price => price.EmpName, StringComparer.Ordinal)
             .ThenBy(price => price.Tariff, StringComparer.Ordinal);

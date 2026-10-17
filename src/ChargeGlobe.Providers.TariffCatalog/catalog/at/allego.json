@@ -1,0 +1,87 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "allego",
+      "name": "Allego",
+      "website": "https://www.allego.eu/pricing/",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "smart",
+          "name": "Allego Smart",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Allego-App.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "allego"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.6
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.59
+                },
+                {
+                  "current": "DC",
+                  "minKw": 50.1,
+                  "pricePerKwh": 0.69
+                }
+              ]
+            }
+          ],
+          "notes": "HPC: Standgebühr 0,248 €/min ab Minute 45, nur für Minuten ohne Laden (nicht abgebildet).",
+          "sourceUrl": "https://www.allego.eu/pricing/",
+          "sourceDate": null,
+          "confidence": "HIGH"
+        },
+        {
+          "key": "plus",
+          "name": "Allego Plus",
+          "currency": "EUR",
+          "monthlyFee": 9.99,
+          "prerequisites": "Abo in der Allego-App.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "allego"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.6
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.44
+                },
+                {
+                  "current": "DC",
+                  "minKw": 50.1,
+                  "pricePerKwh": 0.49
+                }
+              ]
+            }
+          ],
+          "notes": "HPC: Standgebühr 0,248 €/min ab Minute 45, nur für Minuten ohne Laden (nicht abgebildet).",
+          "sourceUrl": "https://www.allego.eu/pricing/",
+          "sourceDate": null,
+          "confidence": "HIGH"
+        }
+      ]
+    }
+  ]
+}

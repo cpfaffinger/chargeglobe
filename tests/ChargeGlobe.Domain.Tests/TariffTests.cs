@@ -4,75 +4,127 @@ namespace ChargeGlobe.Domain.Tests;
 
 public class TariffTests
 {
-    private static readonly DateTimeOffset From = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset T0 = new(2026, 10, 17, 8, 0, 0, TimeSpan.Zero);
 
-    private static Tariff.Values Values(bool roamingOnly = false, params Guid[] operators) =>
-        new(" Basic ", "eur", From, From.AddYears(1), 0.45m, 0.65m, 0.01m, 1m, 0.10m, 120, 4.90m, roamingOnly, operators);
+    private static readonly Dictionary<string, IReadOnlyCollection<string>> Networks = new()
+    {
+        ["evn"] = ["AT*EVN"],
+        ["beoe"] = ["AT*EVN", "AT*VIE", "AT*LAG"],
+        ["tesla"] = ["AT*TSL"],
+    };
+
+    private static IReadOnlyCollection<string> Members(string key) => Networks.GetValueOrDefault(key) ?? [];
+
+    private static TariffPriceElement Ac(decimal kwh) => new(TariffCurrent.AC, null, kwh, null, null, null, null);
+
+    private static TariffPriceElement Dc(decimal kwh, decimal? minKw = null) => new(TariffCurrent.DC, minKw, kwh, null, null, 0.10m, 60);
+
+    private static TariffZone Zone(TariffZoneKind kind, string[] networks, string[] operators, params TariffPriceElement[] prices) =>
+        new(kind, networks, operators, [], [], prices, null);
+
+    private static TariffPlan Plan(params TariffZone[] zones) =>
+        TariffPlan.Create(
+            Guid.CreateVersion7(),
+            "tariff-catalog",
+            new TariffPlan.Content("basic", " Basic ", "eur", 4.9m, " Stromkunde ", ["AT"], zones, " ", "https://example.org/preise", new DateOnly(2026, 7, 1), TariffConfidence.HIGH),
+            "hash",
+            T0);
 
     [Fact]
-    public void An_emp_needs_a_key_and_a_name()
+    public void An_EVSE_gets_the_first_zone_that_covers_its_operator()
     {
-        var emp = Emp.Create("oeamtc-epower", " ÖAMTC ePower ", " https://www.oeamtc.at ");
+        var plan = Plan(
+            Zone(TariffZoneKind.ROAMING, [], [], Ac(0.69m), Dc(0.89m), Dc(0.99m, 100)),
+            Zone(TariffZoneKind.PARTNER, ["beoe"], [], Ac(0.49m), Dc(0.69m)),
+            Zone(TariffZoneKind.HOME, ["evn"], [], Ac(0.39m), Dc(0.59m)),
+            Zone(TariffZoneKind.OPERATOR, [], ["AT*IOY"], Dc(0.79m)));
 
-        Assert.Equal(("oeamtc-epower", "ÖAMTC ePower", "https://www.oeamtc.at"), (emp.Key, emp.Name, emp.Website));
-        Assert.NotEqual(Guid.Empty, emp.Id);
-        emp.Update("ePower", " ");
-        Assert.Equal(("ePower", null), (emp.Name, emp.Website));
+        Assert.Equal((TariffZoneKind.HOME, 0.39m), Of(plan.MatchAt("AT*EVN", true, TariffCurrent.AC, 22, Members)));
+        Assert.Equal((TariffZoneKind.PARTNER, 0.69m), Of(plan.MatchAt("AT*VIE", true, TariffCurrent.DC, 50, Members)));
+        Assert.Equal((TariffZoneKind.OPERATOR, 0.79m), Of(plan.MatchAt("AT*IOY", true, TariffCurrent.DC, 350, Members)));
+        // Roaming: the highest power stage the EVSE reaches.
+        Assert.Equal((TariffZoneKind.ROAMING, 0.89m), Of(plan.MatchAt("AT*SMA", true, TariffCurrent.DC, 50, Members)));
+        Assert.Equal((TariffZoneKind.ROAMING, 0.99m), Of(plan.MatchAt("AT*SMA", null, TariffCurrent.DC, 150, Members)));
+        Assert.Equal((TariffZoneKind.ROAMING, 0.89m), Of(plan.MatchAt("AT*SMA", true, TariffCurrent.DC, null, Members)));
+        Assert.Equal((TariffZoneKind.ROAMING, 0.69m), Of(plan.MatchAt(null, true, TariffCurrent.AC, 11, Members)));
+        // An EVSE without cards of other providers only works in the home and partner network.
+        Assert.Null(plan.MatchAt("AT*SMA", false, TariffCurrent.AC, 11, Members));
+        Assert.Equal(TariffZoneKind.HOME, plan.MatchAt("AT*EVN", false, TariffCurrent.AC, 11, Members)!.Zone.Kind);
+        // A zone without a price for the current does not apply.
+        Assert.Null(Plan(Zone(TariffZoneKind.HOME, ["evn"], [], Ac(0.39m))).MatchAt("AT*EVN", true, TariffCurrent.DC, 50, Members));
+        // Below the lowest power stage the lowest one applies.
+        Assert.Equal(0.99m, Plan(Zone(TariffZoneKind.ROAMING, [], [], Dc(0.99m, 100))).MatchAt("AT*SMA", true, TariffCurrent.DC, 50, Members)!.Price.PricePerKwh);
+    }
 
+    [Fact]
+    public void Roaming_leaves_out_excluded_networks_and_operators_and_can_be_limited()
+    {
+        var open = Plan(new TariffZone(TariffZoneKind.ROAMING, [], [], ["tesla"], ["AT*IOY"], [Ac(0.69m)], "kein Tesla"));
+        Assert.Null(open.MatchAt("AT*TSL", true, TariffCurrent.AC, 11, Members));
+        Assert.Null(open.MatchAt("AT*IOY", true, TariffCurrent.AC, 11, Members));
+        Assert.NotNull(open.MatchAt("AT*LAG", true, TariffCurrent.AC, 11, Members));
+
+        // A roaming price per operator goes before the general roaming price, whatever the order in the tariff.
+        var perOperator = Plan(Zone(TariffZoneKind.ROAMING, [], [], Ac(0.69m)), Zone(TariffZoneKind.ROAMING, [], ["AT*EVN"], Ac(0.75m)));
+        Assert.Equal(0.75m, perOperator.MatchAt("AT*EVN", true, TariffCurrent.AC, 11, Members)!.Price.PricePerKwh);
+        Assert.Equal(0.69m, perOperator.MatchAt("AT*VIE", true, TariffCurrent.AC, 11, Members)!.Price.PricePerKwh);
+
+        var limited = Plan(Zone(TariffZoneKind.ROAMING, ["beoe"], [], Ac(0.69m)));
+        Assert.NotNull(limited.MatchAt("AT*VIE", true, TariffCurrent.AC, 11, Members));
+        Assert.Null(limited.MatchAt("AT*SMA", true, TariffCurrent.AC, 11, Members));
+        Assert.Null(Plan(Zone(TariffZoneKind.HOME, ["unknown"], [], Ac(0.39m))).MatchAt("AT*EVN", true, TariffCurrent.AC, 11, Members));
+    }
+
+    [Fact]
+    public void A_tariff_version_keeps_its_content_and_ends_once()
+    {
+        var plan = Plan(Zone(TariffZoneKind.HOME, ["evn"], [], Ac(0.39m)));
+        Assert.Equal(("basic", "Basic", "EUR", 4.9m, "Stromkunde", (string?)null), (plan.Key, plan.Name, plan.Currency, plan.MonthlyFee, plan.Prerequisites, plan.Notes));
+        Assert.Equal(["AT"], plan.Markets);
+        Assert.Equal(("tariff-catalog", "https://example.org/preise", new DateOnly(2026, 7, 1), TariffConfidence.HIGH, "hash"), (
+            plan.SourceKey, plan.SourceUrl, plan.SourceDate!.Value, plan.Confidence, plan.ContentHash));
+        Assert.True(plan.IsValidAt(T0));
+        Assert.False(plan.IsValidAt(T0.AddSeconds(-1)));
+
+        plan.Close(T0.AddDays(-1));
+        Assert.Equal(T0, plan.ValidTo);
+        plan.Close(T0.AddDays(5));
+        Assert.Equal(T0, plan.ValidTo);
+        Assert.False(plan.IsValidAt(T0));
+
+        var other = Plan(Zone(TariffZoneKind.HOME, ["evn"], [], Ac(0.39m)));
+        other.Close(T0.AddDays(1));
+        Assert.True(other.IsValidAt(T0.AddHours(1)));
+        Assert.Throws<ArgumentException>(() => TariffPlan.Create(
+            Guid.CreateVersion7(), "x", new TariffPlan.Content("Bad Key", "n", "EUR", null, null, ["AT"], [], null, "https://e.org", null, TariffConfidence.LOW), "h", T0));
+    }
+
+    [Fact]
+    public void A_price_element_becomes_the_components_of_a_session()
+    {
+        var components = Dc(0.59m).Components("EUR");
+        Assert.Equal(new PriceComponents("EUR", 0.59m, null, null, 0.10m, 60, false), components);
+        Assert.Equal(17.70m, components.CostOf(30, 40));
+    }
+
+    [Fact]
+    public void Providers_and_networks_check_their_keys_countries_and_operators()
+    {
+        var emp = Emp.Create("evn", " EVN ", " https://www.evn.at ", "AT");
+        Assert.Equal(("evn", "EVN", "https://www.evn.at", "AT"), (emp.Key, emp.Name, emp.Website, emp.Country));
+        emp.Update("EVN Energie", " ", "AT");
+        Assert.Null(emp.Website);
+        Assert.Throws<ArgumentException>(() => Emp.Create("EVN", "EVN", null, "AT"));
         Assert.False(Emp.IsKey(null));
-        Assert.False(Emp.IsKey("x"));
-        Assert.False(Emp.IsKey("-oeamtc"));
-        Assert.False(Emp.IsKey("ÖAMTC"));
-        Assert.Throws<ArgumentException>(() => Emp.Create("Upper", "Name", null));
-        Assert.Throws<ArgumentException>(() => Emp.Create("smatrics", " ", null));
+
+        var network = ChargingNetwork.Create("wien-energie", "Wien Energie", "AT", ["at*vna", "AT*VIE", "AT*VIE", " AT*VES "], "tariff-catalog");
+        Assert.Equal(["AT*VES", "AT*VIE", "AT*VNA"], network.Operators);
+        Assert.Equal(("wien-energie", "Wien Energie", "AT", "tariff-catalog"), (network.Key, network.Name, network.Country, network.SourceKey));
+        Assert.Throws<ArgumentException>(() => ChargingNetwork.Create("Bad", "n", "AT", ["AT*EVN"], "s"));
+        Assert.Throws<ArgumentException>(() => network.Update("n", "AT", ["EVN"], "s"));
+        Assert.True(ChargingNetwork.IsOperatorId("AT*430"));
+        Assert.False(ChargingNetwork.IsOperatorId(null));
     }
 
-    [Fact]
-    public void A_tariff_keeps_its_values_and_is_valid_in_its_period()
-    {
-        var empId = Guid.NewGuid();
-        var other = Guid.NewGuid();
-        var operatorId = Guid.NewGuid();
-        var tariff = Tariff.Create(Guid.NewGuid(), empId, Values(operators: [operatorId, operatorId]));
-
-        Assert.Equal((empId, "Basic", "EUR", 4.90m), (tariff.EmpId, tariff.Name, tariff.Currency, tariff.MonthlyFee));
-        Assert.Equal([operatorId], tariff.OperatorIds);
-        Assert.False(tariff.IsValidAt(From.AddTicks(-1)));
-        Assert.True(tariff.IsValidAt(From));
-        Assert.False(tariff.IsValidAt(From.AddYears(1)));
-
-        tariff.Update(other, Values() with { ValidTo = null });
-        Assert.Equal(other, tariff.EmpId);
-        Assert.True(tariff.IsValidAt(From.AddYears(10)));
-        Assert.Throws<ArgumentException>(() => tariff.Update(other, Values() with { Currency = "" }));
-    }
-
-    [Fact]
-    public void A_tariff_applies_in_its_network_otherwise_with_roaming_otherwise_everywhere()
-    {
-        var own = Guid.NewGuid();
-
-        var network = Tariff.Create(Guid.NewGuid(), Guid.NewGuid(), Values(roamingOnly: true, own));
-        Assert.True(network.AppliesTo(own, false));
-        Assert.False(network.AppliesTo(Guid.NewGuid(), true));
-        Assert.False(network.AppliesTo(null, true));
-
-        var roaming = Tariff.Create(Guid.NewGuid(), Guid.NewGuid(), Values(roamingOnly: true));
-        Assert.True(roaming.AppliesTo(null, true));
-        Assert.False(roaming.AppliesTo(own, false));
-        Assert.False(roaming.AppliesTo(own, null));
-
-        var everywhere = Tariff.Create(Guid.NewGuid(), Guid.NewGuid(), Values());
-        Assert.True(everywhere.AppliesTo(null, null));
-    }
-
-    [Fact]
-    public void The_energy_price_follows_the_current_type()
-    {
-        var tariff = Tariff.Create(Guid.NewGuid(), Guid.NewGuid(), Values());
-
-        Assert.Equal(new PriceComponents("EUR", 0.65m, 0.01m, 1m, 0.10m, 120, false), tariff.ComponentsFor(PowerType.DC));
-        Assert.Equal(0.45m, tariff.ComponentsFor(PowerType.AC_3_PHASE).PricePerKwh);
-        Assert.Equal(0.45m, tariff.ComponentsFor(null).PricePerKwh);
-    }
+    private static (TariffZoneKind, decimal?) Of(TariffMatch? match) => (match!.Zone.Kind, match.Price.PricePerKwh);
 }

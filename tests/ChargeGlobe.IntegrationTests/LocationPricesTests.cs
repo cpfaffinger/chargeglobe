@@ -32,7 +32,7 @@ public class LocationPricesTests(IntegrationFactory factory) : IClassFixture<Int
             await db.Locations.Where(location => location.Name == "Testladepark Ring").Select(location => location.Id).SingleAsync()));
     }
 
-    /// <summary>The fixture and three tariffs: own network of TST, roaming with start fee, everywhere.</summary>
+    /// <summary>The fixture and the tariffs of <see cref="TestTariffs.Cards"/>.</summary>
     private async Task SeedAsync()
     {
         var locations = JsonSerializer.Deserialize<List<ProviderLocationSnapshot>>(
@@ -53,25 +53,7 @@ public class LocationPricesTests(IntegrationFactory factory) : IClassFixture<Int
             return true;
         });
 
-        var admin = factory.Client(_token);
-        var own = await factory.WithDbAsync(db => db.Operators.Where(item => item.OperatorId == "TST").Select(item => item.Id).SingleAsync());
-        var validFrom = DateTimeOffset.UtcNow.AddDays(-30);
-        foreach (var (emp, ac, dc, extra) in new (string, decimal, decimal, object)[]
-        {
-            ("own", 0.30m, 0.50m, new { operatorIds = new[] { own } }),
-            ("roam", 0.40m, 0.60m, new { roamingOnly = true, sessionFee = 1m }),
-            ("every", 0.70m, 0.70m, new { }),
-        })
-        {
-            Assert.True((await admin.PutAsJsonAsync($"/api/v1/emps/{emp}", new { name = emp.ToUpperInvariant() })).IsSuccessStatusCode);
-            var values = JsonSerializer.SerializeToNode(new { emp, name = "Tarif", currency = "EUR", validFrom, pricePerKwhAc = ac, pricePerKwhDc = dc })!.AsObject();
-            foreach (var (name, value) in JsonSerializer.SerializeToNode(extra)!.AsObject())
-            {
-                values[name] = value?.DeepClone();
-            }
-
-            Assert.Equal(HttpStatusCode.Created, (await admin.PutAsJsonAsync($"/api/v1/tariffs/{Guid.NewGuid()}", values)).StatusCode);
-        }
+        await TestTariffs.ImportAsync(factory.Client(_token), "test", TestTariffs.Cards());
     }
 
     public Task DisposeAsync() => Task.CompletedTask;

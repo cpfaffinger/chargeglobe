@@ -66,7 +66,7 @@ export const ADMIN_PAGES: AdminPageLink[] = [
     label: 'Tarife',
     permission: 'tariff:write',
     category: 'Preise',
-    description: 'Ladekarten und Apps (EMPs) mit ihren Tarifen für den Preisvergleich pflegen.',
+    description: 'Tarifkatalog: Ladekarten und Apps mit Heimnetz, Partnernetz und Roaming je Tarif.',
   },
 ];
 

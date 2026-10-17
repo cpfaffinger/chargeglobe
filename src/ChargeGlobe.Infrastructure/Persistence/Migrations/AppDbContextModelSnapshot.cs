@@ -26,6 +26,47 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "timescaledb");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.ChargingNetwork", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)")
+                        .HasColumnName("country");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("key");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.PrimitiveCollection<List<string>>("Operators")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("operators");
+
+                    b.Property<string>("SourceKey")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("source_key");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.ToTable("charging_network", (string)null);
+                });
+
             modelBuilder.Entity("ChargeGlobe.Domain.Charging.ChargingStation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -108,6 +149,12 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)")
+                        .HasColumnName("country");
 
                     b.Property<string>("Key")
                         .IsRequired()
@@ -642,21 +689,22 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                     b.ToTable("region", (string)null);
                 });
 
-            modelBuilder.Entity("ChargeGlobe.Domain.Charging.Tariff", b =>
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.TariffPlan", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<int?>("BlockingAfterMinutes")
-                        .HasColumnType("integer")
-                        .HasColumnName("blocking_after_minutes");
+                    b.Property<string>("Confidence")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("confidence");
 
-                    b.Property<decimal?>("BlockingFeePerMinute")
-                        .HasPrecision(10, 4)
-                        .HasColumnType("numeric(10,4)")
-                        .HasColumnName("blocking_fee_per_minute");
+                    b.Property<string>("ContentHash")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content_hash");
 
                     b.Property<string>("Currency")
                         .IsRequired()
@@ -668,6 +716,16 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("emp_id");
 
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("key");
+
+                    b.PrimitiveCollection<List<string>>("Markets")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("markets");
+
                     b.Property<decimal?>("MonthlyFee")
                         .HasPrecision(10, 2)
                         .HasColumnType("numeric(10,2)")
@@ -678,34 +736,27 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("name");
 
-                    b.PrimitiveCollection<List<Guid>>("OperatorIds")
+                    b.Property<string>("Notes")
+                        .HasColumnType("text")
+                        .HasColumnName("notes");
+
+                    b.Property<string>("Prerequisites")
+                        .HasColumnType("text")
+                        .HasColumnName("prerequisites");
+
+                    b.Property<DateOnly?>("SourceDate")
+                        .HasColumnType("date")
+                        .HasColumnName("source_date");
+
+                    b.Property<string>("SourceKey")
                         .IsRequired()
-                        .HasColumnType("uuid[]")
-                        .HasColumnName("operator_ids");
+                        .HasColumnType("text")
+                        .HasColumnName("source_key");
 
-                    b.Property<decimal?>("PricePerKwhAc")
-                        .HasPrecision(10, 4)
-                        .HasColumnType("numeric(10,4)")
-                        .HasColumnName("price_per_kwh_ac");
-
-                    b.Property<decimal?>("PricePerKwhDc")
-                        .HasPrecision(10, 4)
-                        .HasColumnType("numeric(10,4)")
-                        .HasColumnName("price_per_kwh_dc");
-
-                    b.Property<decimal?>("PricePerMinute")
-                        .HasPrecision(10, 4)
-                        .HasColumnType("numeric(10,4)")
-                        .HasColumnName("price_per_minute");
-
-                    b.Property<bool>("RoamingOnly")
-                        .HasColumnType("boolean")
-                        .HasColumnName("roaming_only");
-
-                    b.Property<decimal?>("SessionFee")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("numeric(10,2)")
-                        .HasColumnName("session_fee");
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("source_url");
 
                     b.Property<DateTimeOffset>("ValidFrom")
                         .HasColumnType("timestamp with time zone")
@@ -715,11 +766,21 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("valid_to");
 
+                    b.Property<string>("Zones")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("zones");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("EmpId");
+                    b.HasIndex("SourceKey")
+                        .HasDatabaseName("IX_tariff_plan_open")
+                        .HasFilter("valid_to IS NULL");
 
-                    b.ToTable("tariff", (string)null);
+                    b.HasIndex("EmpId", "Key", "ValidFrom")
+                        .IsUnique();
+
+                    b.ToTable("tariff_plan", (string)null);
                 });
 
             modelBuilder.Entity("ChargeGlobe.Domain.Provenance.AttributeOrigin", b =>
@@ -1968,7 +2029,7 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("ChargeGlobe.Domain.Charging.Tariff", b =>
+            modelBuilder.Entity("ChargeGlobe.Domain.Charging.TariffPlan", b =>
                 {
                     b.HasOne("ChargeGlobe.Domain.Charging.Emp", null)
                         .WithMany()

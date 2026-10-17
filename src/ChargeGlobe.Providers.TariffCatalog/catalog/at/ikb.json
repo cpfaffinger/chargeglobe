@@ -1,0 +1,79 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "ikb",
+      "name": "IKB (e-laden)",
+      "website": "https://www.ikb.at/energie/e-mobilitaet/e-ladekarte-e-lade-app-e-tarife",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "ikb-e-laden",
+          "name": "IKB-e-laden",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Karte kostenlos; IKB-Energiekunden 10 % Rabatt an e-laden-Tirol-Stationen.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "e-laden-tirol"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.39,
+                  "blockingFeePerMinute": 0.06,
+                  "blockingAfterMinutes": 180
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.54,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "AC-Belegungsgebühr nur 9–19 Uhr, nicht an Stationen mit Parkgebühr."
+            },
+            {
+              "kind": "PARTNER",
+              "networks": [
+                "tiwag",
+                "kelag",
+                "burgenland-energie",
+                "linz-ag",
+                "energie-ag",
+                "vkw",
+                "energie-steiermark",
+                "evn",
+                "energie-graz",
+                "oeamtc"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.56,
+                  "blockingFeePerMinute": 0.06,
+                  "blockingAfterMinutes": 180
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.69,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 60
+                }
+              ]
+            }
+          ],
+          "notes": "Für weiteres Roaming (u. a. Wien Energie, da emobil) sind keine Preise veröffentlicht.",
+          "sourceUrl": "https://www.ikb.at/fileadmin/user_upload/Dokumente/Elektromobilitaet/IKB-E-Laden-Preisblatt.pdf",
+          "sourceDate": "2025-06-01",
+          "confidence": "HIGH"
+        }
+      ]
+    }
+  ]
+}

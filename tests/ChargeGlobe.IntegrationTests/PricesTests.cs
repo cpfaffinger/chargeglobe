@@ -148,56 +148,41 @@ public class PricesTests(IntegrationFactory factory) : IClassFixture<Integration
     public async Task The_cards_that_apply_are_compared_by_the_cost_of_the_example()
     {
         var admin = factory.Client(_accessToken);
-        var operators = await factory.WithDbAsync(async db =>
-        {
-            var other = Operator.Create("Other Operator", "AT");
-            db.Operators.Add(other);
-            await db.SaveChangesAsync();
-            return (Own: await db.Operators.Where(item => item.OperatorId == "TST").Select(item => item.Id).SingleAsync(), Other: other.Id);
-        });
-        var now = DateTimeOffset.UtcNow;
-        async Task TariffAsync(string emp, decimal ac, decimal dc, object extra)
-        {
-            Assert.True((await admin.PutAsJsonAsync($"/api/v1/emps/{emp}", new { name = emp.ToUpperInvariant() })).IsSuccessStatusCode);
-            var values = JsonSerializer.SerializeToNode(new { emp, name = "Tarif", currency = "EUR", validFrom = now.AddDays(-30), pricePerKwhAc = ac, pricePerKwhDc = dc })!.AsObject();
-            foreach (var (name, value) in JsonSerializer.SerializeToNode(extra)!.AsObject())
-            {
-                values[name] = value?.DeepClone();
-            }
+        await TestTariffs.ImportAsync(admin, "test", TestTariffs.Cards());
 
-            var response = await admin.PutAsJsonAsync($"/api/v1/tariffs/{Guid.NewGuid()}", values);
-            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        }
-
-        await TariffAsync("own", 0.30m, 0.50m, new { operatorIds = new[] { operators.Own }, monthlyFee = 5m });
-        await TariffAsync("roam", 0.40m, 0.60m, new { roamingOnly = true, sessionFee = 1m });
-        await TariffAsync("every", 0.70m, 0.70m, new { });
-        await TariffAsync("other", 0.10m, 0.10m, new { operatorIds = new[] { operators.Other } });
-        await TariffAsync("ended", 0.01m, 0.01m, new { validTo = now.AddDays(-1) });
-        await TariffAsync("later", 0.01m, 0.01m, new { validFrom = now.AddDays(1) });
-
-        static IEnumerable<(string, decimal)> Emps(JsonElement body) =>
+        static IEnumerable<(string, string, decimal)> Emps(JsonElement body) =>
             body.GetProperty("data").GetProperty("emps").EnumerateArray()
-                .Select(emp => (emp.GetProperty("emp").GetString()!, emp.GetProperty("price").GetProperty("exampleCost").GetDecimal()));
+                .Select(emp => (emp.GetProperty("emp").GetString()!, emp.GetProperty("zone").GetString()!, emp.GetProperty("price").GetProperty("exampleCost").GetDecimal()));
 
-        // AC with roaming: own network, roaming with start fee (1 + 30 × 0.40), the card for everywhere.
+        static IEnumerable<string> Unavailable(JsonElement body) =>
+            body.GetProperty("data").GetProperty("unavailable").EnumerateArray().Select(tariff => tariff.GetProperty("emp").GetString()!);
+
+        // AC with roaming: home network, roaming with start fee (1 + 30 × 0.40), the home price everywhere; not the other network.
         var available = await PricesAsync(Available);
-        Assert.Equal([("own", 9.00m), ("roam", 13.00m), ("every", 21.00m)], Emps(available));
+        Assert.Equal([("own", "HOME", 9.00m), ("roam", "ROAMING", 13.00m), ("every", "HOME", 21.00m)], Emps(available));
+        Assert.Equal(["other"], Unavailable(available));
         var own = available.GetProperty("data").GetProperty("emps")[0];
-        Assert.Equal(("OWN", "Tarif", 5m), (own.GetProperty("empName").GetString(), own.GetProperty("tariff").GetString(), own.GetProperty("monthlyFee").GetDecimal()));
+        Assert.Equal(("OWN", "Tarif", "tarif", 5m), (own.GetProperty("empName").GetString(), own.GetProperty("tariff").GetString(), own.GetProperty("tariffKey").GetString(), own.GetProperty("monthlyFee").GetDecimal()));
         Assert.Equal(("emp:own", 0.30m), (own.GetProperty("price").GetProperty("source").GetString(), own.GetProperty("price").GetProperty("pricePerKwh").GetDecimal()));
+        Assert.Equal(("https://example.org/own", "2026-10-01", "HIGH"), (own.GetProperty("sourceUrl").GetString(), own.GetProperty("sourceDate").GetString(), own.GetProperty("confidence").GetString()));
         Assert.NotEqual(Guid.Empty, own.GetProperty("tariffId").GetGuid());
         Assert.Equal(17.70m, available.GetProperty("data").GetProperty("current").GetProperty("price").GetProperty("exampleCost").GetDecimal());
 
-        // DC: the DC energy prices.
-        Assert.Equal([("own", 15.00m), ("roam", 19.00m), ("every", 21.00m)], Emps(await PricesAsync(Fast)));
+        // DC: the DC prices, below the 300 kW stage of the roaming card.
+        Assert.Equal([("own", "HOME", 15.00m), ("roam", "ROAMING", 19.00m), ("every", "HOME", 21.00m)], Emps(await PricesAsync(Fast)));
 
-        // Without roaming and without a type: own network and everywhere, AC prices.
+        // Without roaming and without a type: only the home networks of the operator TST of the location, AC prices.
         var surrogate = await factory.WithDbAsync(db => db.Evses
             .Where(evse => evse.IdentityKind == IdentityKind.SURROGATE && evse.Roaming == false)
             .Select(evse => evse.Id)
             .SingleAsync());
-        Assert.Equal([("own", 9.00m), ("every", 21.00m)], Emps(await PricesAsync(surrogate.ToString())));
+        var local = await PricesAsync(surrogate.ToString());
+        Assert.Equal([("own", "HOME", 9.00m), ("every", "HOME", 21.00m)], Emps(local));
+        Assert.Equal(["other", "roam"], Unavailable(local).Order());
+
+        // A new catalog of the source replaces the tariff: the new price applies at once.
+        await TestTariffs.ImportAsync(admin, "test", TestTariffs.Cards(everyPrice: 0.20m));
+        Assert.Equal([("every", "HOME", 6.00m), ("own", "HOME", 9.00m), ("roam", "ROAMING", 13.00m)], Emps(await PricesAsync(Available)));
     }
 
     [Theory]

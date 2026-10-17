@@ -1,0 +1,66 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "wels-strom",
+      "name": "Wels Strom (e.Ladekarte)",
+      "website": "https://www.eww.at/privat/strom/elektromobilitaet/e-ladekarte/e-ladekarte-bestellen",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "e-ladekarte",
+          "name": "e.Ladekarte",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "MONTA-Konto, Aktivierung 17,90 € einmalig, ohne Bindung.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "wels-strom"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.39,
+                  "pricePerMinute": 0.0075
+                },
+                {
+                  "current": "AC",
+                  "minKw": 11.1,
+                  "pricePerKwh": 0.39,
+                  "pricePerMinute": 0.016
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39,
+                  "pricePerMinute": 0.165
+                },
+                {
+                  "current": "DC",
+                  "minKw": 75.1,
+                  "pricePerKwh": 0.39,
+                  "pricePerMinute": 0.5
+                },
+                {
+                  "current": "DC",
+                  "minKw": 150.1,
+                  "pricePerKwh": 0.39,
+                  "pricePerMinute": 1.0
+                }
+              ],
+              "notes": "kWh-Preis plus Zeitpreis je Stunde (0,45 / 0,96 / 9,90 / 30 / 60 €/h) vom Anstecken bis zum Abstecken."
+            }
+          ],
+          "notes": "Andere Stationen über Monta zum Preis des jeweiligen Betreibers (nicht abgebildet).",
+          "sourceUrl": "https://www.eww.at/fileadmin/emobil-link/emobil.link/datenblaetter/emobil-Preisblatt-eLadekarte-2025.pdf",
+          "sourceDate": "2025-01-01",
+          "confidence": "HIGH"
+        }
+      ]
+    }
+  ]
+}

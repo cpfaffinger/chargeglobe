@@ -1,0 +1,168 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "evn",
+      "name": "EVN",
+      "website": "https://www.evn.at/home/e-mobilitaet/e-mobilitaet-tarifuebersicht",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "drive-smart",
+          "name": "#Drive Smart",
+          "currency": "EUR",
+          "monthlyFee": 4.95,
+          "prerequisites": "EVN-Ladekarte (Aktivierung 10 € je Karte), ohne Bindung.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "evn"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.45
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.47
+                },
+                {
+                  "current": "DC",
+                  "minKw": 150,
+                  "pricePerKwh": 0.49
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.54,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.64,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 120
+                },
+                {
+                  "current": "DC",
+                  "minKw": 150,
+                  "pricePerKwh": 0.69,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "Partnerladenetz: alle mit der Karte erreichbaren Stationen in AT, DE, IT, HR und SI."
+            }
+          ],
+          "notes": "Blockiergebühr im EVN-Netz 0,50 €/min erst 30 min nach Ladeende (nicht abgebildet; max. 30 € AC, 60 € DC, nicht bis 3,7 kW und nachts 22–8 Uhr an 11/22 kW). Preisgarantie bis 31.12.2026.",
+          "sourceUrl": "https://www.evn.at/getmedia/3e64fd12-991e-4fe9-8529-118773d7c5c0/583_3_E-Mob-Ladetarife-Einzeln-fur-WEB_driveSmart_brutto.pdf",
+          "sourceDate": "2026-07-01",
+          "confidence": "HIGH"
+        },
+        {
+          "key": "drive-easy",
+          "name": "#Drive Easy",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "EVN-Ladekarte (Aktivierung 10 € je Karte), ohne Bindung.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "evn"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.54
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.54
+                }
+              ]
+            }
+          ],
+          "notes": "Nur an EVN-Ladestationen, kein Partnerladenetz. Blockiergebühr im EVN-Netz 0,50 €/min erst 30 min nach Ladeende (nicht abgebildet; max. 30 € AC, 60 € DC, nicht bis 3,7 kW und nachts 22–8 Uhr an 11/22 kW). Preisgarantie bis 31.12.2026.",
+          "sourceUrl": "https://www.evn.at/getmedia/4f0a06d2-2333-4ee7-8e0d-5780c26fb76d/583_3_E-Mob-Ladetarife-Einzeln-fur-WEB_driveEasy_brutto.pdf",
+          "sourceDate": "2026-07-01",
+          "confidence": "HIGH"
+        },
+        {
+          "key": "emobil",
+          "name": "eMobil (Bestandstarif)",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Nur Bestandskunden (Neuabschluss bis 1.4.2025), Aktivierung 10 € je Karte.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "evn"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.55,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 180
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.65,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "Treuetarif ab der 50. kWh im Monat: AC 0,45, DC 0,50 €/kWh."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.55,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 180
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.65,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "Kein Roamingaufschlag an rund 21.000 Ladepunkten in Österreich."
+            }
+          ],
+          "notes": "Preisgarantie bis 31.12.2026.",
+          "sourceUrl": "https://www.evn.at/getmedia/0fc92385-5c1d-45db-8ab1-921a8d0ff246/510_6_E-Mob_Tarifblatt-2026.pdf",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}

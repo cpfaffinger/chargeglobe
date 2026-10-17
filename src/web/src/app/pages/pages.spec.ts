@@ -359,8 +359,8 @@ describe('account pages', () => {
       expect(text(page(), '#own-cards li')).toBe('Anbieter werden geladen …');
       http.expectOne('/api/v1/emps').flush({
         data: [
-          { key: 'smatrics', name: 'SMATRICS', website: null, tariffs: 1 },
-          { key: 'oeamtc', name: 'ÖAMTC ePower', website: null, tariffs: 1 },
+          { key: 'smatrics', name: 'SMATRICS', website: null, country: 'AT', tariffs: 1 },
+          { key: 'oeamtc', name: 'ÖAMTC ePower', website: null, country: 'AT', tariffs: 1 },
         ],
       });
       await settle();

@@ -106,7 +106,7 @@ public class PreferencesTests(IntegrationFactory factory)
         var keys = new[] { $"card-{Guid.NewGuid():N}"[..20], $"card-{Guid.NewGuid():N}"[..20] };
         await factory.WithDbAsync(db =>
         {
-            db.Emps.AddRange(keys.Select(key => ChargeGlobe.Domain.Charging.Emp.Create(key, key.ToUpperInvariant(), null)));
+            db.Emps.AddRange(keys.Select(key => ChargeGlobe.Domain.Charging.Emp.Create(key, key.ToUpperInvariant(), null, "AT")));
             return db.SaveChangesAsync();
         });
 

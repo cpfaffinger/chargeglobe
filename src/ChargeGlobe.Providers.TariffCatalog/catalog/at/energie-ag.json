@@ -1,0 +1,147 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "energie-ag",
+      "name": "Energie AG",
+      "website": "https://www.energieag.at/privat/elektromobilitaet/unterwegs-laden/ladekarte",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "energie-mobil",
+          "name": "Energie Mobil",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Kartengebühr 19,90 €, ohne Mindestlaufzeit.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "energie-ag"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.54,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.65,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "Keine Blockiergebühr an Park-&-Charge-Stationen."
+            },
+            {
+              "kind": "PARTNER",
+              "networks": [
+                "tiwag",
+                "wels-strom",
+                "ionity",
+                "da-emobil"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerMinute": 0.115
+                },
+                {
+                  "current": "AC",
+                  "minKw": 11.1,
+                  "pricePerMinute": 0.1483
+                },
+                {
+                  "current": "DC",
+                  "pricePerMinute": 0.5483
+                },
+                {
+                  "current": "DC",
+                  "minKw": 50.1,
+                  "pricePerMinute": 1.0817
+                }
+              ],
+              "notes": "Partnernetz je Minute ab dem Anstecken (6,90 / 8,90 / 32,90 / 64,90 €/h); Liste der Partner unvollständig."
+            }
+          ],
+          "notes": "Kein Roaming über das Partnernetz hinaus.",
+          "sourceUrl": "https://energieag.cdn.picturepark.com/v/pQPtEmpk/",
+          "sourceDate": "2024-07-01",
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "energie-mobil-plus",
+          "name": "Energie Mobil+",
+          "currency": "EUR",
+          "monthlyFee": 6.0,
+          "prerequisites": "Kartengebühr 19,90 €, 6 Monate Mindestlaufzeit; mit Kombi-Vorteil 3 €/Monat.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "energie-ag"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.49,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.6,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "Keine Blockiergebühr an Park-&-Charge-Stationen."
+            },
+            {
+              "kind": "PARTNER",
+              "networks": [
+                "tiwag",
+                "wels-strom",
+                "ionity",
+                "da-emobil"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerMinute": 0.115
+                },
+                {
+                  "current": "AC",
+                  "minKw": 11.1,
+                  "pricePerMinute": 0.1483
+                },
+                {
+                  "current": "DC",
+                  "pricePerMinute": 0.5483
+                },
+                {
+                  "current": "DC",
+                  "minKw": 50.1,
+                  "pricePerMinute": 1.0817
+                }
+              ],
+              "notes": "Partnernetz je Minute ab dem Anstecken (6,90 / 8,90 / 32,90 / 64,90 €/h); Liste der Partner unvollständig."
+            }
+          ],
+          "notes": "Kein Roaming über das Partnernetz hinaus.",
+          "sourceUrl": "https://energieag.cdn.picturepark.com/v/pQPtEmpk/",
+          "sourceDate": "2024-07-01",
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}

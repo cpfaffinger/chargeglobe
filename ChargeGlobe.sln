@@ -33,6 +33,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChargeGlobe.Providers.ECont
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChargeGlobe.Providers.OpenChargeMap", "src\ChargeGlobe.Providers.OpenChargeMap\ChargeGlobe.Providers.OpenChargeMap.csproj", "{26DAC6B7-4C91-4303-B3CC-5CA3B16AAEAD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChargeGlobe.Providers.TariffCatalog", "src\ChargeGlobe.Providers.TariffCatalog\ChargeGlobe.Providers.TariffCatalog.csproj", "{17906403-60D6-4B4E-958B-723629D28FE6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -199,6 +201,18 @@ Global
 		{26DAC6B7-4C91-4303-B3CC-5CA3B16AAEAD}.Release|x64.Build.0 = Release|Any CPU
 		{26DAC6B7-4C91-4303-B3CC-5CA3B16AAEAD}.Release|x86.ActiveCfg = Release|Any CPU
 		{26DAC6B7-4C91-4303-B3CC-5CA3B16AAEAD}.Release|x86.Build.0 = Release|Any CPU
+		{17906403-60D6-4B4E-958B-723629D28FE6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{17906403-60D6-4B4E-958B-723629D28FE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{17906403-60D6-4B4E-958B-723629D28FE6}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{17906403-60D6-4B4E-958B-723629D28FE6}.Debug|x64.Build.0 = Debug|Any CPU
+		{17906403-60D6-4B4E-958B-723629D28FE6}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{17906403-60D6-4B4E-958B-723629D28FE6}.Debug|x86.Build.0 = Debug|Any CPU
+		{17906403-60D6-4B4E-958B-723629D28FE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{17906403-60D6-4B4E-958B-723629D28FE6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{17906403-60D6-4B4E-958B-723629D28FE6}.Release|x64.ActiveCfg = Release|Any CPU
+		{17906403-60D6-4B4E-958B-723629D28FE6}.Release|x64.Build.0 = Release|Any CPU
+		{17906403-60D6-4B4E-958B-723629D28FE6}.Release|x86.ActiveCfg = Release|Any CPU
+		{17906403-60D6-4B4E-958B-723629D28FE6}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -217,5 +231,6 @@ Global
 		{F5C993BB-BF0A-4E70-AC53-9F7071D5B060} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{E02A745B-0DED-415E-946C-D2F1A2CC204C} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{26DAC6B7-4C91-4303-B3CC-5CA3B16AAEAD} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{17906403-60D6-4B4E-958B-723629D28FE6} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

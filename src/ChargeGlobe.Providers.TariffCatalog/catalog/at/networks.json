@@ -1,0 +1,300 @@
+{
+  "networks": [
+    {
+      "key": "evn",
+      "name": "EVN",
+      "country": "AT",
+      "operators": [
+        "AT*EVN"
+      ]
+    },
+    {
+      "key": "wien-energie",
+      "name": "Wien Energie",
+      "country": "AT",
+      "operators": [
+        "AT*VIE",
+        "AT*VNA",
+        "AT*VES"
+      ]
+    },
+    {
+      "key": "burgenland-energie",
+      "name": "Burgenland Energie",
+      "country": "AT",
+      "operators": [
+        "AT*EBM"
+      ]
+    },
+    {
+      "key": "energie-steiermark",
+      "name": "Energie Steiermark",
+      "country": "AT",
+      "operators": [
+        "AT*EST"
+      ]
+    },
+    {
+      "key": "energie-graz",
+      "name": "Energie Graz",
+      "country": "AT",
+      "operators": [
+        "AT*EGG"
+      ]
+    },
+    {
+      "key": "kelag",
+      "name": "Kelag",
+      "country": "AT",
+      "operators": [
+        "AT*KEL"
+      ]
+    },
+    {
+      "key": "energie-klagenfurt",
+      "name": "Energie Klagenfurt",
+      "country": "AT",
+      "operators": [
+        "AT*STW"
+      ]
+    },
+    {
+      "key": "linz-ag",
+      "name": "LINZ AG",
+      "country": "AT",
+      "operators": [
+        "AT*LAG"
+      ]
+    },
+    {
+      "key": "energie-ag",
+      "name": "Energie AG",
+      "country": "AT",
+      "operators": [
+        "AT*ENA"
+      ]
+    },
+    {
+      "key": "salzburg-ag",
+      "name": "Salzburg AG",
+      "country": "AT",
+      "operators": [
+        "AT*SZG"
+      ]
+    },
+    {
+      "key": "tiwag",
+      "name": "TIWAG",
+      "country": "AT",
+      "operators": [
+        "AT*TWG"
+      ]
+    },
+    {
+      "key": "e-laden-tirol",
+      "name": "e-laden Tirol (IKB)",
+      "country": "AT",
+      "operators": [
+        "AT*ELT"
+      ]
+    },
+    {
+      "key": "vkw",
+      "name": "illwerke vkw (VLOTTE)",
+      "country": "AT",
+      "operators": [
+        "AT*VKW"
+      ]
+    },
+    {
+      "key": "wels-strom",
+      "name": "Wels Strom",
+      "country": "AT",
+      "operators": [
+        "AT*LNK",
+        "AT*WSG"
+      ]
+    },
+    {
+      "key": "stadtwerke-kufstein",
+      "name": "Stadtwerke Kufstein",
+      "country": "AT",
+      "operators": [
+        "AT*KUF"
+      ]
+    },
+    {
+      "key": "da-emobil",
+      "name": "da emobil",
+      "country": "AT",
+      "operators": [
+        "AT*DAS",
+        "AT*DAE"
+      ]
+    },
+    {
+      "key": "smatrics",
+      "name": "SMATRICS EnBW",
+      "country": "AT",
+      "operators": [
+        "AT*SMA",
+        "AT*SME"
+      ]
+    },
+    {
+      "key": "oeamtc",
+      "name": "ÖAMTC ePower",
+      "country": "AT",
+      "operators": [
+        "AT*120"
+      ]
+    },
+    {
+      "key": "omv",
+      "name": "OMV eMotion",
+      "country": "AT",
+      "operators": [
+        "AT*OMV",
+        "AT*CRT"
+      ]
+    },
+    {
+      "key": "tesla",
+      "name": "Tesla Supercharger",
+      "country": "AT",
+      "operators": [
+        "AT*TSL"
+      ]
+    },
+    {
+      "key": "ionity",
+      "name": "IONITY",
+      "country": "AT",
+      "operators": [
+        "AT*IOY"
+      ]
+    },
+    {
+      "key": "mer",
+      "name": "Mer Austria",
+      "country": "AT",
+      "operators": [
+        "AT*MER"
+      ]
+    },
+    {
+      "key": "shell",
+      "name": "Shell Recharge",
+      "country": "AT",
+      "operators": [
+        "AT*SHE"
+      ]
+    },
+    {
+      "key": "electra",
+      "name": "Electra",
+      "country": "AT",
+      "operators": [
+        "AT*ELC"
+      ]
+    },
+    {
+      "key": "allego",
+      "name": "Allego",
+      "country": "AT",
+      "operators": [
+        "AT*ALL"
+      ]
+    },
+    {
+      "key": "lidl",
+      "name": "Lidl",
+      "country": "AT",
+      "operators": [
+        "AT*LDL"
+      ]
+    },
+    {
+      "key": "moon",
+      "name": "MOON POWER",
+      "country": "AT",
+      "operators": [
+        "AT*POW"
+      ]
+    },
+    {
+      "key": "enio",
+      "name": "ENIO",
+      "country": "AT",
+      "operators": [
+        "AT*430"
+      ]
+    },
+    {
+      "key": "chargepoint",
+      "name": "ChargePoint",
+      "country": "AT",
+      "operators": [
+        "AT*HTB",
+        "AT*CPI"
+      ]
+    },
+    {
+      "key": "mercedes-hpc",
+      "name": "Mercedes-Benz HPC",
+      "country": "AT",
+      "operators": [
+        "AT*MBX"
+      ]
+    },
+    {
+      "key": "oebb",
+      "name": "ÖBB",
+      "country": "AT",
+      "operators": [
+        "AT*OBB"
+      ]
+    },
+    {
+      "key": "aae",
+      "name": "AAE Naturstrom",
+      "country": "AT",
+      "operators": [
+        "AT*AAE"
+      ]
+    },
+    {
+      "key": "tulln-energie",
+      "name": "Tulln Energie",
+      "country": "AT",
+      "operators": [
+        "AT*TLN"
+      ]
+    },
+    {
+      "key": "stromquelle",
+      "name": "Stromquelle",
+      "country": "AT",
+      "operators": [
+        "AT*STQ"
+      ]
+    },
+    {
+      "key": "salzachsonne",
+      "name": "SalzachSonne",
+      "country": "AT",
+      "operators": [
+        "AT*SON"
+      ]
+    },
+    {
+      "key": "strombox",
+      "name": "STROMBOX",
+      "country": "AT",
+      "operators": [
+        "AT*STB"
+      ]
+    }
+  ],
+  "emps": []
+}

@@ -65,8 +65,10 @@
 - [x] Adresssuche für Start und Ziel aus dem BEV-Adressregister (`address_street` + `address`, `pg_trgm`, zweistufig, Import im Worker alle `address.refresh_days`, `GET /geocode`, Gruppe „Adressen“ in den Suchfeldern des Routenplaners)
 - [x] Routing: Compose-Service `routing` (Valhalla 3.9.1, OSM-Extrakt Österreich, Profil `routing`), `IRoutingEngine`, `POST /routes`, „Route hierher“ in der Infokarte mit Routenlinie auf der Karte
 - [ ] Routing-Extrakt automatisch aktualisieren (monatlich; Bau außerhalb des Live-Hosts)
-- [x] EMP-Tarife: Tabellen `emp` und `tariff`, `GET/PUT/DELETE /emps` und `/tariffs` (`tariff:write`, im Audit-Log), Tarif-Editor `/admin/tariffs`, Vergleich je Ladepunkt in `GET /evses/{evseId}/prices` (`emps`, AC/DC nach Stromart, Geltung über Betreiber oder Roaming) mit Tabelle auf der Ladepunkt-Seite und „günstigste Karte“ in der Infokarte
-- [ ] Erste reale Tarife pflegen (2–3 Anbieter, z. B. ÖAMTC ePower, SMATRICS, Electroverse) und laufend aktuell halten; welche Ladekarte an welchem Ladepunkt geht, liefert die E-Control nicht (nur `roaming` ja/nein) – genauer sind die Roaming-Listen der EMPs ([07](07-bestandsanalyse-apps-at.md))
+- [x] EMP-Tarife als Netze, Zonen und Katalog ([ADR-0013](adr/0013-ladetarife-netze-zonen-katalog.md)): Tabellen `emp`, `charging_network`, `tariff_plan` (versioniert, Zonen als `jsonb`), `ITariffSource` + Import (`PUT /tariff-sources/{source}/catalog`, Worker alle 6 h), `GET /emps`, `/networks`, `/tariffs`; Vergleich je Ladepunkt mit Zone und „hier nicht nutzbar“, Tabelle aller Karten in der Infokarte, Katalogansicht `/admin/tariffs`
+- [x] Kuratierter Tarifkatalog Österreich: 26 Anbieter, 36 Netze, rund 50 Tarife ([07](07-bestandsanalyse-apps-at.md), „Tarife der Anbieter“)
+- [ ] Zonen mit dem Preis des jeweiligen Betreibers (Electroverse, Plugsurfing, Monta), Zeitfenster und Deckel, Auslandspreise; Tesla-Standortpreise als eigene Quelle
+- [ ] Tarifkatalog regelmäßig prüfen (Stand je Tarif älter als 6 Monate melden), Preisblatt-Scraper als `ITariffSource` für die großen Anbieter
 
 ### Phase 2 – Preise & Tier-1/2-Quellen
 - [ ] Analyse und Adapter je Anbieter nach Priorität aus [07](07-bestandsanalyse-apps-at.md) (Web-Karten zuerst)

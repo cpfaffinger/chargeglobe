@@ -1,0 +1,79 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "shell",
+      "name": "Shell Recharge",
+      "website": "https://www.shell.at/laden/ladetarife-fuer-ihr-elektroauto.html",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "basic",
+          "name": "Shell Recharge Basic",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Shell App oder Ladekarte, ohne Bindung.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "shell"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.54,
+                  "sessionFee": 0.35
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.69,
+                  "sessionFee": 0.35
+                }
+              ]
+            }
+          ],
+          "notes": "Fremdnetze ab 0,54 (AC) bzw. 0,74 €/kWh (DC) je nach Betreiber, zuzüglich 0,35 € je Ladevorgang (nicht abgebildet).",
+          "sourceUrl": "https://www.shell.at/laden/ladetarife-fuer-ihr-elektroauto.html",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "e-deal",
+          "name": "Shell Recharge e-Deal",
+          "currency": "EUR",
+          "monthlyFee": 9.9,
+          "prerequisites": "Abo in der Shell App, nur privat, max. 500 kWh im Monat, Mindestlaufzeit 1 Monat.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "shell"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.43
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.55
+                }
+              ]
+            }
+          ],
+          "notes": "Nur an Shell-Recharge-Stationen in Österreich.",
+          "sourceUrl": "https://www.shell.at/laden/shell-recharge-e-deal-e-auto-gnstiger-laden.html",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}

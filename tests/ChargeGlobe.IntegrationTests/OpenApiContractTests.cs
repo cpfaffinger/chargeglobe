@@ -73,10 +73,10 @@ public class OpenApiContractTests(IntegrationFactory factory)
         Assert.Equal(
             new[]
             {
-                "addFavorite", "calculateReach", "calculateRoute", "changePassword", "confirmEmail", "createApiKey", "createInitialAdmin", "deleteEmp", "deleteMe", "deleteRole", "deleteTariff", "deleteUser", "exportEvses", "geocodeAddress", "getCrawlerFreshness", "getCrawlerStatus", "getEvse",
-                "getEvseOccupancy", "getEvsePrices", "getEvseStatusHistory", "getHealth", "getLocation", "getLocationOccupancy", "getMapConfig", "getMe", "getPreferences", "getSetting", "getSetupStatus", "getStats", "getUser",
-                "listApiKeys", "listAuditLog", "listConflicts", "listCrawlerRuns", "listEmps", "listEvses", "listFavorites", "listLocationPrices", "listLocations", "listLocationsAlongRoute", "listLocationsInArea", "listMailOutbox", "listOperators", "listPermissions", "listRoles", "listSettings",
-                "listTariffs", "listUserApiKeys", "listUsers", "login", "logout", "putEmp", "putPreferences", "putRole", "putTariff", "refreshToken", "register", "removeFavorite", "requestPasswordReset", "resendConfirmation",
+                "addFavorite", "calculateReach", "calculateRoute", "changePassword", "confirmEmail", "createApiKey", "createInitialAdmin", "deleteMe", "deleteRole", "deleteUser", "exportEvses", "geocodeAddress", "getCrawlerFreshness", "getCrawlerStatus", "getEvse",
+                "getEvseOccupancy", "getEvsePrices", "getEvseStatusHistory", "getHealth", "getLocation", "getLocationOccupancy", "getMapConfig", "getMe", "getPreferences", "getSetting", "getSetupStatus", "getStats", "getUser", "importTariffCatalog",
+                "listApiKeys", "listAuditLog", "listConflicts", "listCrawlerRuns", "listEmps", "listEvses", "listFavorites", "listLocationPrices", "listLocations", "listLocationsAlongRoute", "listLocationsInArea", "listMailOutbox", "listNetworks", "listOperators", "listPermissions", "listRoles", "listSettings",
+                "listTariffs", "listUserApiKeys", "listUsers", "login", "logout", "putPreferences", "putRole", "refreshToken", "register", "removeFavorite", "requestPasswordReset", "resendConfirmation",
                 "resetPassword", "resolveConflict", "revokeApiKey", "revokeUserApiKey", "search", "sendTestMail", "sendUserConfirmationMail", "setUserApproval", "setUserEnabled", "setUserPermissions",
                 "setUserRoles", "updateSetting",
             },
@@ -112,11 +112,9 @@ public class OpenApiContractTests(IntegrationFactory factory)
     [InlineData("/api/v1/conflicts", "get", "conflict:resolve")]
     [InlineData("/api/v1/conflicts/{id}/resolve", "post", "conflict:resolve")]
     [InlineData("/api/v1/emps", "get", "price:read")]
-    [InlineData("/api/v1/emps/{key}", "put", "tariff:write")]
-    [InlineData("/api/v1/emps/{key}", "delete", "tariff:write")]
+    [InlineData("/api/v1/networks", "get", "price:read")]
     [InlineData("/api/v1/tariffs", "get", "price:read")]
-    [InlineData("/api/v1/tariffs/{id}", "put", "tariff:write")]
-    [InlineData("/api/v1/tariffs/{id}", "delete", "tariff:write")]
+    [InlineData("/api/v1/tariff-sources/{source}/catalog", "put", "tariff:write")]
     [InlineData("/api/v1/settings", "get", "settings:read")]
     [InlineData("/api/v1/settings/{key}", "get", "settings:read")]
     [InlineData("/api/v1/settings/{key}", "put", "settings:manage")]

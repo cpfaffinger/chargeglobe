@@ -1,75 +1,80 @@
 using ChargeGlobe.Application.Identity;
+using ChargeGlobe.Providers.Abstractions;
 
 namespace ChargeGlobe.Application.Tariffs;
 
-/// <summary>An e-mobility provider (charging card or app) with the number of its tariffs.</summary>
-public sealed record EmpView(string Key, string Name, string? Website, int Tariffs);
+/// <summary>An e-mobility provider (charging card or app) with the number of its current tariffs.</summary>
+public sealed record EmpView(string Key, string Name, string? Website, string Country, int Tariffs);
 
-public sealed record EmpInput(string Name, string? Website);
+/// <summary>A network of operators (by the operator part of their EVSE-IDs) that zones of tariffs refer to.</summary>
+public sealed record NetworkView(string Key, string Name, string Country, IReadOnlyList<string> Operators);
 
-/// <summary>A tariff of an EMP; amounts in <paramref name="Currency"/>, null if the tariff has no such part.</summary>
-/// <param name="Emp">Key of the EMP.</param>
-/// <param name="ValidTo">End of validity (exclusive); null while it lasts.</param>
-/// <param name="RoamingOnly">Applies at every EVSE with roaming; ignored when <paramref name="OperatorIds"/> is not empty.</param>
-/// <param name="OperatorIds">Applies only at the EVSEs of these operators; empty = not limited.</param>
-public sealed record TariffView(
-    Guid Id,
-    string Emp,
-    string Name,
-    string Currency,
-    DateTimeOffset ValidFrom,
-    DateTimeOffset? ValidTo,
-    decimal? PricePerKwhAc,
-    decimal? PricePerKwhDc,
+/// <param name="Current"><c>AC</c> or <c>DC</c>.</param>
+/// <param name="MinKw">From this maximum power of the EVSE on (HPC stages); null for any.</param>
+public sealed record PriceElementView(
+    string Current,
+    decimal? MinKw,
+    decimal? PricePerKwh,
     decimal? PricePerMinute,
     decimal? SessionFee,
     decimal? BlockingFeePerMinute,
-    int? BlockingAfterMinutes,
+    int? BlockingAfterMinutes);
+
+/// <param name="Kind"><c>OPERATOR</c>, <c>HOME</c>, <c>PARTNER</c> or <c>ROAMING</c>.</param>
+public sealed record ZoneView(
+    string Kind,
+    IReadOnlyList<string> Networks,
+    IReadOnlyList<string> Operators,
+    IReadOnlyList<string> ExcludedNetworks,
+    IReadOnlyList<string> ExcludedOperators,
+    IReadOnlyList<PriceElementView> Prices,
+    string? Notes);
+
+/// <summary>One version of a tariff of an EMP with its zones; amounts in <paramref name="Currency"/> incl. VAT.</summary>
+/// <param name="Emp">Key of the EMP.</param>
+/// <param name="Key">Key of the tariff within the EMP.</param>
+/// <param name="SourceDate">Date the provider states for the prices ("Stand").</param>
+/// <param name="Confidence"><c>HIGH</c>, <c>MEDIUM</c> or <c>LOW</c>.</param>
+/// <param name="ValidTo">End of this version; null while it is current.</param>
+public sealed record TariffView(
+    Guid Id,
+    string Emp,
+    string EmpName,
+    string Key,
+    string Name,
+    string Currency,
     decimal? MonthlyFee,
-    bool RoamingOnly,
-    IReadOnlyList<Guid> OperatorIds);
+    string? Prerequisites,
+    IReadOnlyList<string> Markets,
+    IReadOnlyList<ZoneView> Zones,
+    string? Notes,
+    string SourceUrl,
+    DateOnly? SourceDate,
+    string Confidence,
+    DateTimeOffset ValidFrom,
+    DateTimeOffset? ValidTo);
 
-public enum TariffOutcome
-{
-    Created,
-    Updated,
+/// <summary>What an import changed; with <paramref name="Issues"/> nothing was imported.</summary>
+/// <param name="Created">Tariffs that are new.</param>
+/// <param name="Changed">Tariffs with a new version.</param>
+/// <param name="Closed">Tariffs the source no longer lists (their version ended).</param>
+public sealed record CatalogImportResult(int Networks, int Emps, int Created, int Changed, int Closed, int Unchanged, IReadOnlyList<string> Issues);
 
-    /// <summary>There is no EMP with the key of the tariff.</summary>
-    UnknownEmp,
-
-    /// <summary>One of the operator ids does not exist.</summary>
-    UnknownOperator,
-}
-
-/// <param name="Tariff">The stored tariff; null for <see cref="TariffOutcome.UnknownEmp"/> and <see cref="TariffOutcome.UnknownOperator"/>.</param>
-public sealed record TariffResult(TariffOutcome Outcome, TariffView? Tariff);
-
-public enum EmpDeleteOutcome
-{
-    Deleted,
-    NotFound,
-
-    /// <summary>The EMP still has tariffs.</summary>
-    HasTariffs,
-}
-
-/// <summary>EMPs and their tariffs, maintained by hand (permission <c>tariff:write</c>, docs/06 "Tarife").</summary>
+/// <summary>Providers, networks and tariffs (docs/adr/0013); fed by the tariff sources, readable with <c>price:read</c>.</summary>
 public interface ITariffCatalog
 {
     /// <summary>All EMPs by name.</summary>
     Task<IReadOnlyList<EmpView>> EmpsAsync(CancellationToken cancellationToken);
 
-    /// <summary>Creates or replaces the EMP; idempotent. A change is recorded in the audit log.</summary>
-    Task<(EmpView Emp, bool Created)> PutEmpAsync(string key, EmpInput input, Actor actor, CancellationToken cancellationToken);
+    /// <summary>All networks by key.</summary>
+    Task<IReadOnlyList<NetworkView>> NetworksAsync(CancellationToken cancellationToken);
 
-    Task<EmpDeleteOutcome> DeleteEmpAsync(string key, Actor actor, CancellationToken cancellationToken);
+    /// <summary>The current tariffs (with <paramref name="history"/> also the ended versions), of one EMP if given.</summary>
+    Task<IReadOnlyList<TariffView>> TariffsAsync(string? emp, bool history, CancellationToken cancellationToken);
 
-    /// <summary>The tariffs, of one EMP if <paramref name="emp"/> is given, by EMP and name.</summary>
-    Task<IReadOnlyList<TariffView>> TariffsAsync(string? emp, CancellationToken cancellationToken);
-
-    /// <summary>Creates or replaces the tariff with the id chosen by the client; idempotent. A change is recorded in the audit log.</summary>
-    Task<TariffResult> PutTariffAsync(TariffView tariff, Actor actor, CancellationToken cancellationToken);
-
-    /// <summary>Removes the tariff; false if it does not exist.</summary>
-    Task<bool> DeleteTariffAsync(Guid id, Actor actor, CancellationToken cancellationToken);
+    /// <summary>
+    /// Takes over the whole catalog of a source: new and changed tariffs become new versions, tariffs the source no longer
+    /// lists end. Validated first; with issues nothing is imported. An import by a user is recorded in the audit log.
+    /// </summary>
+    Task<CatalogImportResult> ImportAsync(string sourceKey, TariffCatalogSnapshot snapshot, Actor? actor, CancellationToken cancellationToken);
 }

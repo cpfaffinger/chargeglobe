@@ -1,0 +1,282 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "smatrics",
+      "name": "SMATRICS",
+      "website": "https://smatrics.com/de/laden/tarife",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "charge-simple",
+          "name": "Charge Simple",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "SMATRICS-Vertrag, Aktivierung 19,90 € einmalig, 2 Wochen Kündigungsfrist.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "smatrics"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.55,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 480
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.65,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 180
+                },
+                {
+                  "current": "DC",
+                  "minKw": 80,
+                  "pricePerKwh": 0.65,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ]
+            },
+            {
+              "kind": "PARTNER",
+              "networks": [
+                "oebb"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.55,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 480
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.65,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 180
+                },
+                {
+                  "current": "DC",
+                  "minKw": 80,
+                  "pricePerKwh": 0.65,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "Partnernetze (u. a. VERBUND, ÖBB) zum Heimnetzpreis."
+            }
+          ],
+          "notes": "Ohne Roaming. Blockiergebühr max. 18 € (AC) bzw. 36 € (DC).",
+          "sourceUrl": "https://smatrics.com/de/laden/tarife",
+          "sourceDate": "2024-10-08",
+          "confidence": "HIGH"
+        },
+        {
+          "key": "charge-and-roam",
+          "name": "Charge & Roam",
+          "currency": "EUR",
+          "monthlyFee": 4.9,
+          "prerequisites": "SMATRICS-Vertrag, Aktivierung 19,90 € einmalig, 2 Wochen Kündigungsfrist.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "smatrics"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.55,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 480
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.65,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 180
+                },
+                {
+                  "current": "DC",
+                  "minKw": 80,
+                  "pricePerKwh": 0.65,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ]
+            },
+            {
+              "kind": "PARTNER",
+              "networks": [
+                "oebb"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.55,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 480
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.65,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 180
+                },
+                {
+                  "current": "DC",
+                  "minKw": 80,
+                  "pricePerKwh": 0.65,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "Partnernetze (u. a. VERBUND, ÖBB) zum Heimnetzpreis."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.79,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 480
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.89,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 180
+                },
+                {
+                  "current": "DC",
+                  "minKw": 80,
+                  "pricePerKwh": 0.89,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "Roaming in AT, DE, IT, HR, SK, SI und CZ."
+            }
+          ],
+          "notes": "Blockiergebühr max. 18 € (AC) bzw. 36 € (DC).",
+          "sourceUrl": "https://smatrics.com/de/laden/tarife",
+          "sourceDate": "2024-10-08",
+          "confidence": "HIGH"
+        },
+        {
+          "key": "charge-and-roam-plus",
+          "name": "Charge & Roam+",
+          "currency": "EUR",
+          "monthlyFee": 8.9,
+          "prerequisites": "SMATRICS-Vertrag, Aktivierung 19,90 € einmalig, 2 Wochen Kündigungsfrist.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "smatrics"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.5,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 480
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.55,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 180
+                },
+                {
+                  "current": "DC",
+                  "minKw": 80,
+                  "pricePerKwh": 0.55,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ]
+            },
+            {
+              "kind": "PARTNER",
+              "networks": [
+                "oebb"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.5,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 480
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.55,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 180
+                },
+                {
+                  "current": "DC",
+                  "minKw": 80,
+                  "pricePerKwh": 0.55,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "Partnernetze (u. a. VERBUND, ÖBB) zum Heimnetzpreis."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.69,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 480
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.79,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 180
+                },
+                {
+                  "current": "DC",
+                  "minKw": 80,
+                  "pricePerKwh": 0.79,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "Roaming in AT, DE, IT, HR, SK, SI und CZ."
+            }
+          ],
+          "notes": "Blockiergebühr max. 18 € (AC) bzw. 36 € (DC).",
+          "sourceUrl": "https://smatrics.com/de/laden/tarife",
+          "sourceDate": "2024-10-08",
+          "confidence": "HIGH"
+        }
+      ]
+    }
+  ]
+}

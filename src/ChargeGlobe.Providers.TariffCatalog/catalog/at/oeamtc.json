@@ -1,0 +1,110 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "oeamtc",
+      "name": "ÖAMTC ePower",
+      "website": "https://www.oeamtc.at/epower",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "epower",
+          "name": "ÖAMTC ePower",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Mein-ÖAMTC-Konto genügt, Mitgliedschaft nicht nötig; Karte am Stützpunkt gratis, per Post 7,80 €.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "oeamtc"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.44,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.54,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 120
+                },
+                {
+                  "current": "DC",
+                  "minKw": 150,
+                  "pricePerKwh": 0.64,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 120
+                }
+              ]
+            },
+            {
+              "kind": "PARTNER",
+              "networks": [
+                "evn",
+                "wien-energie",
+                "energie-steiermark",
+                "kelag",
+                "linz-ag",
+                "salzburg-ag",
+                "energie-ag",
+                "da-emobil",
+                "tiwag",
+                "vkw",
+                "smatrics",
+                "ionity",
+                "mer",
+                "omv",
+                "shell",
+                "lidl",
+                "electra",
+                "enio",
+                "mercedes-hpc",
+                "burgenland-energie",
+                "e-laden-tirol",
+                "energie-graz",
+                "aae",
+                "stadtwerke-kufstein",
+                "stromquelle",
+                "tulln-energie",
+                "wels-strom"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.54,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.64,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 120
+                },
+                {
+                  "current": "DC",
+                  "minKw": 150,
+                  "pricePerKwh": 0.74,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 120
+                }
+              ],
+              "notes": "Partnernetz Österreich laut Roamingpartner-Liste (Stand 1.7.2026)."
+            }
+          ],
+          "notes": "Kein offenes Roaming: nur die gelisteten Partner (u. a. nicht Tesla, Allego, MOON, ChargePoint). Ausland: AC 0,64, DC 0,74, HPC 0,84 €/kWh.",
+          "sourceUrl": "https://www.oeamtc.at/0888_26+Preisliste_ePower_regula%CC%88re+Kunden_V3.1.pdf/87.780.714",
+          "sourceDate": "2026-07-01",
+          "confidence": "HIGH"
+        }
+      ]
+    }
+  ]
+}

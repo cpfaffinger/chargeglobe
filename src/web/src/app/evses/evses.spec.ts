@@ -773,7 +773,7 @@ describe('LocationDetails with prices', () => {
     ...overrides,
   });
   const prices = (current: EvsePricesResponse['data']['current'], emps: EmpPrice[] = []): EvsePricesResponse => ({
-    data: { id: 'e', evseId: 'e', tariffKind: 'AD_HOC', from: '', to: '', example: { kwh: 30, minutes: 40 }, current, history: [], emps },
+    data: { id: 'e', evseId: 'e', tariffKind: 'AD_HOC', from: '', to: '', example: { kwh: 30, minutes: 40 }, current, history: [], emps, unavailable: [] },
     meta: { attribution: [] },
   });
 
@@ -813,6 +813,11 @@ describe('LocationDetails with prices', () => {
       empName: 'SMATRICS',
       tariffId: 't-1',
       tariff: 'Basic',
+      tariffKey: 'basic',
+      zone: 'ROAMING',
+      sourceUrl: 'https://example.org/preise',
+      sourceDate: null,
+      confidence: 'HIGH',
       monthlyFee: null,
       price: priceView({ source: 'emp:smatrics', exampleCost: 13.5 }),
     };
@@ -828,6 +833,46 @@ describe('LocationDetails with prices', () => {
       'Der Preis konnte nicht geladen werden.',
     ]);
     expect(root().querySelector('.timeline, #heatmap')).toBeNull();
+    // Only the EVSE with a card gets the list of all cards.
+    expect(root().querySelectorAll('.all-tariffs').length).toBe(1);
+  });
+
+  it('lists every card with zone, cost and monthly fee and names the tariffs that do not work here', async () => {
+    TestBed.inject(CardsStore).set(['own']);
+    const card = (emp: string, zone: EmpPrice['zone'], exampleCost: number, monthlyFee: number | null): EmpPrice => ({
+      emp,
+      empName: emp.toUpperCase(),
+      tariffId: `t-${emp}`,
+      tariffKey: 'basic',
+      tariff: 'Basic',
+      zone,
+      monthlyFee,
+      price: priceView({ source: `emp:${emp}`, exampleCost }),
+      sourceUrl: 'https://example.org/preise',
+      sourceDate: '2026-07-01',
+      confidence: 'HIGH',
+    });
+    fixture = TestBed.createComponent(LocationDetails);
+    fixture.componentRef.setInput('locationId', 'loc-1');
+    await settle();
+    http.expectOne('/api/v1/locations/loc-1').flush({ data: { park: [], location: locationSummary(), evses: [evse()] }, meta: { attribution: [] } });
+    await settle();
+    const response = prices(null, [card('own', 'HOME', 9, 4.9), card('roam', 'ROAMING', 13, null)]);
+    response.data.unavailable = [
+      { emp: 'tesla', empName: 'Tesla', tariffKey: 'supercharging', tariff: 'Supercharging' },
+      { emp: 'evn', empName: 'EVN', tariffKey: 'drive-easy', tariff: '#Drive Easy' },
+    ];
+    http.expectOne('/api/v1/evses/e-1/prices').flush(response);
+    await settle();
+
+    expect(text(root(), '.all-tariffs summary')).toBe('Alle Ladekarten und Apps (2)');
+    const rows = Array.from(root().querySelectorAll('.tariff-table tr'));
+    expect(rows.map((row) => [text(row, 'th'), text(row, '.zone'), text(row, '.price-example'), text(row, '.monthly'), row.classList.contains('own')])).toEqual([
+      ['OWN · Basic', 'Heimnetz', '9,00 €', '+ 4,90 €/Monat', true],
+      ['ROAM · Basic', 'Roaming', '13,00 €', '', false],
+    ]);
+    expect(rows[0].querySelector('.zone-home')).not.toBeNull();
+    expect(text(root(), '.unavailable')).toBe('Hier nicht nutzbar: Tesla · Supercharging, EVN · #Drive Easy');
   });
 
   it('names the cheapest own card and the cheapest card overall if it is another one', async () => {
@@ -837,6 +882,11 @@ describe('LocationDetails with prices', () => {
       empName: emp.toUpperCase(),
       tariffId: `t-${emp}`,
       tariff: 'Basic',
+      tariffKey: 'basic',
+      zone: 'ROAMING',
+      sourceUrl: 'https://example.org/preise',
+      sourceDate: null,
+      confidence: 'HIGH',
       monthlyFee: null,
       price: priceView({ source: `emp:${emp}`, exampleCost }),
     });
@@ -900,6 +950,11 @@ describe('price texts', () => {
       empName: 'Karte',
       tariffId,
       tariff: tariffId,
+      tariffKey: 'basic',
+      zone: 'ROAMING',
+      sourceUrl: 'https://example.org/preise',
+      sourceDate: null,
+      confidence: 'HIGH',
       monthlyFee: 2,
       price: view(exampleCost),
     });
@@ -913,16 +968,17 @@ describe('price texts', () => {
       current,
       history: [],
       emps,
+      unavailable: [],
     });
     const adHoc = { price: view(13), since: '', observedAt: '' };
 
     expect(comparison(data(adHoc, []))).toEqual([]);
     const rows = comparison(data(adHoc, [card('a', 13), card('b', 20), card('c', 9)]));
     expect(rows.map((row) => [row.key, row.label, row.monthlyFee, row.cheapest])).toEqual([
-      ['c', 'Karte · c', 2, true],
+      ['c', 'Karte · c (Roaming)', 2, true],
       ['ad-hoc', 'Ad-hoc (ohne Vertrag)', null, false],
-      ['a', 'Karte · a', 2, false],
-      ['b', 'Karte · b', 2, false],
+      ['a', 'Karte · a (Roaming)', 2, false],
+      ['b', 'Karte · b (Roaming)', 2, false],
     ]);
     expect(comparison(data(null, [card('a', 13), card('b', 13)])).map((row) => row.cheapest)).toEqual([true, true]);
     // Own cards are marked; the ad-hoc price is never one.

@@ -1,0 +1,184 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "energie-steiermark",
+      "name": "Energie Steiermark",
+      "website": "https://www.e-steiermark.com/privat/produkte/e-mobility/lade-app/",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "ladetarif-s",
+          "name": "Ladetarif S",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Mobilitätskarte (erste Karte gratis, jede weitere 9,90 €), monatlich kündbar; Mindestumsatz 3,90 €/Monat, bis Ende 2026 ausgesetzt.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "energie-steiermark"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.45,
+                  "blockingFeePerMinute": 0.035,
+                  "blockingAfterMinutes": 59
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.58,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 29
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.57,
+                  "blockingFeePerMinute": 0.035,
+                  "blockingAfterMinutes": 59
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.665,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 29
+                }
+              ],
+              "notes": "Partner-Verbund: BEÖ-Partner und Roaming über Intercharge."
+            }
+          ],
+          "notes": "Infrastrukturabgabe ab der 60. (AC) bzw. 30. Minute (DC), auch während des Ladens.",
+          "sourceUrl": "https://www.e-steiermark.com/fileadmin/user_upload/downloads/Mobilitaetskarte_Kundeninformation_und_Preisblatt.pdf",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "ladetarif-m",
+          "name": "Ladetarif M",
+          "currency": "EUR",
+          "monthlyFee": 6.99,
+          "prerequisites": "Mobilitätskarte (erste Karte gratis, jede weitere 9,90 €), monatlich kündbar; Mindestumsatz 3,90 €/Monat, bis Ende 2026 ausgesetzt. Grundgebühr bis Ende 2026 erlassen.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "energie-steiermark"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.419,
+                  "blockingFeePerMinute": 0.035,
+                  "blockingAfterMinutes": 59
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.539,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 29
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.53,
+                  "blockingFeePerMinute": 0.035,
+                  "blockingAfterMinutes": 59
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.618,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 29
+                }
+              ],
+              "notes": "Partner-Verbund: BEÖ-Partner und Roaming über Intercharge."
+            }
+          ],
+          "notes": "Infrastrukturabgabe ab der 60. (AC) bzw. 30. Minute (DC), auch während des Ladens.",
+          "sourceUrl": "https://www.e-steiermark.com/fileadmin/user_upload/downloads/Mobilitaetskarte_Kundeninformation_und_Preisblatt.pdf",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "ladetarif-l",
+          "name": "Ladetarif L",
+          "currency": "EUR",
+          "monthlyFee": 19.99,
+          "prerequisites": "Mobilitätskarte (erste Karte gratis, jede weitere 9,90 €), monatlich kündbar; Mindestumsatz 3,90 €/Monat, bis Ende 2026 ausgesetzt. Grundgebühr bis Ende 2026 erlassen.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "energie-steiermark"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.383,
+                  "blockingFeePerMinute": 0.035,
+                  "blockingAfterMinutes": 59
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.493,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 29
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.485,
+                  "blockingFeePerMinute": 0.035,
+                  "blockingAfterMinutes": 59
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.565,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 29
+                }
+              ],
+              "notes": "Partner-Verbund: BEÖ-Partner und Roaming über Intercharge."
+            }
+          ],
+          "notes": "Infrastrukturabgabe ab der 60. (AC) bzw. 30. Minute (DC), auch während des Ladens.",
+          "sourceUrl": "https://www.e-steiermark.com/fileadmin/user_upload/downloads/Mobilitaetskarte_Kundeninformation_und_Preisblatt.pdf",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}

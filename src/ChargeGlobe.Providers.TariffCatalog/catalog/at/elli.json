@@ -1,0 +1,84 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "elli",
+      "name": "Elli (Volkswagen Group Charging)",
+      "website": "https://www.elli.eco/de/privatkunden/produkte/ladetarife?country=AT",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "premium",
+          "name": "Elli Premium",
+          "currency": "EUR",
+          "monthlyFee": 17.99,
+          "prerequisites": "Elli-App, monatlich kündbar, Plug & Charge, Karte gratis.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.46,
+                  "blockingFeePerMinute": 0.15,
+                  "blockingAfterMinutes": 90
+                }
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "mer"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.59,
+                  "blockingFeePerMinute": 0.07,
+                  "blockingAfterMinutes": 210
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.59,
+                  "blockingFeePerMinute": 0.15,
+                  "blockingAfterMinutes": 90
+                }
+              ],
+              "notes": "Ausgewähltes Partnernetz."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.69,
+                  "blockingFeePerMinute": 0.07,
+                  "blockingAfterMinutes": 210
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.74,
+                  "blockingFeePerMinute": 0.15,
+                  "blockingAfterMinutes": 90
+                }
+              ]
+            }
+          ],
+          "notes": "AC-Blockiergebühr nur 8–23 Uhr. Die Tarife Base, IONITY Boost und Ultra (Aufschlag auf den Betreiberpreis) sind nicht abgebildet.",
+          "sourceUrl": "https://www.elli.eco/de/privatkunden/produkte/ladetarife?country=AT",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}
