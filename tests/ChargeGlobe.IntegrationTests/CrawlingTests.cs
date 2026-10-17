@@ -237,7 +237,7 @@ public class CrawlingTests(IntegrationFactory factory) : IClassFixture<Integrati
         var status = (await (await admin.GetAsync("/api/v1/admin/crawler/status")).ReadJsonAsync()).GetProperty("data");
         var providers = status.GetProperty("providers").EnumerateArray().ToList();
         // Every adapter of the catalog appears, also one without plans yet.
-        Assert.Equal(["econtrol", "ocm"], providers.Select(provider => provider.GetProperty("key").GetString()));
+        Assert.Equal(SettingsCatalog.ProviderKeys, providers.Select(provider => provider.GetProperty("key").GetString()));
         Assert.Equal(0, providers[1].GetProperty("plans").GetArrayLength());
         var econtrol = providers[0];
         Assert.Equal(("econtrol", "E-Control Ladestellenverzeichnis", false, 600), (

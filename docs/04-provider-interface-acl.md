@@ -133,12 +133,12 @@ public sealed record ProviderMappingIssue(string ProviderKey, string? ExternalId
 
 ## Generische Adapter
 
-Drei Formate kommen so oft vor, dass sie je einen generischen, konfigurierbaren Adapter bekommen:
+Drei Formate kommen so oft vor, dass sie je einen generischen, konfigurierbaren Adapter bekommen (DATEX II ist umgesetzt, [Endpunkt-Notiz MobiData BW](endpunkte/mobidata-bw.md)):
 
 | Adapter | Für | Konfiguration |
 |---|---|---|
 | `Providers.Ocpi` | OCPI 2.2.1 `Locations`/`Tariffs` (CH-Open-Data, Partner-Feeds, manche NAPs) | Base-URL, Token, Versions-Endpoint |
-| `Providers.DatexII` | DATEX II EnergyInfrastructure (NAPs DE/AT/IT) | Pull-URL, Credentials, Namespace-Version |
+| `Providers.DatexII` (vorhanden) | DATEX II EnergyInfrastructure v3.5 JSON (MobiData BW, NAPs DE/AT/IT) | `DatexProfile`: URLs der Tabellen- und Statuspublikation, `offset`/`limit`-Paging, Länder, Key-Header, Descriptor-Werte; Instanzen in `DatexProfiles`, registriert mit `services.AddDatexIIProvider(profile)` |
 | `Providers.GenericJsonMap` | Web-Karten, die einfach `GET …?bbox=…` → JSON-Liste liefern | JSON-Pfade (`$.stations[*]`, `$.lat`, …), Status-Mapping – für einfache Quellen ohne eigenes C#-Projekt |
 
 ## Registrierung & Konfiguration
@@ -216,4 +216,4 @@ Checkliste „Tarif oder Anbieter ergänzen“:
 4. Fixtures + Replay-Test, Health-Probe. Liefert ein Request alles (`BulkAll`), bekommt das Inventar einen gemeinsamen Plan für alle Regionen statt einen je Region.
 5. Gegen eine Region laufen lassen (auf dem Live-Host erst nach dem Server-Test), `/admin/conflicts` prüfen (typisch: Koordinaten-Offsets, mehrdeutige Zuordnungen, Stecker-Freitext); der Tier im Descriptor entscheidet über die Präzedenz der Attribute ([03](03-datenmodell.md#quellen-präzedenz-je-attribut)).
 6. Konfiguration + Attribution-Text in `source`-Tabelle; Eintrag in `docs/07` aktualisieren.
-7. Key in `SettingsCatalog.ProviderKeys` ergänzen (Einstellungen unter `provider:<key>`, Zeile in `/admin/crawler`), `services.Add<Quelle>Provider()` in `AddJobs`, Projekt in die Dockerfiles von Jobs und Tests und in `ChargeGlobe.sln`.
+7. Key in `SettingsCatalog.ProviderKeys` ergänzen (Einstellungen unter `provider:<key>`, Zeile in `/admin/crawler`), `services.Add<Quelle>Provider()` in `AddJobs`, Projekt in die Dockerfiles von Jobs und Tests und in `ChargeGlobe.sln`; Anzeigename in `SOURCE_NAMES` (`src/web/src/app/evses/status.ts`) und `PROVIDER_NAMES` (`admin-settings.page.ts`). Eine neue DATEX-II-Quelle braucht kein Projekt, nur ein `DatexProfile` in `DatexProfiles` und die Registrierung.

@@ -66,14 +66,15 @@ public sealed class PollJobRunner(
 
     /// <summary>
     /// Kind of a failure: rejected or missing key blocks until the settings change; rate limit, server error,
-    /// network error, timeout and format errors cool down; anything else (e.g. the database) is not the source's fault.
+    /// network error, timeout and format errors (JSON, or a page or file that lost its expected form) cool down;
+    /// anything else (e.g. the database) is not the source's fault.
     /// </summary>
     public static FailureKind? Classify(Exception exception, CancellationToken cancellationToken) =>
         exception switch
         {
             ProviderNotConfiguredException => FailureKind.BLOCKED,
             HttpRequestException { StatusCode: HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden } => FailureKind.BLOCKED,
-            HttpRequestException or JsonException => FailureKind.TRANSIENT,
+            HttpRequestException or JsonException or InvalidDataException => FailureKind.TRANSIENT,
             OperationCanceledException when !cancellationToken.IsCancellationRequested => FailureKind.TRANSIENT,
             _ => null,
         };

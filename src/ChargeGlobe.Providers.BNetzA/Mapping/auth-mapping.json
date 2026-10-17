@@ -1,0 +1,13 @@
+{
+  "RFID-Karte": ["RFID_READER"],
+  "Onlinezahlungsverfahren": ["WEBSITE"],
+  "Kreditkarte (NFC)": ["CREDIT_CARD_PAYABLE", "CONTACTLESS_CARD_SUPPORT"],
+  "Kreditkarte (Lesegerät)": ["CREDIT_CARD_PAYABLE", "CHIP_CARD_SUPPORT"],
+  "Debitkarte (NFC)": ["DEBIT_CARD_PAYABLE", "CONTACTLESS_CARD_SUPPORT"],
+  "Debitkarte (Lesegerät)": ["DEBIT_CARD_PAYABLE", "CHIP_CARD_SUPPORT"],
+  "Plug & Charge": ["CHARGING_CONTRACT"],
+  "Bargeld": ["CASH"],
+  "Kostenlos": [],
+  "Kostenlos (Registrierung)": [],
+  "Sonstige": []
+}

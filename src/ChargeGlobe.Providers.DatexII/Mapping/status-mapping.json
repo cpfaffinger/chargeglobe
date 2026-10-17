@@ -1,0 +1,17 @@
+{
+  "available": "AVAILABLE",
+  "blocked": "BLOCKED",
+  "charging": "CHARGING",
+  "faulted": "OUTOFORDER",
+  "inoperative": "INOPERATIVE",
+  "occupied": "CHARGING",
+  "outOfOrder": "OUTOFORDER",
+  "OUT_OF_ORDER": "OUTOFORDER",
+  "outOfStock": "OUTOFORDER",
+  "OUT_OF_STOCK": "OUTOFORDER",
+  "planned": "PLANNED",
+  "removed": "REMOVED",
+  "reserved": "RESERVED",
+  "unavailable": "INOPERATIVE",
+  "unknown": "UNKNOWN"
+}

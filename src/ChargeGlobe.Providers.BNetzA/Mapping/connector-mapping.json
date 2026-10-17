@@ -1,0 +1,12 @@
+{
+  "AC Typ 2 Steckdose": { "standard": "IEC_62196_T2", "format": "SOCKET", "powerType": "AC_3_PHASE" },
+  "AC Typ 2 Fahrzeugkupplung": { "standard": "IEC_62196_T2", "format": "CABLE", "powerType": "AC_3_PHASE" },
+  "AC Typ 1 Steckdose": { "standard": "IEC_62196_T1", "format": "SOCKET", "powerType": "AC_1_PHASE" },
+  "AC Schuko": { "standard": "DOMESTIC_F", "format": "SOCKET", "powerType": "AC_1_PHASE" },
+  "AC CEE 3-polig": { "standard": "UNKNOWN", "format": "SOCKET", "powerType": "AC_1_PHASE" },
+  "AC CEE 5-polig": { "standard": "UNKNOWN", "format": "SOCKET", "powerType": "AC_3_PHASE" },
+  "DC Fahrzeugkupplung Typ Combo 2 (CCS)": { "standard": "IEC_62196_T2_COMBO", "format": "CABLE", "powerType": "DC" },
+  "DC CHAdeMO": { "standard": "CHADEMO", "format": "CABLE", "powerType": "DC" },
+  "DC Tesla Fahrzeugkupplung (Typ 2)": { "standard": "TESLA_S", "format": "CABLE", "powerType": "DC" },
+  "DC Megawatt Charging System (MCS)": { "standard": "UNKNOWN", "format": "CABLE", "powerType": "DC" }
+}

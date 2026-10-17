@@ -185,6 +185,7 @@ public class IngestJobsTests
         Assert.Equal(FailureKind.BLOCKED, PollJobRunner.Classify(new ProviderNotConfiguredException("no key"), CancellationToken.None));
         Assert.Equal(FailureKind.TRANSIENT, PollJobRunner.Classify(new HttpRequestException("network"), CancellationToken.None));
         Assert.Equal(FailureKind.TRANSIENT, PollJobRunner.Classify(new JsonException("format"), CancellationToken.None));
+        Assert.Equal(FailureKind.TRANSIENT, PollJobRunner.Classify(new InvalidDataException("page without link"), CancellationToken.None));
         Assert.Null(PollJobRunner.Classify(new InvalidOperationException("database"), CancellationToken.None));
     }
 
@@ -328,22 +329,49 @@ public class IngestJobsTests
             new StubConfig(new() { [(SettingsCatalog.ProviderRegions, "provider:none")] = "" }), harness.Runner,
             new JobOptions(JobRole.Crawler, "c"), TimeProvider.System, new ListLogger<PollScheduler>());
 
+        // An empty regions setting means every state of the countries of the source.
+        var austria = RegionBounds.ForCountries(["AT"]).Select(region => region.Code).ToList();
         var statusOnly = scheduler.PlansFor(new StatusOnlySource());
         var perRegion = scheduler.PlansFor(new FakeSource { Capabilities = ProviderCapabilities.StaticInventory });
 
-        Assert.Equal(4, statusOnly.Count);
+        Assert.Equal(9, statusOnly.Count);
         Assert.All(statusOnly, plan => Assert.Equal((JobType.STATUS_POLL, TimeSpan.FromMinutes(15)), (plan.JobType, plan.Interval)));
-        Assert.Equal(["AT-9", "AT-3", "AT-4", "AT-1"], statusOnly.Select(plan => plan.RegionCode));
+        Assert.Equal(austria, statusOnly.Select(plan => plan.RegionCode));
         Assert.Empty(scheduler.PlansFor(new StatusOnlySource { Defaults = new PollDefaults(null, null, null) }));
-        Assert.Equal(
-            ["AT-9", "AT-3", "AT-4", "AT-1", "AT-9", "AT-3", "AT-4", "AT-1"],
-            perRegion.Select(plan => plan.RegionCode));
-        Assert.Empty(scheduler.PlansFor(new FakeSource { Key = "none" }));
+        Assert.Equal([.. austria, .. austria], perRegion.Select(plan => plan.RegionCode));
+        // A source of a country without regions gets no plans.
+        Assert.Empty(scheduler.PlansFor(new FakeSource { Key = "none", Countries = ["XX"] }));
 
         var bulk = scheduler.PlansFor(new FakeSource()).Single(plan => plan.JobType == JobType.INVENTORY_FULL);
-        Assert.Equal("AT-9,AT-3,AT-4,AT-1", bulk.RegionCode);
-        // Envelope of Vienna, Lower Austria, Upper Austria and Burgenland.
-        Assert.Equal((12.74, 46.83, 17.17, 49.03), (bulk.Bbox.MinLongitude, bulk.Bbox.MinLatitude, bulk.Bbox.MaxLongitude, bulk.Bbox.MaxLatitude));
+        Assert.Equal(string.Join(',', austria), bulk.RegionCode);
+        // Envelope of Austria.
+        Assert.Equal((9.53, 46.37, 17.17, 49.03), (bulk.Bbox.MinLongitude, bulk.Bbox.MinLatitude, bulk.Bbox.MaxLongitude, bulk.Bbox.MaxLatitude));
+
+        // A bulk status publication (DATEX II) gets one status plan for all regions instead of one per region.
+        var bulkStatus = scheduler.PlansFor(new FakeSource
+        {
+            Key = "bulk",
+            Capabilities = ProviderCapabilities.StaticInventory | ProviderCapabilities.LiveStatusPerEvse | ProviderCapabilities.BulkAll,
+        });
+        Assert.Equal(
+            [(JobType.INVENTORY_FULL, string.Join(',', austria), TimeSpan.FromDays(1)), (JobType.STATUS_POLL, string.Join(',', austria), TimeSpan.FromMinutes(15))],
+            bulkStatus.Select(plan => (plan.JobType, plan.RegionCode, plan.Interval)));
+    }
+
+    [Fact]
+    public void Regions_of_other_countries_than_the_source_are_ignored_with_a_warning()
+    {
+        var harness = Create(new FakeSource());
+        var logger = new ListLogger<PollScheduler>();
+        var scheduler = new PollScheduler(
+            harness.Services.GetRequiredService<IServiceScopeFactory>(), [], new EnabledSettings(),
+            new StubConfig(new() { [(SettingsCatalog.ProviderRegions, "provider:de")] = "DE-BE, AT-9, DE-HH" }), harness.Runner,
+            new JobOptions(JobRole.Crawler, "c"), TimeProvider.System, logger);
+
+        var plans = scheduler.PlansFor(new FakeSource { Key = "de", Countries = ["DE"], Capabilities = ProviderCapabilities.StaticInventory });
+
+        Assert.Equal(["DE-BE", "DE-HH", "DE-BE", "DE-HH"], plans.Select(plan => plan.RegionCode));
+        Assert.Contains("Provider de: regions of other countries ignored: AT-9", logger.Messages);
     }
 
     [Fact]
@@ -438,6 +466,8 @@ public class IngestJobsTests
 
         public ProviderCapabilities Capabilities { get; init; } = EControlProvider.DescriptorValue.Capabilities;
 
+        public IReadOnlyList<string> Countries { get; init; } = EControlProvider.DescriptorValue.Countries;
+
         public List<ProviderLocationSnapshot> Locations { get; set; } = [];
 
         public List<ProviderEvseStatus> Statuses { get; set; } = [];
@@ -453,7 +483,7 @@ public class IngestJobsTests
         /// <summary>Called on every status fetch, e.g. to let time pass.</summary>
         public Action? OnStatusFetch { get; set; }
 
-        public ProviderDescriptor Descriptor => EControlProvider.DescriptorValue with { Key = Key, Capabilities = Capabilities };
+        public ProviderDescriptor Descriptor => EControlProvider.DescriptorValue with { Key = Key, Capabilities = Capabilities, Countries = Countries };
 
         public async IAsyncEnumerable<ProviderLocationSnapshot> FetchInventoryAsync(
             InventoryQuery query, [EnumeratorCancellation] CancellationToken cancellationToken)

@@ -81,11 +81,11 @@ Reihenfolge nach Nutzen. Schritte 1, 2 und 5 brauchen kein Konto und können sof
 6. **Open Charge Map**: der vorhandene Key ([ocm](endpunkte/ocm.md)) gilt auch für Deutschland; nur Lückenfüller.
 7. **Beobachten**: IVSG-Verabschiedung; Verlagerung der Inbetriebnahme-Meldungen zur Mobilithek [V-sek]; ob die Bundesnetzagentur den Webservice irgendwann um DATEX II oder Status erweitert.
 
-### 3.3 Was die Entwicklung danach baut
-- Adapter `bnetza` (Tier `OFFICIAL`, Inventar aus CSV oder Webservice, Matching über EVSE-ID, sonst Geo + Betreiber + Steckerkonfiguration; `Ladeeinrichtungs-ID` als stabiler Quellschlüssel).
-- Generischer **DATEX-II-Adapter** ([09](09-roadmap.md), Phase 3) mit konfigurierbarem Profil: zuerst MobiData BW (`static`/`realtime`, JSON v3.5), dann Mobilithek-Pull je Subscription-ID (`GET https://mobilithek.info:8443/mobilithek/api/V1.0/subscription?subscriptionID=…`, Client-Zertifikat, Pflicht-Header `Accept-Encoding: gzip`, `If-Modified-Since` für Delta-Pakete, 204 = kein Paket, 304 = nichts Neues, 404 bei Überschreitung des nicht dokumentierten Zugriffslimits). Status-Mapping `RefillPointStatusEnum` → OCPI steht in [08 §7](08-datenquellen-und-recht.md).
-- Region-Seed der 16 Bundesländer (`DE-BW` … `DE-TH`) aus OSM wie `regions-at.geojson`.
-- Attribution je Quelle in `meta.attribution`; Lizenz je Mobilithek-Angebot als Einstellung je Feed.
+### 3.3 Stand der Umsetzung und was die Entwicklung noch baut
+- Vorhanden: Adapter `bnetza` (Tier `OFFICIAL`, Inventar aus der monatlichen CSV, Link von der Seite der Ladesäulenkarte; Matching über EVSE-ID, sonst synthetischer Schlüssel `<Ladeeinrichtungs-ID>/LP<n>` und Geo-Kaskade; [Endpunkt-Notiz](endpunkte/bnetza.md)). Offen: Umstellung auf den tagesaktuellen Webservice, sobald der Betreiber die OpenAPI-Beschreibung hat.
+- Vorhanden: generischer **DATEX-II-Adapter** `ChargeGlobe.Providers.DatexII` mit `DatexProfile` je Quelle; erste Instanz MobiData BW (`static`/`realtime`, JSON v3.5, `offset`/`limit`-Paging, Inventar mit EVSE-IDs und Ad-hoc-Preisen, Status in Bulk; [Endpunkt-Notiz](endpunkte/mobidata-bw.md)); Status-Mapping `RefillPointStatusEnum` → OCPI nach [08 §7](08-datenquellen-und-recht.md); Parser an den DATEX-Publikationen der E-Control getestet. Offen: Mobilithek-Profil (Pull je Subscription-ID über `GET https://mobilithek.info:8443/mobilithek/api/V1.0/subscription?subscriptionID=…`, Client-Zertifikat, Pflicht-Header `Accept-Encoding: gzip`, `If-Modified-Since` für Delta-Pakete, 204 = kein Paket, 304 = nichts Neues, 404 bei Überschreitung des nicht dokumentierten Zugriffslimits), Lizenz je Mobilithek-Angebot als Einstellung je Feed.
+- Vorhanden: Region-Seed der 16 Bundesländer (`DE-BB` … `DE-TH`) aus OSM (`regions-de.geojson`, `scripts/regions/build-regions-de.sh`); Attribution je Quelle in `meta.attribution`.
+- Offen: Betreiber-Seed aus der BDEW-Operator-ID-Liste (Schritt 5 in 3.2).
 
 ## 4. Was chargeglobe je Land braucht
 

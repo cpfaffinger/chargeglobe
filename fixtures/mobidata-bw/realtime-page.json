@@ -1,0 +1,369 @@
+{
+  "payload": {
+    "versionG": "3.5",
+    "modelBaseVersionG": "3",
+    "profileNameG": "AFIR Energy Infrastructure",
+    "profileVersionG": "01-00-00",
+    "aegiEnergyInfrastructureStatusPublication": {
+      "lang": "de",
+      "publicationTime": "2026-10-17T12:11:32.941383+00:00",
+      "publicationCreator": {
+        "country": "DE",
+        "nationalIdentifier": "OCPDB"
+      },
+      "energyInfrastructureSiteStatus": [
+        {
+          "reference": {
+            "targetClass": "FacilityObject",
+            "idG": "CH*CCC*E50080",
+            "versionG": "2026-10-17T01:53:41.946835+00:00"
+          },
+          "lastUpdated": "2026-10-17T01:53:41.946835+00:00",
+          "energyInfrastructureStationStatus": [
+            {
+              "reference": {
+                "targetClass": "FacilityObject",
+                "idG": "CH*CCC*E50080",
+                "versionG": "2026-10-17T01:53:41.946835+00:00"
+              },
+              "refillPointStatus": [
+                {
+                  "aegiRefillPointStatus": {
+                    "reference": {
+                      "targetClass": "FacilityObject",
+                      "idG": "CH*CCC*E50080",
+                      "versionG": "2026-10-17T01:53:41.926925+00:00"
+                    },
+                    "lastUpdated": "2026-10-17T01:53:41.926925+00:00",
+                    "status": {
+                      "value": "unknown"
+                    }
+                  }
+                },
+                {
+                  "aegiRefillPointStatus": {
+                    "reference": {
+                      "targetClass": "FacilityObject",
+                      "idG": "CH*CCC*E50024",
+                      "versionG": "2026-10-17T01:53:41.931077+00:00"
+                    },
+                    "lastUpdated": "2026-10-17T01:53:41.931077+00:00",
+                    "status": {
+                      "value": "unknown"
+                    }
+                  }
+                },
+                {
+                  "aegiRefillPointStatus": {
+                    "reference": {
+                      "targetClass": "FacilityObject",
+                      "idG": "CH*CCC*E50079",
+                      "versionG": "2026-10-17T01:53:41.946835+00:00"
+                    },
+                    "lastUpdated": "2026-10-17T01:53:41.946835+00:00",
+                    "status": {
+                      "value": "unknown"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "reference": {
+            "targetClass": "FacilityObject",
+            "idG": "Mer Germany-3914",
+            "versionG": "2026-10-17T08:16:38+00:00"
+          },
+          "lastUpdated": "2026-10-17T08:16:38+00:00",
+          "energyInfrastructureStationStatus": [
+            {
+              "reference": {
+                "targetClass": "FacilityObject",
+                "idG": "3914",
+                "versionG": "2026-10-17T08:16:38+00:00"
+              },
+              "refillPointStatus": [
+                {
+                  "aegiRefillPointStatus": {
+                    "reference": {
+                      "targetClass": "FacilityObject",
+                      "idG": "1347",
+                      "versionG": "2026-10-17T08:16:38+00:00"
+                    },
+                    "lastUpdated": "2026-10-17T08:16:38+00:00",
+                    "status": {
+                      "value": "available"
+                    }
+                  }
+                },
+                {
+                  "aegiRefillPointStatus": {
+                    "reference": {
+                      "targetClass": "FacilityObject",
+                      "idG": "1349",
+                      "versionG": "2026-10-15T23:06:05+00:00"
+                    },
+                    "lastUpdated": "2026-10-16T20:23:09+00:00",
+                    "status": {
+                      "value": "available"
+                    }
+                  }
+                },
+                {
+                  "aegiRefillPointStatus": {
+                    "reference": {
+                      "targetClass": "FacilityObject",
+                      "idG": "1352",
+                      "versionG": "2026-10-15T23:06:05+00:00"
+                    },
+                    "lastUpdated": "2026-10-12T21:37:38+00:00",
+                    "status": {
+                      "value": "available"
+                    }
+                  }
+                },
+                {
+                  "aegiRefillPointStatus": {
+                    "reference": {
+                      "targetClass": "FacilityObject",
+                      "idG": "1353",
+                      "versionG": "2026-10-15T23:06:05+00:00"
+                    },
+                    "lastUpdated": "2026-10-12T21:37:38+00:00",
+                    "status": {
+                      "value": "available"
+                    }
+                  }
+                },
+                {
+                  "aegiRefillPointStatus": {
+                    "reference": {
+                      "targetClass": "FacilityObject",
+                      "idG": "1346",
+                      "versionG": "2026-10-17T08:16:38+00:00"
+                    },
+                    "lastUpdated": "2026-10-17T08:16:38+00:00",
+                    "status": {
+                      "value": "available"
+                    }
+                  }
+                },
+                {
+                  "aegiRefillPointStatus": {
+                    "reference": {
+                      "targetClass": "FacilityObject",
+                      "idG": "1348",
+                      "versionG": "2026-10-15T23:06:05+00:00"
+                    },
+                    "lastUpdated": "2026-10-16T20:23:09+00:00",
+                    "status": {
+                      "value": "available"
+                    }
+                  }
+                },
+                {
+                  "aegiRefillPointStatus": {
+                    "reference": {
+                      "targetClass": "FacilityObject",
+                      "idG": "1351",
+                      "versionG": "2026-10-15T23:06:05+00:00"
+                    },
+                    "lastUpdated": "2026-10-14T20:23:40+00:00",
+                    "status": {
+                      "value": "available"
+                    }
+                  }
+                },
+                {
+                  "aegiRefillPointStatus": {
+                    "reference": {
+                      "targetClass": "FacilityObject",
+                      "idG": "1350",
+                      "versionG": "2026-10-15T23:06:05+00:00"
+                    },
+                    "lastUpdated": "2026-03-25T08:21:49+00:00",
+                    "status": {
+                      "value": "outOfOrder"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "reference": {
+            "targetClass": "FacilityObject",
+            "idG": "800013227",
+            "versionG": "2026-10-17T11:41:16.524000+00:00"
+          },
+          "lastUpdated": "2026-10-17T11:41:16.524000+00:00",
+          "energyInfrastructureStationStatus": [
+            {
+              "reference": {
+                "targetClass": "FacilityObject",
+                "idG": "14514",
+                "versionG": "2026-10-17T10:53:45.894000+00:00"
+              },
+              "refillPointStatus": [
+                {
+                  "aegiRefillPointStatus": {
+                    "reference": {
+                      "targetClass": "FacilityObject",
+                      "idG": "DE*EBW*E914213*2",
+                      "versionG": "2026-10-17T09:43:10.772000+00:00"
+                    },
+                    "lastUpdated": "2026-10-17T09:43:10.772000+00:00",
+                    "status": {
+                      "value": "available"
+                    }
+                  }
+                },
+                {
+                  "aegiRefillPointStatus": {
+                    "reference": {
+                      "targetClass": "FacilityObject",
+                      "idG": "DE*EBW*E914213*1",
+                      "versionG": "2026-10-17T10:53:45.894000+00:00"
+                    },
+                    "lastUpdated": "2026-10-17T10:53:45.894000+00:00",
+                    "status": {
+                      "value": "available"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "reference": {
+                "targetClass": "FacilityObject",
+                "idG": "14537",
+                "versionG": "2026-10-17T11:41:16.524000+00:00"
+              },
+              "refillPointStatus": [
+                {
+                  "aegiRefillPointStatus": {
+                    "reference": {
+                      "targetClass": "FacilityObject",
+                      "idG": "DE*EBW*E914214*1",
+                      "versionG": "2026-10-17T06:51:04.647000+00:00"
+                    },
+                    "lastUpdated": "2026-10-17T06:51:04.647000+00:00",
+                    "status": {
+                      "value": "available"
+                    }
+                  }
+                },
+                {
+                  "aegiRefillPointStatus": {
+                    "reference": {
+                      "targetClass": "FacilityObject",
+                      "idG": "DE*EBW*E914214*2",
+                      "versionG": "2026-10-17T11:41:16.524000+00:00"
+                    },
+                    "lastUpdated": "2026-10-17T11:41:16.524000+00:00",
+                    "status": {
+                      "value": "charging"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "reference": {
+            "targetClass": "FacilityObject",
+            "idG": "2935",
+            "versionG": "2026-10-17T01:01:31.721843+00:00"
+          },
+          "lastUpdated": "2026-10-17T01:01:31.721843+00:00",
+          "energyInfrastructureStationStatus": [
+            {
+              "reference": {
+                "targetClass": "FacilityObject",
+                "idG": "2935",
+                "versionG": "2026-10-17T01:01:31.721843+00:00"
+              },
+              "refillPointStatus": [
+                {
+                  "aegiRefillPointStatus": {
+                    "reference": {
+                      "targetClass": "FacilityObject",
+                      "idG": "DE*SHN*E0030119",
+                      "versionG": "2026-10-15T17:48:09.212000+00:00"
+                    },
+                    "lastUpdated": "2026-10-16T02:16:47.732611+00:00",
+                    "status": {
+                      "value": "available"
+                    }
+                  }
+                },
+                {
+                  "aegiRefillPointStatus": {
+                    "reference": {
+                      "targetClass": "FacilityObject",
+                      "idG": "DE*SHN*E0030120",
+                      "versionG": "2026-10-15T17:48:09.212000+00:00"
+                    },
+                    "lastUpdated": "2026-10-16T02:16:47.749588+00:00",
+                    "status": {
+                      "value": "available"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "reference": {
+            "targetClass": "FacilityObject",
+            "idG": "CH*CCI*E22078",
+            "versionG": "2026-10-17T01:53:41.564796+00:00"
+          },
+          "lastUpdated": "2026-10-17T01:53:41.564796+00:00",
+          "energyInfrastructureStationStatus": [
+            {
+              "reference": {
+                "targetClass": "FacilityObject",
+                "idG": "CH*CCI*E22078",
+                "versionG": "2026-10-17T01:53:41.564796+00:00"
+              },
+              "refillPointStatus": [
+                {
+                  "aegiRefillPointStatus": {
+                    "reference": {
+                      "targetClass": "FacilityObject",
+                      "idG": "CH*CCI*E22078",
+                      "versionG": "2026-10-17T01:53:41.516037+00:00"
+                    },
+                    "lastUpdated": "2026-10-17T01:53:41.516037+00:00",
+                    "status": {
+                      "value": "unknown"
+                    }
+                  }
+                },
+                {
+                  "aegiRefillPointStatus": {
+                    "reference": {
+                      "targetClass": "FacilityObject",
+                      "idG": "CH*CCI*E22076",
+                      "versionG": "2026-10-17T01:53:41.549036+00:00"
+                    },
+                    "lastUpdated": "2026-10-17T01:53:41.549036+00:00",
+                    "status": {
+                      "value": "unknown"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

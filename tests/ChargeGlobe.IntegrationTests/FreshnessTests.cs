@@ -105,11 +105,12 @@ public class FreshnessTests(IntegrationFactory factory) : IClassFixture<Integrat
         });
 
         Assert.Equal(Now, freshness.At);
-        Assert.Equal(["AT-1", "AT-2", "AT-3", "AT-4", "AT-5", "AT-6", "AT-7", "AT-8", "AT-9"], freshness.Regions.Select(region => region.Code));
-        Assert.Equal(new RegionFreshness("AT-9", "Wien", 5, 3, 20, 40), freshness.Regions[^1]);
+        Assert.Equal(RegionBounds.All.Keys.Order(StringComparer.Ordinal), freshness.Regions.Select(region => region.Code));
+        Assert.Equal(new RegionFreshness("AT-9", "Wien", 5, 3, 20, 40), freshness.Regions[8]);
+        Assert.Equal(new RegionFreshness("DE-TH", "Thüringen", 0, 0, 0, 0), freshness.Regions[^1]);
         Assert.Equal(new RegionFreshness("AT-1", "Burgenland", 0, 0, 0, 0), freshness.Regions[0]);
 
-        Assert.Equal(["econtrol", "ocm"], freshness.Sources.Select(source => source.Key));
+        Assert.Equal(SettingsCatalog.ProviderKeys, freshness.Sources.Select(source => source.Key));
         var econtrol = freshness.Sources[0];
         Assert.Equal((5, 600), (econtrol.RequestsLastHour, econtrol.BudgetPerHour));
         Assert.Equal(
@@ -133,7 +134,7 @@ public class FreshnessTests(IntegrationFactory factory) : IClassFixture<Integrat
 
         using var admin = factory.Client((await factory.LoginAsync(IntegrationFactory.AdminEmail, IntegrationFactory.AdminPassword)).AccessToken);
         var first = (await (await admin.GetAsync("/api/v1/admin/crawler/freshness")).ReadJsonAsync()).GetProperty("data");
-        Assert.Equal(9, first.GetProperty("regions").GetArrayLength());
+        Assert.Equal(RegionBounds.All.Count, first.GetProperty("regions").GetArrayLength());
         Assert.Equal(3, first.GetProperty("sources")[0].GetProperty("points").GetArrayLength());
         Assert.Equal(System.Text.Json.JsonValueKind.Array, first.GetProperty("operators").ValueKind);
         var second = (await (await admin.GetAsync("/api/v1/admin/crawler/freshness")).ReadJsonAsync()).GetProperty("data");

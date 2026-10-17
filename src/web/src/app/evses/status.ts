@@ -24,7 +24,12 @@ export const EVSE_STATUS: Record<string, { color: string; icon: IconName; label:
 export const statusOf = (status: string) => EVSE_STATUS[status] ?? EVSE_STATUS['UNKNOWN'];
 
 /** Names of the sources (keys of the table source) in status lines. */
-const SOURCE_NAMES: Record<string, string> = { econtrol: 'E-Control', ocm: 'Open Charge Map' };
+const SOURCE_NAMES: Record<string, string> = {
+  econtrol: 'E-Control',
+  ocm: 'Open Charge Map',
+  bnetza: 'Bundesnetzagentur',
+  'mobidata-bw': 'MobiData BW',
+};
 
 export const sourceName = (key: string | null): string => (key === null ? '' : (SOURCE_NAMES[key] ?? key));
 

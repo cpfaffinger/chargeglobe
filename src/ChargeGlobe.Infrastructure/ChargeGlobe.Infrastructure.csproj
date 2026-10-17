@@ -23,8 +23,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Region polygons from OpenStreetMap (ODbL), loaded by RegionSeeder; rebuilt by scripts/regions/build-regions-at.sh. -->
+    <!-- Region polygons from OpenStreetMap (ODbL), loaded by RegionSeeder; rebuilt by scripts/regions/build-regions-at.sh and build-regions-de.sh. -->
     <EmbeddedResource Include="Persistence\Seed\regions-at.geojson" LogicalName="ChargeGlobe.Infrastructure.Persistence.Seed.regions-at.geojson" />
+    <EmbeddedResource Include="Persistence\Seed\regions-de.geojson" LogicalName="ChargeGlobe.Infrastructure.Persistence.Seed.regions-de.geojson" />
   </ItemGroup>
 
   <ItemGroup>

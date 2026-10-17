@@ -23,11 +23,13 @@
     <ProjectReference Include="..\..\src\ChargeGlobe.Providers.Abstractions\ChargeGlobe.Providers.Abstractions.csproj" />
     <ProjectReference Include="..\..\src\ChargeGlobe.Providers.EControl\ChargeGlobe.Providers.EControl.csproj" />
     <ProjectReference Include="..\..\src\ChargeGlobe.Providers.OpenChargeMap\ChargeGlobe.Providers.OpenChargeMap.csproj" />
+    <ProjectReference Include="..\..\src\ChargeGlobe.Providers.BNetzA\ChargeGlobe.Providers.BNetzA.csproj" />
+    <ProjectReference Include="..\..\src\ChargeGlobe.Providers.DatexII\ChargeGlobe.Providers.DatexII.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <!-- Recorded, sanitized source responses (repository folder fixtures/, docs/04 rule 7). -->
-    <None Include="..\..\fixtures\**\*.json" LinkBase="fixtures" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\fixtures\**\*.json;..\..\fixtures\**\*.csv" LinkBase="fixtures" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

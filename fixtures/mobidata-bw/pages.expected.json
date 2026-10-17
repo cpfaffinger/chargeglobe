@@ -1,0 +1,2994 @@
+{
+  "locations": [
+    {
+      "externalId": "1002913",
+      "name": null,
+      "address": {
+        "street": "Viktoriastr. 5",
+        "postalCode": "44532",
+        "city": "Lünen",
+        "country": "DE"
+      },
+      "coordinates": {
+        "latitude": 51.608953,
+        "longitude": 7.522998
+      },
+      "operatorName": "Stadtwerke Lünen Infrastrukturbau GmbH",
+      "operatorId": null,
+      "access": "PUBLIC",
+      "openingTimes": {
+        "twentyFourSeven": true,
+        "description": null
+      },
+      "evses": [
+        {
+          "externalId": "BNETZA*1002913*1",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 11.0,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 11.0,
+              "maxVoltage": 400,
+              "maxAmperage": 32,
+              "rawType": "iec62196T2"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": [
+            "RFID_READER",
+            "APP",
+            "DEBIT_CARD_PAYABLE",
+            "CONTACTLESS_CARD_SUPPORT"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "BNETZA*1002913*2",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 11.0,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 11.0,
+              "maxVoltage": 400,
+              "maxAmperage": 32,
+              "rawType": "iec62196T2"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": [
+            "RFID_READER",
+            "APP",
+            "DEBIT_CARD_PAYABLE",
+            "CONTACTLESS_CARD_SUPPORT"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        }
+      ],
+      "observedAt": "2026-10-17T12:00:00+00:00",
+      "raw": {
+        "idG": "1002913",
+        "versionG": "2026-10-13T07:43:30.596692+00:00",
+        "operatingHours": {
+          "afacOpenAllHours": {}
+        },
+        "locationReference": {
+          "locPointLocation": {
+            "locLocationExtensionG": {
+              "FacilityLocation": {
+                "address": {
+                  "postcode": "44532",
+                  "city": {
+                    "values": [
+                      {
+                        "lang": "de",
+                        "value": "Lünen"
+                      }
+                    ]
+                  },
+                  "countryCode": "DE",
+                  "addressLine": [
+                    {
+                      "order": 1,
+                      "type": {
+                        "value": "street"
+                      },
+                      "text": {
+                        "values": [
+                          {
+                            "lang": "de",
+                            "value": "Viktoriastr."
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "order": 2,
+                      "type": {
+                        "value": "houseNumber"
+                      },
+                      "text": {
+                        "values": [
+                          {
+                            "lang": "de",
+                            "value": "5"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "locAreaLocation": {
+            "coordinatesForDisplay": {
+              "latitude": 51.608953,
+              "longitude": 7.522998
+            }
+          }
+        },
+        "operator": {
+          "afacAnOrganisation": {
+            "name": {
+              "values": [
+                {
+                  "lang": "de",
+                  "value": "Stadtwerke Lünen Infrastrukturbau GmbH"
+                }
+              ]
+            }
+          }
+        },
+        "energyInfrastructureStation": [
+          {
+            "idG": "1002913",
+            "versionG": "2026-10-13T07:43:30.596692+00:00",
+            "totalMaximumPower": 22.0,
+            "authenticationAndIdentificationMethods": [
+              {
+                "value": "nfc"
+              },
+              {
+                "value": "debitCard"
+              },
+              {
+                "value": "overTheAir"
+              },
+              {
+                "value": "rfid"
+              }
+            ],
+            "numberOfRefillPoints": 2,
+            "serviceType": [
+              {
+                "serviceType": {
+                  "value": "unattended"
+                }
+              }
+            ],
+            "refillPoint": [
+              {
+                "aegiElectricChargingPoint": {
+                  "idG": "BNETZA*1002913*1",
+                  "versionG": "2026-10-13T07:43:30.592898+00:00",
+                  "deliveryUnit": {
+                    "value": "kWh"
+                  },
+                  "currentType": {
+                    "value": "ac"
+                  },
+                  "numberOfConnectors": 1,
+                  "availableVoltage": [
+                    400
+                  ],
+                  "availableChargingPower": [
+                    11000
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "iec62196T2"
+                      },
+                      "connectorFormat": {
+                        "value": "socket"
+                      },
+                      "maxPowerAtSocket": 11000.0,
+                      "voltage": 400.0,
+                      "maximumCurrent": 32.0
+                    }
+                  ]
+                }
+              },
+              {
+                "aegiElectricChargingPoint": {
+                  "idG": "BNETZA*1002913*2",
+                  "versionG": "2026-10-13T07:43:30.596692+00:00",
+                  "deliveryUnit": {
+                    "value": "kWh"
+                  },
+                  "currentType": {
+                    "value": "ac"
+                  },
+                  "numberOfConnectors": 1,
+                  "availableVoltage": [
+                    400
+                  ],
+                  "availableChargingPower": [
+                    11000
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "iec62196T2"
+                      },
+                      "connectorFormat": {
+                        "value": "socket"
+                      },
+                      "maxPowerAtSocket": 11000.0,
+                      "voltage": 400.0,
+                      "maximumCurrent": 32.0
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "operatorCountry": null,
+      "facilities": null
+    },
+    {
+      "externalId": "1002917",
+      "name": null,
+      "address": {
+        "street": "Graf-Adolf-Str. 31",
+        "postalCode": "44534",
+        "city": "Lünen",
+        "country": "DE"
+      },
+      "coordinates": {
+        "latitude": 51.616172,
+        "longitude": 7.518306
+      },
+      "operatorName": "Stadtwerke Lünen Infrastrukturbau GmbH",
+      "operatorId": null,
+      "access": "PUBLIC",
+      "openingTimes": {
+        "twentyFourSeven": true,
+        "description": null
+      },
+      "evses": [
+        {
+          "externalId": "BNETZA*1002917*1",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 50.0,
+          "powerType": "DC",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2_COMBO",
+              "format": "CABLE",
+              "powerType": "DC",
+              "maxPowerKw": 50.0,
+              "maxVoltage": 400,
+              "maxAmperage": 375,
+              "rawType": "iec62196T2COMBO"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": [
+            "RFID_READER",
+            "DEBIT_CARD_PAYABLE",
+            "CONTACTLESS_CARD_SUPPORT"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "BNETZA*1002917*2",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22.0,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 22.0,
+              "maxVoltage": 400,
+              "maxAmperage": 32,
+              "rawType": "iec62196T2"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": [
+            "RFID_READER",
+            "DEBIT_CARD_PAYABLE",
+            "CONTACTLESS_CARD_SUPPORT"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        }
+      ],
+      "observedAt": "2026-10-17T12:00:00+00:00",
+      "raw": {
+        "idG": "1002917",
+        "versionG": "2026-10-13T07:43:30.791172+00:00",
+        "operatingHours": {
+          "afacOpenAllHours": {}
+        },
+        "locationReference": {
+          "locPointLocation": {
+            "locLocationExtensionG": {
+              "FacilityLocation": {
+                "address": {
+                  "postcode": "44534",
+                  "city": {
+                    "values": [
+                      {
+                        "lang": "de",
+                        "value": "Lünen"
+                      }
+                    ]
+                  },
+                  "countryCode": "DE",
+                  "addressLine": [
+                    {
+                      "order": 1,
+                      "type": {
+                        "value": "street"
+                      },
+                      "text": {
+                        "values": [
+                          {
+                            "lang": "de",
+                            "value": "Graf-Adolf-Str."
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "order": 2,
+                      "type": {
+                        "value": "houseNumber"
+                      },
+                      "text": {
+                        "values": [
+                          {
+                            "lang": "de",
+                            "value": "31"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "locAreaLocation": {
+            "coordinatesForDisplay": {
+              "latitude": 51.616172,
+              "longitude": 7.518306
+            }
+          }
+        },
+        "operator": {
+          "afacAnOrganisation": {
+            "name": {
+              "values": [
+                {
+                  "lang": "de",
+                  "value": "Stadtwerke Lünen Infrastrukturbau GmbH"
+                }
+              ]
+            }
+          }
+        },
+        "energyInfrastructureStation": [
+          {
+            "idG": "1002917",
+            "versionG": "2026-10-13T07:43:30.791172+00:00",
+            "totalMaximumPower": 72.0,
+            "authenticationAndIdentificationMethods": [
+              {
+                "value": "nfc"
+              },
+              {
+                "value": "debitCard"
+              },
+              {
+                "value": "rfid"
+              }
+            ],
+            "numberOfRefillPoints": 2,
+            "serviceType": [
+              {
+                "serviceType": {
+                  "value": "unattended"
+                }
+              }
+            ],
+            "refillPoint": [
+              {
+                "aegiElectricChargingPoint": {
+                  "idG": "BNETZA*1002917*1",
+                  "versionG": "2026-10-13T07:43:30.787205+00:00",
+                  "deliveryUnit": {
+                    "value": "kWh"
+                  },
+                  "currentType": {
+                    "value": "dc"
+                  },
+                  "numberOfConnectors": 1,
+                  "availableVoltage": [
+                    400
+                  ],
+                  "availableChargingPower": [
+                    50000
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "iec62196T2COMBO"
+                      },
+                      "connectorFormat": {
+                        "value": "cableMode3"
+                      },
+                      "maxPowerAtSocket": 50000.0,
+                      "voltage": 400.0,
+                      "maximumCurrent": 375.0
+                    }
+                  ]
+                }
+              },
+              {
+                "aegiElectricChargingPoint": {
+                  "idG": "BNETZA*1002917*2",
+                  "versionG": "2026-10-13T07:43:30.791172+00:00",
+                  "deliveryUnit": {
+                    "value": "kWh"
+                  },
+                  "currentType": {
+                    "value": "ac"
+                  },
+                  "numberOfConnectors": 1,
+                  "availableVoltage": [
+                    400
+                  ],
+                  "availableChargingPower": [
+                    22000
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "iec62196T2"
+                      },
+                      "connectorFormat": {
+                        "value": "socket"
+                      },
+                      "maxPowerAtSocket": 22000.0,
+                      "voltage": 400.0,
+                      "maximumCurrent": 32.0
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "operatorCountry": null,
+      "facilities": null
+    },
+    {
+      "externalId": "1038884",
+      "name": null,
+      "address": {
+        "street": "Marcuskaje 1",
+        "postalCode": "28217",
+        "city": "Bremen",
+        "country": "DE"
+      },
+      "coordinates": {
+        "latitude": 53.09434,
+        "longitude": 8.76874
+      },
+      "operatorName": "Eulektro GmbH",
+      "operatorId": "EUL",
+      "access": "PUBLIC",
+      "openingTimes": {
+        "twentyFourSeven": true,
+        "description": null
+      },
+      "evses": [
+        {
+          "externalId": "BNETZA*1040978*1",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22.0,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 22.0,
+              "maxVoltage": 400,
+              "maxAmperage": 32,
+              "rawType": "iec62196T2"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": [
+            "RFID_READER",
+            "APP"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "BNETZA*1040978*2",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22.0,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 22.0,
+              "maxVoltage": 400,
+              "maxAmperage": 32,
+              "rawType": "iec62196T2"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": [
+            "RFID_READER",
+            "APP"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "BNETZA*1038884*1",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22.0,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 22.0,
+              "maxVoltage": 400,
+              "maxAmperage": 32,
+              "rawType": "iec62196T2"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": [
+            "RFID_READER",
+            "APP"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "BNETZA*1038884*2",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22.0,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 22.0,
+              "maxVoltage": 400,
+              "maxAmperage": 32,
+              "rawType": "iec62196T2"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": [
+            "RFID_READER",
+            "APP"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "BNETZA*1040979*1",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22.0,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 22.0,
+              "maxVoltage": 400,
+              "maxAmperage": 32,
+              "rawType": "iec62196T2"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": [
+            "RFID_READER",
+            "APP"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "BNETZA*1040979*2",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22.0,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 22.0,
+              "maxVoltage": 400,
+              "maxAmperage": 32,
+              "rawType": "iec62196T2"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": [
+            "RFID_READER",
+            "APP"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        }
+      ],
+      "observedAt": "2026-10-17T12:00:00+00:00",
+      "raw": {
+        "idG": "1038884",
+        "versionG": "2026-10-13T07:58:41.545452+00:00",
+        "operatingHours": {
+          "afacOpenAllHours": {}
+        },
+        "locationReference": {
+          "locPointLocation": {
+            "locLocationExtensionG": {
+              "FacilityLocation": {
+                "address": {
+                  "postcode": "28217",
+                  "city": {
+                    "values": [
+                      {
+                        "lang": "de",
+                        "value": "Bremen"
+                      }
+                    ]
+                  },
+                  "countryCode": "DE",
+                  "addressLine": [
+                    {
+                      "order": 1,
+                      "type": {
+                        "value": "street"
+                      },
+                      "text": {
+                        "values": [
+                          {
+                            "lang": "de",
+                            "value": "Marcuskaje"
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "order": 2,
+                      "type": {
+                        "value": "houseNumber"
+                      },
+                      "text": {
+                        "values": [
+                          {
+                            "lang": "de",
+                            "value": "1"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "locAreaLocation": {
+            "coordinatesForDisplay": {
+              "latitude": 53.09434,
+              "longitude": 8.76874
+            }
+          }
+        },
+        "operator": {
+          "afacAnOrganisation": {
+            "name": {
+              "values": [
+                {
+                  "lang": "de",
+                  "value": "Eulektro GmbH"
+                }
+              ]
+            },
+            "externalIdentifier": [
+              {
+                "identifier": "DE*EUL",
+                "typeOfIdentifier": {
+                  "value": "extendedG",
+                  "extendedValueG": "operatorId"
+                }
+              }
+            ]
+          }
+        },
+        "energyInfrastructureStation": [
+          {
+            "idG": "1040978",
+            "versionG": "2026-10-13T07:58:41.540846+00:00",
+            "totalMaximumPower": 44.0,
+            "authenticationAndIdentificationMethods": [
+              {
+                "value": "overTheAir"
+              },
+              {
+                "value": "rfid"
+              }
+            ],
+            "numberOfRefillPoints": 2,
+            "serviceType": [
+              {
+                "serviceType": {
+                  "value": "unattended"
+                }
+              }
+            ],
+            "refillPoint": [
+              {
+                "aegiElectricChargingPoint": {
+                  "idG": "BNETZA*1040978*1",
+                  "versionG": "2026-10-13T07:58:41.538220+00:00",
+                  "deliveryUnit": {
+                    "value": "kWh"
+                  },
+                  "currentType": {
+                    "value": "ac"
+                  },
+                  "numberOfConnectors": 1,
+                  "availableVoltage": [
+                    400
+                  ],
+                  "availableChargingPower": [
+                    22000
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "iec62196T2"
+                      },
+                      "connectorFormat": {
+                        "value": "socket"
+                      },
+                      "maxPowerAtSocket": 22000.0,
+                      "voltage": 400.0,
+                      "maximumCurrent": 32.0
+                    }
+                  ]
+                }
+              },
+              {
+                "aegiElectricChargingPoint": {
+                  "idG": "BNETZA*1040978*2",
+                  "versionG": "2026-10-13T07:58:41.540846+00:00",
+                  "deliveryUnit": {
+                    "value": "kWh"
+                  },
+                  "currentType": {
+                    "value": "ac"
+                  },
+                  "numberOfConnectors": 1,
+                  "availableVoltage": [
+                    400
+                  ],
+                  "availableChargingPower": [
+                    22000
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "iec62196T2"
+                      },
+                      "connectorFormat": {
+                        "value": "socket"
+                      },
+                      "maxPowerAtSocket": 22000.0,
+                      "voltage": 400.0,
+                      "maximumCurrent": 32.0
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "idG": "1038884",
+            "versionG": "2026-10-13T07:58:41.536108+00:00",
+            "totalMaximumPower": 70.0,
+            "authenticationAndIdentificationMethods": [
+              {
+                "value": "overTheAir"
+              },
+              {
+                "value": "rfid"
+              }
+            ],
+            "numberOfRefillPoints": 2,
+            "serviceType": [
+              {
+                "serviceType": {
+                  "value": "unattended"
+                }
+              }
+            ],
+            "refillPoint": [
+              {
+                "aegiElectricChargingPoint": {
+                  "idG": "BNETZA*1038884*1",
+                  "versionG": "2026-10-13T07:58:41.532161+00:00",
+                  "deliveryUnit": {
+                    "value": "kWh"
+                  },
+                  "currentType": {
+                    "value": "ac"
+                  },
+                  "numberOfConnectors": 1,
+                  "availableVoltage": [
+                    400
+                  ],
+                  "availableChargingPower": [
+                    22000
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "iec62196T2"
+                      },
+                      "connectorFormat": {
+                        "value": "socket"
+                      },
+                      "maxPowerAtSocket": 22000.0,
+                      "voltage": 400.0,
+                      "maximumCurrent": 32.0
+                    }
+                  ]
+                }
+              },
+              {
+                "aegiElectricChargingPoint": {
+                  "idG": "BNETZA*1038884*2",
+                  "versionG": "2026-10-13T07:58:41.536108+00:00",
+                  "deliveryUnit": {
+                    "value": "kWh"
+                  },
+                  "currentType": {
+                    "value": "ac"
+                  },
+                  "numberOfConnectors": 1,
+                  "availableVoltage": [
+                    400
+                  ],
+                  "availableChargingPower": [
+                    22000
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "iec62196T2"
+                      },
+                      "connectorFormat": {
+                        "value": "socket"
+                      },
+                      "maxPowerAtSocket": 22000.0,
+                      "voltage": 400.0,
+                      "maximumCurrent": 32.0
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "idG": "1040979",
+            "versionG": "2026-10-13T07:58:41.545452+00:00",
+            "totalMaximumPower": 44.0,
+            "authenticationAndIdentificationMethods": [
+              {
+                "value": "overTheAir"
+              },
+              {
+                "value": "rfid"
+              }
+            ],
+            "numberOfRefillPoints": 2,
+            "serviceType": [
+              {
+                "serviceType": {
+                  "value": "unattended"
+                }
+              }
+            ],
+            "refillPoint": [
+              {
+                "aegiElectricChargingPoint": {
+                  "idG": "BNETZA*1040979*1",
+                  "versionG": "2026-10-13T07:58:41.542890+00:00",
+                  "deliveryUnit": {
+                    "value": "kWh"
+                  },
+                  "currentType": {
+                    "value": "ac"
+                  },
+                  "numberOfConnectors": 1,
+                  "availableVoltage": [
+                    400
+                  ],
+                  "availableChargingPower": [
+                    22000
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "iec62196T2"
+                      },
+                      "connectorFormat": {
+                        "value": "socket"
+                      },
+                      "maxPowerAtSocket": 22000.0,
+                      "voltage": 400.0,
+                      "maximumCurrent": 32.0
+                    }
+                  ]
+                }
+              },
+              {
+                "aegiElectricChargingPoint": {
+                  "idG": "BNETZA*1040979*2",
+                  "versionG": "2026-10-13T07:58:41.545452+00:00",
+                  "deliveryUnit": {
+                    "value": "kWh"
+                  },
+                  "currentType": {
+                    "value": "ac"
+                  },
+                  "numberOfConnectors": 1,
+                  "availableVoltage": [
+                    400
+                  ],
+                  "availableChargingPower": [
+                    22000
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "iec62196T2"
+                      },
+                      "connectorFormat": {
+                        "value": "socket"
+                      },
+                      "maxPowerAtSocket": 22000.0,
+                      "voltage": 400.0,
+                      "maximumCurrent": 32.0
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "operatorCountry": "DE",
+      "facilities": null
+    },
+    {
+      "externalId": "1116748",
+      "name": null,
+      "address": {
+        "street": "Kantstr. 2",
+        "postalCode": "10623",
+        "city": "Berlin",
+        "country": "DE"
+      },
+      "coordinates": {
+        "latitude": 52.505415,
+        "longitude": 13.33241
+      },
+      "operatorName": "Park One GmbH",
+      "operatorId": null,
+      "access": "PUBLIC",
+      "openingTimes": {
+        "twentyFourSeven": true,
+        "description": null
+      },
+      "evses": [
+        {
+          "externalId": "BNETZA*1116748*2",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22.0,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 22.0,
+              "maxVoltage": 400,
+              "maxAmperage": 32,
+              "rawType": "iec62196T2"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": [
+            "RFID_READER",
+            "APP"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "BNETZA*1116748*1",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22.0,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 22.0,
+              "maxVoltage": 400,
+              "maxAmperage": 32,
+              "rawType": "iec62196T2"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": [
+            "RFID_READER",
+            "APP"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "BNETZA*1116748*3",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22.0,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 22.0,
+              "maxVoltage": 400,
+              "maxAmperage": 32,
+              "rawType": "iec62196T2"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": [
+            "RFID_READER",
+            "APP"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        }
+      ],
+      "observedAt": "2026-10-17T12:00:00+00:00",
+      "raw": {
+        "idG": "1116748",
+        "versionG": "2026-10-13T08:38:55.364119+00:00",
+        "operatingHours": {
+          "afacOpenAllHours": {}
+        },
+        "locationReference": {
+          "locPointLocation": {
+            "locLocationExtensionG": {
+              "FacilityLocation": {
+                "address": {
+                  "postcode": "10623",
+                  "city": {
+                    "values": [
+                      {
+                        "lang": "de",
+                        "value": "Berlin"
+                      }
+                    ]
+                  },
+                  "countryCode": "DE",
+                  "addressLine": [
+                    {
+                      "order": 1,
+                      "type": {
+                        "value": "street"
+                      },
+                      "text": {
+                        "values": [
+                          {
+                            "lang": "de",
+                            "value": "Kantstr."
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "order": 2,
+                      "type": {
+                        "value": "houseNumber"
+                      },
+                      "text": {
+                        "values": [
+                          {
+                            "lang": "de",
+                            "value": "2"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "locAreaLocation": {
+            "coordinatesForDisplay": {
+              "latitude": 52.505415,
+              "longitude": 13.33241
+            }
+          }
+        },
+        "operator": {
+          "afacAnOrganisation": {
+            "name": {
+              "values": [
+                {
+                  "lang": "de",
+                  "value": "Park One GmbH"
+                }
+              ]
+            }
+          }
+        },
+        "energyInfrastructureStation": [
+          {
+            "idG": "1116748",
+            "versionG": "2026-10-13T08:38:55.364119+00:00",
+            "totalMaximumPower": 22.0,
+            "authenticationAndIdentificationMethods": [
+              {
+                "value": "overTheAir"
+              },
+              {
+                "value": "rfid"
+              }
+            ],
+            "numberOfRefillPoints": 3,
+            "serviceType": [
+              {
+                "serviceType": {
+                  "value": "unattended"
+                }
+              }
+            ],
+            "refillPoint": [
+              {
+                "aegiElectricChargingPoint": {
+                  "idG": "BNETZA*1116748*2",
+                  "versionG": "2026-10-13T08:38:55.362206+00:00",
+                  "deliveryUnit": {
+                    "value": "kWh"
+                  },
+                  "currentType": {
+                    "value": "ac"
+                  },
+                  "numberOfConnectors": 1,
+                  "availableVoltage": [
+                    400
+                  ],
+                  "availableChargingPower": [
+                    22000
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "iec62196T2"
+                      },
+                      "connectorFormat": {
+                        "value": "socket"
+                      },
+                      "maxPowerAtSocket": 22000.0,
+                      "voltage": 400.0,
+                      "maximumCurrent": 32.0
+                    }
+                  ]
+                }
+              },
+              {
+                "aegiElectricChargingPoint": {
+                  "idG": "BNETZA*1116748*1",
+                  "versionG": "2026-10-13T08:38:55.358661+00:00",
+                  "deliveryUnit": {
+                    "value": "kWh"
+                  },
+                  "currentType": {
+                    "value": "ac"
+                  },
+                  "numberOfConnectors": 1,
+                  "availableVoltage": [
+                    400
+                  ],
+                  "availableChargingPower": [
+                    22000
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "iec62196T2"
+                      },
+                      "connectorFormat": {
+                        "value": "socket"
+                      },
+                      "maxPowerAtSocket": 22000.0,
+                      "voltage": 400.0,
+                      "maximumCurrent": 32.0
+                    }
+                  ]
+                }
+              },
+              {
+                "aegiElectricChargingPoint": {
+                  "idG": "BNETZA*1116748*3",
+                  "versionG": "2026-10-13T08:38:55.364119+00:00",
+                  "deliveryUnit": {
+                    "value": "kWh"
+                  },
+                  "currentType": {
+                    "value": "ac"
+                  },
+                  "numberOfConnectors": 1,
+                  "availableVoltage": [
+                    400
+                  ],
+                  "availableChargingPower": [
+                    22000
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "iec62196T2"
+                      },
+                      "connectorFormat": {
+                        "value": "socket"
+                      },
+                      "maxPowerAtSocket": 22000.0,
+                      "voltage": 400.0,
+                      "maximumCurrent": 32.0
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "operatorCountry": null,
+      "facilities": null
+    },
+    {
+      "externalId": "800013227",
+      "name": null,
+      "address": {
+        "street": "Am Metternicher Weg 2, 4 6",
+        "postalCode": "53913",
+        "city": "Swisttal",
+        "country": "DE"
+      },
+      "coordinates": {
+        "latitude": 50.7214,
+        "longitude": 6.90617
+      },
+      "operatorName": "ENBW",
+      "operatorId": "EBW",
+      "access": "PUBLIC",
+      "openingTimes": {
+        "twentyFourSeven": true,
+        "description": null
+      },
+      "evses": [
+        {
+          "externalId": "DE*EBW*E914213*1",
+          "evseId": "DE*EBW*E914213*1",
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 200.0,
+          "powerType": "DC",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2_COMBO",
+              "format": "CABLE",
+              "powerType": "DC",
+              "maxPowerKw": 200.0,
+              "maxVoltage": 1000,
+              "maxAmperage": 200,
+              "rawType": "iec62196T2COMBO"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": [
+            "RFID_READER",
+            "APP",
+            "CREDIT_CARD_PAYABLE",
+            "DEBIT_CARD_PAYABLE"
+          ],
+          "roaming": null,
+          "adHocPrice": {
+            "currency": "EUR",
+            "pricePerKwh": 0.79,
+            "pricePerMinute": 0.24,
+            "sessionFee": null,
+            "blockingFeePerMinute": null,
+            "blockingAfterMinutes": null,
+            "freeOfCharge": false
+          }
+        },
+        {
+          "externalId": "DE*EBW*E914213*2",
+          "evseId": "DE*EBW*E914213*2",
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 200.0,
+          "powerType": "DC",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2_COMBO",
+              "format": "CABLE",
+              "powerType": "DC",
+              "maxPowerKw": 200.0,
+              "maxVoltage": 1000,
+              "maxAmperage": 200,
+              "rawType": "iec62196T2COMBO"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": [
+            "RFID_READER",
+            "APP",
+            "CREDIT_CARD_PAYABLE",
+            "DEBIT_CARD_PAYABLE"
+          ],
+          "roaming": null,
+          "adHocPrice": {
+            "currency": "EUR",
+            "pricePerKwh": 0.79,
+            "pricePerMinute": 0.24,
+            "sessionFee": null,
+            "blockingFeePerMinute": null,
+            "blockingAfterMinutes": null,
+            "freeOfCharge": false
+          }
+        },
+        {
+          "externalId": "DE*EBW*E914214*2",
+          "evseId": "DE*EBW*E914214*2",
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 200.0,
+          "powerType": "DC",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2_COMBO",
+              "format": "CABLE",
+              "powerType": "DC",
+              "maxPowerKw": 200.0,
+              "maxVoltage": 1000,
+              "maxAmperage": 200,
+              "rawType": "iec62196T2COMBO"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": [
+            "RFID_READER",
+            "APP",
+            "CREDIT_CARD_PAYABLE",
+            "DEBIT_CARD_PAYABLE"
+          ],
+          "roaming": null,
+          "adHocPrice": {
+            "currency": "EUR",
+            "pricePerKwh": 0.79,
+            "pricePerMinute": 0.24,
+            "sessionFee": null,
+            "blockingFeePerMinute": null,
+            "blockingAfterMinutes": null,
+            "freeOfCharge": false
+          }
+        },
+        {
+          "externalId": "DE*EBW*E914214*1",
+          "evseId": "DE*EBW*E914214*1",
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 200.0,
+          "powerType": "DC",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2_COMBO",
+              "format": "CABLE",
+              "powerType": "DC",
+              "maxPowerKw": 200.0,
+              "maxVoltage": 1000,
+              "maxAmperage": 200,
+              "rawType": "iec62196T2COMBO"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": [
+            "RFID_READER",
+            "APP",
+            "CREDIT_CARD_PAYABLE",
+            "DEBIT_CARD_PAYABLE"
+          ],
+          "roaming": null,
+          "adHocPrice": {
+            "currency": "EUR",
+            "pricePerKwh": 0.79,
+            "pricePerMinute": 0.24,
+            "sessionFee": null,
+            "blockingFeePerMinute": null,
+            "blockingAfterMinutes": null,
+            "freeOfCharge": false
+          }
+        }
+      ],
+      "observedAt": "2026-10-17T12:00:00+00:00",
+      "raw": {
+        "idG": "800013227",
+        "versionG": "2026-10-17T11:41:16.524000+00:00",
+        "operatingHours": {
+          "afacOpenAllHours": {}
+        },
+        "locationReference": {
+          "locPointLocation": {
+            "locLocationExtensionG": {
+              "FacilityLocation": {
+                "address": {
+                  "postcode": "53913",
+                  "city": {
+                    "values": [
+                      {
+                        "lang": "de",
+                        "value": "Swisttal"
+                      }
+                    ]
+                  },
+                  "countryCode": "DE",
+                  "addressLine": [
+                    {
+                      "order": 1,
+                      "type": {
+                        "value": "street"
+                      },
+                      "text": {
+                        "values": [
+                          {
+                            "lang": "de",
+                            "value": "Am Metternicher Weg 2, 4"
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "order": 2,
+                      "type": {
+                        "value": "houseNumber"
+                      },
+                      "text": {
+                        "values": [
+                          {
+                            "lang": "de",
+                            "value": "6"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "locAreaLocation": {
+            "coordinatesForDisplay": {
+              "latitude": 50.7214,
+              "longitude": 6.90617
+            }
+          }
+        },
+        "operator": {
+          "afacAnOrganisation": {
+            "name": {
+              "values": [
+                {
+                  "lang": "de",
+                  "value": "ENBW"
+                }
+              ]
+            },
+            "externalIdentifier": [
+              {
+                "identifier": "EBW",
+                "typeOfIdentifier": {
+                  "value": "extendedG",
+                  "extendedValueG": "operatorId"
+                }
+              }
+            ]
+          }
+        },
+        "energyInfrastructureStation": [
+          {
+            "idG": "14514",
+            "versionG": "2026-10-17T10:53:45.894000+00:00",
+            "totalMaximumPower": 200000.0,
+            "authenticationAndIdentificationMethods": [
+              {
+                "value": "creditCard"
+              },
+              {
+                "value": "debitCard"
+              },
+              {
+                "value": "overTheAir"
+              },
+              {
+                "value": "rfid"
+              }
+            ],
+            "numberOfRefillPoints": 2,
+            "userInterfaceLanguage": [
+              "de",
+              "en"
+            ],
+            "serviceType": [
+              {
+                "serviceType": {
+                  "value": "unattended"
+                }
+              }
+            ],
+            "refillPoint": [
+              {
+                "aegiElectricChargingPoint": {
+                  "idG": "DE*EBW*E914213*1",
+                  "versionG": "2026-10-17T10:53:45.894000+00:00",
+                  "deliveryUnit": {
+                    "value": "kWh"
+                  },
+                  "currentType": {
+                    "value": "dc"
+                  },
+                  "numberOfConnectors": 1,
+                  "availableVoltage": [
+                    1000
+                  ],
+                  "availableChargingPower": [
+                    200000
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "iec62196T2COMBO"
+                      },
+                      "connectorFormat": {
+                        "value": "cableMode3"
+                      },
+                      "maxPowerAtSocket": 200000.0,
+                      "voltage": 1000.0,
+                      "maximumCurrent": 200.0
+                    }
+                  ],
+                  "electricEnergy": [
+                    {
+                      "isGreenEnergy": true,
+                      "energyRate": [
+                        {
+                          "idG": "66bc92a2d399e040daffb65c6f594315",
+                          "ratePolicy": {
+                            "value": "adHoc"
+                          },
+                          "lastUpdated": "2026-10-16T22:00:10.242000+00:00",
+                          "applicableCurrency": [
+                            "EUR"
+                          ],
+                          "energyPrice": [
+                            {
+                              "priceType": {
+                                "value": "pricePerKWh"
+                              },
+                              "value": 0.66386555,
+                              "taxIncluded": false,
+                              "taxRate": 19.0
+                            },
+                            {
+                              "priceType": {
+                                "value": "pricePerMinute"
+                              },
+                              "value": 0.20168067,
+                              "taxIncluded": false,
+                              "taxRate": 19.0,
+                              "timeBasedApplicability": {
+                                "fromMinute": 30,
+                                "toMinute": 0
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "aegiElectricChargingPoint": {
+                  "idG": "DE*EBW*E914213*2",
+                  "versionG": "2026-10-17T09:43:10.772000+00:00",
+                  "deliveryUnit": {
+                    "value": "kWh"
+                  },
+                  "currentType": {
+                    "value": "dc"
+                  },
+                  "numberOfConnectors": 1,
+                  "availableVoltage": [
+                    1000
+                  ],
+                  "availableChargingPower": [
+                    200000
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "iec62196T2COMBO"
+                      },
+                      "connectorFormat": {
+                        "value": "cableMode3"
+                      },
+                      "maxPowerAtSocket": 200000.0,
+                      "voltage": 1000.0,
+                      "maximumCurrent": 200.0
+                    }
+                  ],
+                  "electricEnergy": [
+                    {
+                      "isGreenEnergy": true,
+                      "energyRate": [
+                        {
+                          "idG": "66bc92a2d399e040daffb65c6f594315",
+                          "ratePolicy": {
+                            "value": "adHoc"
+                          },
+                          "lastUpdated": "2026-10-16T22:00:10.242000+00:00",
+                          "applicableCurrency": [
+                            "EUR"
+                          ],
+                          "energyPrice": [
+                            {
+                              "priceType": {
+                                "value": "pricePerKWh"
+                              },
+                              "value": 0.66386555,
+                              "taxIncluded": false,
+                              "taxRate": 19.0
+                            },
+                            {
+                              "priceType": {
+                                "value": "pricePerMinute"
+                              },
+                              "value": 0.20168067,
+                              "taxIncluded": false,
+                              "taxRate": 19.0,
+                              "timeBasedApplicability": {
+                                "fromMinute": 30,
+                                "toMinute": 0
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "idG": "14537",
+            "versionG": "2026-10-17T11:41:16.524000+00:00",
+            "totalMaximumPower": 200000.0,
+            "authenticationAndIdentificationMethods": [
+              {
+                "value": "creditCard"
+              },
+              {
+                "value": "debitCard"
+              },
+              {
+                "value": "overTheAir"
+              },
+              {
+                "value": "rfid"
+              }
+            ],
+            "numberOfRefillPoints": 2,
+            "userInterfaceLanguage": [
+              "de",
+              "en"
+            ],
+            "serviceType": [
+              {
+                "serviceType": {
+                  "value": "unattended"
+                }
+              }
+            ],
+            "refillPoint": [
+              {
+                "aegiElectricChargingPoint": {
+                  "idG": "DE*EBW*E914214*2",
+                  "versionG": "2026-10-17T11:41:16.524000+00:00",
+                  "deliveryUnit": {
+                    "value": "kWh"
+                  },
+                  "currentType": {
+                    "value": "dc"
+                  },
+                  "numberOfConnectors": 1,
+                  "availableVoltage": [
+                    1000
+                  ],
+                  "availableChargingPower": [
+                    200000
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "iec62196T2COMBO"
+                      },
+                      "connectorFormat": {
+                        "value": "cableMode3"
+                      },
+                      "maxPowerAtSocket": 200000.0,
+                      "voltage": 1000.0,
+                      "maximumCurrent": 200.0
+                    }
+                  ],
+                  "electricEnergy": [
+                    {
+                      "isGreenEnergy": true,
+                      "energyRate": [
+                        {
+                          "idG": "66bc92a2d399e040daffb65c6f594315",
+                          "ratePolicy": {
+                            "value": "adHoc"
+                          },
+                          "lastUpdated": "2026-10-16T22:00:10.242000+00:00",
+                          "applicableCurrency": [
+                            "EUR"
+                          ],
+                          "energyPrice": [
+                            {
+                              "priceType": {
+                                "value": "pricePerKWh"
+                              },
+                              "value": 0.66386555,
+                              "taxIncluded": false,
+                              "taxRate": 19.0
+                            },
+                            {
+                              "priceType": {
+                                "value": "pricePerMinute"
+                              },
+                              "value": 0.20168067,
+                              "taxIncluded": false,
+                              "taxRate": 19.0,
+                              "timeBasedApplicability": {
+                                "fromMinute": 30,
+                                "toMinute": 0
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "aegiElectricChargingPoint": {
+                  "idG": "DE*EBW*E914214*1",
+                  "versionG": "2026-10-17T06:51:04.647000+00:00",
+                  "deliveryUnit": {
+                    "value": "kWh"
+                  },
+                  "currentType": {
+                    "value": "dc"
+                  },
+                  "numberOfConnectors": 1,
+                  "availableVoltage": [
+                    1000
+                  ],
+                  "availableChargingPower": [
+                    200000
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "iec62196T2COMBO"
+                      },
+                      "connectorFormat": {
+                        "value": "cableMode3"
+                      },
+                      "maxPowerAtSocket": 200000.0,
+                      "voltage": 1000.0,
+                      "maximumCurrent": 200.0
+                    }
+                  ],
+                  "electricEnergy": [
+                    {
+                      "isGreenEnergy": true,
+                      "energyRate": [
+                        {
+                          "idG": "66bc92a2d399e040daffb65c6f594315",
+                          "ratePolicy": {
+                            "value": "adHoc"
+                          },
+                          "lastUpdated": "2026-10-16T22:00:10.242000+00:00",
+                          "applicableCurrency": [
+                            "EUR"
+                          ],
+                          "energyPrice": [
+                            {
+                              "priceType": {
+                                "value": "pricePerKWh"
+                              },
+                              "value": 0.66386555,
+                              "taxIncluded": false,
+                              "taxRate": 19.0
+                            },
+                            {
+                              "priceType": {
+                                "value": "pricePerMinute"
+                              },
+                              "value": 0.20168067,
+                              "taxIncluded": false,
+                              "taxRate": 19.0,
+                              "timeBasedApplicability": {
+                                "fromMinute": 30,
+                                "toMinute": 0
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "operatorCountry": "DE",
+      "facilities": null
+    },
+    {
+      "externalId": "Mer Germany-3914",
+      "name": null,
+      "address": {
+        "street": "6 Bahnhofsplatz",
+        "postalCode": "84453",
+        "city": "Mühldorf am Inn",
+        "country": "DE"
+      },
+      "coordinates": {
+        "latitude": 48.2480037,
+        "longitude": 12.5201577
+      },
+      "operatorName": "Mer Germany",
+      "operatorId": null,
+      "access": "PUBLIC",
+      "openingTimes": {
+        "twentyFourSeven": true,
+        "description": null
+      },
+      "evses": [
+        {
+          "externalId": "1346",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 3.6,
+          "powerType": "AC_1_PHASE",
+          "connectors": [
+            {
+              "standard": "DOMESTIC_F",
+              "format": "SOCKET",
+              "powerType": "AC_1_PHASE",
+              "maxPowerKw": 3.6,
+              "maxVoltage": 230,
+              "maxAmperage": 16,
+              "rawType": "domesticF"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": [
+            "RFID_READER",
+            "APP"
+          ],
+          "roaming": null,
+          "adHocPrice": {
+            "currency": "EUR",
+            "pricePerKwh": 0.58,
+            "pricePerMinute": null,
+            "sessionFee": null,
+            "blockingFeePerMinute": null,
+            "blockingAfterMinutes": null,
+            "freeOfCharge": false
+          }
+        },
+        {
+          "externalId": "1353",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 3.6,
+          "powerType": "AC_1_PHASE",
+          "connectors": [
+            {
+              "standard": "DOMESTIC_F",
+              "format": "SOCKET",
+              "powerType": "AC_1_PHASE",
+              "maxPowerKw": 3.6,
+              "maxVoltage": 230,
+              "maxAmperage": 16,
+              "rawType": "domesticF"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": [
+            "RFID_READER",
+            "APP"
+          ],
+          "roaming": null,
+          "adHocPrice": {
+            "currency": "EUR",
+            "pricePerKwh": 0.58,
+            "pricePerMinute": null,
+            "sessionFee": null,
+            "blockingFeePerMinute": null,
+            "blockingAfterMinutes": null,
+            "freeOfCharge": false
+          }
+        },
+        {
+          "externalId": "1347",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22.0,
+          "powerType": "AC_1_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_1_PHASE",
+              "maxPowerKw": 22.0,
+              "maxVoltage": 230,
+              "maxAmperage": 32,
+              "rawType": "iec62196T2"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": [
+            "RFID_READER",
+            "APP"
+          ],
+          "roaming": null,
+          "adHocPrice": {
+            "currency": "EUR",
+            "pricePerKwh": 0.58,
+            "pricePerMinute": null,
+            "sessionFee": null,
+            "blockingFeePerMinute": null,
+            "blockingAfterMinutes": null,
+            "freeOfCharge": false
+          }
+        },
+        {
+          "externalId": "1349",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22.0,
+          "powerType": "AC_1_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_1_PHASE",
+              "maxPowerKw": 22.0,
+              "maxVoltage": 230,
+              "maxAmperage": 32,
+              "rawType": "iec62196T2"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": [
+            "RFID_READER",
+            "APP"
+          ],
+          "roaming": null,
+          "adHocPrice": {
+            "currency": "EUR",
+            "pricePerKwh": 0.58,
+            "pricePerMinute": null,
+            "sessionFee": null,
+            "blockingFeePerMinute": null,
+            "blockingAfterMinutes": null,
+            "freeOfCharge": false
+          }
+        },
+        {
+          "externalId": "1351",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 3.6,
+          "powerType": "AC_1_PHASE",
+          "connectors": [
+            {
+              "standard": "DOMESTIC_F",
+              "format": "SOCKET",
+              "powerType": "AC_1_PHASE",
+              "maxPowerKw": 3.6,
+              "maxVoltage": 230,
+              "maxAmperage": 16,
+              "rawType": "domesticF"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": [
+            "RFID_READER",
+            "APP"
+          ],
+          "roaming": null,
+          "adHocPrice": {
+            "currency": "EUR",
+            "pricePerKwh": 0.58,
+            "pricePerMinute": null,
+            "sessionFee": null,
+            "blockingFeePerMinute": null,
+            "blockingAfterMinutes": null,
+            "freeOfCharge": false
+          }
+        },
+        {
+          "externalId": "1352",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22.0,
+          "powerType": "AC_1_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_1_PHASE",
+              "maxPowerKw": 22.0,
+              "maxVoltage": 230,
+              "maxAmperage": 32,
+              "rawType": "iec62196T2"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": [
+            "RFID_READER",
+            "APP"
+          ],
+          "roaming": null,
+          "adHocPrice": {
+            "currency": "EUR",
+            "pricePerKwh": 0.58,
+            "pricePerMinute": null,
+            "sessionFee": null,
+            "blockingFeePerMinute": null,
+            "blockingAfterMinutes": null,
+            "freeOfCharge": false
+          }
+        },
+        {
+          "externalId": "1348",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 3.6,
+          "powerType": "AC_1_PHASE",
+          "connectors": [
+            {
+              "standard": "DOMESTIC_F",
+              "format": "SOCKET",
+              "powerType": "AC_1_PHASE",
+              "maxPowerKw": 3.6,
+              "maxVoltage": 230,
+              "maxAmperage": 16,
+              "rawType": "domesticF"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": [
+            "RFID_READER",
+            "APP"
+          ],
+          "roaming": null,
+          "adHocPrice": {
+            "currency": "EUR",
+            "pricePerKwh": 0.58,
+            "pricePerMinute": null,
+            "sessionFee": null,
+            "blockingFeePerMinute": null,
+            "blockingAfterMinutes": null,
+            "freeOfCharge": false
+          }
+        },
+        {
+          "externalId": "1350",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22.0,
+          "powerType": "AC_1_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_1_PHASE",
+              "maxPowerKw": 22.0,
+              "maxVoltage": 230,
+              "maxAmperage": 32,
+              "rawType": "iec62196T2"
+            }
+          ],
+          "status": null,
+          "statusRaw": null,
+          "authMethods": [
+            "RFID_READER",
+            "APP"
+          ],
+          "roaming": null,
+          "adHocPrice": {
+            "currency": "EUR",
+            "pricePerKwh": 0.58,
+            "pricePerMinute": null,
+            "sessionFee": null,
+            "blockingFeePerMinute": null,
+            "blockingAfterMinutes": null,
+            "freeOfCharge": false
+          }
+        }
+      ],
+      "observedAt": "2026-10-17T12:00:00+00:00",
+      "raw": {
+        "idG": "Mer Germany-3914",
+        "versionG": "2026-10-17T08:16:38+00:00",
+        "additionalInformation": [
+          {
+            "values": [
+              {
+                "lang": "de",
+                "value": "Mer Germany GmbH - Mühldorf am Inn - Bahnhofsplatz 6 #1"
+              }
+            ]
+          }
+        ],
+        "operatingHours": {
+          "afacOpenAllHours": {}
+        },
+        "locationReference": {
+          "locPointLocation": {
+            "locLocationExtensionG": {
+              "FacilityLocation": {
+                "address": {
+                  "postcode": "84453",
+                  "city": {
+                    "values": [
+                      {
+                        "lang": "de",
+                        "value": "Mühldorf am Inn"
+                      }
+                    ]
+                  },
+                  "countryCode": "DE",
+                  "addressLine": [
+                    {
+                      "order": 1,
+                      "type": {
+                        "value": "street"
+                      },
+                      "text": {
+                        "values": [
+                          {
+                            "lang": "de",
+                            "value": "6 Bahnhofsplatz"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "locAreaLocation": {
+            "coordinatesForDisplay": {
+              "latitude": 48.2480037,
+              "longitude": 12.5201577
+            }
+          }
+        },
+        "owner": {
+          "afacAnOrganisation": {
+            "name": {
+              "values": [
+                {
+                  "lang": "de",
+                  "value": "Mer Germany"
+                }
+              ]
+            }
+          }
+        },
+        "operator": {
+          "afacAnOrganisation": {
+            "name": {
+              "values": [
+                {
+                  "lang": "de",
+                  "value": "Mer Germany"
+                }
+              ]
+            }
+          }
+        },
+        "energyInfrastructureStation": [
+          {
+            "idG": "3914",
+            "versionG": "2026-10-17T08:16:38+00:00",
+            "totalMaximumPower": 102400.0,
+            "authenticationAndIdentificationMethods": [
+              {
+                "value": "overTheAir"
+              },
+              {
+                "value": "rfid"
+              }
+            ],
+            "numberOfRefillPoints": 8,
+            "serviceType": [
+              {
+                "serviceType": {
+                  "value": "unattended"
+                }
+              }
+            ],
+            "refillPoint": [
+              {
+                "aegiElectricChargingPoint": {
+                  "idG": "1346",
+                  "versionG": "2026-10-17T08:16:38+00:00",
+                  "deliveryUnit": {
+                    "value": "kWh"
+                  },
+                  "currentType": {
+                    "value": "ac"
+                  },
+                  "numberOfConnectors": 1,
+                  "availableVoltage": [
+                    230
+                  ],
+                  "availableChargingPower": [
+                    3600
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "domesticF"
+                      },
+                      "connectorFormat": {
+                        "value": "socket"
+                      },
+                      "maxPowerAtSocket": 3600.0,
+                      "voltage": 230.0,
+                      "maximumCurrent": 16.0
+                    }
+                  ],
+                  "electricEnergy": [
+                    {
+                      "isGreenEnergy": true,
+                      "energyRate": [
+                        {
+                          "idG": "2ee2481486f0c870315657899816ef49",
+                          "ratePolicy": {
+                            "value": "adHoc"
+                          },
+                          "lastUpdated": "2026-10-13T16:42:34+00:00",
+                          "applicableCurrency": [
+                            "EUR"
+                          ],
+                          "energyPrice": [
+                            {
+                              "priceType": {
+                                "value": "pricePerKWh"
+                              },
+                              "value": 0.4874,
+                              "taxIncluded": false,
+                              "taxRate": 19.0,
+                              "timeBasedApplicability": {
+                                "fromMinute": 0
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "aegiElectricChargingPoint": {
+                  "idG": "1353",
+                  "versionG": "2026-10-15T23:06:05+00:00",
+                  "deliveryUnit": {
+                    "value": "kWh"
+                  },
+                  "currentType": {
+                    "value": "ac"
+                  },
+                  "numberOfConnectors": 1,
+                  "availableVoltage": [
+                    230
+                  ],
+                  "availableChargingPower": [
+                    3600
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "domesticF"
+                      },
+                      "connectorFormat": {
+                        "value": "socket"
+                      },
+                      "maxPowerAtSocket": 3600.0,
+                      "voltage": 230.0,
+                      "maximumCurrent": 16.0
+                    }
+                  ],
+                  "electricEnergy": [
+                    {
+                      "isGreenEnergy": true,
+                      "energyRate": [
+                        {
+                          "idG": "2ee2481486f0c870315657899816ef49",
+                          "ratePolicy": {
+                            "value": "adHoc"
+                          },
+                          "lastUpdated": "2026-10-13T16:42:34+00:00",
+                          "applicableCurrency": [
+                            "EUR"
+                          ],
+                          "energyPrice": [
+                            {
+                              "priceType": {
+                                "value": "pricePerKWh"
+                              },
+                              "value": 0.4874,
+                              "taxIncluded": false,
+                              "taxRate": 19.0,
+                              "timeBasedApplicability": {
+                                "fromMinute": 0
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "aegiElectricChargingPoint": {
+                  "idG": "1347",
+                  "versionG": "2026-10-17T08:16:38+00:00",
+                  "deliveryUnit": {
+                    "value": "kWh"
+                  },
+                  "currentType": {
+                    "value": "ac"
+                  },
+                  "numberOfConnectors": 1,
+                  "availableVoltage": [
+                    230
+                  ],
+                  "availableChargingPower": [
+                    22000
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "iec62196T2"
+                      },
+                      "connectorFormat": {
+                        "value": "socket"
+                      },
+                      "maxPowerAtSocket": 22000.0,
+                      "voltage": 230.0,
+                      "maximumCurrent": 32.0
+                    }
+                  ],
+                  "electricEnergy": [
+                    {
+                      "isGreenEnergy": true,
+                      "energyRate": [
+                        {
+                          "idG": "2ee2481486f0c870315657899816ef49",
+                          "ratePolicy": {
+                            "value": "adHoc"
+                          },
+                          "lastUpdated": "2026-10-13T16:42:34+00:00",
+                          "applicableCurrency": [
+                            "EUR"
+                          ],
+                          "energyPrice": [
+                            {
+                              "priceType": {
+                                "value": "pricePerKWh"
+                              },
+                              "value": 0.4874,
+                              "taxIncluded": false,
+                              "taxRate": 19.0,
+                              "timeBasedApplicability": {
+                                "fromMinute": 0
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "aegiElectricChargingPoint": {
+                  "idG": "1349",
+                  "versionG": "2026-10-15T23:06:05+00:00",
+                  "deliveryUnit": {
+                    "value": "kWh"
+                  },
+                  "currentType": {
+                    "value": "ac"
+                  },
+                  "numberOfConnectors": 1,
+                  "availableVoltage": [
+                    230
+                  ],
+                  "availableChargingPower": [
+                    22000
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "iec62196T2"
+                      },
+                      "connectorFormat": {
+                        "value": "socket"
+                      },
+                      "maxPowerAtSocket": 22000.0,
+                      "voltage": 230.0,
+                      "maximumCurrent": 32.0
+                    }
+                  ],
+                  "electricEnergy": [
+                    {
+                      "isGreenEnergy": true,
+                      "energyRate": [
+                        {
+                          "idG": "2ee2481486f0c870315657899816ef49",
+                          "ratePolicy": {
+                            "value": "adHoc"
+                          },
+                          "lastUpdated": "2026-10-13T16:42:34+00:00",
+                          "applicableCurrency": [
+                            "EUR"
+                          ],
+                          "energyPrice": [
+                            {
+                              "priceType": {
+                                "value": "pricePerKWh"
+                              },
+                              "value": 0.4874,
+                              "taxIncluded": false,
+                              "taxRate": 19.0,
+                              "timeBasedApplicability": {
+                                "fromMinute": 0
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "aegiElectricChargingPoint": {
+                  "idG": "1351",
+                  "versionG": "2026-10-15T23:06:05+00:00",
+                  "deliveryUnit": {
+                    "value": "kWh"
+                  },
+                  "currentType": {
+                    "value": "ac"
+                  },
+                  "numberOfConnectors": 1,
+                  "availableVoltage": [
+                    230
+                  ],
+                  "availableChargingPower": [
+                    3600
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "domesticF"
+                      },
+                      "connectorFormat": {
+                        "value": "socket"
+                      },
+                      "maxPowerAtSocket": 3600.0,
+                      "voltage": 230.0,
+                      "maximumCurrent": 16.0
+                    }
+                  ],
+                  "electricEnergy": [
+                    {
+                      "isGreenEnergy": true,
+                      "energyRate": [
+                        {
+                          "idG": "2ee2481486f0c870315657899816ef49",
+                          "ratePolicy": {
+                            "value": "adHoc"
+                          },
+                          "lastUpdated": "2026-10-13T16:42:34+00:00",
+                          "applicableCurrency": [
+                            "EUR"
+                          ],
+                          "energyPrice": [
+                            {
+                              "priceType": {
+                                "value": "pricePerKWh"
+                              },
+                              "value": 0.4874,
+                              "taxIncluded": false,
+                              "taxRate": 19.0,
+                              "timeBasedApplicability": {
+                                "fromMinute": 0
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "aegiElectricChargingPoint": {
+                  "idG": "1352",
+                  "versionG": "2026-10-15T23:06:05+00:00",
+                  "deliveryUnit": {
+                    "value": "kWh"
+                  },
+                  "currentType": {
+                    "value": "ac"
+                  },
+                  "numberOfConnectors": 1,
+                  "availableVoltage": [
+                    230
+                  ],
+                  "availableChargingPower": [
+                    22000
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "iec62196T2"
+                      },
+                      "connectorFormat": {
+                        "value": "socket"
+                      },
+                      "maxPowerAtSocket": 22000.0,
+                      "voltage": 230.0,
+                      "maximumCurrent": 32.0
+                    }
+                  ],
+                  "electricEnergy": [
+                    {
+                      "isGreenEnergy": true,
+                      "energyRate": [
+                        {
+                          "idG": "2ee2481486f0c870315657899816ef49",
+                          "ratePolicy": {
+                            "value": "adHoc"
+                          },
+                          "lastUpdated": "2026-10-13T16:42:34+00:00",
+                          "applicableCurrency": [
+                            "EUR"
+                          ],
+                          "energyPrice": [
+                            {
+                              "priceType": {
+                                "value": "pricePerKWh"
+                              },
+                              "value": 0.4874,
+                              "taxIncluded": false,
+                              "taxRate": 19.0,
+                              "timeBasedApplicability": {
+                                "fromMinute": 0
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "aegiElectricChargingPoint": {
+                  "idG": "1348",
+                  "versionG": "2026-10-15T23:06:05+00:00",
+                  "deliveryUnit": {
+                    "value": "kWh"
+                  },
+                  "currentType": {
+                    "value": "ac"
+                  },
+                  "numberOfConnectors": 1,
+                  "availableVoltage": [
+                    230
+                  ],
+                  "availableChargingPower": [
+                    3600
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "domesticF"
+                      },
+                      "connectorFormat": {
+                        "value": "socket"
+                      },
+                      "maxPowerAtSocket": 3600.0,
+                      "voltage": 230.0,
+                      "maximumCurrent": 16.0
+                    }
+                  ],
+                  "electricEnergy": [
+                    {
+                      "isGreenEnergy": true,
+                      "energyRate": [
+                        {
+                          "idG": "2ee2481486f0c870315657899816ef49",
+                          "ratePolicy": {
+                            "value": "adHoc"
+                          },
+                          "lastUpdated": "2026-10-13T16:42:34+00:00",
+                          "applicableCurrency": [
+                            "EUR"
+                          ],
+                          "energyPrice": [
+                            {
+                              "priceType": {
+                                "value": "pricePerKWh"
+                              },
+                              "value": 0.4874,
+                              "taxIncluded": false,
+                              "taxRate": 19.0,
+                              "timeBasedApplicability": {
+                                "fromMinute": 0
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "aegiElectricChargingPoint": {
+                  "idG": "1350",
+                  "versionG": "2026-10-15T23:06:05+00:00",
+                  "deliveryUnit": {
+                    "value": "kWh"
+                  },
+                  "currentType": {
+                    "value": "ac"
+                  },
+                  "numberOfConnectors": 1,
+                  "availableVoltage": [
+                    230
+                  ],
+                  "availableChargingPower": [
+                    22000
+                  ],
+                  "connector": [
+                    {
+                      "connectorType": {
+                        "value": "iec62196T2"
+                      },
+                      "connectorFormat": {
+                        "value": "socket"
+                      },
+                      "maxPowerAtSocket": 22000.0,
+                      "voltage": 230.0,
+                      "maximumCurrent": 32.0
+                    }
+                  ],
+                  "electricEnergy": [
+                    {
+                      "isGreenEnergy": true,
+                      "energyRate": [
+                        {
+                          "idG": "2ee2481486f0c870315657899816ef49",
+                          "ratePolicy": {
+                            "value": "adHoc"
+                          },
+                          "lastUpdated": "2026-10-13T16:42:34+00:00",
+                          "applicableCurrency": [
+                            "EUR"
+                          ],
+                          "energyPrice": [
+                            {
+                              "priceType": {
+                                "value": "pricePerKWh"
+                              },
+                              "value": 0.4874,
+                              "taxIncluded": false,
+                              "taxRate": 19.0,
+                              "timeBasedApplicability": {
+                                "fromMinute": 0
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "operatorCountry": null,
+      "facilities": null
+    }
+  ],
+  "statuses": [
+    {
+      "externalId": "1347",
+      "evseId": null,
+      "canonicalEvseId": null,
+      "status": "AVAILABLE",
+      "statusRaw": "available",
+      "observedAt": "2026-10-17T12:00:00+00:00",
+      "sourceReportedAt": "2026-10-17T08:16:38+00:00"
+    },
+    {
+      "externalId": "1349",
+      "evseId": null,
+      "canonicalEvseId": null,
+      "status": "AVAILABLE",
+      "statusRaw": "available",
+      "observedAt": "2026-10-17T12:00:00+00:00",
+      "sourceReportedAt": "2026-10-16T20:23:09+00:00"
+    },
+    {
+      "externalId": "1352",
+      "evseId": null,
+      "canonicalEvseId": null,
+      "status": "AVAILABLE",
+      "statusRaw": "available",
+      "observedAt": "2026-10-17T12:00:00+00:00",
+      "sourceReportedAt": "2026-10-12T21:37:38+00:00"
+    },
+    {
+      "externalId": "1353",
+      "evseId": null,
+      "canonicalEvseId": null,
+      "status": "AVAILABLE",
+      "statusRaw": "available",
+      "observedAt": "2026-10-17T12:00:00+00:00",
+      "sourceReportedAt": "2026-10-12T21:37:38+00:00"
+    },
+    {
+      "externalId": "1346",
+      "evseId": null,
+      "canonicalEvseId": null,
+      "status": "AVAILABLE",
+      "statusRaw": "available",
+      "observedAt": "2026-10-17T12:00:00+00:00",
+      "sourceReportedAt": "2026-10-17T08:16:38+00:00"
+    },
+    {
+      "externalId": "1348",
+      "evseId": null,
+      "canonicalEvseId": null,
+      "status": "AVAILABLE",
+      "statusRaw": "available",
+      "observedAt": "2026-10-17T12:00:00+00:00",
+      "sourceReportedAt": "2026-10-16T20:23:09+00:00"
+    },
+    {
+      "externalId": "1351",
+      "evseId": null,
+      "canonicalEvseId": null,
+      "status": "AVAILABLE",
+      "statusRaw": "available",
+      "observedAt": "2026-10-17T12:00:00+00:00",
+      "sourceReportedAt": "2026-10-14T20:23:40+00:00"
+    },
+    {
+      "externalId": "1350",
+      "evseId": null,
+      "canonicalEvseId": null,
+      "status": "OUTOFORDER",
+      "statusRaw": "outOfOrder",
+      "observedAt": "2026-10-17T12:00:00+00:00",
+      "sourceReportedAt": "2026-03-25T08:21:49+00:00"
+    },
+    {
+      "externalId": "DE*EBW*E914213*2",
+      "evseId": "DE*EBW*E914213*2",
+      "canonicalEvseId": null,
+      "status": "AVAILABLE",
+      "statusRaw": "available",
+      "observedAt": "2026-10-17T12:00:00+00:00",
+      "sourceReportedAt": "2026-10-17T09:43:10.772+00:00"
+    },
+    {
+      "externalId": "DE*EBW*E914213*1",
+      "evseId": "DE*EBW*E914213*1",
+      "canonicalEvseId": null,
+      "status": "AVAILABLE",
+      "statusRaw": "available",
+      "observedAt": "2026-10-17T12:00:00+00:00",
+      "sourceReportedAt": "2026-10-17T10:53:45.894+00:00"
+    },
+    {
+      "externalId": "DE*EBW*E914214*1",
+      "evseId": "DE*EBW*E914214*1",
+      "canonicalEvseId": null,
+      "status": "AVAILABLE",
+      "statusRaw": "available",
+      "observedAt": "2026-10-17T12:00:00+00:00",
+      "sourceReportedAt": "2026-10-17T06:51:04.647+00:00"
+    },
+    {
+      "externalId": "DE*EBW*E914214*2",
+      "evseId": "DE*EBW*E914214*2",
+      "canonicalEvseId": null,
+      "status": "CHARGING",
+      "statusRaw": "charging",
+      "observedAt": "2026-10-17T12:00:00+00:00",
+      "sourceReportedAt": "2026-10-17T11:41:16.524+00:00"
+    },
+    {
+      "externalId": "DE*SHN*E0030119",
+      "evseId": "DE*SHN*E0030119",
+      "canonicalEvseId": null,
+      "status": "AVAILABLE",
+      "statusRaw": "available",
+      "observedAt": "2026-10-17T12:00:00+00:00",
+      "sourceReportedAt": "2026-10-16T02:16:47.732611+00:00"
+    },
+    {
+      "externalId": "DE*SHN*E0030120",
+      "evseId": "DE*SHN*E0030120",
+      "canonicalEvseId": null,
+      "status": "AVAILABLE",
+      "statusRaw": "available",
+      "observedAt": "2026-10-17T12:00:00+00:00",
+      "sourceReportedAt": "2026-10-16T02:16:47.749588+00:00"
+    }
+  ],
+  "prices": []
+}

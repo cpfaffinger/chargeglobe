@@ -2,3 +2,5 @@
 *.sln text eol=crlf
 *.png binary
 *.ico binary
+# Recorded source files keep their line endings (the register of the Bundesnetzagentur uses CRLF).
+fixtures/**/*.csv -text

@@ -1,0 +1,1417 @@
+{
+  "locations": [
+    {
+      "externalId": "1081024",
+      "name": null,
+      "address": {
+        "street": "Platz vor dem Neuen Tor 0",
+        "postalCode": "10115",
+        "city": "Berlin",
+        "country": "DE"
+      },
+      "coordinates": {
+        "latitude": 52.528677,
+        "longitude": 13.378846
+      },
+      "operatorName": "E.ON Drive Infrastructure GmbH",
+      "operatorId": "UFC",
+      "access": "PUBLIC",
+      "openingTimes": {
+        "twentyFourSeven": true,
+        "description": null
+      },
+      "evses": [
+        {
+          "externalId": "DEUFCE011211",
+          "evseId": "DE*UFC*E01121*1",
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 22,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "AC Typ 2 Steckdose"
+            }
+          ],
+          "status": null,
+          "statusRaw": "In Betrieb",
+          "authMethods": [
+            "RFID_READER",
+            "WEBSITE"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "DEUFCE011212",
+          "evseId": "DE*UFC*E01121*2",
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 22,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "AC Typ 2 Steckdose"
+            }
+          ],
+          "status": null,
+          "statusRaw": "In Betrieb",
+          "authMethods": [
+            "RFID_READER",
+            "WEBSITE"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        }
+      ],
+      "observedAt": "2026-10-17T08:00:00+00:00",
+      "raw": {
+        "Ladeeinrichtungs-ID": "1081024",
+        "Betreiber": "E.ON Drive Infrastructure GmbH",
+        "Anzeigename (Karte)": "E.ON Drive Infrastructure",
+        "Status": "In Betrieb",
+        "Art der Ladeeinrichtung": "Normalladeeinrichtung",
+        "Anzahl Ladepunkte": "2",
+        "Nennleistung Ladeeinrichtung [kW]": "44",
+        "Inbetriebnahmedatum": "16.10.2024",
+        "Straße": "Platz vor dem Neuen Tor",
+        "Hausnummer": "0",
+        "Postleitzahl": "10115",
+        "Ort": "Berlin",
+        "Kreis/kreisfreie Stadt": "Kreisfreie Stadt Berlin",
+        "Bundesland": "Berlin",
+        "Breitengrad": "52,528677",
+        "Längengrad": "13,378846",
+        "Informationen zum Parkraum": "Keine Beschränkung",
+        "Bezahlsysteme": "Onlinezahlungsverfahren;RFID-Karte",
+        "Öffnungszeiten": "247",
+        "Öffnungszeiten: Wochentage": "Montag; Dienstag; Mittwoch; Donnerstag; Freitag; Samstag; Sonntag",
+        "Öffnungszeiten: Tageszeiten": "00:00-23:59; 00:00-23:59; 00:00-23:59; 00:00-23:59; 00:00-23:59; 00:00-23:59; 00:00-23:59",
+        "Steckertypen1": "AC Typ 2 Steckdose",
+        "Nennleistung Stecker1": "22",
+        "EVSE-ID1": "DE*UFC*E01121*1",
+        "Steckertypen2": "AC Typ 2 Steckdose",
+        "Nennleistung Stecker2": "22",
+        "EVSE-ID2": "DE*UFC*E01121*2"
+      },
+      "operatorCountry": "DE",
+      "facilities": null
+    },
+    {
+      "externalId": "1018030",
+      "name": null,
+      "address": {
+        "street": "Leipziger Platz 19",
+        "postalCode": "01011",
+        "city": "Berlin",
+        "country": "DE"
+      },
+      "coordinates": {
+        "latitude": 52.510055,
+        "longitude": 13.377592
+      },
+      "operatorName": "Berliner Stadtwerke KommunalPartner GmbH",
+      "operatorId": null,
+      "access": null,
+      "openingTimes": null,
+      "evses": [
+        {
+          "externalId": "1018030/LP1",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 22,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "AC Typ 2 Steckdose"
+            }
+          ],
+          "status": null,
+          "statusRaw": "In Betrieb",
+          "authMethods": [
+            "RFID_READER",
+            "WEBSITE"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "1018030/LP2",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 22,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "AC Typ 2 Steckdose"
+            }
+          ],
+          "status": null,
+          "statusRaw": "In Betrieb",
+          "authMethods": [
+            "RFID_READER",
+            "WEBSITE"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        }
+      ],
+      "observedAt": "2026-10-17T08:00:00+00:00",
+      "raw": {
+        "Ladeeinrichtungs-ID": "1018030",
+        "Betreiber": "Berliner Stadtwerke KommunalPartner GmbH",
+        "Anzeigename (Karte)": "Berliner Stadtwerke KommunalPartner GmbH",
+        "Status": "In Betrieb",
+        "Art der Ladeeinrichtung": "Normalladeeinrichtung",
+        "Anzahl Ladepunkte": "2",
+        "Nennleistung Ladeeinrichtung [kW]": "30",
+        "Inbetriebnahmedatum": "30.06.2023",
+        "Straße": "Leipziger Platz",
+        "Hausnummer": "19",
+        "Postleitzahl": "01011",
+        "Ort": "Berlin",
+        "Kreis/kreisfreie Stadt": "Kreisfreie Stadt Berlin",
+        "Bundesland": "Berlin",
+        "Breitengrad": "52,510055",
+        "Längengrad": "13,377592",
+        "Bezahlsysteme": "Onlinezahlungsverfahren;RFID-Karte;Sonstige",
+        "Öffnungszeiten": "Keine Angabe",
+        "Steckertypen1": "AC Typ 2 Steckdose",
+        "Nennleistung Stecker1": "22",
+        "Steckertypen2": "AC Typ 2 Steckdose",
+        "Nennleistung Stecker2": "22"
+      },
+      "operatorCountry": null,
+      "facilities": null
+    },
+    {
+      "externalId": "1084823",
+      "name": null,
+      "address": {
+        "street": "Steigäcker 4",
+        "postalCode": "78582",
+        "city": "Balgheim",
+        "country": "DE"
+      },
+      "coordinates": {
+        "latitude": 48.066779,
+        "longitude": 8.765814
+      },
+      "operatorName": "Autohaus Klaiber gmbH",
+      "operatorId": null,
+      "access": null,
+      "openingTimes": null,
+      "evses": [
+        {
+          "externalId": "1084823/LP1",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 11,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 11,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "AC Typ 2 Steckdose"
+            }
+          ],
+          "status": "INOPERATIVE",
+          "statusRaw": "In Wartung",
+          "authMethods": [
+            "RFID_READER",
+            "WEBSITE"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "1084823/LP2",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22,
+          "powerType": "DC",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2_COMBO",
+              "format": "CABLE",
+              "powerType": "DC",
+              "maxPowerKw": 22,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "DC Fahrzeugkupplung Typ Combo 2 (CCS)"
+            }
+          ],
+          "status": "INOPERATIVE",
+          "statusRaw": "In Wartung",
+          "authMethods": [
+            "RFID_READER",
+            "WEBSITE"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        }
+      ],
+      "observedAt": "2026-10-17T08:00:00+00:00",
+      "raw": {
+        "Ladeeinrichtungs-ID": "1084823",
+        "Betreiber": "Autohaus Klaiber gmbH",
+        "Status": "In Wartung",
+        "Art der Ladeeinrichtung": "Normalladeeinrichtung",
+        "Anzahl Ladepunkte": "2",
+        "Nennleistung Ladeeinrichtung [kW]": "33",
+        "Inbetriebnahmedatum": "21.11.2022",
+        "Straße": "Steigäcker",
+        "Hausnummer": "4",
+        "Postleitzahl": "78582",
+        "Ort": "Balgheim",
+        "Kreis/kreisfreie Stadt": "Landkreis Tuttlingen",
+        "Bundesland": "Baden-Württemberg",
+        "Breitengrad": "48,066779",
+        "Längengrad": "8,765814",
+        "Bezahlsysteme": "Onlinezahlungsverfahren;RFID-Karte;Sonstige",
+        "Öffnungszeiten": "Keine Angabe",
+        "Steckertypen1": "AC Typ 2 Steckdose",
+        "Nennleistung Stecker1": "11",
+        "Steckertypen2": "DC Fahrzeugkupplung Typ Combo 2 (CCS)",
+        "Nennleistung Stecker2": "22"
+      },
+      "operatorCountry": null,
+      "facilities": null
+    },
+    {
+      "externalId": "1150299",
+      "name": "BIM",
+      "address": {
+        "street": "Alt-Friedrichsfelde 60",
+        "postalCode": "10315",
+        "city": "Berlin",
+        "country": "DE"
+      },
+      "coordinates": {
+        "latitude": 52.50963,
+        "longitude": 13.52885
+      },
+      "operatorName": "Berliner Stadtwerke KommunalPartner GmbH",
+      "operatorId": null,
+      "access": "PUBLIC",
+      "openingTimes": {
+        "twentyFourSeven": false,
+        "description": "Montag 05:30-22:00; Dienstag 05:30-22:00; Mittwoch 05:30-22:00; Donnerstag 05:30-22:00; Freitag 05:30-22:00; Samstag 06:00-14:00"
+      },
+      "evses": [
+        {
+          "externalId": "1150299/LP1",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 22,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "AC Typ 2 Steckdose"
+            }
+          ],
+          "status": null,
+          "statusRaw": "In Betrieb",
+          "authMethods": [
+            "RFID_READER",
+            "WEBSITE"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "1150299/LP2",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 22,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "AC Typ 2 Steckdose"
+            }
+          ],
+          "status": null,
+          "statusRaw": "In Betrieb",
+          "authMethods": [
+            "RFID_READER",
+            "WEBSITE"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        }
+      ],
+      "observedAt": "2026-10-17T08:00:00+00:00",
+      "raw": {
+        "Ladeeinrichtungs-ID": "1150299",
+        "Betreiber": "Berliner Stadtwerke KommunalPartner GmbH",
+        "Anzeigename (Karte)": "Berliner Stadtwerke KommunalPartner GmbH",
+        "Status": "In Betrieb",
+        "Art der Ladeeinrichtung": "Normalladeeinrichtung",
+        "Anzahl Ladepunkte": "2",
+        "Nennleistung Ladeeinrichtung [kW]": "22",
+        "Inbetriebnahmedatum": "10.02.2026",
+        "Straße": "Alt-Friedrichsfelde",
+        "Hausnummer": "60",
+        "Adresszusatz": "Parkplatz Nord",
+        "Postleitzahl": "10315",
+        "Ort": "Berlin",
+        "Kreis/kreisfreie Stadt": "Kreisfreie Stadt Berlin",
+        "Bundesland": "Berlin",
+        "Breitengrad": "52,50963",
+        "Längengrad": "13,52885",
+        "Standortbezeichnung": "BIM",
+        "Informationen zum Parkraum": "Keine Beschränkung",
+        "Bezahlsysteme": "Onlinezahlungsverfahren;RFID-Karte",
+        "Öffnungszeiten": "Eingeschränkt",
+        "Öffnungszeiten: Wochentage": "Montag; Dienstag; Mittwoch; Donnerstag; Freitag; Samstag",
+        "Öffnungszeiten: Tageszeiten": "05:30-22:00; 05:30-22:00; 05:30-22:00; 05:30-22:00; 05:30-22:00; 06:00-14:00",
+        "Steckertypen1": "AC Typ 2 Steckdose",
+        "Nennleistung Stecker1": "22",
+        "Steckertypen2": "AC Typ 2 Steckdose",
+        "Nennleistung Stecker2": "22"
+      },
+      "operatorCountry": null,
+      "facilities": null
+    },
+    {
+      "externalId": "1030313",
+      "name": null,
+      "address": {
+        "street": "Bebelplatz 2",
+        "postalCode": "10117",
+        "city": "Berlin",
+        "country": "DE"
+      },
+      "coordinates": {
+        "latitude": 52.516197,
+        "longitude": 13.394703
+      },
+      "operatorName": "Q-Park Recharge Germany GmbH",
+      "operatorId": null,
+      "access": null,
+      "openingTimes": null,
+      "evses": [
+        {
+          "externalId": "1030313/LP1",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 11,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 11,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "AC Typ 2 Steckdose"
+            },
+            {
+              "standard": "IEC_62196_T2",
+              "format": "CABLE",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 11,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "AC Typ 2 Fahrzeugkupplung"
+            }
+          ],
+          "status": null,
+          "statusRaw": "In Betrieb",
+          "authMethods": [
+            "RFID_READER",
+            "WEBSITE"
+          ],
+          "roaming": null,
+          "adHocPrice": {
+            "currency": "EUR",
+            "pricePerKwh": null,
+            "pricePerMinute": null,
+            "sessionFee": null,
+            "blockingFeePerMinute": null,
+            "blockingAfterMinutes": null,
+            "freeOfCharge": true
+          }
+        }
+      ],
+      "observedAt": "2026-10-17T08:00:00+00:00",
+      "raw": {
+        "Ladeeinrichtungs-ID": "1030313",
+        "Betreiber": "Q-Park Recharge Germany GmbH",
+        "Anzeigename (Karte)": "Q-Park Recharge Germany GmbH",
+        "Status": "In Betrieb",
+        "Art der Ladeeinrichtung": "Normalladeeinrichtung",
+        "Anzahl Ladepunkte": "1",
+        "Nennleistung Ladeeinrichtung [kW]": "11",
+        "Inbetriebnahmedatum": "24.11.2022",
+        "Straße": "Bebelplatz",
+        "Hausnummer": "2",
+        "Adresszusatz": "Tiefgarage",
+        "Postleitzahl": "10117",
+        "Ort": "Berlin",
+        "Kreis/kreisfreie Stadt": "Kreisfreie Stadt Berlin",
+        "Bundesland": "Berlin",
+        "Breitengrad": "52,516197",
+        "Längengrad": "13,394703",
+        "Bezahlsysteme": "Kostenlos (Registrierung);Onlinezahlungsverfahren;RFID-Karte",
+        "Öffnungszeiten": "Keine Angabe",
+        "Steckertypen1": "AC Typ 2 Steckdose; AC Typ 2 Fahrzeugkupplung",
+        "Nennleistung Stecker1": "11; 11"
+      },
+      "operatorCountry": null,
+      "facilities": null
+    },
+    {
+      "externalId": "1043033",
+      "name": null,
+      "address": {
+        "street": "Rudower Str. 120",
+        "postalCode": "12351",
+        "city": "Berlin",
+        "country": "DE"
+      },
+      "coordinates": {
+        "latitude": 52.435067,
+        "longitude": 13.46718
+      },
+      "operatorName": "Allego GmbH",
+      "operatorId": "ALL",
+      "access": null,
+      "openingTimes": null,
+      "evses": [
+        {
+          "externalId": "DEALLEGO0006361",
+          "evseId": "DEALLEGO000636*1",
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 50,
+          "powerType": "DC",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2_COMBO",
+              "format": "CABLE",
+              "powerType": "DC",
+              "maxPowerKw": 50,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "DC Fahrzeugkupplung Typ Combo 2 (CCS)"
+            },
+            {
+              "standard": "CHADEMO",
+              "format": "CABLE",
+              "powerType": "DC",
+              "maxPowerKw": 50,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "DC CHAdeMO"
+            }
+          ],
+          "status": null,
+          "statusRaw": "In Betrieb",
+          "authMethods": [
+            "RFID_READER",
+            "WEBSITE"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "DEALLEGO0006362",
+          "evseId": "DEALLEGO000636*2",
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 43,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "CABLE",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 43,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "AC Typ 2 Fahrzeugkupplung"
+            }
+          ],
+          "status": null,
+          "statusRaw": "In Betrieb",
+          "authMethods": [
+            "RFID_READER",
+            "WEBSITE"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        }
+      ],
+      "observedAt": "2026-10-17T08:00:00+00:00",
+      "raw": {
+        "Ladeeinrichtungs-ID": "1043033",
+        "Betreiber": "Allego GmbH",
+        "Anzeigename (Karte)": "Allego",
+        "Status": "In Betrieb",
+        "Art der Ladeeinrichtung": "Schnellladeeinrichtung",
+        "Anzahl Ladepunkte": "2",
+        "Nennleistung Ladeeinrichtung [kW]": "93",
+        "Inbetriebnahmedatum": "29.08.2018",
+        "Straße": "Rudower Str.",
+        "Hausnummer": "120",
+        "Postleitzahl": "12351",
+        "Ort": "Berlin",
+        "Kreis/kreisfreie Stadt": "Kreisfreie Stadt Berlin",
+        "Bundesland": "Berlin",
+        "Breitengrad": "52,435067",
+        "Längengrad": "13,46718",
+        "Bezahlsysteme": "Onlinezahlungsverfahren;RFID-Karte",
+        "Öffnungszeiten": "Keine Angabe",
+        "Steckertypen1": "DC Fahrzeugkupplung Typ Combo 2 (CCS); DC CHAdeMO",
+        "Nennleistung Stecker1": "50; 50",
+        "EVSE-ID1": "DEALLEGO000636*1",
+        "Steckertypen2": "AC Typ 2 Fahrzeugkupplung",
+        "Nennleistung Stecker2": "43",
+        "EVSE-ID2": "DEALLEGO000636*2"
+      },
+      "operatorCountry": "DE",
+      "facilities": null
+    },
+    {
+      "externalId": "1103322",
+      "name": "Gärtringen",
+      "address": {
+        "street": "Böblinger Str. 6",
+        "postalCode": "71116",
+        "city": "Gärtringen",
+        "country": "DE"
+      },
+      "coordinates": {
+        "latitude": 48.638673,
+        "longitude": 8.910368
+      },
+      "operatorName": "Circle K Deutschland GmbH",
+      "operatorId": null,
+      "access": "PUBLIC",
+      "openingTimes": {
+        "twentyFourSeven": true,
+        "description": null
+      },
+      "evses": [
+        {
+          "externalId": "1103322/LP1",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 300,
+          "powerType": "DC",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2_COMBO",
+              "format": "CABLE",
+              "powerType": "DC",
+              "maxPowerKw": 300,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "DC Fahrzeugkupplung Typ Combo 2 (CCS)"
+            }
+          ],
+          "status": null,
+          "statusRaw": "In Betrieb",
+          "authMethods": [
+            "RFID_READER",
+            "WEBSITE",
+            "CREDIT_CARD_PAYABLE",
+            "DEBIT_CARD_PAYABLE",
+            "CONTACTLESS_CARD_SUPPORT",
+            "CHIP_CARD_SUPPORT"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "1103322/LP2",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 300,
+          "powerType": "DC",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2_COMBO",
+              "format": "CABLE",
+              "powerType": "DC",
+              "maxPowerKw": 300,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "DC Fahrzeugkupplung Typ Combo 2 (CCS)"
+            }
+          ],
+          "status": null,
+          "statusRaw": "In Betrieb",
+          "authMethods": [
+            "RFID_READER",
+            "WEBSITE",
+            "CREDIT_CARD_PAYABLE",
+            "DEBIT_CARD_PAYABLE",
+            "CONTACTLESS_CARD_SUPPORT",
+            "CHIP_CARD_SUPPORT"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        }
+      ],
+      "observedAt": "2026-10-17T08:00:00+00:00",
+      "raw": {
+        "Ladeeinrichtungs-ID": "1103322",
+        "Betreiber": "Circle K Deutschland GmbH",
+        "Anzeigename (Karte)": "Circle K Deutschland",
+        "Status": "In Betrieb",
+        "Art der Ladeeinrichtung": "Schnellladeeinrichtung",
+        "Anzahl Ladepunkte": "2",
+        "Nennleistung Ladeeinrichtung [kW]": "300",
+        "Inbetriebnahmedatum": "09.12.2024",
+        "Straße": "Böblinger Str.",
+        "Hausnummer": "6",
+        "Postleitzahl": "71116",
+        "Ort": "Gärtringen",
+        "Kreis/kreisfreie Stadt": "Landkreis Böblingen",
+        "Bundesland": "Baden-Württemberg",
+        "Breitengrad": "48,638673",
+        "Längengrad": "8,910368",
+        "Standortbezeichnung": "Gärtringen",
+        "Informationen zum Parkraum": "Keine Beschränkung",
+        "Bezahlsysteme": "Kreditkarte (Lesegerät);Kreditkarte (NFC);Debitkarte (Lesegerät);Debitkarte (NFC);Onlinezahlungsverfahren;RFID-Karte",
+        "Öffnungszeiten": "247",
+        "Öffnungszeiten: Wochentage": "Montag; Dienstag; Mittwoch; Donnerstag; Freitag; Samstag; Sonntag",
+        "Öffnungszeiten: Tageszeiten": "00:00-23:59; 00:00-23:59; 00:00-23:59; 00:00-23:59; 00:00-23:59; 00:00-23:59; 00:00-23:59",
+        "Steckertypen1": "DC Fahrzeugkupplung Typ Combo 2 (CCS)",
+        "Nennleistung Stecker1": "300",
+        "EVSE-ID1": "Seriennummer 23BZ3224B",
+        "Steckertypen2": "DC Fahrzeugkupplung Typ Combo 2 (CCS)",
+        "Nennleistung Stecker2": "300",
+        "EVSE-ID2": "Seriennummer 23BZ3224B"
+      },
+      "operatorCountry": null,
+      "facilities": null
+    },
+    {
+      "externalId": "1152370",
+      "name": null,
+      "address": {
+        "street": "Promenadeweg 34",
+        "postalCode": "89165",
+        "city": "Dietenheim",
+        "country": "DE"
+      },
+      "coordinates": {
+        "latitude": 48.2167,
+        "longitude": 10.1333
+      },
+      "operatorName": "Stadt Dietenheim",
+      "operatorId": null,
+      "access": "PUBLIC",
+      "openingTimes": null,
+      "evses": [
+        {
+          "externalId": "1152370/LP1",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 11,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 11,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "AC Typ 2 Steckdose"
+            }
+          ],
+          "status": null,
+          "statusRaw": "In Betrieb",
+          "authMethods": [
+            "WEBSITE"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "1152370/LP2",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 11,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 11,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "AC Typ 2 Steckdose"
+            }
+          ],
+          "status": null,
+          "statusRaw": "In Betrieb",
+          "authMethods": [
+            "WEBSITE"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "1152370/LP3",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 11,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 11,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "AC Typ 2 Steckdose"
+            }
+          ],
+          "status": null,
+          "statusRaw": "In Betrieb",
+          "authMethods": [
+            "WEBSITE"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "1152370/LP4",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 11,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 11,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "AC Typ 2 Steckdose"
+            }
+          ],
+          "status": null,
+          "statusRaw": "In Betrieb",
+          "authMethods": [
+            "WEBSITE"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        }
+      ],
+      "observedAt": "2026-10-17T08:00:00+00:00",
+      "raw": {
+        "Ladeeinrichtungs-ID": "1152370",
+        "Betreiber": "Stadt Dietenheim",
+        "Status": "In Betrieb",
+        "Art der Ladeeinrichtung": "Normalladeeinrichtung",
+        "Anzahl Ladepunkte": "4",
+        "Nennleistung Ladeeinrichtung [kW]": "44",
+        "Inbetriebnahmedatum": "11.03.2026",
+        "Straße": "Promenadeweg",
+        "Hausnummer": "34",
+        "Postleitzahl": "89165",
+        "Ort": "Dietenheim",
+        "Kreis/kreisfreie Stadt": "Landkreis Alb-Donau-Kreis",
+        "Bundesland": "Baden-Württemberg",
+        "Breitengrad": "48,2167",
+        "Längengrad": "10,1333",
+        "Informationen zum Parkraum": "Keine Beschränkung",
+        "Bezahlsysteme": "Sonstige;Onlinezahlungsverfahren",
+        "Öffnungszeiten": "Keine Angabe",
+        "Steckertypen1": "AC Typ 2 Steckdose",
+        "Nennleistung Stecker1": "11",
+        "EVSE-ID1": "E7JFZ",
+        "Steckertypen2": "AC Typ 2 Steckdose",
+        "Nennleistung Stecker2": "11",
+        "EVSE-ID2": "EUJC6",
+        "Steckertypen3": "AC Typ 2 Steckdose",
+        "Nennleistung Stecker3": "11",
+        "EVSE-ID3": "EM5XX",
+        "Steckertypen4": "AC Typ 2 Steckdose",
+        "Nennleistung Stecker4": "11",
+        "EVSE-ID4": "EAU1V"
+      },
+      "operatorCountry": null,
+      "facilities": null
+    },
+    {
+      "externalId": "1147864",
+      "name": null,
+      "address": {
+        "street": "Festplatzweg 11",
+        "postalCode": "29525",
+        "city": "Uelzen",
+        "country": "DE"
+      },
+      "coordinates": {
+        "latitude": 53,
+        "longitude": 10.515613
+      },
+      "operatorName": "Uhlenköper-Camp Körding eGbR",
+      "operatorId": null,
+      "access": "PUBLIC",
+      "openingTimes": null,
+      "evses": [
+        {
+          "externalId": "1147864/LP1",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 3.7,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 3.7,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "AC Typ 2 Steckdose"
+            }
+          ],
+          "status": null,
+          "statusRaw": "In Betrieb",
+          "authMethods": [
+            "CREDIT_CARD_PAYABLE",
+            "DEBIT_CARD_PAYABLE",
+            "CHIP_CARD_SUPPORT",
+            "CASH"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        }
+      ],
+      "observedAt": "2026-10-17T08:00:00+00:00",
+      "raw": {
+        "Ladeeinrichtungs-ID": "1147864",
+        "Betreiber": "Uhlenköper-Camp Körding eGbR",
+        "Status": "In Betrieb",
+        "Art der Ladeeinrichtung": "Normalladeeinrichtung",
+        "Anzahl Ladepunkte": "1",
+        "Nennleistung Ladeeinrichtung [kW]": "3,7",
+        "Inbetriebnahmedatum": "15.06.2023",
+        "Straße": "Festplatzweg",
+        "Hausnummer": "11",
+        "Postleitzahl": "29525",
+        "Ort": "Uelzen",
+        "Kreis/kreisfreie Stadt": "Landkreis Uelzen",
+        "Bundesland": "Niedersachsen",
+        "Breitengrad": "53",
+        "Längengrad": "10,515613",
+        "Informationen zum Parkraum": "Keine Beschränkung",
+        "Bezahlsysteme": "Bargeld;Kreditkarte (Lesegerät);Debitkarte (Lesegerät)",
+        "Öffnungszeiten": "Keine Angabe",
+        "Steckertypen1": "AC Typ 2 Steckdose",
+        "Nennleistung Stecker1": "3,7"
+      },
+      "operatorCountry": null,
+      "facilities": null
+    },
+    {
+      "externalId": "1150139",
+      "name": null,
+      "address": {
+        "street": "Schwarzleite 2",
+        "postalCode": "91220",
+        "city": "Schnaittach",
+        "country": "DE"
+      },
+      "coordinates": {
+        "latitude": 49.56819,
+        "longitude": 11.327578
+      },
+      "operatorName": "BP Europa SE",
+      "operatorId": null,
+      "access": "PUBLIC",
+      "openingTimes": {
+        "twentyFourSeven": true,
+        "description": null
+      },
+      "evses": [
+        {
+          "externalId": "1150139/LP1",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 1000,
+          "powerType": "DC",
+          "connectors": [
+            {
+              "standard": "UNKNOWN",
+              "format": "CABLE",
+              "powerType": "DC",
+              "maxPowerKw": 1000,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "DC Megawatt Charging System (MCS)"
+            },
+            {
+              "standard": "IEC_62196_T2_COMBO",
+              "format": "CABLE",
+              "powerType": "DC",
+              "maxPowerKw": 600,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "DC Fahrzeugkupplung Typ Combo 2 (CCS)"
+            }
+          ],
+          "status": null,
+          "statusRaw": "In Betrieb",
+          "authMethods": [
+            "RFID_READER",
+            "WEBSITE",
+            "CREDIT_CARD_PAYABLE",
+            "DEBIT_CARD_PAYABLE",
+            "CONTACTLESS_CARD_SUPPORT",
+            "CHIP_CARD_SUPPORT"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        }
+      ],
+      "observedAt": "2026-10-17T08:00:00+00:00",
+      "raw": {
+        "Ladeeinrichtungs-ID": "1150139",
+        "Betreiber": "BP Europa SE",
+        "Anzeigename (Karte)": "Aral Pulse",
+        "Status": "In Betrieb",
+        "Art der Ladeeinrichtung": "Schnellladeeinrichtung",
+        "Anzahl Ladepunkte": "1",
+        "Nennleistung Ladeeinrichtung [kW]": "1000",
+        "Inbetriebnahmedatum": "30.01.2026",
+        "Straße": "Schwarzleite",
+        "Hausnummer": "2",
+        "Postleitzahl": "91220",
+        "Ort": "Schnaittach",
+        "Kreis/kreisfreie Stadt": "Landkreis Nürnberger Land",
+        "Bundesland": "Bayern",
+        "Breitengrad": "49,56819",
+        "Längengrad": "11,327578",
+        "Informationen zum Parkraum": "Keine Beschränkung",
+        "Bezahlsysteme": "Kreditkarte (NFC);Kreditkarte (Lesegerät);Debitkarte (NFC);Debitkarte (Lesegerät);Onlinezahlungsverfahren;RFID-Karte",
+        "Öffnungszeiten": "247",
+        "Öffnungszeiten: Wochentage": "Montag; Dienstag; Mittwoch; Donnerstag; Freitag; Samstag; Sonntag",
+        "Öffnungszeiten: Tageszeiten": "00:00-23:59; 00:00-23:59; 00:00-23:59; 00:00-23:59; 00:00-23:59; 00:00-23:59; 00:00-23:59",
+        "Steckertypen1": "DC Megawatt Charging System (MCS); DC Fahrzeugkupplung Typ Combo 2 (CCS)",
+        "Nennleistung Stecker1": "1000; 600"
+      },
+      "operatorCountry": null,
+      "facilities": null
+    },
+    {
+      "externalId": "1149893",
+      "name": "BIO COMPANY SE",
+      "address": {
+        "street": "Treskowallee 114",
+        "postalCode": "10318",
+        "city": "Berlin",
+        "country": "DE"
+      },
+      "coordinates": {
+        "latitude": 52.480624,
+        "longitude": 13.525059
+      },
+      "operatorName": "BIO COMPANY SE",
+      "operatorId": "MDS",
+      "access": "RESTRICTED",
+      "openingTimes": {
+        "twentyFourSeven": true,
+        "description": null
+      },
+      "evses": [
+        {
+          "externalId": "DEMDSE012465",
+          "evseId": "DE*MDS*E012465",
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 22,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "AC Typ 2 Steckdose"
+            }
+          ],
+          "status": null,
+          "statusRaw": "In Betrieb",
+          "authMethods": [
+            "RFID_READER",
+            "WEBSITE",
+            "CREDIT_CARD_PAYABLE",
+            "CHIP_CARD_SUPPORT"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "DEMDSE012114",
+          "evseId": "DE*MDS*E012114",
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 22,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "AC Typ 2 Steckdose"
+            }
+          ],
+          "status": null,
+          "statusRaw": "In Betrieb",
+          "authMethods": [
+            "RFID_READER",
+            "WEBSITE",
+            "CREDIT_CARD_PAYABLE",
+            "CHIP_CARD_SUPPORT"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        }
+      ],
+      "observedAt": "2026-10-17T08:00:00+00:00",
+      "raw": {
+        "Ladeeinrichtungs-ID": "1149893",
+        "Betreiber": "BIO COMPANY SE",
+        "Anzeigename (Karte)": "BIO COMPANY SE",
+        "Status": "In Betrieb",
+        "Art der Ladeeinrichtung": "Normalladeeinrichtung",
+        "Anzahl Ladepunkte": "2",
+        "Nennleistung Ladeeinrichtung [kW]": "22",
+        "Inbetriebnahmedatum": "16.02.2026",
+        "Straße": "Treskowallee",
+        "Hausnummer": "114",
+        "Adresszusatz": "Kundenparkplatz",
+        "Postleitzahl": "10318",
+        "Ort": "Berlin",
+        "Kreis/kreisfreie Stadt": "Kreisfreie Stadt Berlin",
+        "Bundesland": "Berlin",
+        "Breitengrad": "52,480624",
+        "Längengrad": "13,525059",
+        "Standortbezeichnung": "BIO COMPANY SE",
+        "Informationen zum Parkraum": "Nur für Kunden/Besucher",
+        "Bezahlsysteme": "Kreditkarte (Lesegerät);Onlinezahlungsverfahren;RFID-Karte",
+        "Öffnungszeiten": "247",
+        "Öffnungszeiten: Wochentage": "Montag; Dienstag; Mittwoch; Donnerstag; Freitag; Samstag; Sonntag",
+        "Öffnungszeiten: Tageszeiten": "00:00-23:59; 00:00-23:59; 00:00-23:59; 00:00-23:59; 00:00-23:59; 00:00-23:59; 00:00-23:59",
+        "Steckertypen1": "AC Typ 2 Steckdose",
+        "Nennleistung Stecker1": "22",
+        "EVSE-ID1": "DE*MDS*E012465",
+        "Steckertypen2": "AC Typ 2 Steckdose",
+        "Nennleistung Stecker2": "22",
+        "EVSE-ID2": "DE*MDS*E012114"
+      },
+      "operatorCountry": "DE",
+      "facilities": null
+    },
+    {
+      "externalId": "1117446",
+      "name": "Q1 P+R Sanierung S-Bahn Parkhaus Echterdingen",
+      "address": {
+        "street": "In den Gärtlesäckern 45",
+        "postalCode": "70771",
+        "city": "Leinfelden-Echterdingen",
+        "country": "DE"
+      },
+      "coordinates": {
+        "latitude": 48.691924,
+        "longitude": 9.17094
+      },
+      "operatorName": "Stadtwerke Leinfelden-Echterdingen",
+      "operatorId": null,
+      "access": "PUBLIC",
+      "openingTimes": {
+        "twentyFourSeven": true,
+        "description": null
+      },
+      "evses": [
+        {
+          "externalId": "1117446/LP1",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 22,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "AC Typ 2 Steckdose"
+            }
+          ],
+          "status": null,
+          "statusRaw": "In Betrieb",
+          "authMethods": [
+            "RFID_READER",
+            "WEBSITE",
+            "CREDIT_CARD_PAYABLE",
+            "CONTACTLESS_CARD_SUPPORT"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "1117446/LP2",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 22,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "AC Typ 2 Steckdose"
+            }
+          ],
+          "status": null,
+          "statusRaw": "In Betrieb",
+          "authMethods": [
+            "RFID_READER",
+            "WEBSITE",
+            "CREDIT_CARD_PAYABLE",
+            "CONTACTLESS_CARD_SUPPORT"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "1117446/LP3",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 22,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "AC Typ 2 Steckdose"
+            }
+          ],
+          "status": null,
+          "statusRaw": "In Betrieb",
+          "authMethods": [
+            "RFID_READER",
+            "WEBSITE",
+            "CREDIT_CARD_PAYABLE",
+            "CONTACTLESS_CARD_SUPPORT"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "1117446/LP4",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 22,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "AC Typ 2 Steckdose"
+            }
+          ],
+          "status": null,
+          "statusRaw": "In Betrieb",
+          "authMethods": [
+            "RFID_READER",
+            "WEBSITE",
+            "CREDIT_CARD_PAYABLE",
+            "CONTACTLESS_CARD_SUPPORT"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "1117446/LP5",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 22,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "AC Typ 2 Steckdose"
+            }
+          ],
+          "status": null,
+          "statusRaw": "In Betrieb",
+          "authMethods": [
+            "RFID_READER",
+            "WEBSITE",
+            "CREDIT_CARD_PAYABLE",
+            "CONTACTLESS_CARD_SUPPORT"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        },
+        {
+          "externalId": "1117446/LP6",
+          "evseId": null,
+          "physicalReference": null,
+          "stationExternalId": null,
+          "maxPowerKw": 22,
+          "powerType": "AC_3_PHASE",
+          "connectors": [
+            {
+              "standard": "IEC_62196_T2",
+              "format": "SOCKET",
+              "powerType": "AC_3_PHASE",
+              "maxPowerKw": 22,
+              "maxVoltage": null,
+              "maxAmperage": null,
+              "rawType": "AC Typ 2 Steckdose"
+            }
+          ],
+          "status": null,
+          "statusRaw": "In Betrieb",
+          "authMethods": [
+            "RFID_READER",
+            "WEBSITE",
+            "CREDIT_CARD_PAYABLE",
+            "CONTACTLESS_CARD_SUPPORT"
+          ],
+          "roaming": null,
+          "adHocPrice": null
+        }
+      ],
+      "observedAt": "2026-10-17T08:00:00+00:00",
+      "raw": {
+        "Ladeeinrichtungs-ID": "1117446",
+        "Betreiber": "Stadtwerke Leinfelden-Echterdingen",
+        "Status": "In Betrieb",
+        "Art der Ladeeinrichtung": "Normalladeeinrichtung",
+        "Anzahl Ladepunkte": "6",
+        "Nennleistung Ladeeinrichtung [kW]": "132",
+        "Inbetriebnahmedatum": "20.03.2024",
+        "Straße": "In den Gärtlesäckern",
+        "Hausnummer": "45",
+        "Postleitzahl": "70771",
+        "Ort": "Leinfelden-Echterdingen",
+        "Kreis/kreisfreie Stadt": "Landkreis Esslingen",
+        "Bundesland": "Baden-Württemberg",
+        "Breitengrad": "48,691924",
+        "Längengrad": "9,17094",
+        "Standortbezeichnung": "Q1 P+R Sanierung S-Bahn Parkhaus Echterdingen",
+        "Informationen zum Parkraum": "Keine Beschränkung",
+        "Bezahlsysteme": "Onlinezahlungsverfahren;Kreditkarte (NFC);RFID-Karte",
+        "Öffnungszeiten": "247",
+        "Öffnungszeiten: Wochentage": "Montag; Dienstag; Mittwoch; Donnerstag; Freitag; Samstag; Sonntag",
+        "Öffnungszeiten: Tageszeiten": "00:00-23:59; 00:00-23:59; 00:00-23:59; 00:00-23:59; 00:00-23:59; 00:00-23:59; 00:00-23:59",
+        "Steckertypen1": "AC Typ 2 Steckdose",
+        "Nennleistung Stecker1": "22",
+        "Steckertypen2": "AC Typ 2 Steckdose",
+        "Nennleistung Stecker2": "22",
+        "Steckertypen3": "AC Typ 2 Steckdose",
+        "Nennleistung Stecker3": "22",
+        "Steckertypen4": "AC Typ 2 Steckdose",
+        "Nennleistung Stecker4": "22",
+        "Steckertypen5": "AC Typ 2 Steckdose",
+        "Nennleistung Stecker5": "22",
+        "Steckertypen6": "AC Typ 2 Steckdose",
+        "Nennleistung Stecker6": "22"
+      },
+      "operatorCountry": null,
+      "facilities": null
+    }
+  ]
+}

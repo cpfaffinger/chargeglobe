@@ -11,6 +11,8 @@ COPY src/ChargeGlobe.Infrastructure/ChargeGlobe.Infrastructure.csproj src/Charge
 COPY src/ChargeGlobe.Providers.Abstractions/ChargeGlobe.Providers.Abstractions.csproj src/ChargeGlobe.Providers.Abstractions/
 COPY src/ChargeGlobe.Providers.EControl/ChargeGlobe.Providers.EControl.csproj src/ChargeGlobe.Providers.EControl/
 COPY src/ChargeGlobe.Providers.OpenChargeMap/ChargeGlobe.Providers.OpenChargeMap.csproj src/ChargeGlobe.Providers.OpenChargeMap/
+COPY src/ChargeGlobe.Providers.BNetzA/ChargeGlobe.Providers.BNetzA.csproj src/ChargeGlobe.Providers.BNetzA/
+COPY src/ChargeGlobe.Providers.DatexII/ChargeGlobe.Providers.DatexII.csproj src/ChargeGlobe.Providers.DatexII/
 COPY src/ChargeGlobe.Providers.TariffCatalog/ChargeGlobe.Providers.TariffCatalog.csproj src/ChargeGlobe.Providers.TariffCatalog/
 COPY src/ChargeGlobe.Api/ChargeGlobe.Api.csproj src/ChargeGlobe.Api/
 COPY src/ChargeGlobe.Jobs/ChargeGlobe.Jobs.csproj src/ChargeGlobe.Jobs/
