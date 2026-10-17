@@ -107,7 +107,16 @@
                   "maxBlockingFee": 36
                 }
               ],
-              "notes": "Roaming in AT, DE, IT, HR, SK, SI und CZ."
+              "notes": "Roaming in AT, DE, IT, HR, SK, SI und CZ zum selben Preis.",
+              "countries": [
+                "AT",
+                "DE",
+                "IT",
+                "HR",
+                "SK",
+                "SI",
+                "CZ"
+              ]
             }
           ],
           "notes": "Einführungspreis bis Jänner 2027; ab 1.2.2027 Heimnetz 0,55, Roaming 0,89 €/kWh.",
@@ -216,7 +225,16 @@
                   "maxBlockingFee": 36
                 }
               ],
-              "notes": "Roaming in AT, DE, IT, HR, SK, SI und CZ."
+              "notes": "Roaming in AT, DE, IT, HR, SK, SI und CZ zum selben Preis.",
+              "countries": [
+                "AT",
+                "DE",
+                "IT",
+                "HR",
+                "SK",
+                "SI",
+                "CZ"
+              ]
             }
           ],
           "notes": "Einführungspreis bis Jänner 2027; ab 1.2.2027 11,99 €/Monat, Heimnetz 0,39, Roaming 0,79 €/kWh.",

@@ -62,7 +62,10 @@
                   "maxBlockingFee": 25
                 }
               ],
-              "notes": "Partnernetz (Roaming): alle anderen Stationen mit Fremdkarten-Annahme."
+              "notes": "Partnernetz (Roaming): alle anderen Stationen mit Fremdkarten-Annahme in Österreich; im Ausland nicht nutzbar.",
+              "countries": [
+                "AT"
+              ]
             }
           ],
           "notes": "Standzeitzuschlag nach 5 h (City/Spot), an Parking-Standorten nach 12 h und auch nachts. Die kWh-Preise werden am 1.4. und 1.10. angepasst.",
@@ -126,7 +129,10 @@
                   "maxBlockingFee": 25
                 }
               ],
-              "notes": "Partnernetz (Roaming): alle anderen Stationen mit Fremdkarten-Annahme."
+              "notes": "Partnernetz (Roaming): alle anderen Stationen mit Fremdkarten-Annahme in Österreich; im Ausland nicht nutzbar.",
+              "countries": [
+                "AT"
+              ]
             }
           ],
           "notes": "Standzeitzuschlag nach 5 h (City/Spot), an Parking-Standorten nach 12 h und auch nachts. Die kWh-Preise werden am 1.4. und 1.10. angepasst.",
@@ -190,7 +196,10 @@
                   "maxBlockingFee": 25
                 }
               ],
-              "notes": "Partnernetz (Roaming): alle anderen Stationen mit Fremdkarten-Annahme."
+              "notes": "Partnernetz (Roaming): alle anderen Stationen mit Fremdkarten-Annahme in Österreich; im Ausland nicht nutzbar.",
+              "countries": [
+                "AT"
+              ]
             }
           ],
           "notes": "Standzeitzuschlag nach 5 h (City/Spot), an Parking-Standorten nach 12 h und auch nachts. Die kWh-Preise werden am 1.4. und 1.10. angepasst.",
@@ -266,6 +275,10 @@
                   "minKw": 50.1,
                   "pricePerMinute": 1.999
                 }
+              ],
+              "notes": "Im Ausland nicht nutzbar.",
+              "countries": [
+                "AT"
               ]
             }
           ],

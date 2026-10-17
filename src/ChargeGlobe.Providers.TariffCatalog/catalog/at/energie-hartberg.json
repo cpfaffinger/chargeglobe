@@ -1,0 +1,83 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "energie-hartberg",
+      "name": "Energie Hartberg",
+      "website": "https://www.stadtwerke-hartberg.at/energie/e-mobilitaet/",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "stromkunde",
+          "name": "Energie Hartberg für Stromkunden",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Stromkunde der Stadtwerke Hartberg; Ladekarte im Kundencenter.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "stadtwerke-hartberg"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.35
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.35,
+                  "blockingFeePerMinute": 0.05,
+                  "blockingAfterMinutes": 44
+                }
+              ]
+            }
+          ],
+          "notes": "Blockiergebühr nur an DC-Stationen ab der 45. Minute; Abrechnung über AMPLICITY.",
+          "sourceUrl": "https://www.stadtwerke-hartberg.at/energie/e-mobilitaet/",
+          "sourceDate": null,
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
+        },
+        {
+          "key": "direkt",
+          "name": "Energie Hartberg Direkt",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Keine; Zahlung per QR-Code oder Karte am Ladepunkt.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "stadtwerke-hartberg"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.45
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.45,
+                  "blockingFeePerMinute": 0.05,
+                  "blockingAfterMinutes": 44
+                }
+              ]
+            }
+          ],
+          "notes": "Für alle; Blockiergebühr nur an DC-Stationen ab der 45. Minute.",
+          "sourceUrl": "https://www.stadtwerke-hartberg.at/energie/e-mobilitaet/",
+          "sourceDate": null,
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
+        }
+      ]
+    }
+  ]
+}

@@ -27,10 +27,88 @@
                   "current": "DC",
                   "pricePerKwh": 0.66
                 }
+              ],
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.68
+                }
+              ],
+              "countries": [
+                "DE"
+              ]
+            },
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.8
+                }
+              ],
+              "countries": [
+                "IT"
+              ]
+            },
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.69
+                }
+              ],
+              "countries": [
+                "SI"
+              ]
+            },
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.7
+                }
+              ],
+              "countries": [
+                "HR"
+              ]
+            },
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.67
+                }
+              ],
+              "countries": [
+                "SK"
               ]
             }
           ],
-          "notes": "Mindestpreis laut IONITY für Österreich; an der Station kann der Preis höher sein. Nur an IONITY-Stationen.",
+          "notes": "Mindestpreise laut IONITY je Land der Station; an der Station kann der Preis höher sein. Nur an IONITY-Stationen. In CZ, HU und CH in Landeswährung, sonst nicht veröffentlicht.",
           "sourceUrl": "https://www.ionity.eu/subscriptions",
           "sourceDate": null,
           "confidence": "MEDIUM",
@@ -56,10 +134,88 @@
                   "current": "DC",
                   "pricePerKwh": 0.51
                 }
+              ],
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.51
+                }
+              ],
+              "countries": [
+                "DE"
+              ]
+            },
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.6
+                }
+              ],
+              "countries": [
+                "IT"
+              ]
+            },
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.52
+                }
+              ],
+              "countries": [
+                "SI"
+              ]
+            },
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.53
+                }
+              ],
+              "countries": [
+                "HR"
+              ]
+            },
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.5
+                }
+              ],
+              "countries": [
+                "SK"
               ]
             }
           ],
-          "notes": "Mindestpreis laut IONITY für Österreich; an der Station kann der Preis höher sein. Nur an IONITY-Stationen.",
+          "notes": "Mindestpreise laut IONITY je Land der Station; an der Station kann der Preis höher sein. Nur an IONITY-Stationen. In CZ, HU und CH in Landeswährung, sonst nicht veröffentlicht.",
           "sourceUrl": "https://www.ionity.eu/subscriptions",
           "sourceDate": "2026-07-01",
           "confidence": "MEDIUM",
@@ -85,10 +241,88 @@
                   "current": "DC",
                   "pricePerKwh": 0.41
                 }
+              ],
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.41
+                }
+              ],
+              "countries": [
+                "DE"
+              ]
+            },
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.48
+                }
+              ],
+              "countries": [
+                "IT"
+              ]
+            },
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.41
+                }
+              ],
+              "countries": [
+                "SI"
+              ]
+            },
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.42
+                }
+              ],
+              "countries": [
+                "HR"
+              ]
+            },
+            {
+              "kind": "HOME",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.4
+                }
+              ],
+              "countries": [
+                "SK"
               ]
             }
           ],
-          "notes": "Mindestpreis laut IONITY für Österreich; an der Station kann der Preis höher sein. Nur an IONITY-Stationen.",
+          "notes": "Mindestpreise laut IONITY je Land der Station; an der Station kann der Preis höher sein. Nur an IONITY-Stationen. In CZ, HU und CH in Landeswährung, sonst nicht veröffentlicht.",
           "sourceUrl": "https://www.ionity.eu/subscriptions",
           "sourceDate": "2026-07-01",
           "confidence": "MEDIUM",

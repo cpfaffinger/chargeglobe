@@ -191,12 +191,12 @@ Erhoben am 17.10.2026 aus Preisblättern und Tarifseiten, abgelegt im kuratierte
 
 | Muster | Anbieter | Abbildung |
 |---|---|---|
-| Heimnetz + ein Preis für alle anderen Stationen | EVN #Drive Smart („Partnerladenetz“ = Roaming in AT, DE, IT, HR, SI), Wien Energie Tanke, Energie Steiermark, SMATRICS Charge & Roam, VERBUND V-Go, OMV eMotion, Elli Premium | `HOME` + offene `ROAMING`-Zone |
+| Heimnetz + ein Preis für alle anderen Stationen | EVN #Drive Smart („Partnerladenetz“ = Roaming in AT, DE, IT, HR, SI), Wien Energie Tanke, Energie Steiermark, SMATRICS Charge & Roam, VERBUND V-Go, OMV eMotion, Elli Premium, GENOL G+ Card (Roaming nur bei 17 Partnernetzen) | `HOME` + `ROAMING`-Zone, die Länder des Roamings als `countries` |
 | ein Preis überall | LINZ AG StromMOBIL (eigene Stationen und alle gelisteten Roaming-Partner), EVN eMobil (Bestand) | `HOME` + `ROAMING` mit gleichem Preis, nicht gelistete Betreiber ausgeschlossen |
 | benannte Partnerliste, kein weiteres Roaming | ÖAMTC ePower (27 Netze inkl. IONITY, Mer, Lidl), Kelag ePlus/eMax, IKB, Energie AG (Partner je Minute) | `HOME` + `PARTNER` mit Netzliste |
 | Roamingpreis je Betreiber | da emobil, TIWAG mobil | je Preisgruppe eine `ROAMING`-Zone mit Netzen; nicht gelistete Betreiber nicht nutzbar |
 | Roaming je Minute, Ausnahmen je kWh | Salzburg AG (PLUS-Partner IONITY, Shell, Mer, OMV je kWh), Burgenland Energie (benannte Partner je Minute) | benannte `ROAMING`-Zone vor der offenen |
-| Preis des Betreibers weitergereicht | Octopus Electroverse, Plugsurfing, Chargemap (+10 %, mit Boost 0 %), Wels Strom (Monta-Roaming), MB.CHARGE Public S/M/L (−0/−10/−15 % neben festen Preisen für Mercedes-HPC, IONITY und Partnernetz), BMW Charging Flex/Active, Elli Base/IONITY Boost/Ultra (+0,39 € je Ladevorgang), Shell-Roaming (+0,35 €) | Zone mit `pricing` `OPERATOR_AD_HOC` und Aufschlag auf den Ad-hoc-Preis des Ladepunkts |
+| Preis des Betreibers weitergereicht | Abrechnungsplattformen von Standortbetreibern (Smart Fuel Pass inkl. Sonnenladen, AMPLICITY) im eigenen Netz, Octopus Electroverse, Plugsurfing, Chargemap (+10 %, mit Boost 0 %), Wels Strom (Monta-Roaming), MB.CHARGE Public S/M/L (−0/−10/−15 % neben festen Preisen für Mercedes-HPC, IONITY und Partnernetz), BMW Charging Flex/Active, Elli Base/IONITY Boost/Ultra (+0,39 € je Ladevorgang), Shell-Roaming (+0,35 €) | Zone mit `pricing` `OPERATOR_AD_HOC` und Aufschlag auf den Ad-hoc-Preis des Ladepunkts |
 | Herstellerkarten (Digital Charging Solutions, Elli) | Kia Charge, Charge myHyundai, Volvo, Toyota, smart, CHARGE NOW (auch MG), MB.CHARGE, BMW (DCS: „flexible Preise“, Rabatte von 5–30 % und ein Preferred Partner Network aus IONITY, EVN, Electra, Mer, Kelag, Shell, da emobil, Salzburg AG); Audi, Škoda, CUPRA (Elli: flexible Preise, IONITY- und Premium-Tarife mit Festpreisen); Porsche, Polestar (Plugsurfing), Mobilize (Renault) | Betreiberpreis mit Rabatt, Festpreise für IONITY/Mer/Partner, Premium-Tarife als offene Roamingzone |
 | Preis je Ladepunkt nicht veröffentlicht | EnBW mobility+ außerhalb von SMATRICS EnBW (0,56–0,89 €/kWh) | Zone mit `pricing` `UNKNOWN`: nutzbar, Preis unbekannt |
 | nur eigenes Netz | EVN #Drive Easy, Kelag eStart, Energie Klagenfurt, Stadtwerke Kufstein, Wels Strom, IONITY, Shell, Mer, Electra, Allego, Lidl | nur `HOME` |
@@ -216,14 +216,53 @@ Befunde:
 
 Abgleich der 40.868 aktiven Ladepunkte im Live-Bestand mit dem Katalog (50 Anbieter, 102 Tarife, vor dem Abgleich mit ladetarif.at):
 - **37.909 Ladepunkte** sind mit mindestens einer Ladekarte nutzbar: je Betreiber 28–49 Tarife mit festem Preis und bis zu 42 mit Betreiberpreis oder unbekanntem Preis (z. B. EVN 42 + 38, Wien Energie 36 + 42, IONITY 49 + 30, ChargePoint 28 + 42).
-- **2.183 Ladepunkte** nehmen laut E-Control keine Fremdkarten an (`roaming = false`) und gehören zu Betreibern ohne eigene Ladekarte, vor allem Parkgaragen und Firmenstandorte (Best in Parking 455, Smart Fuel Pass 283, MGAtech 256, KWMS 16); dort gilt nur der Ad-hoc-Preis.
+- **2.183 Ladepunkte** nahmen laut E-Control keine Fremdkarten an (`roaming = false`) und gehörten zu Betreibern ohne eigene Ladekarte im Katalog; die 20 größten sind unten aufgeschlüsselt.
 - **776 Tesla-Ladepunkte**: keine Karte im Katalog (siehe oben), Ad-hoc-Preis aus der E-Control.
 - Ohne eigenes Netz im Katalog (nur über offene Roamingzonen erreichbar) sind die großen Betreiber ChargePoint (`AT*HTB`, `AT*CPI`), MOON (`AT*POW`), eCarUp (`CH*ECU`), e-sprit (`AT*EK6`), Wattif, Chargewell, Plenitude und E-Mobilitätszentrum: Sie haben keine eigene Ladekarte, ihre Apps rechnen den Ad-hoc-Preis ab.
+
+#### Betreiber ohne Karte (`roaming = false`, kein Netz in einer Zone; SQL auf dem Live-Bestand und Recherche vom 17.10.2026)
+
+Das Flag `roaming` gilt je Ladepunkt: Bei KWMS, GENOL, Contipark, STROMBOX, vaylens und e-Flux nehmen die meisten Ladepunkte Fremdkarten an, nur einzelne Standorte nicht.
+
+| Betreiber-ID | Betreiber | EVSEs ohne Karte | Zahlung / Ergebnis |
+|---|---|---|---|
+| `AT*BIP` | Best in Parking | 455 | Laden und Parken gemeinsam an der Garage abgerechnet, Preis nur als Aushang; keine Karte, kein Roaming |
+| `AT*SFP` | Smart Fuel Pass | 283 | App-Plattform für Standortbetreiber (QR-Code, Karte, Prepaid), Preis je Standort → neu: Anbieter `smart-fuel-pass` zum Betreiberpreis (Netz `smart-fuel-pass`) |
+| `AT*MGA` | MGAtech (AMPLICITY) | 256 | Abrechnungsplattform für Standortbetreiber (QR-Code, Kreditkarte, RFID-Abo), einzelne Stationen über Electroverse → neu: Anbieter `amplicity` zum Betreiberpreis |
+| `AT*SNL` | Sonnenladen | 132 | über die Smart-Fuel-Pass-App, registriert günstiger → im Netz `smart-fuel-pass` |
+| `AT*GBC` | Green Business Center Linz | 73 | RFID für Mieter des Bürogebäudes (vermutlich); keine öffentliche Karte |
+| `AT*C4O` | vaylens | 46 | Plattform mit Roaming je Ladepunkt; die 46 gehören einzelnen Standortbetreibern ohne Freigabe |
+| `AT*735` | Loxone Campus | 40 | nur kontaktlose Karten vor Ort, kein Preis im Register |
+| `AT*OBE` | OBERGER Energie | 38 | Kartenterminal vor Ort |
+| `AT*E61` | Schultz Gruppe | 34 | Kredit- oder Bankomatkarte am Terminal (Hochzillertal) |
+| `AT*GNL` | GENOL (Lagerhaus) | 32 | GENOL G+ Card → neu: Anbieter `genol` (Heimnetz `genol`, Roaming bei 17 Partnernetzen) |
+| `AT*FTR` | futuregrid.energy | 30 | im ePower-Standortverzeichnis des ÖAMTC → Heimnetz von ÖAMTC ePower |
+| `AT*EHB` | Stadtwerke Hartberg | 29 | eigene Ladekarte, Abrechnung über AMPLICITY → neu: Anbieter `energie-hartberg` (Stromkunden 0,35, Direkt 0,45 €/kWh) |
+| `AT*STB` | STROMBOX | 23 | die 23 sind „Direct Payment only“ |
+| `AT*84N` | Steinplatte | 20 | Zahlung vor Ort (vermutlich) |
+| `AT*CTP` | Servipark (Contipark) | 20 | Flag vermutlich falsch: die Garagenseite nennt Preise anderer Anbieter „im Roaming-Verband“ |
+| `AT*HSH` | New Energie | 18 | Zahlung vor Ort (vermutlich) |
+| `AT*EPP` | EPP | 17 | Bankomatzahlung vor Ort |
+| `AT*EFL` | Road (e-Flux) | 17 | Plattform mit Roaming je Ladepunkt; Register meldet 0,005 €/kWh (vermutlich Fehler) |
+| `AT*KWS` | KWMS | 16 | Plattform mit Roaming je Ladepunkt; die 16 ohne Freigabe |
+| `AT*F9B` | CAS Immobilien | 16 | Register meldet 0,005 €/kWh (vermutlich Fehler) |
+
+Neu abgedeckt sind damit 762 Ladepunkte (SFP, MGA, SNL, GNL, FTR, EHB); bei den übrigen gibt es nur den Ad-hoc-Preis vor Ort.
+
+#### Auslandspreise (Recherche 17.10.2026, Zonen mit `countries`)
+
+- **EVN #Drive Smart**: Partnerladenetz in AT, DE, IT, HR und SI zum selben Preis; anderswo nicht freigeschaltet. #Drive Easy nur an EVN-Stationen.
+- **SMATRICS Charge & Roam(+)** und **VERBUND V-GO**: ein Roamingpreis für AT, DE, IT, HR, SK, SI und CZ; bei SMATRICS EnBW-Stationen in Deutschland (`DE*EBW`, Netz `enbw-de`) zum Heimnetzpreis. Charge Simple ohne Roaming.
+- **Wien Energie** (alle Tanke-Tarife): im Ausland nicht nutzbar (FAQ vom 10.11.2022, nichts Neueres).
+- **ÖAMTC ePower**: „Partnernetz Ausland“ in DE, IT, HR und SI zu AC 0,64, DC 0,74, HPC 0,84 €/kWh; gilt nur bei den gelisteten Partnern, die Zone deckt alle Stationen dieser Länder ab.
+- **IONITY**: Preise je Land der Station (DE, IT, SI, HR, SK in Euro; CZ, HU, CH nur in Landeswährung und nicht im Katalog); das Netz `ionity` hat die Betreiber-IDs dieser Länder. Offen: Die Abo-Seite zeigt für Österreich im Monatsabo 0,49 (Motion) bzw. 0,39 €/kWh (Power), der Katalog hat 0,51/0,41 (Listenpreis).
+- **Elli**: Tarife je Vertragsland, jeder nennt nur die Preise im eigenen Land; für österreichische Verträge sind keine Auslandspreise veröffentlicht.
+- **EnBW mobility+**: an EnBW-Stationen in Deutschland S 0,56, M 0,46, L 0,39 €/kWh, bei anderen Betreibern 0,56–0,89 €/kWh nur in der App; für Österreich keine eigene Preistabelle, die Zone bleibt `UNKNOWN`.
 
 ## Nächste Schritte aus der Bestandsanalyse
 
 1. E-Control: Key liegt vor, Adapter `ChargeGlobe.Providers.EControl` existiert ([Endpunkt-Notiz](endpunkte/econtrol.md)). Offen: Swagger ist auch mit Key nicht lesbar, Bulk-Endpunkt und Status-Aktualisierungsrate unbekannt; Operator-IDs aller Scope-Betreiber aus den Daten ziehen.
 2. Tarifkatalog aktuell halten (Stand je Tarif, Preisänderungen meist zum 1.1., 1.4., 1.7. und 1.10.); offene Lücken siehe „Tarife der Anbieter (Katalog 10/2026)“.
-3. Tesla-Adapter auf Basis der evmap-Endpunkte (cua-api + Guest-GraphQL) mit Fixtures.
+3. Tesla: kein Adapter (Bot-Schutz und Website-Bedingungen, [Endpunkt-Notiz](endpunkte/tesla-findus.md)); Preise nur als Ad-hoc-Preis der E-Control mit Preis-Hinweis des Netzes.
 4. Netzwerkanalyse (DevTools) der Web-Karten: Electroverse, SMATRICS/ÖBB, Energie AG (CIRRANTiC), EnBW – jeweils Endpunkt-Notiz nach Vorlage in 05, Capabilities, ToS.
 5. App-Endpunkte aus der Analyse vom 17.10.2026 (siehe „Aus der App-Analyse“): ToS bzw. Erlaubnis klären (EVN/e-vo für `emobilportal.at`, SMATRICS/Verbund für den POI-Dienst, ÖAMTC, IONITY), danach Adapter mit Fixtures bauen. Reihenfolge nach Nutzen: V-Go/SMATRICS (91.600 EVSEs mit Status), EVN-Portal (anonym, Status je EVSE), IONITY (Ad-hoc-Preis je Stecker), ÖAMTC (Stationspreise).

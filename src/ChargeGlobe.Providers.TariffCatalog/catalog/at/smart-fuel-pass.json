@@ -1,0 +1,39 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "smart-fuel-pass",
+      "name": "Smart Fuel Pass",
+      "website": "https://apps.apple.com/at/app/smart-fuel-pass/id1616179460",
+      "country": "SK",
+      "tariffs": [
+        {
+          "key": "app",
+          "name": "Smart Fuel Pass App",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "App Smart Fuel Pass (kostenlos) oder QR-Code am Ladepunkt; Karte, Apple Pay, Google Pay oder Prepaid-Konto.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "smart-fuel-pass"
+              ],
+              "prices": [],
+              "notes": "Preis je Ladepunkt vom Standortbetreiber; die App zeigt ihn vor dem Start.",
+              "pricing": "OPERATOR_AD_HOC"
+            }
+          ],
+          "notes": "Abrechnungsplattform für Standortbetreiber (Hotels, Garagen, Gemeinden, Sonnenladen); registrierte Nutzer zahlen bei manchen Standorten weniger.",
+          "sourceUrl": "https://apps.apple.com/at/app/smart-fuel-pass/id1616179460",
+          "sourceDate": null,
+          "confidence": "LOW",
+          "checkedOn": "2026-10-17"
+        }
+      ]
+    }
+  ]
+}
