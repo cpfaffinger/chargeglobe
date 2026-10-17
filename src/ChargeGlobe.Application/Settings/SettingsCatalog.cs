@@ -30,6 +30,8 @@ public static class SettingsCatalog
     public const string MapStartZoom = "map.start.zoom";
     public const string MapStatusMaxAgeMinutes = "map.status_max_age_minutes";
 
+    public const string StatusFaultGraceMinutes = "status.fault_grace_minutes";
+
     public const string ProviderEnabled = "provider.enabled";
     public const string ProviderApiKey = "provider.api_key";
     public const string ProviderReferer = "provider.referer";
@@ -130,6 +132,15 @@ public static class SettingsCatalog
         {
             Min = 5,
             Max = 1440,
+        },
+        new(StatusFaultGraceMinutes, SettingType.Int, 10,
+            "A fault reported by a source (OUTOFORDER or INOPERATIVE) counts on the map, in the location card, the favorites, " +
+            "the search and the statistics only once it lasts this many minutes; until then the status before it is shown with " +
+            "the hint that the source reports a short fault. Some sources report many faults of a few minutes. The stored " +
+            "readings, the history, the EVSE search and the admin views are not affected. 0 shows every fault at once.")
+        {
+            Min = 0,
+            Max = 240,
         },
 
         new(ProviderEnabled, SettingType.Bool, false,

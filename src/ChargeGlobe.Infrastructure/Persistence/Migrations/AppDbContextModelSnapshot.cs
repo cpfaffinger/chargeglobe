@@ -288,6 +288,14 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("observed_at");
 
+                    b.Property<DateTimeOffset?>("PreviousSince")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("previous_since");
+
+                    b.Property<string>("PreviousStatus")
+                        .HasColumnType("text")
+                        .HasColumnName("previous_status");
+
                     b.Property<DateTimeOffset>("Since")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("since");

@@ -103,8 +103,11 @@ public static class LocationsEndpoints
             .WithDescription(
                 "Returns one active location (`id` from `listLocations`) with all its EVSEs: EVSE-ID (`hasEvseId` false " +
                 "for an ID assigned by chargeglobe), current OCPI status with `statusSince`, `statusObservedAt` and " +
-                "`statusSource` (key of the source that reported it, e.g. econtrol; the status is the source's own, faults " +
-                "included; null and status UNKNOWN if older than `map.status_max_age_minutes`), maximum power, current type, connectors, " +
+                "`statusSource` (key of the source that reported it, e.g. econtrol; null and status UNKNOWN if older than " +
+                "`map.status_max_age_minutes`). A fault (OUTOFORDER or INOPERATIVE) shorter than `status.fault_grace_minutes` " +
+                "(default 10) is not yet the status: `status` and `statusSince` are those before it, and `reportedStatus` with " +
+                "`reportedSince` tell the fault the source reports (null otherwise); the counts of the location and of " +
+                "`listLocations` follow the same rule. Further: maximum power, current type, connectors, " +
                 "`authMethods` (how a session is started and paid: RFID_READER, APP, QR_CODE, WEBSITE, CHARGING_CONTRACT, " +
                 "CREDIT_CARD_PAYABLE, DEBIT_CARD_PAYABLE, CONTACTLESS_CARD_SUPPORT, CHIP_CARD_SUPPORT, PED_TERMINAL, CASH; " +
                 "empty if unknown), `roaming` (charging cards of other providers accepted; null if unknown) and " +

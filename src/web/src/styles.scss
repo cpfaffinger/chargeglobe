@@ -969,6 +969,14 @@ app-location-detail {
 }
 
 // Charging stations, EVSEs and connectors of a location.
+app-location-details .brief-fault {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 4px 0 0;
+  color: var(--mat-sys-on-surface-variant);
+}
+
 app-location-details .capacity {
   margin: 0;
   font: var(--mat-sys-title-small);

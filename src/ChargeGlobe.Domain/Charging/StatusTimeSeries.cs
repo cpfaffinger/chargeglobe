@@ -111,6 +111,12 @@ public sealed class EvseStatusCurrent
 
     public string SourceKey { get; private set; } = null!;
 
+    /// <summary>The status before the current one; null until the status changed once.</summary>
+    public EvseStatus? PreviousStatus { get; private set; }
+
+    /// <summary>Since when the EVSE had <see cref="PreviousStatus"/>.</summary>
+    public DateTimeOffset? PreviousSince { get; private set; }
+
     public static EvseStatusCurrent Create(Guid evseId, EvseStatus status, string sourceKey, DateTimeOffset observedAt) =>
         new()
         {
@@ -131,6 +137,7 @@ public sealed class EvseStatusCurrent
 
         if (status != Status)
         {
+            (PreviousStatus, PreviousSince) = (Status, Since);
             Status = status;
             Since = observedAt;
         }
@@ -141,6 +148,19 @@ public sealed class EvseStatusCurrent
 
     /// <summary>The reading is too old to be shown as current.</summary>
     public bool IsStale(DateTimeOffset now, TimeSpan maxAge) => now - ObservedAt > maxAge;
+
+    /// <summary>
+    /// A fault (OUTOFORDER or INOPERATIVE) that began less than <paramref name="grace"/> ago after a status that was no
+    /// fault: shown as that status until the fault lasts longer (sources such as EVN report many short faults). The same
+    /// rule is the database function <c>evse_shown_status</c>.
+    /// </summary>
+    public bool InFaultGrace(DateTimeOffset now, TimeSpan grace) =>
+        grace > TimeSpan.Zero && IsFault(Status) && now - Since < grace && PreviousStatus is { } previous && !IsFault(previous);
+
+    /// <summary>The status to show: <see cref="PreviousStatus"/> during a fault grace, otherwise <see cref="Status"/>.</summary>
+    public EvseStatus ShownStatus(DateTimeOffset now, TimeSpan grace) => InFaultGrace(now, grace) ? PreviousStatus!.Value : Status;
+
+    private static bool IsFault(EvseStatus status) => status is EvseStatus.OUTOFORDER or EvseStatus.INOPERATIVE;
 }
 
 /// <summary>"x of y available" of a location, for sources without status per EVSE (hypertable).</summary>

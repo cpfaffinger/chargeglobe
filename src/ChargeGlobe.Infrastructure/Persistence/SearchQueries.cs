@@ -17,6 +17,7 @@ public sealed partial class SearchQueries(AppDbContext db, IAppConfig config, Ti
         var text = query.Trim();
         var hits = new List<HitRow>();
         var fresh = timeProvider.GetUtcNow().AddMinutes(-config.Get<int>(SettingsCatalog.MapStatusMaxAgeMinutes));
+        var grace = StatusGrace.Since(config, timeProvider.GetUtcNow());
         string[] occupied = Availability.OccupiedStatuses;
         string[] faulted = Availability.FaultedStatuses;
         var normalized = Separators().Replace(text, string.Empty).ToUpperInvariant();
@@ -32,13 +33,13 @@ public sealed partial class SearchQueries(AppDbContext db, IAppConfig config, Ti
                            s.total AS "EvsesTotal", s.available AS "EvsesAvailable", s.occupied AS "EvsesOccupied", s.faulted AS "EvsesFaulted",
                            CASE WHEN ce.observed_at >= {fresh} THEN ce.status ELSE 'UNKNOWN' END AS "EvseStatus"
                     FROM evse e JOIN location l ON l.id = e.location_id
-                    LEFT JOIN evse_status_current ce ON ce.evse_id = e.id
+                    LEFT JOIN (SELECT evse_id, observed_at, evse_shown_status(status, previous_status, since, {grace}::timestamptz) AS status FROM evse_status_current) ce ON ce.evse_id = e.id
                     CROSS JOIN LATERAL (
                         SELECT count(e2.id)::int AS total,
                                (count(*) FILTER (WHERE c.status = 'AVAILABLE' AND c.observed_at >= {fresh}))::int AS available,
                                (count(*) FILTER (WHERE c.status = ANY({occupied}) AND c.observed_at >= {fresh}))::int AS occupied,
                                (count(*) FILTER (WHERE c.status = ANY({faulted}) AND c.observed_at >= {fresh}))::int AS faulted
-                        FROM evse e2 LEFT JOIN evse_status_current c ON c.evse_id = e2.id
+                        FROM evse e2 LEFT JOIN (SELECT evse_id, observed_at, evse_shown_status(status, previous_status, since, {grace}::timestamptz) AS status FROM evse_status_current) c ON c.evse_id = e2.id
                         WHERE e2.location_id = l.id AND e2.lifecycle = 'ACTIVE') s
                     WHERE e.evse_id_norm LIKE {prefix} AND e.lifecycle = 'ACTIVE' AND l.lifecycle = 'ACTIVE'
                     ORDER BY e.evse_id_norm
@@ -67,7 +68,7 @@ public sealed partial class SearchQueries(AppDbContext db, IAppConfig config, Ti
                                (count(*) FILTER (WHERE c.status = 'AVAILABLE' AND c.observed_at >= {fresh}))::int AS available,
                                (count(*) FILTER (WHERE c.status = ANY({occupied}) AND c.observed_at >= {fresh}))::int AS occupied,
                                (count(*) FILTER (WHERE c.status = ANY({faulted}) AND c.observed_at >= {fresh}))::int AS faulted
-                        FROM evse e2 LEFT JOIN evse_status_current c ON c.evse_id = e2.id
+                        FROM evse e2 LEFT JOIN (SELECT evse_id, observed_at, evse_shown_status(status, previous_status, since, {grace}::timestamptz) AS status FROM evse_status_current) c ON c.evse_id = e2.id
                         WHERE e2.location_id = l.id AND e2.lifecycle = 'ACTIVE') s
                     WHERE l.lifecycle = 'ACTIVE'
                       AND (coalesce(l.name, '') || ' ' || coalesce(l.address, '') || ' ' || coalesce(l.postal_code, '') || ' ' || coalesce(l.city, ''))
