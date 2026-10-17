@@ -401,8 +401,8 @@ public sealed class CrawlerMonitor(
     }
 
     /// <summary>
-    /// Phases that began in the window, over the partial index on the start of the fault intervals; the operator is the
-    /// country and operator part of the normalized EVSE-ID (surrogates have none).
+    /// Phases that began in the window, over the partial index on the start of the fault intervals, grouped by the operator
+    /// of the EVSE (its party ID comes from the EVSE-ID prefix; surrogates have none) and shown with that prefix.
     /// </summary>
     private async Task<List<OperatorRow>> OperatorFaultsAsync(DateTimeOffset now, CancellationToken cancellationToken)
     {
@@ -410,19 +410,22 @@ public sealed class CrawlerMonitor(
         await using var own = new AppDbContext(options);
         return await own.Database.SqlQuery<OperatorRow>($"""
             WITH phase AS (
-                SELECT left(e.evse_id_norm, 5) AS prefix, i.evse_id, i.valid_from, i.valid_to
+                SELECT e.operator_id, i.evse_id, i.valid_from, i.valid_to
                 FROM evse_status_interval i
                 JOIN evse e ON e.id = i.evse_id
                 WHERE i.status IN ('OUTOFORDER', 'INOPERATIVE') AND i.valid_from >= {since} AND i.valid_from <= {now}
-                  AND e.identity_kind = 'EVSE_ID')
-            SELECT left(p.prefix, 2) || '*' || substr(p.prefix, 3) AS "Prefix",
-                   (SELECT o.name FROM operator o WHERE o.country = left(p.prefix, 2) AND o.operator_id = substr(p.prefix, 3)) AS "Name",
-                   count(*)::int AS "Phases", count(DISTINCT p.evse_id)::int AS "Evses",
-                   (count(*) FILTER (WHERE p.valid_to IS NULL OR p.valid_to > {now}))::int AS "Ongoing",
-                   (extract(epoch FROM percentile_cont(0.5) WITHIN GROUP (ORDER BY p.valid_to - p.valid_from)
-                        FILTER (WHERE p.valid_to <= {now})) / 60)::float8 AS "MedianMinutes"
-            FROM phase p
-            GROUP BY p.prefix
+                  AND e.identity_kind = 'EVSE_ID' AND e.operator_id IS NOT NULL),
+            faults AS (
+                SELECT p.operator_id, count(*)::int AS phases, count(DISTINCT p.evse_id)::int AS evses,
+                       (count(*) FILTER (WHERE p.valid_to IS NULL OR p.valid_to > {now}))::int AS ongoing,
+                       (extract(epoch FROM percentile_cont(0.5) WITHIN GROUP (ORDER BY p.valid_to - p.valid_from)
+                            FILTER (WHERE p.valid_to <= {now})) / 60)::float8 AS median
+                FROM phase p
+                GROUP BY p.operator_id)
+            SELECT o.country || '*' || o.operator_id AS "Prefix", o.name AS "Name", f.phases AS "Phases", f.evses AS "Evses",
+                   f.ongoing AS "Ongoing", f.median AS "MedianMinutes"
+            FROM faults f
+            JOIN operator o ON o.id = f.operator_id AND o.operator_id IS NOT NULL
             ORDER BY 3 DESC, 1
             LIMIT {ICrawlerMonitor.TopOperators}
             """).ToListAsync(cancellationToken);
