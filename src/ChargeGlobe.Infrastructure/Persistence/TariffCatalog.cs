@@ -35,7 +35,11 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, IAppC
             .OrderBy(emp => emp.Name)
             .ThenBy(emp => emp.Key)
             .Select(emp => new EmpView(emp.Key, emp.Name, emp.Website, emp.Country, db.TariffPlans.Count(plan => plan.EmpId == emp.Id && plan.ValidTo == null)))
+            .Where(emp => emp.Tariffs > 0)
             .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyCollection<string>> EmpKeysAsync(CancellationToken cancellationToken) =>
+        await db.Emps.AsNoTracking().Select(emp => emp.Key).ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<NetworkView>> NetworksAsync(CancellationToken cancellationToken) =>
         (await db.ChargingNetworks.AsNoTracking().OrderBy(network => network.Key).ToListAsync(cancellationToken))
@@ -65,9 +69,27 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, IAppC
             cancellationToken);
     }
 
+    public Task<int> CheckSoonCountAsync(CancellationToken cancellationToken)
+    {
+        var (stale, soon) = (StaleBefore(), CheckSoonBefore());
+        return db.TariffPlans.CountAsync(
+            plan => plan.ValidTo == null
+                && ((plan.SourceDate != null && plan.SourceDate >= stale) || (plan.CheckedOn != null && plan.CheckedOn >= stale))
+                && !((plan.SourceDate != null && plan.SourceDate >= soon) || (plan.CheckedOn != null && plan.CheckedOn >= soon)),
+            cancellationToken);
+    }
+
+    private DateOnly Today() => DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+
     /// <summary>Tariffs whose "Stand" and last check both lie before this day (or are unknown) are stale.</summary>
-    private DateOnly StaleBefore() =>
-        DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime).AddMonths(-config.Get<int>(SettingsCatalog.TariffStaleMonths));
+    private DateOnly StaleBefore() => Today().AddMonths(-config.Get<int>(SettingsCatalog.TariffStaleMonths));
+
+    /// <summary>Half the span of <see cref="StaleBefore"/>: tariffs last seen before this day are to be checked soon.</summary>
+    private DateOnly CheckSoonBefore()
+    {
+        var today = Today();
+        return today.AddDays(-(today.DayNumber - StaleBefore().DayNumber) / 2);
+    }
 
     public async Task<CatalogImportResult> ImportAsync(string sourceKey, TariffCatalogSnapshot snapshot, Actor? actor, CancellationToken cancellationToken)
     {

@@ -135,7 +135,7 @@ public static class PreferencesEndpoints
 
         if (document.Cards is { Count: > 0 } cards)
         {
-            var known = (await catalog.EmpsAsync(cancellationToken)).Select(emp => emp.Key).ToHashSet();
+            var known = (await catalog.EmpKeysAsync(cancellationToken)).ToHashSet();
             if (new Validation().Require(cards.All(known.Contains), "cards", "Must be keys of EMPs from listEmps.").ToResult() is { } unknown)
             {
                 return unknown;

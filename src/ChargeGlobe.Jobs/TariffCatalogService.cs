@@ -80,6 +80,7 @@ public sealed class TariffCatalogService(
                 if (_staleLoggedOn != today)
                 {
                     logger.LogInformation("Tariff catalog: {Count} tariffs older than the setting tariff.stale_months or without date", await catalog.StaleCountAsync(stoppingToken));
+                    logger.LogInformation("Tariff catalog: {Count} tariffs to check soon", await catalog.CheckSoonCountAsync(stoppingToken));
                     _staleLoggedOn = today;
                 }
             }

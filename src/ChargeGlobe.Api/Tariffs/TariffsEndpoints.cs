@@ -64,7 +64,8 @@ public static class TariffsEndpoints
             .WithSummary("List the e-mobility providers (charging cards and apps)")
             .WithDescription(
                 "Returns the providers of charging cards and apps by name: `key` (used by `listTariffs` and the own cards of " +
-                "`putPreferences`), `name`, `website`, `country` and `tariffs` (number of current tariffs).")
+                "`putPreferences`), `name`, `website`, `country` and `tariffs` (number of current tariffs). Providers whose tariffs " +
+                "all ended (e.g. a discontinued app) are left out; their old versions stay readable with `listTariffs?history=true`.")
             .Produces<EmpsResponse>()
             .WithResponseExample(StatusCodes.Status200OK, new EmpsResponse([ExampleEmp]));
 

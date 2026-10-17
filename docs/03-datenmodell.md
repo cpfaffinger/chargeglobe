@@ -114,7 +114,9 @@ Zwei Arten von Preisen (`TariffKind`): der **Ad-hoc-Preis** (`AD_HOC`, ohne Vert
 
 Der Preisvergleich je Ladepunkt (`GET /evses/{evseId}/prices`, Felder `emps` und `unavailable`) rechnet zur Abfragezeit über alle offenen Tarifversionen: Betreiber des EVSE ist der Betreiberteil seiner EVSE-ID, bei Surrogat-IDs die Betreiber-ID (`operator.country*operator.operator_id`) des Betreibers von EVSE oder Standort; Stromart DC bei `power_type` DC (ohne Angabe bei einem DC-Stecker), sonst AC; Leistung = höchste Leistung der Stecker. Je Tarif gilt die erste passende Zone nach den Regeln von [ADR-0013](adr/0013-ladetarife-netze-zonen-katalog.md); Tarife ohne passende Zone stehen in `unavailable`. Eine Zone mit Betreiberpreis rechnet mit dem aktuellen Ad-hoc-Preis des EVSE (`evse_price_current`) mal (1 + `markupPercent`/100) je Betrag plus `markupSessionFee`; ist keiner bekannt, steht der Tarif in `priceUnknown`, ebenso jeder Tarif, dessen Zone `UNKNOWN` ist. Die gültigen Tarife (wenige Hundert Zeilen) und Netze werden je Anfrage einmal geladen und im Speicher zugeordnet.
 
-Ein Tarif gilt als **veraltet** (`stale`), wenn weder der Stand noch die letzte Prüfung innerhalb von `tariff.stale_months` (Default 6) liegt.
+Ein Tarif gilt als **veraltet** (`stale`), wenn weder der Stand noch die letzte Prüfung innerhalb von `tariff.stale_months` (Default 6) liegt; **bald zu prüfen** ist er, wenn beide älter als die Hälfte dieser Spanne sind (Worker-Log).
+
+Ein Anbieter, dessen Tarife alle beendet sind (z. B. eine eingestellte App), bleibt in `emp` stehen, weil seine Tarifversionen auf ihn verweisen (FK `RESTRICT`, Historie), fehlt aber in `listEmps` und damit in der Auswahl der eigenen Ladekarten; schon gespeicherte eigene Karten bleiben gültig.
 
 Preiselemente mit Zeitfenster oder Wochentagen gelten für eine Sitzung, die jetzt (Ortszeit Europe/Vienna) beginnt; Blockierminuten zählen nur, soweit sie ab diesem Beginn in das Blockier-Zeitfenster fallen, höchstens `maxBlockingMinutes`; die Blockiergebühr ist auf `maxBlockingFee` gedeckelt und entfällt in der Beispielsitzung, wenn sie erst ab Ladeende zählt.
 
