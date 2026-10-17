@@ -167,6 +167,24 @@ public class TariffsTests(IntegrationFactory factory)
         await ImportAsync(admin, NewKey("src"), catalog);
 
         Assert.Equal([true, true], (await TariffsAsync(admin, $"?emp={emp}")).Select(item => item.GetProperty("stale").GetBoolean()));
+
+        // A recent check against the source makes the same values fresh without a new version.
+        var (source, checkedEmp) = (NewKey("src"), NewKey("emp"));
+        var checkedCatalog = Catalog(NewKey("net"), checkedEmp);
+        foreach (var tariff in checkedCatalog["emps"]![0]!["tariffs"]!.AsArray())
+        {
+            tariff!["sourceDate"] = null;
+        }
+
+        await ImportAsync(admin, source, checkedCatalog);
+        Assert.All(await TariffsAsync(admin, $"?emp={checkedEmp}"), item => Assert.True(item.GetProperty("stale").GetBoolean()));
+        foreach (var tariff in checkedCatalog["emps"]![0]!["tariffs"]!.AsArray())
+        {
+            tariff!["checkedOn"] = RecentDate;
+        }
+
+        Assert.Equal((0, 0, 0, 2), Counts(await ImportAsync(admin, source, checkedCatalog)));
+        Assert.All(await TariffsAsync(admin, $"?emp={checkedEmp}"), item => Assert.Equal((false, RecentDate), (item.GetProperty("stale").GetBoolean(), item.GetProperty("checkedOn").GetString())));
         var fresh = Catalog(NewKey("net"), NewKey("emp"));
         await ImportAsync(admin, NewKey("src"), fresh);
         Assert.False((await TariffsAsync(admin, $"?emp={fresh["emps"]![0]!["key"]}"))[0].GetProperty("stale").GetBoolean());
@@ -233,6 +251,8 @@ public class TariffsTests(IntegrationFactory factory)
         { "price.endTime=8 Uhr", "startTime and endTime come together" },
         { "price2.maxBlockingFee=5", "maxBlockingFee needs a blocking fee" },
         { "price.blockingFrom=LATER", "blockingFrom must be SESSION_START or CHARGING_END" },
+        { "zone.currents=HPC", "currents must be AC and/or DC" },
+        { "zone.currents=", "currents must be AC and/or DC" },
         { "zone.pricing=PER_MINUTE", "the pricing must be FIXED, OPERATOR_AD_HOC or UNKNOWN" },
         { "zone.pricing=OPERATOR_AD_HOC", "a zone with the operator's or an unknown price has no prices of its own" },
         { "zone.pricing=UNKNOWN", "a zone with the operator's or an unknown price has no prices of its own" },
@@ -300,7 +320,7 @@ public class TariffsTests(IntegrationFactory factory)
 
         target[property] = property switch
         {
-            "operators" or "excludedOperators" or "networks" or "markets" => value == "" ? new JsonArray() : new JsonArray(value),
+            "operators" or "excludedOperators" or "networks" or "markets" or "currents" => value == "" ? new JsonArray() : new JsonArray(value),
             "prices" or "zones" => new JsonArray(),
             "monthlyFee" or "minKw" or "blockingAfterMinutes" or "pricePerKwh" or "markupPercent" or "markupSessionFee" or "maxBlockingFee" => value == "" ? null : JsonValue.Create(decimal.Parse(value, System.Globalization.CultureInfo.InvariantCulture)),
             _ => value,

@@ -62,7 +62,8 @@
           "notes": "Eigene Stationen (AC 0,50, DC 0,55 €/kWh) sind ohne Betreiber-ID in den Daten und deshalb nicht zugeordnet.",
           "sourceUrl": "https://stadtwerke.co.at/wp-content/uploads/2024/12/Tarifblatt_Mobilitaetskarte_2025.pdf",
           "sourceDate": "2025-01-01",
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

@@ -39,7 +39,8 @@
           "notes": "Nur an Stationen der Stadtwerke Kufstein und ausgewiesenen Partnerstationen. Herbstaktion bis 30.11.2026: −0,04 €/kWh.",
           "sourceUrl": "https://www.stwk.at/fileadmin/Stadtwerke/Downloads/Strom/6-Ladeinfrastruktur/2025-10-01_E-Mobilit%C3%A4ty-Ladeschl%C3%BCssel_Formular-Tarife.pdf",
           "sourceDate": "2025-10-01",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "lade-plus",
@@ -73,7 +74,8 @@
           "notes": "Nur an Stationen der Stadtwerke Kufstein und ausgewiesenen Partnerstationen. Herbstaktion bis 30.11.2026: −0,04 €/kWh.",
           "sourceUrl": "https://www.stwk.at/fileadmin/Stadtwerke/Downloads/Strom/6-Ladeinfrastruktur/2025-10-01_E-Mobilit%C3%A4ty-Ladeschl%C3%BCssel_Formular-Tarife.pdf",
           "sourceDate": "2025-10-01",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

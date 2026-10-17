@@ -30,7 +30,8 @@
           "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert.",
           "sourceUrl": "https://www.toyota-charging-network.eu/api/public/v1/AT/tariffs/pdf?locale=de_AT",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "active",
@@ -55,9 +56,12 @@
                 "salzburg-ag"
               ],
               "prices": [],
-              "notes": "Preferred Partner Network: 15 % Rabatt (laut Preisliste DC).",
+              "notes": "Preferred Partner Network: 15 % Rabatt auf DC.",
               "pricing": "OPERATOR_AD_HOC",
-              "markupPercent": -15
+              "markupPercent": -15,
+              "currents": [
+                "DC"
+              ]
             },
             {
               "kind": "ROAMING",
@@ -73,7 +77,8 @@
           "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert.",
           "sourceUrl": "https://www.toyota-charging-network.eu/api/public/v1/AT/tariffs/pdf?locale=de_AT",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "active-plus",
@@ -98,9 +103,12 @@
                 "salzburg-ag"
               ],
               "prices": [],
-              "notes": "Preferred Partner Network: 25 % Rabatt (laut Preisliste DC).",
+              "notes": "Preferred Partner Network: 25 % Rabatt auf DC.",
               "pricing": "OPERATOR_AD_HOC",
-              "markupPercent": -25
+              "markupPercent": -25,
+              "currents": [
+                "DC"
+              ]
             },
             {
               "kind": "ROAMING",
@@ -116,7 +124,8 @@
           "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert.",
           "sourceUrl": "https://www.toyota-charging-network.eu/api/public/v1/AT/tariffs/pdf?locale=de_AT",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

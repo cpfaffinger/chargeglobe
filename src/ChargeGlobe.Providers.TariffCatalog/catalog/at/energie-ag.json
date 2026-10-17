@@ -72,7 +72,8 @@
           "notes": "Kein Roaming über das Partnernetz hinaus.",
           "sourceUrl": "https://energieag.cdn.picturepark.com/v/pQPtEmpk/",
           "sourceDate": "2024-07-01",
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "energie-mobil-plus",
@@ -139,7 +140,8 @@
           "notes": "Kein Roaming über das Partnernetz hinaus.",
           "sourceUrl": "https://energieag.cdn.picturepark.com/v/pQPtEmpk/",
           "sourceDate": "2024-07-01",
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

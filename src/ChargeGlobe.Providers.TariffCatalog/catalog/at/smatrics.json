@@ -82,7 +82,8 @@
           "notes": "Ohne Roaming.",
           "sourceUrl": "https://smatrics.com/de/laden/tarife",
           "sourceDate": "2024-10-08",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "charge-and-roam",
@@ -190,7 +191,8 @@
           "notes": null,
           "sourceUrl": "https://smatrics.com/de/laden/tarife",
           "sourceDate": "2024-10-08",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "charge-and-roam-plus",
@@ -298,7 +300,8 @@
           "notes": null,
           "sourceUrl": "https://smatrics.com/de/laden/tarife",
           "sourceDate": "2024-10-08",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

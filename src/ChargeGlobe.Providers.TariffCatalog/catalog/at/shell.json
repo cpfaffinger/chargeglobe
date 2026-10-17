@@ -49,7 +49,8 @@
           "notes": null,
           "sourceUrl": "https://www.shell.at/laden/ladetarife-fuer-ihr-elektroauto.html",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "e-deal",
@@ -81,7 +82,8 @@
           "notes": "Nur an Shell-Recharge-Stationen in Österreich.",
           "sourceUrl": "https://www.shell.at/laden/shell-recharge-e-deal-e-auto-gnstiger-laden.html",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

@@ -65,7 +65,8 @@
           "notes": "Kein AC-Preis im eigenen Netz veröffentlicht; Leistungsgrenze 50 kW laut Tarifkalkulator der E-Control.",
           "sourceUrl": "https://www.omv.at/de/mobilitaet/e-mobilitaet/omv-emotion-tarife",
           "sourceDate": "2025-07-04",
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "premium-plus",
@@ -125,7 +126,8 @@
           "notes": "Kein AC-Preis im eigenen Netz veröffentlicht; Leistungsgrenze 50 kW laut Tarifkalkulator der E-Control.",
           "sourceUrl": "https://www.omv.at/de/mobilitaet/e-mobilitaet/omv-emotion-tarife",
           "sourceDate": "2025-07-04",
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

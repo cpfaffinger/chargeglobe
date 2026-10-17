@@ -46,6 +46,7 @@ public sealed record EmpRecord(string Key, string Name, string? Website, string 
 /// <param name="SourceUrl">Price sheet or page the values are taken from.</param>
 /// <param name="SourceDate">Date the provider states for the prices.</param>
 /// <param name="Confidence"><c>HIGH</c> (read from the price sheet), <c>MEDIUM</c> (derived), <c>LOW</c> (unclear).</param>
+/// <param name="CheckedOn">When the values were last checked against the source (e.g. a page without "Stand").</param>
 public sealed record TariffRecord(
     string Key,
     string Name,
@@ -57,7 +58,8 @@ public sealed record TariffRecord(
     string? Notes,
     string SourceUrl,
     DateOnly? SourceDate,
-    string Confidence);
+    string Confidence,
+    DateOnly? CheckedOn = null);
 
 /// <param name="Kind"><c>OPERATOR</c>, <c>HOME</c>, <c>PARTNER</c> or <c>ROAMING</c>.</param>
 /// <param name="Networks">Keys of the networks the zone covers; for ROAMING none means every operator.</param>
@@ -66,6 +68,7 @@ public sealed record TariffRecord(
 /// <param name="Pricing"><c>FIXED</c> (default: the price elements) or <c>OPERATOR_AD_HOC</c> (the ad-hoc price of the EVSE).</param>
 /// <param name="MarkupPercent">With <c>OPERATOR_AD_HOC</c>: percent on the ad-hoc price, −10 for 10 % off.</param>
 /// <param name="MarkupSessionFee">With <c>OPERATOR_AD_HOC</c>: fee of the provider per session on top.</param>
+/// <param name="Currents"><c>AC</c> and/or <c>DC</c>: the zone applies only to EVSEs of these currents; null for both.</param>
 public sealed record ZoneRecord(
     string Kind,
     IReadOnlyList<string>? Networks,
@@ -76,7 +79,8 @@ public sealed record ZoneRecord(
     string? Notes,
     string? Pricing = null,
     decimal? MarkupPercent = null,
-    decimal? MarkupSessionFee = null);
+    decimal? MarkupSessionFee = null,
+    IReadOnlyList<string>? Currents = null);
 
 /// <param name="Current"><c>AC</c> or <c>DC</c>.</param>
 /// <param name="MinKw">The price applies from this maximum power of the EVSE on (HPC stages); null for any.</param>

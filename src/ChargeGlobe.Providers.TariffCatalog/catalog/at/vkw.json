@@ -71,7 +71,8 @@
           "notes": null,
           "sourceUrl": "https://www.vkw.at/ladetarife",
           "sourceDate": "2026-04-01",
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

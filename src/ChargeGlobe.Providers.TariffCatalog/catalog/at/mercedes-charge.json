@@ -30,7 +30,8 @@
           "notes": null,
           "sourceUrl": "https://eu.charge.mercedes-benz.com/api/public/v1/at/tariffs/pdf?locale=de_AT",
           "sourceDate": null,
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "public-m",
@@ -108,7 +109,8 @@
           "notes": null,
           "sourceUrl": "https://eu.charge.mercedes-benz.com/web/de/mb-at/tariffs",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "public-l",
@@ -186,7 +188,8 @@
           "notes": null,
           "sourceUrl": "https://eu.charge.mercedes-benz.com/web/de/mb-at/tariffs",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

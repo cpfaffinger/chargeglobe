@@ -40,7 +40,8 @@
           "notes": "Preisblatt ohne USt-Angabe; als Verbraucherpreise brutto angenommen.",
           "sourceUrl": "https://www.ladetarif.at/api/products/375",
           "sourceDate": "2024-02-01",
-          "confidence": "LOW"
+          "confidence": "LOW",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

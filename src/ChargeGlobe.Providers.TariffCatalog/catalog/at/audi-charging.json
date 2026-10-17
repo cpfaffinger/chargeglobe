@@ -30,7 +30,8 @@
           "notes": "„Flexible Preise“ je Betreiber, angezeigt in der App; hier mit dem Ad-hoc-Preis angenähert.",
           "sourceUrl": "https://www.audi.at/elektromobilitaet/laden/unterwegs-laden",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "plus",
@@ -67,7 +68,8 @@
           "notes": "„Flexible Preise“ je Betreiber, angezeigt in der App; hier mit dem Ad-hoc-Preis angenähert.",
           "sourceUrl": "https://www.audi.at/elektromobilitaet/laden/unterwegs-laden",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "pro",
@@ -128,7 +130,8 @@
           "notes": "AC-Blockiergebühr nur 9–21 Uhr.",
           "sourceUrl": "https://www.audi.at/elektromobilitaet/laden/unterwegs-laden",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

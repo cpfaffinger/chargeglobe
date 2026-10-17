@@ -71,7 +71,8 @@
           "notes": "Für weiteres Roaming (u. a. Wien Energie, da emobil) sind keine Preise veröffentlicht.",
           "sourceUrl": "https://www.ikb.at/fileadmin/user_upload/Dokumente/Elektromobilitaet/IKB-E-Laden-Preisblatt.pdf",
           "sourceDate": "2025-06-01",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

@@ -38,7 +38,8 @@
           "notes": "AC-Preis auf der österreichischen Seite nicht angegeben.",
           "sourceUrl": "https://at.mer.eco/fahrerportal/wiefunktioniertes/",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

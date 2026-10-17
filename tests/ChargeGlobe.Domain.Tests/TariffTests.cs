@@ -167,5 +167,33 @@ public class TariffTests
         Assert.Equal((30m, TariffBlockingFrom.CHARGING_END), (capped.Components("EUR").BlockingFeeMax, capped.Components("EUR").BlockingFrom));
     }
 
+    [Fact]
+    public void A_zone_for_one_current_leaves_the_other_to_the_next_zone()
+    {
+        var dcOnly = new TariffZone(TariffZoneKind.PARTNER, ["evn"], [], [], [], [], null, TariffPricing.OPERATOR_AD_HOC, -30, null, [TariffCurrent.DC]);
+        var plan = Plan(dcOnly, Zone(TariffZoneKind.ROAMING, [], [], Ac(0.69m), Dc(0.79m)));
+
+        Assert.Equal(TariffZoneKind.PARTNER, plan.MatchAt("AT*EVN", true, TariffCurrent.DC, 50, Members)!.Zone.Kind);
+        Assert.Equal((TariffZoneKind.ROAMING, 0.69m), Of(plan.MatchAt("AT*EVN", true, TariffCurrent.AC, 11, Members)));
+    }
+
+    [Fact]
+    public void A_check_against_the_source_only_moves_forward()
+    {
+        var plan = TariffPlan.Create(Guid.CreateVersion7(), "x", new TariffPlan.Content("basic", "Basic", "EUR", null, null, ["AT"], [], null, "https://e.org", null, TariffConfidence.LOW), "h", T0, new DateOnly(2026, 10, 1));
+        Assert.Equal(new DateOnly(2026, 10, 1), plan.CheckedOn);
+        plan.Check(new DateOnly(2026, 9, 1));
+        plan.Check(null);
+        Assert.Equal(new DateOnly(2026, 10, 1), plan.CheckedOn);
+        plan.Check(new DateOnly(2026, 10, 17));
+        Assert.Equal(new DateOnly(2026, 10, 17), plan.CheckedOn);
+
+        var unchecked_ = TariffPlan.Create(Guid.CreateVersion7(), "x", new TariffPlan.Content("basic", "Basic", "EUR", null, null, ["AT"], [], null, "https://e.org", null, TariffConfidence.LOW), "h", T0);
+        unchecked_.Check(null);
+        Assert.Null(unchecked_.CheckedOn);
+        unchecked_.Check(new DateOnly(2026, 10, 17));
+        Assert.Equal(new DateOnly(2026, 10, 17), unchecked_.CheckedOn);
+    }
+
     private static (TariffZoneKind, decimal?) Of(TariffMatch? match) => (match!.Zone.Kind, match.Price!.PricePerKwh);
 }

@@ -30,7 +30,8 @@
           "notes": "„Flexible Preise“ je Betreiber, angezeigt in der App; hier mit dem Ad-hoc-Preis angenähert.",
           "sourceUrl": "https://www.cupraofficial.at/e-mobilitaet/ladetarife",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "ionity-flex",
@@ -67,7 +68,8 @@
           "notes": "„Flexible Preise“ je Betreiber, angezeigt in der App; hier mit dem Ad-hoc-Preis angenähert.",
           "sourceUrl": "https://www.cupraofficial.at/e-mobilitaet/ladetarife",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "ionity-pro",
@@ -104,7 +106,8 @@
           "notes": "„Flexible Preise“ je Betreiber, angezeigt in der App; hier mit dem Ad-hoc-Preis angenähert.",
           "sourceUrl": "https://www.cupraofficial.at/e-mobilitaet/ladetarife",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "premium",
@@ -174,7 +177,8 @@
           "notes": "Blockiergebühren nur in der App.",
           "sourceUrl": "https://www.cupraofficial.at/e-mobilitaet/ladetarife",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

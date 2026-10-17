@@ -55,6 +55,9 @@ const CONFIDENCE: Record<Tariff['confidence'], string> = { HIGH: 'aus dem Preisb
                   · {{ tariff.prerequisites }}
                 }
                 · Stand {{ tariff.sourceDate ? (tariff.sourceDate | date: 'dd.MM.yyyy') : 'unbekannt' }} ({{ confidence(tariff) }})
+                @if (tariff.checkedOn) {
+                  · geprüft {{ tariff.checkedOn | date: 'dd.MM.yyyy' }}
+                }
                 @if (tariff.stale) {
                   <span class="stale">Stand prüfen</span>
                 }
@@ -135,7 +138,8 @@ export class AdminTariffsPage {
   /** The networks and operators of the zone; for roaming without them "alle mit Roaming" and what is left out. */
   protected covers(zone: Zone): string {
     const names = [...zone.networks.map((key) => this.networkNames().get(key) ?? key), ...zone.operators];
-    const covered = names.length > 0 ? names.join(', ') : 'alle Betreiber mit Fremdkarten-Annahme';
+    const all = names.length > 0 ? names.join(', ') : 'alle Betreiber mit Fremdkarten-Annahme';
+    const covered = zone.currents?.length ? `${all} – nur ${zone.currents.join('/')}` : all;
     const excluded = [...zone.excludedNetworks.map((key) => this.networkNames().get(key) ?? key), ...zone.excludedOperators];
     return excluded.length > 0 ? `${covered} (außer ${excluded.join(', ')})` : covered;
   }

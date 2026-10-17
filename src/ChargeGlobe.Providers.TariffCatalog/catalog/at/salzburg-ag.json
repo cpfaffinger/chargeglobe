@@ -98,7 +98,8 @@
           "notes": "Charge&Sleep: AC-Start 20–5 Uhr ohne Standgebühr. Partner-Stationen in Parkgaragen mit eigenen Preisen (nicht abgebildet).",
           "sourceUrl": "https://www.salzburg-ag.at/content/dam/web18/dokumente/e-mobilit%C3%A4t/Produktblatt_Stromladen_Ladetarife.pdf",
           "sourceDate": "2026-07-01",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "stromladen-pro",
@@ -191,7 +192,8 @@
           "notes": "Charge&Sleep: AC-Start 20–5 Uhr ohne Standgebühr. Partner-Stationen in Parkgaragen mit eigenen Preisen (nicht abgebildet).",
           "sourceUrl": "https://www.salzburg-ag.at/content/dam/web18/dokumente/e-mobilit%C3%A4t/Produktblatt_Stromladen_Ladetarife.pdf",
           "sourceDate": "2026-07-01",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

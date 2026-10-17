@@ -45,7 +45,8 @@
           "notes": "Nur an Kelag-Stationen.",
           "sourceUrl": "https://www.kelag.at/media/tarife/Kelag_eStart.pdf",
           "sourceDate": "2026-06-01",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "eplus",
@@ -121,7 +122,8 @@
           "notes": null,
           "sourceUrl": "https://www.kelag.at/media/tarife/Kelag_ePlus.pdf",
           "sourceDate": "2026-06-01",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "emax",
@@ -197,7 +199,8 @@
           "notes": null,
           "sourceUrl": "https://www.kelag.at/media/tarife/Kelag_eMax.pdf",
           "sourceDate": "2026-06-01",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

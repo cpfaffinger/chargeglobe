@@ -57,10 +57,12 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, IAppC
     public Task<int> StaleCountAsync(CancellationToken cancellationToken)
     {
         var cutoff = StaleBefore();
-        return db.TariffPlans.CountAsync(plan => plan.ValidTo == null && (plan.SourceDate == null || plan.SourceDate < cutoff), cancellationToken);
+        return db.TariffPlans.CountAsync(
+            plan => plan.ValidTo == null && !((plan.SourceDate != null && plan.SourceDate >= cutoff) || (plan.CheckedOn != null && plan.CheckedOn >= cutoff)),
+            cancellationToken);
     }
 
-    /// <summary>Tariffs whose "Stand" lies before this day are stale.</summary>
+    /// <summary>Tariffs whose "Stand" and last check both lie before this day (or are unknown) are stale.</summary>
     private DateOnly StaleBefore() =>
         DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime).AddMonths(-config.Get<int>(SettingsCatalog.TariffStaleMonths));
 
@@ -121,6 +123,7 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, IAppC
                     seen.Add(current.Id);
                     if (current.ContentHash == hash)
                     {
+                        current.Check(tariff.CheckedOn);
                         unchanged++;
                         continue;
                     }
@@ -133,7 +136,7 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, IAppC
                     created++;
                 }
 
-                db.TariffPlans.Add(TariffPlan.Create(emp.Id, sourceKey, content, hash, now));
+                db.TariffPlans.Add(TariffPlan.Create(emp.Id, sourceKey, content, hash, now, tariff.CheckedOn));
             }
         }
 
@@ -202,6 +205,7 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, IAppC
                     Require(pricing == TariffPricing.OPERATOR_AD_HOC || zone.MarkupPercent is null && zone.MarkupSessionFee is null, $"{z}: markups need the pricing OPERATOR_AD_HOC.");
                     Require(zone.MarkupPercent is null or (>= MinMarkupPercent and <= MaxMarkupPercent), $"{z}: markupPercent must lie between {MinMarkupPercent} and {MaxMarkupPercent}.");
                     Require(zone.MarkupSessionFee is null or (>= 0 and <= MaxAmount), $"{z}: markupSessionFee must lie between 0 and {MaxAmount}.");
+                    Require(zone.Currents is null || (zone.Currents.Count > 0 && zone.Currents.All(item => Enum.TryParse<TariffCurrent>(item, false, out _))), $"{z}: currents must be AC and/or DC.");
                     foreach (var price in zone.Prices ?? [])
                     {
                         Require(Enum.TryParse<TariffCurrent>(price.Current, false, out _), $"{z}: the current must be AC or DC.");
@@ -264,7 +268,8 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, IAppC
                 zone.Notes,
                 zone.Pricing is null ? TariffPricing.FIXED : Enum.Parse<TariffPricing>(zone.Pricing),
                 zone.MarkupPercent,
-                zone.MarkupSessionFee))],
+                zone.MarkupSessionFee,
+                zone.Currents is null ? null : [.. zone.Currents.Select(Enum.Parse<TariffCurrent>)]))],
             record.Notes,
             record.SourceUrl,
             record.SourceDate,
@@ -293,14 +298,16 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, IAppC
                 zone.Notes,
                 zone.Pricing.ToString(),
                 zone.MarkupPercent,
-                zone.MarkupSessionFee))],
+                zone.MarkupSessionFee,
+                zone.Currents is null ? null : [.. zone.Currents.Select(current => current.ToString())]))],
             plan.Notes,
             plan.SourceUrl,
             plan.SourceDate,
+            plan.CheckedOn,
             plan.Confidence.ToString(),
             plan.ValidFrom,
             plan.ValidTo,
-            plan.SourceDate is not { } date || date < staleBefore);
+            !(plan.SourceDate >= staleBefore || plan.CheckedOn >= staleBefore));
 
     [GeneratedRegex("^[A-Z]{3}$")]
     private static partial Regex CurrencyPattern();

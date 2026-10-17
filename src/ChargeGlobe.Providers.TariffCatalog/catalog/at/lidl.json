@@ -42,7 +42,8 @@
           "notes": "Grenze für High Power Charging nicht angegeben, hier ab 150 kW. Nur an Lidl-Stationen.",
           "sourceUrl": "https://kundenservice.lidl.at/SelfServiceAT/s/article/Was-kostet-der-Ladevorgang",
           "sourceDate": "2026-04-10",
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

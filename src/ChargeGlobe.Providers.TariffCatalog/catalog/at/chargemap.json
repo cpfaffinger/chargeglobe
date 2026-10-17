@@ -31,7 +31,8 @@
           "notes": "Partnerrabatte bis 50 % an einzelnen Stationen (Filter „Stationen im Angebot“) sind nicht abgebildet.",
           "sourceUrl": "https://support.chargemap.com/l/en/article/5sesv0pxmo-chargemap-boost-subscription",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "boost",
@@ -57,7 +58,8 @@
           "notes": null,
           "sourceUrl": "https://support.chargemap.com/l/en/article/5sesv0pxmo-chargemap-boost-subscription",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

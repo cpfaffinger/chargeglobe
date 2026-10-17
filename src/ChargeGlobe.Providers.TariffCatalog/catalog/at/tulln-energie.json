@@ -37,7 +37,8 @@
           "notes": "Nur im eigenen Netz in Tulln; Preisblatt ohne Datum.",
           "sourceUrl": "https://www.tulln.at/fileadmin/Content/Formulare/Umwelt/TullnEnergie/Stromtank_GmbH.pdf",
           "sourceDate": null,
-          "confidence": "LOW"
+          "confidence": "LOW",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "l-charger",
@@ -69,7 +70,8 @@
           "notes": "Nur im eigenen Netz in Tulln; Preisblatt ohne Datum.",
           "sourceUrl": "https://www.tulln.at/fileadmin/Content/Formulare/Umwelt/TullnEnergie/Stromtank_GmbH.pdf",
           "sourceDate": null,
-          "confidence": "LOW"
+          "confidence": "LOW",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "xl-charger",
@@ -101,7 +103,8 @@
           "notes": "Nur im eigenen Netz in Tulln; Preisblatt ohne Datum.",
           "sourceUrl": "https://www.tulln.at/fileadmin/Content/Formulare/Umwelt/TullnEnergie/Stromtank_GmbH.pdf",
           "sourceDate": null,
-          "confidence": "LOW"
+          "confidence": "LOW",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

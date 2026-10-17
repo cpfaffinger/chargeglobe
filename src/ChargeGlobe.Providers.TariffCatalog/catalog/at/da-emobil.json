@@ -529,7 +529,8 @@
           "notes": "Roaming mit eigenem Preis je Betreiber; nicht gelistete Betreiber (u. a. Tesla, Lidl, MOON, SMATRICS EnBW) sind nicht nutzbar.",
           "sourceUrl": "https://www.da-emobil.com/laden-tarife/tarife-roaming/",
           "sourceDate": "2025-05-01",
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

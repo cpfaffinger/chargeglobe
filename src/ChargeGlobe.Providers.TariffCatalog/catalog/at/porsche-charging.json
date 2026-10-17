@@ -55,7 +55,8 @@
           "notes": null,
           "sourceUrl": "https://ask.porsche.com/at/de-AT/charging-service-price-list/",
           "sourceDate": "2026-10-10",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

@@ -113,7 +113,8 @@
           "notes": "Einführungspreis bis Jänner 2027; ab 1.2.2027 Heimnetz 0,55, Roaming 0,89 €/kWh.",
           "sourceUrl": "https://www.verbund.com/de/privat/e-mobilitaet/v-go-app",
           "sourceDate": "2026-07-03",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "v-go-premium",
@@ -221,7 +222,8 @@
           "notes": "Einführungspreis bis Jänner 2027; ab 1.2.2027 11,99 €/Monat, Heimnetz 0,39, Roaming 0,79 €/kWh.",
           "sourceUrl": "https://www.verbund.com/de/privat/e-mobilitaet/v-go-app",
           "sourceDate": "2026-07-03",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

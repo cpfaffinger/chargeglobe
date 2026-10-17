@@ -48,7 +48,8 @@
           "notes": "Nur an Stationen der Stadtwerke Klagenfurt.",
           "sourceUrl": "https://www.stw.at/wp-content/uploads/2026/08/260806_preisblatt_emobil-ab-01012023.pdf",
           "sourceDate": "2023-01-01",
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         }
       ]
     }
