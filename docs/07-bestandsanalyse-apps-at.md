@@ -249,6 +249,10 @@ Das Flag `roaming` gilt je Ladepunkt: Bei KWMS, GENOL, Contipark, STROMBOX, vayl
 
 Neu abgedeckt sind damit 762 Ladepunkte (SFP, MGA, SNL, GNL, FTR, EHB): Nach dem Deploy (17.10.2026) sind **38.671 von 40.868 Ladepunkten** mit mindestens einer Ladekarte nutzbar; ohne Karte bleiben 1.421 Ladepunkte (vor allem Best in Parking 455, Green Business Center 73, vaylens 46) und die 776 von Tesla, dort gibt es nur den Ad-hoc-Preis vor Ort.
 
+#### Unplausible Ad-hoc-Preise im Register (17.10.2026, `/admin/prices`)
+
+920 aktive Ladepunkte bei 121 Betreibern haben einen unplausiblen Ad-hoc-Preis (Spanne 0,05–2,00 €/kWh). Die meisten melden gar keinen Betrag (nur Startgebühr 0, z. B. ENIO `AT*430` 225, ChargePoint `AT*CPI` 50, Loxone `AT*735` 40, STROMBOX `AT*STB` 27, Futuregrid `AT*FTR` 24), andere Energiepreise im Bereich von Zehntel-Cent (z. B. `AT*APC` 103 mit 0,0059–0,0069 €/kWh, `AT*8WA` 20, CAS Immobilien `AT*F9B` mit 0,005 €/kWh) – vermutlich Netto-Preise in Euro statt Cent oder fehlende Preise der Betreiber. An diesen Ladepunkten zeigen Karte und Detailseite „Preis laut Register vermutlich falsch“; die Anzahl der Ladepunkte mit Ladekarte (38.671) ändert sich dadurch nicht.
+
 #### Auslandspreise (Recherche 17.10.2026, Zonen mit `countries`)
 
 - **EVN #Drive Smart**: Partnerladenetz in AT, DE, IT, HR und SI zum selben Preis; anderswo nicht freigeschaltet. #Drive Easy nur an EVN-Stationen.
