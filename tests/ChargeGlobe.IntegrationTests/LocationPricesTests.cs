@@ -119,6 +119,10 @@ public class LocationPricesTests(IntegrationFactory factory) : IClassFixture<Int
         Assert.Equal(("roam", 13.00m, "AT*TST*ETEST0001*1"), Card(cards[0]));
         Assert.Equal(("roam", 19.00m, "AT*TST*ETEST0002*DC1"), Card(cards[1]));
 
+        // Own tariffs go before the cards: only "roam/tarif" counts although "own" is cheaper.
+        var tariffs = (await PricesAsync(new { locationIds = new[] { _stephansplatz }, cards = new[] { "own" }, tariffs = new[] { "roam/tarif" } })).GetProperty("data")[0];
+        Assert.Equal(("roam", 13.00m, "AT*TST*ETEST0001*1"), Card(tariffs));
+
         // No cards: ad-hoc only.
         var none = (await PricesAsync(new { locationIds = new[] { _stephansplatz }, cards = Array.Empty<string>() })).GetProperty("data")[0];
         Assert.Equal(JsonValueKind.Null, none.GetProperty("cheapestCard").ValueKind);
@@ -135,6 +139,8 @@ public class LocationPricesTests(IntegrationFactory factory) : IClassFixture<Int
         { $$"""{"locationIds":["{{Guid.NewGuid()}}"],"durationMinutes":0}""", "durationMinutes" },
         { $$"""{"locationIds":["{{Guid.NewGuid()}}"],"durationMinutes":601}""", "durationMinutes" },
         { $$"""{"locationIds":["{{Guid.NewGuid()}}"],"cards":["Not a key"]}""", "cards" },
+        { $$"""{"locationIds":["{{Guid.NewGuid()}}"],"tariffs":["roam"]}""", "tariffs" },
+        { "{\"locationIds\":[\"" + Guid.NewGuid() + "\"],\"tariffs\":[" + string.Join(',', Enumerable.Range(0, 31).Select(index => $"\"emp/tariff-{index}\"")) + "]}", "tariffs" },
         { "{\"locationIds\":[\"" + Guid.NewGuid() + "\"],\"cards\":[" + string.Join(',', Enumerable.Range(0, 21).Select(index => $"\"card-{index}\"")) + "]}", "cards" },
     };
 

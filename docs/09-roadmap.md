@@ -63,7 +63,7 @@
 - [x] Eigene Ladekarten des Nutzers (`cards` in `/me/preferences`, Auswahl unter „Mein Konto“, „deine Karte“ im Preisvergleich und „deine günstigste Karte“ in der Infokarte)
 - [x] Preisverlauf der Tarife (`getTariffHistory`, „Verlauf“ in `/admin/tariffs`, „Preis geändert am …“ in der Infokarte)
 - [x] Registerfehler melden: vermutlich gemeinter Preis und Mail-Entwurf je Betreiber in `/admin/prices` (nichts wird versendet)
-- [x] Eigene Tarife je Anbieter (`tariffs`, `onlyOwnTariffs` in `/me/preferences`): Ladepunkte zeigen per Vorgabe nur die eigenen Tarife, „Alle anzeigen“ je Ladepunkt
+- [x] Eigene Tarife je Anbieter (`tariffs`, `onlyOwnTariffs` in `/me/preferences`): Ladepunkte zeigen per Vorgabe nur die eigenen Tarife, „Alle anzeigen“ je Ladepunkt; Routenplanung mit den eigenen Tarifen, Summe der Grundgebühren im Konto
 - [x] Ingest-Durchsatz: Vorladen je Nachricht, ein Schreibvorgang je Nachricht; ein Register-Lauf ist in unter 3 min statt 16 min verarbeitet (docs/05)
 - [x] Ladeparks (Standorte desselben Betreibers ≤ 25 m), Marker am selben Punkt nebeneinander, Park-Marker ab 9 Stationen, Gesamtauslastung des Parks (`GET /locations/{id}/occupancy?park=true`)
 - [x] Ladestationen aus vierteiligen EVSE-IDs (`charging_station`), Infokarte mit Ladestationen, Ladepunkten (= Fahrzeuge) und Anschlüssen, Glossar `/help/begriffe`, Statistik mit Ladeparks, Ladestationen und Verteilungen

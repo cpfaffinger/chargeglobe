@@ -389,7 +389,7 @@ describe('account pages', () => {
       box('oeamtc/epower').click();
       await settle();
       expect([cards.tariffs(), cards.cards()]).toEqual([['smatrics/charge-and-roam'], ['evn', 'smatrics']]);
-      expect(text(page(), '#own-summary')).toBe('1 Tarif gewählt – Ladepunkte zeigen nur diese, alle auf Klick.');
+      expect(text(page(), '#own-summary')).toBe('1 Tarif gewählt – Ladepunkte zeigen nur diese, alle auf Klick. Deine Tarife kosten zusammen 4,90 €/Monat.');
       page().querySelector<HTMLButtonElement>('[data-card="evn"] .remove-card')!.click();
       await settle();
       expect(cards.cards()).toEqual(['smatrics']);
@@ -398,7 +398,7 @@ describe('account pages', () => {
       page().querySelector<HTMLButtonElement>('#only-own button')!.click();
       await settle();
       expect(cards.onlyOwn()).toBeFalse();
-      expect(text(page(), '#own-summary')).toBe('1 Tarif gewählt.');
+      expect(text(page(), '#own-summary')).toBe('1 Tarif gewählt. Deine Tarife kosten zusammen 4,90 €/Monat.');
 
       const search = page().querySelector<HTMLInputElement>('#own-search')!;
       search.value = 'öam';

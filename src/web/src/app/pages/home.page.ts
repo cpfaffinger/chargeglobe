@@ -252,6 +252,9 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
                       <mat-button-toggle value="route">Route</mat-button-toggle>
                       <mat-button-toggle value="price">günstigste zuerst</mat-button-toggle>
                     </mat-button-toggle-group>
+                    @if (cards.tariffs().length > 0) {
+                      <span class="muted" id="stops-own">Preise mit deinen Tarifen</span>
+                    }
                   </div>
                 }
                 <ol>
@@ -583,7 +586,7 @@ export class HomePage {
   protected readonly trip = signal<Trip | null>(null);
   /** Line of the shown route, for loading its stops again when the filters change. */
   private routeLine: RouteResponse['data']['geometry'] | null = null;
-  private readonly cards = inject(CardsStore);
+  protected readonly cards = inject(CardsStore);
   private readonly vehicles = inject(VehicleStore);
   protected readonly vehicle = this.vehicles.vehicle;
   protected readonly consumption = CONSUMPTION;
@@ -1083,12 +1086,13 @@ export class HomePage {
     }
   }
 
-  /** The lowest price per stop with the own cards; an answer for an older list is dropped, a failure leaves none. */
+  /** The lowest price per stop with the own tariffs (or cards); an answer for an older list is dropped, a failure leaves none. */
   private async loadPrices(request: number, stops: RouteLocation[]): Promise<void> {
     try {
       const response = await this.routes.prices(
         stops.map((stop) => stop.id),
         this.cards.cards(),
+        this.cards.tariffs(),
       );
       if (request === this.routeRequest) {
         const prices = new Map<string, StopPrice>();

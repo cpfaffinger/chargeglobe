@@ -37,6 +37,9 @@ interface EmpTariffs {
         {{ store.tariffs().length === 1 ? '1 Tarif' : store.tariffs().length + ' Tarife' }} gewählt{{
           store.onlyOwn() ? ' – Ladepunkte zeigen nur diese, alle auf Klick.' : '.'
         }}
+        @if (monthlyTotal() > 0) {
+          <span id="own-fees">Deine Tarife kosten zusammen {{ fee(monthlyTotal()) }}/Monat.</span>
+        }
       }
     </p>
     <mat-form-field class="own-search" subscriptSizing="dynamic">
@@ -118,6 +121,14 @@ export class OwnCards {
       .filter((group) => !query || group.emp.name.toLowerCase().includes(query))
       .sort((left, right) => Number(this.ownTariffs(right) > 0) - Number(this.ownTariffs(left) > 0));
   });
+
+  /** Sum of the monthly fees of the own tariffs. */
+  protected readonly monthlyTotal = computed(() =>
+    this.groups()
+      .flatMap((group) => group.tariffs)
+      .filter((tariff) => this.isOwn(tariff))
+      .reduce((sum, tariff) => sum + (tariff.monthlyFee ?? 0), 0),
+  );
 
   constructor() {
     void attempt(this.busy, this.errors, async () => {
