@@ -352,30 +352,63 @@ describe('account pages', () => {
       expect(TestBed.inject(Router).url).toBe('/');
     });
 
-    it('lets users with price:read choose their own charging cards', async () => {
+    it('lets users with price:read choose their own tariffs per provider', async () => {
       auth.hasPermission.and.callFake((permission) => permission === 'price:read');
       await open('/account');
       http.expectOne('/api/v1/health').flush({ status: 'ok', db: 'ok' });
       expect(text(page(), '#own-cards li')).toBe('Anbieter werden geladen …');
       http.expectOne('/api/v1/emps').flush({
         data: [
-          { key: 'smatrics', name: 'SMATRICS', website: null, country: 'AT', tariffs: 1 },
+          { key: 'smatrics', name: 'SMATRICS', website: null, country: 'AT', tariffs: 2 },
           { key: 'oeamtc', name: 'ÖAMTC ePower', website: null, country: 'AT', tariffs: 1 },
+          { key: 'evn', name: 'EVN', website: null, country: 'AT', tariffs: 0 },
+        ],
+      });
+      http.expectOne('/api/v1/tariffs').flush({
+        data: [
+          { emp: 'smatrics', key: 'charge-and-roam', name: 'Charge & Roam', monthlyFee: 4.9 },
+          { emp: 'smatrics', key: 'charge-simple', name: 'Charge Simple', monthlyFee: null },
+          { emp: 'oeamtc', key: 'epower', name: 'ÖAMTC ePower', monthlyFee: 0 },
         ],
       });
       await settle();
       const cards = TestBed.inject(CardsStore);
-      cards.set(['oeamtc']);
+      expect(text(page(), '#own-summary')).toBe('Noch kein Tarif gewählt – Ladepunkte zeigen alle Ladekarten und Apps.');
+      cards.set(['oeamtc', 'evn'], ['oeamtc/epower']);
       await settle();
 
-      const box = (key: string) => page().querySelector<HTMLInputElement>(`mat-checkbox[data-card="${key}"] input`)!;
-      expect([box('smatrics').checked, box('oeamtc').checked]).toEqual([false, true]);
-      box('smatrics').click();
+      // Providers with own tariffs first; a provider chosen without tariff can be removed.
+      expect(Array.from(page().querySelectorAll<HTMLElement>('.own-emp')).map((item) => item.dataset['card'])).toEqual(['oeamtc', 'smatrics', 'evn']);
+      expect(text(page(), '[data-card="oeamtc"] .own-count')).toBe('1 gewählt');
+      expect(text(page(), '[data-card="smatrics"] mat-checkbox')).toBe('Charge & Roam · 4,90 €/Monat');
+      const box = (key: string) => page().querySelector<HTMLInputElement>(`mat-checkbox[data-tariff="${key}"] input`)!;
+      expect([box('smatrics/charge-and-roam').checked, box('oeamtc/epower').checked]).toEqual([false, true]);
+      box('smatrics/charge-and-roam').click();
       await settle();
-      expect(cards.cards()).toEqual(['oeamtc', 'smatrics']);
-      box('oeamtc').click();
+      expect([cards.tariffs(), cards.cards()]).toEqual([['oeamtc/epower', 'smatrics/charge-and-roam'], ['oeamtc', 'evn', 'smatrics']]);
+      box('oeamtc/epower').click();
+      await settle();
+      expect([cards.tariffs(), cards.cards()]).toEqual([['smatrics/charge-and-roam'], ['evn', 'smatrics']]);
+      expect(text(page(), '#own-summary')).toBe('1 Tarif gewählt – Ladepunkte zeigen nur diese, alle auf Klick.');
+      page().querySelector<HTMLButtonElement>('[data-card="evn"] .remove-card')!.click();
       await settle();
       expect(cards.cards()).toEqual(['smatrics']);
+
+      // The filter of the price lists can be switched off.
+      page().querySelector<HTMLButtonElement>('#only-own button')!.click();
+      await settle();
+      expect(cards.onlyOwn()).toBeFalse();
+      expect(text(page(), '#own-summary')).toBe('1 Tarif gewählt.');
+
+      const search = page().querySelector<HTMLInputElement>('#own-search')!;
+      search.value = 'öam';
+      search.dispatchEvent(new Event('input'));
+      await settle();
+      expect(Array.from(page().querySelectorAll<HTMLElement>('.own-emp')).map((item) => item.dataset['card'])).toEqual(['oeamtc']);
+      search.value = 'xyz';
+      search.dispatchEvent(new Event('input'));
+      await settle();
+      expect(text(page(), '#own-cards li')).toBe('Kein Anbieter passt zur Suche.');
     });
 
     it('says when no EMP exists yet', async () => {
@@ -383,6 +416,7 @@ describe('account pages', () => {
       await open('/account');
       http.expectOne('/api/v1/health').flush({ status: 'ok', db: 'ok' });
       http.expectOne('/api/v1/emps').flush({ data: [] });
+      http.expectOne('/api/v1/tariffs').flush({ data: [] });
       await settle();
       expect(text(page(), '#own-cards li')).toBe('Noch keine Ladekarten-Anbieter erfasst.');
     });
@@ -392,6 +426,7 @@ describe('account pages', () => {
       await open('/account');
       http.expectOne('/api/v1/health').flush({ status: 'ok', db: 'ok' });
       http.expectOne('/api/v1/emps').flush({ title: 'Error', detail: 'Database down.' }, { status: 503, statusText: 'Error' });
+      http.expectOne('/api/v1/tariffs').flush({ data: [] });
       await settle();
       expect(text(page(), '#own-cards .error')).toBe('Database down.');
     });

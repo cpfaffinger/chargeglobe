@@ -226,9 +226,15 @@ const SHARE_MESSAGES: Record<ShareResult, string | null> = {
                       }
                     </p>
                   }
-                  @let rows = compare(pricing, cards.cards());
+                  @let onlyOwn = cards.filtering() && !showAll();
+                  @let rows = compare(pricing, cards.ownKeys(), onlyOwn);
+                  @if (cards.filtering() && pricing.emps.length > 0) {
+                    <button matButton type="button" id="show-all" (click)="showAll.set(!showAll())">
+                      {{ onlyOwn ? 'Alle Ladekarten anzeigen (' + pricing.emps.length + ')' : 'Nur meine Tarife' }}
+                    </button>
+                  }
                   @if (rows.length > 0) {
-                    <h3 id="comparison-title">Vergleich mit Ladekarten</h3>
+                    <h3 id="comparison-title">{{ onlyOwn ? 'Vergleich mit meinen Tarifen' : 'Vergleich mit Ladekarten' }}</h3>
                     <table id="price-comparison" class="data-table" aria-labelledby="comparison-title">
                       <thead>
                         <tr>
@@ -438,6 +444,8 @@ export class EvseDetailPage {
   protected readonly session = sessionText;
   protected readonly compare = comparison;
   protected readonly cards = inject(CardsStore);
+  /** Every card in the comparison although the user shows only own tariffs. */
+  protected readonly showAll = signal(false);
   /** The ad-hoc price needs price:read. */
   protected readonly prices = inject(AuthService).hasPermission('price:read');
   protected readonly priceData = signal<EvsePricesResponse | null>(null);

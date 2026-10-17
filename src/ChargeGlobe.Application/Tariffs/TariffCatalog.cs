@@ -90,6 +90,9 @@ public interface ITariffCatalog
     /// <summary>The keys of every EMP, also of those without current tariffs (cards chosen earlier stay valid).</summary>
     Task<IReadOnlyCollection<string>> EmpKeysAsync(CancellationToken cancellationToken);
 
+    /// <summary>"emp/tariff" of every tariff, also of ended ones (tariffs chosen earlier stay valid).</summary>
+    Task<IReadOnlyCollection<string>> TariffKeysAsync(CancellationToken cancellationToken);
+
     /// <summary>All networks by key.</summary>
     Task<IReadOnlyList<NetworkView>> NetworksAsync(CancellationToken cancellationToken);
 

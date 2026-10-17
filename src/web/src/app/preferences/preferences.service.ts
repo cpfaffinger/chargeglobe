@@ -20,6 +20,10 @@ export interface PreferencesDocument {
   cards?: string[] | null;
   /** The car of the charging plan; missing or null: the defaults. */
   vehicle?: Vehicle | null;
+  /** The own tariffs as "emp/tariff"; missing or null: none. */
+  tariffs?: string[] | null;
+  /** With own tariffs show only these at a charge point; missing or null: true. */
+  onlyOwnTariffs?: boolean | null;
 }
 
 export interface PreferencesResponse {
@@ -64,6 +68,8 @@ export class PreferencesService {
     mapOptions: this.options.options(),
     cards: this.cards.cards(),
     vehicle: this.vehicles.vehicle(),
+    tariffs: this.cards.tariffs(),
+    onlyOwnTariffs: this.cards.onlyOwn(),
   }));
 
   constructor() {
@@ -116,7 +122,7 @@ export class PreferencesService {
       this.filters.apply(toFilters(document.filters));
     }
     this.options.set(document.mapOptions ?? DEFAULT_MAP_OPTIONS);
-    this.cards.set(document.cards ?? []);
+    this.cards.set(document.cards ?? [], document.tariffs ?? [], document.onlyOwnTariffs ?? true);
     this.vehicles.set(document.vehicle ?? DEFAULT_VEHICLE);
     this.synced = JSON.stringify(this.document());
   }

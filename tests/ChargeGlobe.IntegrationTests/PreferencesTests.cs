@@ -79,12 +79,34 @@ public class PreferencesTests(IntegrationFactory factory)
         { """{"mapOptions":{"clusterRadius":50}}""", "mapOptions.clusterMaxZoom" },
         { "{\"cards\":[" + string.Join(',', Enumerable.Range(0, 21).Select(index => $"\"card-{index}\"")) + "]}", "cards" },
         { """{"cards":["no-such-emp"]}""", "cards" },
+        { "{\"tariffs\":[" + string.Join(',', Enumerable.Range(0, 31).Select(index => $"\"emp/tariff-{index}\"")) + "]}", "tariffs" },
+        { """{"tariffs":["no-such-emp/basic"]}""", "tariffs" },
         { """{"vehicle":{"consumptionKwhPer100Km":4,"batteryKwh":60}}""", "vehicle.consumptionKwhPer100Km" },
         { """{"vehicle":{"batteryKwh":60}}""", "vehicle.consumptionKwhPer100Km" },
         { """{"vehicle":{"consumptionKwhPer100Km":18,"batteryKwh":251}}""", "vehicle.batteryKwh" },
         { """{"vehicle":{"consumptionKwhPer100Km":18,"batteryKwh":60,"startSoc":101}}""", "vehicle.startSoc" },
         { """{"vehicle":{"consumptionKwhPer100Km":18,"batteryKwh":60,"arrivalSoc":-1}}""", "vehicle.arrivalSoc" },
     };
+
+    [Fact]
+    public async Task Own_tariffs_are_keys_of_known_tariffs_and_only_these_are_shown_by_default()
+    {
+        var admin = factory.Client((await factory.LoginAsync(IntegrationFactory.AdminEmail, IntegrationFactory.AdminPassword)).AccessToken);
+        var emp = $"own-{Guid.NewGuid():N}"[..20];
+        await TestTariffs.ImportAsync(admin, $"src-{Guid.NewGuid():N}"[..20], [TestTariffs.Emp(emp, null, TestTariffs.Zone("HOME", ["AT*TST"], TestTariffs.Price("AC", 0.30m)))], []);
+        var (client, _) = await SignedInAsync();
+
+        var put = await client.PutAsJsonAsync("/api/v1/me/preferences", new { cards = new[] { emp }, tariffs = new[] { $"{emp}/tarif", $"{emp}/tarif" } });
+
+        Assert.Equal(HttpStatusCode.OK, put.StatusCode);
+        var data = (await (await client.GetAsync("/api/v1/me/preferences")).ReadJsonAsync()).GetProperty("data");
+        Assert.Equal([$"{emp}/tarif"], data.GetProperty("tariffs").EnumerateArray().Select(tariff => tariff.GetString()));
+        Assert.Equal(JsonValueKind.Null, data.GetProperty("onlyOwnTariffs").ValueKind);
+
+        // The user may switch the filter off; the choice stays.
+        await client.PutAsJsonAsync("/api/v1/me/preferences", new { tariffs = new[] { $"{emp}/tarif" }, onlyOwnTariffs = false });
+        Assert.False((await (await client.GetAsync("/api/v1/me/preferences")).ReadJsonAsync()).GetProperty("data").GetProperty("onlyOwnTariffs").GetBoolean());
+    }
 
     [Fact]
     public async Task The_car_of_the_charging_plan_follows_the_account()

@@ -39,8 +39,16 @@ public sealed record VehiclePreference(decimal? ConsumptionKwhPer100Km, decimal?
 /// <param name="MapOptions">Null: the defaults.</param>
 /// <param name="Cards">Keys of the EMPs (<c>listEmps</c>) whose charging cards or apps the user has; null: none chosen.</param>
 /// <param name="Vehicle">The car of the charging plan; null: the defaults of the app.</param>
+/// <param name="Tariffs">The user's own tariffs as "emp/tariff" (<c>listTariffs</c>: <c>emp</c> and <c>key</c>); null: none chosen.</param>
+/// <param name="OnlyOwnTariffs">With at least one own tariff the price lists show only these (the user can show all per charge point); null: true.</param>
 public sealed record PreferencesDocument(
-    HomePreference? Home, FilterPreferences? Filters, MapOptionPreferences? MapOptions, IReadOnlyList<string>? Cards = null, VehiclePreference? Vehicle = null)
+    HomePreference? Home,
+    FilterPreferences? Filters,
+    MapOptionPreferences? MapOptions,
+    IReadOnlyList<string>? Cards = null,
+    VehiclePreference? Vehicle = null,
+    IReadOnlyList<string>? Tariffs = null,
+    bool? OnlyOwnTariffs = null)
 {
     public static readonly PreferencesDocument Empty = new(null, null, null);
 }
@@ -55,6 +63,7 @@ public static class PreferencesEndpoints
 {
     public const int MaxOperators = 100;
     public const int MaxCards = 20;
+    public const int MaxTariffs = 30;
 
     /// <summary>Ranges of the car, as in the web app (map/charging-plan.ts).</summary>
     public const decimal MinConsumption = 5;
@@ -69,7 +78,9 @@ public static class PreferencesEndpoints
         new FilterPreferences(["IEC_62196_T2_COMBO"], 50, null, [], true, false, false, false, false),
         new MapOptionPreferences(60, 14),
         ["smatrics", "oeamtc"],
-        new VehiclePreference(18, 60, 80, 15));
+        new VehiclePreference(18, 60, 80, 15),
+        ["smatrics/charge-and-roam", "oeamtc/epower"],
+        true);
 
     public static IEndpointRouteBuilder MapPreferencesEndpoints(this IEndpointRouteBuilder endpoints)
     {
@@ -86,7 +97,9 @@ public static class PreferencesEndpoints
                 "`cards` (keys of the EMPs from `listEmps` whose charging cards or apps the user has; the price comparison of " +
                 "`getEvsePrices` can highlight them; null = none) and `vehicle` (the car of the charging plan along a route: " +
                 "`consumptionKwhPer100Km`, `batteryKwh`, `startSoc` and `arrivalSoc` in %, the last two null for the defaults " +
-                "of the app; null = defaults). " +
+                "of the app; null = defaults), `tariffs` (the user's own tariffs as \"emp/tariff\", e.g. \"oeamtc/epower\", from " +
+                "`listTariffs`; null = none) and `onlyOwnTariffs` (with at least one own tariff the web app shows only these in the " +
+                "price lists of a charge point, all on demand; null = true). " +
                 "`meta.updatedAt` is null while the account has not stored preferences yet; the web app then uploads the " +
                 "values of the browser. Requires an account or API key, no specific permission.")
             .Produces<PreferencesResponse>()
@@ -102,7 +115,8 @@ public static class PreferencesEndpoints
                 "values (latitude −90…90, longitude −180…180, zoom 0…24); `filters.connector` OCPI connector standards (as in " +
                 "`listLocations`, stored in upper case); `minPowerKw`/`maxPowerKw` above 0, at most 1000, min not above " +
                 "max; at most 100 `operatorId`; `mapOptions` with both values (`clusterRadius` 0…120, `clusterMaxZoom` 5…18); " +
-                "at most 20 `cards`, each the key of an existing EMP (duplicates are dropped); `vehicle` with " +
+                "at most 20 `cards`, each the key of an existing EMP (duplicates are dropped); at most 30 `tariffs`, each " +
+                "\"emp/tariff\" of an existing (also ended) tariff (duplicates are dropped); `vehicle` with " +
                 "`consumptionKwhPer100Km` 5…60 and `batteryKwh` 10…250, `startSoc` and `arrivalSoc` null or 0…100. " +
                 "200 with the stored document; 422 with field errors such as `home.zoom`, `filters.connector`, `cards` or " +
                 "`vehicle.batteryKwh`. A change " +
@@ -131,6 +145,15 @@ public static class PreferencesEndpoints
         if (invalid is not null)
         {
             return invalid;
+        }
+
+        if (document.Tariffs is { Count: > 0 } tariffs)
+        {
+            var known = (await catalog.TariffKeysAsync(cancellationToken)).ToHashSet();
+            if (new Validation().Require(tariffs.All(known.Contains), "tariffs", "Must be \"emp/tariff\" of tariffs from listTariffs.").ToResult() is { } unknown)
+            {
+                return unknown;
+            }
         }
 
         if (document.Cards is { Count: > 0 } cards)
@@ -171,6 +194,7 @@ public static class PreferencesEndpoints
         }
 
         validation.Require(request.Cards is not { Count: > MaxCards }, "cards", $"At most {MaxCards} cards.");
+        validation.Require(request.Tariffs is not { Count: > MaxTariffs }, "tariffs", $"At most {MaxTariffs} tariffs.");
         if (request.Vehicle is { } vehicle)
         {
             validation
@@ -192,6 +216,7 @@ public static class PreferencesEndpoints
             {
                 Filters = request.Filters is null ? null : request.Filters with { Connector = connectors },
                 Cards = request.Cards is null ? null : [.. request.Cards.Distinct()],
+                Tariffs = request.Tariffs is null ? null : [.. request.Tariffs.Distinct()],
             },
             validation.ToResult());
     }
