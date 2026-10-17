@@ -131,8 +131,9 @@ describe('App with its routes', () => {
       auth.hasPermission.and.returnValue(true);
       await navigate('/account');
       http.expectOne('/api/v1/health');
-      // With price:read the account page offers the own cards.
+      // With price:read the account page offers the own cards and tariffs.
       http.expectOne('/api/v1/emps').flush({ data: [] });
+      http.expectOne('/api/v1/tariffs').flush({ data: [] });
 
       expect(root().querySelector('.toolbar-nav')).toBeNull();
       root().querySelector<HTMLButtonElement>('#menu')!.click();
