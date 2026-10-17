@@ -88,7 +88,7 @@ public class DatexIIReplayTests
         Assert.DoesNotContain("telephoneNumber", actual);
         Assert.DoesNotContain("+41", actual);
         Assert.Equal(
-            ["https://api.mobidata-bw.de/ocpdb/api/public/datex/v3.5/json/static?offset=0&limit=5000", "https://api.mobidata-bw.de/ocpdb/api/public/datex/v3.5/json/realtime?offset=0&limit=5000", "https://api.mobidata-bw.de/ocpdb/api/public/datex/v3.5/json/realtime?offset=0&limit=5000"],
+            ["https://api.mobidata-bw.de/ocpdb/api/public/datex/v3.5/json/static?offset=0&limit=2000", "https://api.mobidata-bw.de/ocpdb/api/public/datex/v3.5/json/realtime?offset=0&limit=5000", "https://api.mobidata-bw.de/ocpdb/api/public/datex/v3.5/json/realtime?offset=0&limit=5000"],
             handler.Requests.Select(request => request.RequestUri!.ToString()));
         Assert.Equal(
             [
@@ -312,7 +312,8 @@ public class DatexIIAdapterTests
             descriptor.Capabilities);
         Assert.Equal(new PollDefaults(TimeSpan.FromDays(1), TimeSpan.FromMinutes(5), null), descriptor.PollDefaults);
         Assert.Contains("dl-de/by-2-0", descriptor.AttributionText);
-        Assert.Equal(5_000, DatexProfiles.MobiDataBw.PageSize);
+        Assert.Equal((2_000, 5_000), (DatexProfiles.MobiDataBw.PageSize, DatexProfiles.MobiDataBw.StatusPageSize));
+        Assert.Null(DatexProfiles.EControl.StatusPageSize);
         // A profile without a status publication offers no status.
         var staticOnly = DatexProfiles.MobiDataBw with { RealtimeUrl = null };
         Assert.False(staticOnly.Capabilities.HasFlag(ProviderCapabilities.LiveStatusPerEvse));
@@ -344,8 +345,8 @@ public class DatexIIAdapterTests
 
         Assert.Empty(locations);
         Assert.Equal(DatexProvider.MaxPagesPerRun, handler.Requests.Count);
-        Assert.Contains("DATEX II mobidata-bw static stopped after 100 pages before the end", logger.Messages);
-        Assert.Contains("DATEX II mobidata-bw static publication read: 100 sites, 0 in other countries, 0 mirrored from another source, 100 outside the box, 0 skipped", logger.Messages);
+        Assert.Contains("DATEX II mobidata-bw static stopped after 200 pages before the end", logger.Messages);
+        Assert.Contains("DATEX II mobidata-bw static publication read: 200 sites, 0 in other countries, 0 mirrored from another source, 200 outside the box, 0 skipped", logger.Messages);
 
         var (inside, _) = Datex.Provider(profile with { PageSize = 0 }, new StubHandler(_ => StubHandler.Json(Datex.StaticPage(7, 1))));
         Assert.Single(await inside.FetchInventoryAsync(new InventoryQuery(Datex.Berlin, null, null), CancellationToken.None).ToListAsync());

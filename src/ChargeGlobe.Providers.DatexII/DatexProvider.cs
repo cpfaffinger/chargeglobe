@@ -21,8 +21,8 @@ public sealed class DatexProvider(
     TimeProvider timeProvider,
     ILogger<DatexProvider> logger) : IInventorySource, IStatusSource, IPriceSource, IProviderHealth
 {
-    /// <summary>Pages one run may read; Germany takes about 25 with 5,000 sites per page.</summary>
-    public const int MaxPagesPerRun = 100;
+    /// <summary>Pages one run may read; the table publication of Germany takes about 55 with 2,000 sites per page.</summary>
+    public const int MaxPagesPerRun = 200;
 
     /// <summary>Requests for one page before a 5xx of the source fails the run.</summary>
     public const int PageAttempts = 3;
@@ -40,7 +40,7 @@ public sealed class DatexProvider(
         }
 
         var (sites, foreign, mirrored, outside, skipped) = (0, 0, 0, 0, 0);
-        await foreach (var site in PagesAsync(profile.StaticUrl, DatexParser.ParseTable, "static", cancellationToken))
+        await foreach (var site in PagesAsync(profile.StaticUrl, profile.PageSize, DatexParser.ParseTable, "static", cancellationToken))
         {
             sites++;
             if (site.Country is { } country && !profile.Countries.Contains(country))
@@ -89,7 +89,7 @@ public sealed class DatexProvider(
     {
         var realtime = profile.RealtimeUrl ?? throw new NotSupportedException($"DATEX II {profile.Key} has no status publication.");
         var (points, foreign, mirrored) = (0, 0, 0);
-        await foreach (var site in PagesAsync(realtime, DatexParser.ParseStatus, "realtime", cancellationToken))
+        await foreach (var site in PagesAsync(realtime, profile.StatusPageSize ?? profile.PageSize, DatexParser.ParseStatus, "realtime", cancellationToken))
         {
             foreach (var status in mapper.ToStatuses(site, timeProvider.GetUtcNow()))
             {
@@ -124,7 +124,7 @@ public sealed class DatexProvider(
             yield break;
         }
 
-        await foreach (var site in PagesAsync(realtime, DatexParser.ParseStatus, "realtime", cancellationToken))
+        await foreach (var site in PagesAsync(realtime, profile.StatusPageSize ?? profile.PageSize, DatexParser.ParseStatus, "realtime", cancellationToken))
         {
             foreach (var price in mapper.ToPrices(site, timeProvider.GetUtcNow()).Where(price => Keeps(price.ExternalId) && !profile.IsMirrored(price.ExternalId)))
             {
@@ -171,13 +171,13 @@ public sealed class DatexProvider(
     }
 
     /// <summary>One page; a 5xx of the source is tried again after <see cref="DatexProfile.PageRetryDelay"/>, twice at most.</summary>
-    private async Task<System.Text.Json.Nodes.JsonNode> GetPageAsync(Uri publication, int offset, string name, int page, CancellationToken cancellationToken)
+    private async Task<System.Text.Json.Nodes.JsonNode> GetPageAsync(Uri publication, int offset, int pageSize, string name, int page, CancellationToken cancellationToken)
     {
         for (var attempt = 1; ; attempt++)
         {
             try
             {
-                return await client.GetAsync(publication, offset, profile.PageSize, cancellationToken);
+                return await client.GetAsync(publication, offset, pageSize, cancellationToken);
             }
             catch (ProviderHttpException exception) when (attempt < PageAttempts && (int?)exception.StatusCode >= 500)
             {
@@ -192,7 +192,7 @@ public sealed class DatexProvider(
 
     /// <summary>The items of a publication page by page: until a page is short, or at once without paging.</summary>
     private async IAsyncEnumerable<T> PagesAsync<T>(
-        Uri publication, Func<System.Text.Json.Nodes.JsonNode, IReadOnlyList<T>> parse, string name, [EnumeratorCancellation] CancellationToken cancellationToken)
+        Uri publication, int pageSize, Func<System.Text.Json.Nodes.JsonNode, IReadOnlyList<T>> parse, string name, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var (offset, pages) = (0, 0);
         while (true)
@@ -203,7 +203,7 @@ public sealed class DatexProvider(
                 yield break;
             }
 
-            var items = parse(await GetPageAsync(publication, offset, name, pages + 1, cancellationToken));
+            var items = parse(await GetPageAsync(publication, offset, pageSize, name, pages + 1, cancellationToken));
             pages++;
             logger.LogInformation("DATEX II {Provider} {Publication} page {Page}: {Items} sites from {Offset}", profile.Key, name, pages, items.Count, offset);
             foreach (var item in items)
@@ -211,12 +211,12 @@ public sealed class DatexProvider(
                 yield return item;
             }
 
-            if (profile.PageSize == 0 || items.Count < profile.PageSize)
+            if (pageSize == 0 || items.Count < pageSize)
             {
                 yield break;
             }
 
-            offset += profile.PageSize;
+            offset += pageSize;
         }
     }
 }

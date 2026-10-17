@@ -14,7 +14,8 @@ namespace ChargeGlobe.Providers.DatexII;
 /// <param name="StaticUrl">The table publication (inventory, prices).</param>
 /// <param name="RealtimeUrl">The status publication; null if the source has none.</param>
 /// <param name="Countries">ISO 3166-1 alpha-2 codes of the sites and EVSE-IDs the adapter keeps; sites and EVSE-IDs of other countries are skipped.</param>
-/// <param name="PageSize">Sites per request with <c>offset</c>/<c>limit</c> paging; 0 if one request returns everything.</param>
+/// <param name="PageSize">Sites per request of the table publication with <c>offset</c>/<c>limit</c> paging; 0 if one request returns everything.</param>
+/// <param name="StatusPageSize">Sites per request of the status publication; null means <paramref name="PageSize"/>.</param>
 /// <param name="ApiKeyHeader">Header that carries the setting <c>provider.api_key</c> (with the referer); null for open sources.</param>
 /// <param name="MirroredIdPrefixes">
 /// First part (before <c>*</c>) of refill point IDs of sites the source mirrors from another source chargeglobe reads
@@ -36,7 +37,8 @@ public sealed record DatexProfile(
     int PageSize = 0,
     string? ApiKeyHeader = null,
     IReadOnlyList<string>? MirroredIdPrefixes = null,
-    TimeSpan? PageRetryDelay = null)
+    TimeSpan? PageRetryDelay = null,
+    int? StatusPageSize = null)
 {
     /// <summary>Capabilities from the publications: inventory with EVSE-IDs and prices, status in bulk if there is a status publication.</summary>
     public ProviderCapabilities Capabilities =>
@@ -69,11 +71,13 @@ public static class DatexProfiles
         new Uri("https://api.mobidata-bw.de/ocpdb/api/public/datex/v3.5/json/static"),
         new Uri("https://api.mobidata-bw.de/ocpdb/api/public/datex/v3.5/json/realtime"),
         ["DE"],
-        // Inventory once a day (about 25 requests with 5,000 sites per page), status every 5 minutes (about 10 requests).
+        // Inventory once a day (about 55 requests with 2,000 sites per page), status every 5 minutes (about 11 requests).
         new PollDefaults(TimeSpan.FromDays(1), TimeSpan.FromMinutes(5), null),
-        // Rate limits of the API are not documented (docs/08); larger pages than 5,000 sites made the API answer 5xx.
+        // Rate limits of the API are not documented (docs/08); the API takes 20-30 s for 5,000 sites of the table
+        // publication and then answers 500 now and then, 2,000 take about 5 s; the status publication is fast.
         new RateLimitPolicy(PerMinute: 12, Burst: 4),
-        PageSize: 5_000,
+        PageSize: 2_000,
+        StatusPageSize: 5_000,
         MirroredIdPrefixes: ["BNETZA"],
         // The API answers single pages with 500 now and then; a run would otherwise start over after the cooldown.
         PageRetryDelay: TimeSpan.FromSeconds(15));
