@@ -466,7 +466,7 @@ describe('App with its routes', () => {
 });
 
 describe('appConfig', () => {
-  it('provides HTTP client with interceptor, session restore, setup state and the router', () => {
-    expect(appConfig.providers.length).toBe(6);
+  it('provides HTTP client with interceptor, session restore, setup state, the router and the reload on stale chunks', () => {
+    expect(appConfig.providers.length).toBe(7);
   });
 });
