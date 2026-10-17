@@ -110,7 +110,7 @@ public class FreshnessTests(IntegrationFactory factory) : IClassFixture<Integrat
         Assert.Equal(new RegionFreshness("DE-TH", "Thüringen", 0, 0, 0, 0), freshness.Regions[^1]);
         Assert.Equal(new RegionFreshness("AT-1", "Burgenland", 0, 0, 0, 0), freshness.Regions[0]);
 
-        Assert.Equal(["econtrol", "ocm"], freshness.Sources.Select(source => source.Key));
+        Assert.Equal(SettingsCatalog.ProviderKeys, freshness.Sources.Select(source => source.Key));
         var econtrol = freshness.Sources[0];
         Assert.Equal((5, 600), (econtrol.RequestsLastHour, econtrol.BudgetPerHour));
         Assert.Equal(
