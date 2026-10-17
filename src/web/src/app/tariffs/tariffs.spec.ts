@@ -254,13 +254,15 @@ describe('AdminTariffsPage', () => {
         { id: 'v-3', validFrom: '2026-10-10T00:00:00Z', validTo: null, sourceDate: null, checkedOn: null, monthlyFee: 4.95, changes: [] },
       ],
     };
-    service.history.and.resolveTo(history);
+    let answer!: (value: TariffHistory) => void;
+    service.history.and.returnValue(new Promise<TariffHistory>((resolve) => (answer = resolve)));
     await render();
 
     const details = root().querySelector<HTMLDetailsElement>('[data-tariff="drive-smart"] .tariff-history')!;
     details.dispatchEvent(new Event('toggle'));
     await fixture.whenStable();
     expect(details.querySelector('app-loading')).not.toBeNull();
+    answer(history);
     await flush();
     await fixture.whenStable();
     const items = Array.from(details.querySelectorAll('.versions > li')).map((item) => item.textContent!.replace(/\s+/g, ' ').trim());
