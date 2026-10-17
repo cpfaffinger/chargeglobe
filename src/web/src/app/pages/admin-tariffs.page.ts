@@ -1,6 +1,8 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { attempt } from '../auth/problem';
 import { AppIcon } from '../design/icon';
@@ -12,13 +14,21 @@ const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
 const CONFIDENCE: Record<Tariff['confidence'], string> = { HIGH: 'aus dem Preisblatt', MEDIUM: 'abgeleitet', LOW: 'unsicher' };
 
+/** Order of providers and tariffs: by name, or the longest unchecked first (by the newer of "Stand" and last check). */
+type TariffOrder = 'name' | 'checked';
+
+/** The day the values were last confirmed: the newer of "Stand" and last check ("" if neither, so it sorts first). */
+function lastSeen(tariff: Tariff): string {
+  return [tariff.sourceDate ?? '', tariff.checkedOn ?? ''].sort().at(-1)!;
+}
+
 /**
  * The tariff catalog (tariff:write): per provider its current tariffs with monthly fee, source and "Stand", and per zone
  * which networks it covers and what AC and DC (by power stage) cost. The data comes from the tariff sources
  * (docs/adr/0013); the page shows it, changes go through the catalog files or importTariffCatalog.
  */
 @Component({
-  imports: [AppIcon, AppLoading, DatePipe, MatButtonModule, MatExpansionModule],
+  imports: [AppIcon, AppLoading, DatePipe, MatButtonModule, MatButtonToggleModule, MatCheckboxModule, MatExpansionModule],
   selector: 'app-admin-tariffs',
   template: `
     <h1>Tarife</h1>
@@ -34,7 +44,14 @@ const CONFIDENCE: Record<Tariff['confidence'], string> = { HIGH: 'aus dem Preisb
         Anbieters vergleichen.
       </p>
     }
-    <button matButton type="button" id="reload" [disabled]="loading()" (click)="load()"><app-icon name="refresh" />Aktualisieren</button>
+    <div class="tariff-tools">
+      <button matButton type="button" id="reload" [disabled]="loading()" (click)="load()"><app-icon name="refresh" />Aktualisieren</button>
+      <mat-checkbox id="only-stale" [checked]="onlyStale()" (change)="onlyStale.set($event.checked)">Nur „Stand prüfen“</mat-checkbox>
+      <mat-button-toggle-group id="order" aria-label="Sortierung" hideSingleSelectionIndicator [value]="order()" (change)="order.set($event.value)">
+        <mat-button-toggle value="name">nach Name</mat-button-toggle>
+        <mat-button-toggle value="checked">am längsten ungeprüft zuerst</mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
     @for (error of errors(); track error) {
       <p class="error" role="alert">{{ error }}</p>
     }
@@ -42,7 +59,7 @@ const CONFIDENCE: Record<Tariff['confidence'], string> = { HIGH: 'aus dem Preisb
       <app-loading id="tariffs-loading" text="Tarife werden geladen …" />
     }
     <mat-accordion multi>
-      @for (emp of emps(); track emp.key) {
+      @for (emp of shownEmps(); track emp.key) {
         <mat-expansion-panel class="emp" [attr.data-emp]="emp.key">
           <mat-expansion-panel-header>
             <mat-panel-title>{{ emp.name }}</mat-panel-title>
@@ -91,7 +108,7 @@ const CONFIDENCE: Record<Tariff['confidence'], string> = { HIGH: 'aus dem Preisb
         </mat-expansion-panel>
       } @empty {
         @if (!loading()) {
-          <p id="no-emps">Noch keine Tarife im Katalog.</p>
+          <p id="no-emps">{{ onlyStale() && emps().length > 0 ? 'Kein Tarif muss geprüft werden.' : 'Noch keine Tarife im Katalog.' }}</p>
         }
       }
     </mat-accordion>
@@ -106,6 +123,25 @@ export class AdminTariffsPage {
   protected readonly loading = signal(false);
   protected readonly errors = signal<string[]>([]);
   protected readonly staleCount = computed(() => this.tariffs().filter((tariff) => tariff.stale).length);
+  protected readonly onlyStale = signal(false);
+  protected readonly order = signal<TariffOrder>('name');
+
+  /** The tariffs shown: all or only the stale ones, in the chosen order. */
+  private readonly shownTariffs = computed(() => {
+    const tariffs = this.tariffs().filter((tariff) => !this.onlyStale() || tariff.stale);
+    return this.order() === 'checked' ? [...tariffs].sort((a, b) => lastSeen(a).localeCompare(lastSeen(b))) : tariffs;
+  });
+
+  /** The providers with a shown tariff; by name, or by their longest unchecked tariff. */
+  protected readonly shownEmps = computed(() => {
+    const tariffs = this.shownTariffs();
+    const emps = this.emps().filter((emp) => tariffs.some((tariff) => tariff.emp === emp.key));
+    if (this.order() === 'name') {
+      return emps;
+    }
+    const first = (emp: Emp) => tariffs.findIndex((tariff) => tariff.emp === emp.key);
+    return [...emps].sort((a, b) => first(a) - first(b));
+  });
   private readonly networkNames = computed(() => new Map(this.networks().map((network) => [network.key, network.name])));
 
   constructor() {
@@ -122,7 +158,7 @@ export class AdminTariffsPage {
   }
 
   protected tariffsOf(emp: Emp): Tariff[] {
-    return this.tariffs().filter((tariff) => tariff.emp === emp.key);
+    return this.shownTariffs().filter((tariff) => tariff.emp === emp.key);
   }
 
   protected amount(value: number, currency: string): string {

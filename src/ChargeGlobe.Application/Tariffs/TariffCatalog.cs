@@ -82,8 +82,11 @@ public sealed record CatalogImportResult(int Networks, int Emps, int Created, in
 /// <summary>Providers, networks and tariffs (docs/adr/0013); fed by the tariff sources, readable with <c>price:read</c>.</summary>
 public interface ITariffCatalog
 {
-    /// <summary>All EMPs by name.</summary>
+    /// <summary>The EMPs with at least one current tariff, by name; providers whose tariffs all ended are left out.</summary>
     Task<IReadOnlyList<EmpView>> EmpsAsync(CancellationToken cancellationToken);
+
+    /// <summary>The keys of every EMP, also of those without current tariffs (cards chosen earlier stay valid).</summary>
+    Task<IReadOnlyCollection<string>> EmpKeysAsync(CancellationToken cancellationToken);
 
     /// <summary>All networks by key.</summary>
     Task<IReadOnlyList<NetworkView>> NetworksAsync(CancellationToken cancellationToken);
@@ -93,6 +96,12 @@ public interface ITariffCatalog
 
     /// <summary>The number of current tariffs that are stale (see <see cref="TariffView.Stale"/>).</summary>
     Task<int> StaleCountAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The number of current tariffs that are not stale yet but whose "Stand" and last check both lie more than half of
+    /// <c>tariff.stale_months</c> back: the ones to check soon.
+    /// </summary>
+    Task<int> CheckSoonCountAsync(CancellationToken cancellationToken);
 
     /// <summary>
     /// Takes over the whole catalog of a source: new and changed tariffs become new versions, tariffs the source no longer

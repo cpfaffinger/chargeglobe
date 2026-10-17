@@ -75,7 +75,8 @@
 - [x] Tesla-Preise geprüft: findus-Standortseiten nicht automatisiert (Bot-Schutz, Website-Bedingungen), Ad-hoc-Preise aus der E-Control ([Endpunkt-Notiz](endpunkte/tesla-findus.md)); an Tesla-Ladepunkten Preis-Hinweis des Netzes mit der Standortseite (`priceNote`, 55 kuratierte Standorte)
 - [x] ladetarif.at (Tarifkalkulator der E-Control) geprüft: keine Nutzungsbedingungen, keine Lizenz → kein Adapter, manueller Abgleich mit `scripts/tariffs/compare-ladetarif.py` ([Endpunkt-Notiz](endpunkte/ladetarif.md))
 - [ ] Freigabe von ladetarif.at bei der E-Control anfragen (Betreiber; Lesen, Weitergabe unter CC BY 4.0, Betreiber je Tarif), danach Adapter `ladetarif` als `ITariffSource`
-- [x] Tarifkatalog prüfen: `stale` in `GET /tariffs` und „Stand prüfen“ in `/admin/tariffs` (Stand unbekannt oder älter als `tariff.stale_months`), tägliche Zahl im Worker-Log
+- [x] Tarifkatalog prüfen: `stale` in `GET /tariffs` und „Stand prüfen“ in `/admin/tariffs` (Stand unbekannt oder älter als `tariff.stale_months`) mit Filter und Sortierung nach Prüfdatum, tägliche Zahlen im Worker-Log (veraltet, bald zu prüfen)
+- [x] Eingestellte Anbieter (alle Tarife beendet) fehlen in `listEmps`; ihre Tarifhistorie bleibt
 - [ ] Preisblatt-Scraper als `ITariffSource` für die großen Anbieter
 
 ### Phase 2 – Preise & Tier-1/2-Quellen

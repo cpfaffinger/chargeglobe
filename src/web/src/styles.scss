@@ -1968,6 +1968,14 @@ app-admin-tariffs .stale {
   font: var(--mat-sys-label-small);
 }
 
+app-admin-tariffs .tariff-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin: 8px 0 16px;
+}
+
 app-admin-tariffs .stale-summary {
   color: var(--mat-sys-error);
 }

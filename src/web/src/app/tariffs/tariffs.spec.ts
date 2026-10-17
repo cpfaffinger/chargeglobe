@@ -202,6 +202,33 @@ describe('AdminTariffsPage', () => {
     expect(root().querySelector('#no-emps')).toBeNull();
   });
 
+  it('shows only the tariffs to check and sorts the longest unchecked first', async () => {
+    await render();
+    const shown = () => Array.from(root().querySelectorAll<HTMLElement>('.tariff')).map((section) => section.dataset['tariff']);
+    expect(shown()).toEqual(['drive-smart', 'drive-easy', 'epower']);
+
+    root().querySelector<HTMLInputElement>('#only-stale input')!.click();
+    await fixture.whenStable();
+    expect(shown()).toEqual(['drive-easy']);
+    expect(Array.from(root().querySelectorAll<HTMLElement>('.emp')).map((panel) => panel.dataset['emp'])).toEqual(['evn']);
+
+    // By the newer of "Stand" and last check: the ePower check of 01.10. before the one of 17.10.
+    root().querySelector<HTMLInputElement>('#only-stale input')!.click();
+    service.tariffs.and.resolveTo([tariff(), tariff({ id: 't-3', emp: 'oeamtc', key: 'epower', name: 'ePower', checkedOn: '2026-10-01' })]);
+    root().querySelector<HTMLButtonElement>('#reload')!.click();
+    await flush();
+    await fixture.whenStable();
+    Array.from(root().querySelectorAll<HTMLElement>('#order mat-button-toggle'))[1].querySelector('button')!.click();
+    await fixture.whenStable();
+    expect(shown()).toEqual(['epower', 'drive-smart']);
+    expect(Array.from(root().querySelectorAll<HTMLElement>('.emp')).map((panel) => panel.dataset['emp'])).toEqual(['oeamtc', 'evn']);
+
+    // Nothing stale: the filter says so.
+    root().querySelector<HTMLInputElement>('#only-stale input')!.click();
+    await fixture.whenStable();
+    expect(text(root(), '#no-emps')).toBe('Kein Tarif muss geprüft werden.');
+  });
+
   it('reloads, reports errors and says when the catalog is empty', async () => {
     service.emps.and.rejectWith(new HttpErrorResponse({ status: 500, error: { title: 'Server kaputt' } }));
     await render();

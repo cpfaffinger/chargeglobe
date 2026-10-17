@@ -142,11 +142,14 @@ public class TariffsTests(IntegrationFactory factory)
         Assert.Equal(2, history.Count(item => item.GetProperty("validTo").ValueKind != JsonValueKind.Null));
         Assert.Equal(3, await factory.WithDbAsync(db => db.AuditLog.CountAsync(entry => entry.Action == "tariff.import" && entry.Target == $"tariff-source:{source}")));
 
-        // An empty catalog ends every tariff of the source and removes its networks; the provider stays.
+        // An empty catalog ends every tariff of the source and removes its networks; the provider stays for the history
+        // of its tariffs but leaves listEmps.
         Assert.Equal((0, 0, 1, 0), Counts(await ImportAsync(admin, source, new JsonObject { ["networks"] = new JsonArray(), ["emps"] = new JsonArray() })));
         Assert.Empty(await TariffsAsync(admin, $"?emp={emp}"));
+        Assert.Equal(3, (await TariffsAsync(admin, $"?emp={emp}&history=true")).Count);
         Assert.DoesNotContain((await (await admin.GetAsync("/api/v1/networks")).ReadJsonAsync()).GetProperty("data").EnumerateArray(), item => item.GetProperty("key").GetString() == network);
-        Assert.Equal(0, (await (await admin.GetAsync("/api/v1/emps")).ReadJsonAsync()).GetProperty("data").EnumerateArray().Single(item => item.GetProperty("key").GetString() == emp).GetProperty("tariffs").GetInt32());
+        Assert.DoesNotContain((await (await admin.GetAsync("/api/v1/emps")).ReadJsonAsync()).GetProperty("data").EnumerateArray(), item => item.GetProperty("key").GetString() == emp);
+        Assert.Contains(emp, await factory.WithScopeAsync(services => services.GetRequiredService<ChargeGlobe.Application.Tariffs.ITariffCatalog>().EmpKeysAsync(CancellationToken.None)));
     }
 
     [Fact]
@@ -193,6 +196,15 @@ public class TariffsTests(IntegrationFactory factory)
         await ImportAsync(admin, NewKey("src"), fresh);
         Assert.False((await TariffsAsync(admin, $"?emp={fresh["emps"]![0]!["key"]}"))[0].GetProperty("stale").GetBoolean());
         Assert.True(await factory.WithScopeAsync(services => services.GetRequiredService<ChargeGlobe.Application.Tariffs.ITariffCatalog>().StaleCountAsync(CancellationToken.None)) >= 2);
+
+        // Four months ago: not stale after six months yet, but to be checked soon (after half of the span).
+        var soon = Catalog(NewKey("net"), NewKey("emp"), withPlus: false);
+        soon["emps"]![0]!["tariffs"]![0]!["sourceDate"] = DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(-4)).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+        Task<int> CheckSoonAsync() => factory.WithScopeAsync(services => services.GetRequiredService<ChargeGlobe.Application.Tariffs.ITariffCatalog>().CheckSoonCountAsync(CancellationToken.None));
+        var before = await CheckSoonAsync();
+        await ImportAsync(admin, NewKey("src"), soon);
+        Assert.False((await TariffsAsync(admin, $"?emp={soon["emps"]![0]!["key"]}"))[0].GetProperty("stale").GetBoolean());
+        Assert.Equal(before + 1, await CheckSoonAsync());
     }
 
     [Fact]

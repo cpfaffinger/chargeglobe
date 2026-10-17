@@ -181,8 +181,9 @@ public static class SettingsCatalog
         },
 
         new(TariffStaleMonths, SettingType.Int, 6,
-            "A tariff counts as stale when the \"Stand\" of its price sheet (sourceDate) is older than this many months or " +
-            "unknown: listTariffs marks it, /admin/tariffs shows it, and the worker logs their number once a day.")
+            "A tariff counts as stale when both the \"Stand\" of its price sheet (sourceDate) and its last check (checkedOn) " +
+            "are older than this many months or unknown: listTariffs marks it, /admin/tariffs shows it, and the worker logs " +
+            "their number once a day, together with the tariffs to check soon (older than half this span).")
         {
             Min = 1,
             Max = 36,
