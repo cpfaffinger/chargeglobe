@@ -236,6 +236,7 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, IAppC
                     Require(zone.MarkupPercent is null or (>= MinMarkupPercent and <= MaxMarkupPercent), $"{z}: markupPercent must lie between {MinMarkupPercent} and {MaxMarkupPercent}.");
                     Require(zone.MarkupSessionFee is null or (>= 0 and <= MaxAmount), $"{z}: markupSessionFee must lie between 0 and {MaxAmount}.");
                     Require(zone.Currents is null || (zone.Currents.Count > 0 && zone.Currents.All(item => Enum.TryParse<TariffCurrent>(item, false, out _))), $"{z}: currents must be AC and/or DC.");
+                    Require(zone.Countries is null || (zone.Countries.Count > 0 && zone.Countries.All(IsCountry)), $"{z}: countries must be ISO 3166-1 alpha-2 codes such as DE.");
                     foreach (var price in zone.Prices ?? [])
                     {
                         Require(Enum.TryParse<TariffCurrent>(price.Current, false, out _), $"{z}: the current must be AC or DC.");
@@ -310,7 +311,8 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, IAppC
                 zone.Pricing is null ? TariffPricing.FIXED : Enum.Parse<TariffPricing>(zone.Pricing),
                 zone.MarkupPercent,
                 zone.MarkupSessionFee,
-                zone.Currents is null ? null : [.. zone.Currents.Select(Enum.Parse<TariffCurrent>)]))],
+                zone.Currents is null ? null : [.. zone.Currents.Select(Enum.Parse<TariffCurrent>)],
+                zone.Countries is null ? null : [.. zone.Countries.Distinct().Order(StringComparer.Ordinal)]))],
             record.Notes,
             record.SourceUrl,
             record.SourceDate,
@@ -341,7 +343,8 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, IAppC
                 zone.Pricing.ToString(),
                 zone.MarkupPercent,
                 zone.MarkupSessionFee,
-                zone.Currents is null ? null : [.. zone.Currents.Select(current => current.ToString())]))],
+                zone.Currents is null ? null : [.. zone.Currents.Select(current => current.ToString())],
+                zone.Countries))],
             plan.Notes,
             plan.SourceUrl,
             plan.SourceDate,

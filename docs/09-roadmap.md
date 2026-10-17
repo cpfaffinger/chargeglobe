@@ -71,7 +71,7 @@
 - [x] Zeitfenster (Nachttarife), Deckel der Blockiergebühr, Blockiergebühr ab Ladeende (EVN, Wien Energie, SMATRICS, Salzburg AG, Kelag, TIWAG, EnBW, Maingau, Energie Klagenfurt)
 - [x] Wochentage (`days`), Zeitfenster der Blockiergebühr und Höchstzahl abgerechneter Blockierminuten (Elli, Škoda, Audi, Porsche, IONITY-Tarife, EVN, Wien Energie, IKB; Charge&Sleep der Salzburg AG als Startfenster)
 - [x] Stromart je Zone (`currents`, z. B. Partnerpreis nur an DC) und Prüfdatum je Tarif (`checkedOn`): „Stand prüfen“ nur, wenn weder Stand noch Prüfung jünger als `tariff.stale_months` sind
-- [ ] Auslandspreise (Zonen je Land)
+- [x] Auslandspreise als Zonen je Land (`countries`); Land des Ladepunkts = Land des Standorts
 - [x] Tesla-Preise geprüft: findus-Standortseiten nicht automatisiert (Bot-Schutz, Website-Bedingungen), Ad-hoc-Preise aus der E-Control ([Endpunkt-Notiz](endpunkte/tesla-findus.md)); an Tesla-Ladepunkten Preis-Hinweis des Netzes mit der Standortseite (`priceNote`, 55 kuratierte Standorte)
 - [x] ladetarif.at (Tarifkalkulator der E-Control) geprüft: keine Nutzungsbedingungen, keine Lizenz → kein Adapter, manueller Abgleich mit `scripts/tariffs/compare-ladetarif.py` ([Endpunkt-Notiz](endpunkte/ladetarif.md))
 - [ ] Freigabe von ladetarif.at bei der E-Control anfragen (Betreiber; Lesen, Weitergabe unter CC BY 4.0, Betreiber je Tarif), danach Adapter `ladetarif` als `ITariffSource`

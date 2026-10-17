@@ -57,6 +57,26 @@ public class TariffTests
     }
 
     [Fact]
+    public void A_zone_for_countries_applies_only_there_and_goes_before_the_one_for_every_country()
+    {
+        var abroad = new TariffZone(TariffZoneKind.ROAMING, [], [], [], [], [Ac(0.79m)], "Ausland", Countries: ["DE", "IT"]);
+        var plan = Plan(Zone(TariffZoneKind.ROAMING, [], [], Ac(0.59m)), abroad, Zone(TariffZoneKind.HOME, ["evn"], [], Ac(0.39m)));
+
+        Assert.Equal((TariffZoneKind.ROAMING, 0.79m), Of(plan.MatchAt("DE*ION", true, TariffCurrent.AC, 11, Members, country: "DE")));
+        Assert.Equal((TariffZoneKind.ROAMING, 0.59m), Of(plan.MatchAt("AT*SMA", true, TariffCurrent.AC, 11, Members, country: "AT")));
+        Assert.Equal((TariffZoneKind.ROAMING, 0.59m), Of(plan.MatchAt("AT*SMA", true, TariffCurrent.AC, 11, Members)));
+        // A named network still goes first, also abroad.
+        Assert.Equal((TariffZoneKind.HOME, 0.39m), Of(plan.MatchAt("AT*EVN", true, TariffCurrent.AC, 11, Members, country: "DE")));
+
+        // Without a zone for every country the card has no price elsewhere.
+        var onlyAbroad = Plan(abroad);
+        Assert.Null(onlyAbroad.MatchAt("AT*SMA", true, TariffCurrent.AC, 11, Members, country: "AT"));
+        Assert.Null(onlyAbroad.MatchAt("AT*SMA", true, TariffCurrent.AC, 11, Members));
+        Assert.True(abroad.AppliesIn("IT"));
+        Assert.False(abroad.AppliesIn(null));
+    }
+
+    [Fact]
     public void Roaming_leaves_out_excluded_networks_and_operators_and_can_be_limited()
     {
         var open = Plan(new TariffZone(TariffZoneKind.ROAMING, [], [], ["tesla"], ["AT*IOY"], [Ac(0.69m)], "kein Tesla"));

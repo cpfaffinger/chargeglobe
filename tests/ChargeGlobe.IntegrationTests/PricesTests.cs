@@ -167,6 +167,7 @@ public class PricesTests(IntegrationFactory factory) : IClassFixture<Integration
         // AC with roaming: home network, roaming with start fee (1 + 30 × 0.40), the home price everywhere; not the other network.
         var available = await PricesAsync(Available);
         // flex: the ad-hoc price 0.59 + 10 % = 0.649 €/kWh plus 0.39 € per session.
+        // "roam" at its Austrian price: its zone for Germany (0.05 €/kWh) does not apply to an EVSE in AT.
         Assert.Equal([("own", "HOME", 9.00m), ("roam", "ROAMING", 13.00m), ("flex", "ROAMING", 19.86m), ("every", "HOME", 21.00m)], Emps(available));
         Assert.Equal(["other"], Unavailable(available));
         var own = available.GetProperty("data").GetProperty("emps")[0];

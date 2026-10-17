@@ -82,6 +82,7 @@ public sealed record TariffRecord(
 /// <param name="MarkupPercent">With <c>OPERATOR_AD_HOC</c>: percent on the ad-hoc price, −10 for 10 % off.</param>
 /// <param name="MarkupSessionFee">With <c>OPERATOR_AD_HOC</c>: fee of the provider per session on top.</param>
 /// <param name="Currents"><c>AC</c> and/or <c>DC</c>: the zone applies only to EVSEs of these currents; null for both.</param>
+/// <param name="Countries">ISO 3166-1 alpha-2 countries: the zone applies only to EVSEs there (prices abroad); null for every country.</param>
 public sealed record ZoneRecord(
     string Kind,
     IReadOnlyList<string>? Networks,
@@ -93,7 +94,8 @@ public sealed record ZoneRecord(
     string? Pricing = null,
     decimal? MarkupPercent = null,
     decimal? MarkupSessionFee = null,
-    IReadOnlyList<string>? Currents = null);
+    IReadOnlyList<string>? Currents = null,
+    IReadOnlyList<string>? Countries = null);
 
 /// <param name="Current"><c>AC</c> or <c>DC</c>.</param>
 /// <param name="MinKw">The price applies from this maximum power of the EVSE on (HPC stages); null for any.</param>
