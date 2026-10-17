@@ -44,7 +44,8 @@ public sealed record ZoneView(
     decimal? MarkupPercent,
     decimal? MarkupSessionFee,
     IReadOnlyList<string>? Currents,
-    IReadOnlyList<string>? Countries);
+    IReadOnlyList<string>? Countries,
+    decimal? MarkupPerKwh);
 
 /// <summary>One version of a tariff of an EMP with its zones; amounts in <paramref name="Currency"/> incl. VAT.</summary>
 /// <param name="Emp">Key of the EMP.</param>

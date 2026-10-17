@@ -287,7 +287,24 @@ public class TariffsTests(IntegrationFactory factory)
         { "zone.markupPercent=5", "markups need the pricing OPERATOR_AD_HOC" },
         { "operator.markupPercent=150", "markupPercent must lie between -50 and 100" },
         { "operator.markupSessionFee=-1", "markupSessionFee must lie between 0 and 1000" },
+        { "operator.markupPerKwh=-2.5", "markupPerKwh must lie between -2 and 2" },
+        { "roaming.markupPerKwh=-0.25", "markups need the pricing OPERATOR_AD_HOC" },
     };
+
+    [Fact]
+    public async Task A_zone_at_the_operators_price_may_take_an_amount_per_kWh_off()
+    {
+        var admin = await AdminAsync();
+        var emp = NewKey("emp");
+        var catalog = Catalog(NewKey("net"), emp, withPlus: false);
+        var roaming = OperatorPriced(catalog["emps"]![0]!["tariffs"]![0]!["zones"]![1]!.AsObject());
+        roaming["markupPerKwh"] = -0.25m;
+        await ImportAsync(admin, NewKey("src"), catalog);
+
+        var zone = (await TariffsAsync(admin, $"?emp={emp}"))[0].GetProperty("zones")[1];
+        Assert.Equal(("OPERATOR_AD_HOC", -0.25m), (zone.GetProperty("pricing").GetString(), zone.GetProperty("markupPerKwh").GetDecimal()));
+        Assert.Equal(JsonValueKind.Null, (await TariffsAsync(admin, $"?emp={emp}"))[0].GetProperty("zones")[0].GetProperty("markupPerKwh").ValueKind);
+    }
 
     [Theory]
     [MemberData(nameof(InvalidCatalogs))]
@@ -352,7 +369,7 @@ public class TariffsTests(IntegrationFactory factory)
             "days" => new JsonArray(int.Parse(value, System.Globalization.CultureInfo.InvariantCulture)),
             "operators" or "excludedOperators" or "networks" or "markets" or "currents" or "countries" => value == "" ? new JsonArray() : new JsonArray(value),
             "prices" or "zones" => new JsonArray(),
-            "monthlyFee" or "minKw" or "blockingAfterMinutes" or "pricePerKwh" or "markupPercent" or "markupSessionFee" or "maxBlockingFee" or "maxBlockingMinutes" => value == "" ? null : JsonValue.Create(decimal.Parse(value, System.Globalization.CultureInfo.InvariantCulture)),
+            "monthlyFee" or "minKw" or "blockingAfterMinutes" or "pricePerKwh" or "markupPercent" or "markupSessionFee" or "markupPerKwh" or "maxBlockingFee" or "maxBlockingMinutes" => value == "" ? null : JsonValue.Create(decimal.Parse(value, System.Globalization.CultureInfo.InvariantCulture)),
             _ => value,
         };
     }

@@ -240,6 +240,7 @@ public sealed record TariffPriceElement(
 /// <param name="MarkupPercent">With operator pricing: percent on every amount of the ad-hoc price (−10 = 10 % off).</param>
 /// <param name="MarkupSessionFee">With operator pricing: fee of the provider per session on top.</param>
 /// <param name="Currents">The zone applies only to EVSEs of these currents (e.g. a discount of the operator's price for DC only); null for both.</param>
+/// <param name="MarkupPerKwh">With operator pricing: amount per kWh on top of the operator's energy price (−0.25 = 25 cents off), never below 0.</param>
 /// <param name="Countries">The zone applies only to EVSEs in these countries (ISO 3166-1 alpha-2, e.g. the prices abroad of a roaming network); null for every country.</param>
 public sealed record TariffZone(
     TariffZoneKind Kind,
@@ -254,14 +255,16 @@ public sealed record TariffZone(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] decimal? MarkupPercent = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] decimal? MarkupSessionFee = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<TariffCurrent>? Currents = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<string>? Countries = null)
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<string>? Countries = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] decimal? MarkupPerKwh = null)
 {
     /// <summary>Whether the zone applies in the country of the EVSE: always without <see cref="Countries"/>, else only in a listed one.</summary>
     public bool AppliesIn(string? country) => Countries is null || (country is not null && Countries.Contains(country));
 
     /// <summary>
     /// The price of an operator-priced zone from the ad-hoc price of the EVSE: every amount with <see cref="MarkupPercent"/>,
-    /// plus <see cref="MarkupSessionFee"/> per session. A free EVSE stays free.
+    /// plus <see cref="MarkupSessionFee"/> per session, and <see cref="MarkupPerKwh"/> on an energy price (not below 0;
+    /// a price without energy part stays without). A free EVSE stays free.
     /// </summary>
     public PriceComponents MarkUp(PriceComponents adHoc)
     {
@@ -274,7 +277,7 @@ public sealed record TariffZone(
         decimal? Scale(decimal? amount) => amount is { } value ? Math.Round(value * factor, 4) : null;
         return adHoc with
         {
-            PricePerKwh = Scale(adHoc.PricePerKwh),
+            PricePerKwh = MarkupPerKwh is { } perKwh && Scale(adHoc.PricePerKwh) is { } kwh ? Math.Max(0, kwh + perKwh) : Scale(adHoc.PricePerKwh),
             PricePerMinute = Scale(adHoc.PricePerMinute),
             SessionFee = MarkupSessionFee is { } fee ? (Scale(adHoc.SessionFee) ?? 0) + fee : Scale(adHoc.SessionFee),
             BlockingFeePerMinute = Scale(adHoc.BlockingFeePerMinute),
