@@ -506,14 +506,14 @@ describe('EvseDetailPage with prices', () => {
 
     // With the own tariff: only it and the ad-hoc price, all on demand.
     TestBed.inject(CardsStore).set(['t-2'], ['t-2/basic']);
-    await fixture.whenStable();
+    await settle();
     expect(text(page(), '#comparison-title')).toBe('Vergleich mit meinen Tarifen');
     expect(Array.from(page().querySelectorAll('#price-comparison tbody tr')).map((row) => text(row, 'td:first-child'))).toEqual([
       'Ad-hoc (ohne Vertrag) günstigste',
       'ÖAMTC · Basic (Roaming) deine Karte',
     ]);
     page().querySelector<HTMLButtonElement>('#show-all')!.click();
-    await fixture.whenStable();
+    await settle();
     expect(page().querySelectorAll('#price-comparison tbody tr').length).toBe(3);
     expect(text(page(), '#show-all')).toBe('Nur meine Tarife');
   });
