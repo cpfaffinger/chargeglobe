@@ -93,10 +93,10 @@ public class DatexIIReplayTests
         Assert.Equal(
             [
                 "DATEX II mobidata-bw static page 1: 7 sites from 0",
-                "DATEX II mobidata-bw static publication read: 7 sites, 1 in other countries, 0 outside the box, 0 skipped",
-                "DATEX II mobidata-bw realtime page 1: 5 sites from 0",
-                "DATEX II mobidata-bw status publication read: 14 refill points, 5 of other countries skipped",
-                "DATEX II mobidata-bw realtime page 1: 5 sites from 0",
+                "DATEX II mobidata-bw static publication read: 7 sites, 1 in other countries, 4 mirrored from another source, 0 outside the box, 0 skipped",
+                "DATEX II mobidata-bw realtime page 1: 6 sites from 0",
+                "DATEX II mobidata-bw status publication read: 14 refill points, 5 of other countries and 2 of another source skipped",
+                "DATEX II mobidata-bw realtime page 1: 6 sites from 0",
             ],
             logger.Messages);
     }
@@ -104,7 +104,8 @@ public class DatexIIReplayTests
     [Fact]
     public async Task The_MobiData_mapping_covers_synthetic_IDs_EVSE_IDs_operator_codes_prices_and_statuses()
     {
-        var (provider, _) = Datex.Provider(DatexProfiles.MobiDataBw, Datex.MobiDataHandler());
+        // Without the mirrored prefixes, the sites of the Bundesnetzagentur come through as well.
+        var (provider, _) = Datex.Provider(DatexProfiles.MobiDataBw with { MirroredIdPrefixes = null }, Datex.MobiDataHandler());
 
         var locations = (await provider.FetchInventoryAsync(new InventoryQuery(null, null, null), CancellationToken.None).ToListAsync())
             .ToDictionary(location => location.ExternalId);
@@ -150,6 +151,60 @@ public class DatexIIReplayTests
         Assert.NotNull(charging.SourceReportedAt);
         Assert.Contains(statuses, status => status.ExternalId == "1350" && status.Status == EvseStatus.OUTOFORDER && status.EvseId is null);
         Assert.Contains(statuses, status => status.ExternalId == "DE*SHN*E0030119" && status.Status == EvseStatus.AVAILABLE);
+        Assert.Contains(statuses, status => status.ExternalId == "BNETZA*1077306*1" && status.Status == EvseStatus.INOPERATIVE);
+    }
+
+    [Fact]
+    public async Task Sites_and_statuses_mirrored_from_the_Bundesnetzagentur_are_skipped()
+    {
+        var (provider, _) = Datex.Provider(DatexProfiles.MobiDataBw, Datex.MobiDataHandler());
+
+        var locations = await provider.FetchInventoryAsync(new InventoryQuery(null, null, null), CancellationToken.None).ToListAsync();
+        var statuses = await provider.FetchStatusAsync(new StatusQuery(null, null), CancellationToken.None).ToListAsync();
+        var prices = await provider.FetchPricesAsync(new PriceQuery(null, null), CancellationToken.None).ToListAsync();
+
+        Assert.Equal(["800013227", "Mer Germany-3914"], locations.Select(location => location.ExternalId));
+        Assert.DoesNotContain(statuses, status => status.ExternalId.StartsWith("BNETZA*", StringComparison.Ordinal));
+        Assert.Equal(14, statuses.Count);
+        Assert.Empty(prices);
+        Assert.True(DatexProfiles.MobiDataBw.IsMirrored("BNETZA*1002913*1"));
+        Assert.False(DatexProfiles.MobiDataBw.IsMirrored("1347"));
+        Assert.False(DatexProfiles.MobiDataBw.IsMirrored("BNETZA"));
+        Assert.False(DatexProfiles.EControl.IsMirrored("BNETZA*1*1"));
+        Assert.Equal(TimeSpan.FromSeconds(15), DatexProfiles.MobiDataBw.PageRetryDelay);
+        Assert.Null(DatexProfiles.EControl.PageRetryDelay);
+    }
+
+    [Fact]
+    public async Task A_page_the_source_answers_with_5xx_is_requested_again_twice()
+    {
+        var profile = DatexProfiles.MobiDataBw with { PageSize = 2, PageRetryDelay = TimeSpan.Zero };
+        var calls = 0;
+        var handler = new StubHandler(_ => ++calls switch
+        {
+            1 => new HttpResponseMessage(HttpStatusCode.InternalServerError),
+            2 => StubHandler.Json(Datex.StaticPage(1, 2)),
+            3 => new HttpResponseMessage(HttpStatusCode.BadGateway),
+            4 => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable),
+            _ => StubHandler.Json(Datex.StaticPage(3, 1)),
+        });
+        var (provider, logger) = Datex.Provider(profile, handler);
+
+        var locations = await provider.FetchInventoryAsync(new InventoryQuery(null, null, null), CancellationToken.None).ToListAsync();
+
+        Assert.Equal(["1", "2", "3"], locations.Select(location => location.ExternalId));
+        Assert.Equal(5, handler.Requests.Count);
+        Assert.Contains("DATEX II mobidata-bw static page 1 returned 500; requesting it again in 0 s", logger.Messages);
+        Assert.Contains("DATEX II mobidata-bw static page 2 returned 503; requesting it again in 0 s", logger.Messages);
+
+        // Three failures in a row fail the run; a 4xx is not tried again.
+        var (failing, _) = Datex.Provider(profile, new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.InternalServerError)));
+        var exception = await Assert.ThrowsAsync<ProviderHttpException>(() => failing.FetchInventoryAsync(new InventoryQuery(null, null, null), CancellationToken.None).ToListAsync().AsTask());
+        Assert.Equal(HttpStatusCode.InternalServerError, exception.StatusCode);
+        var forbiddenHandler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.Forbidden));
+        var (forbidden, _) = Datex.Provider(profile, forbiddenHandler);
+        await Assert.ThrowsAsync<ProviderHttpException>(() => forbidden.FetchInventoryAsync(new InventoryQuery(null, null, null), CancellationToken.None).ToListAsync().AsTask());
+        Assert.Single(forbiddenHandler.Requests);
     }
 
     [Fact]
@@ -177,7 +232,7 @@ public class DatexIIReplayTests
             Assert.Equal(new Uri("https://ogb.net/"), request.Headers.Referrer);
             Assert.Empty(request.RequestUri!.Query);
         });
-        Assert.Contains("DATEX II econtrol-datex static publication read: 4 sites, 0 in other countries, 0 outside the box, 1 skipped", logger.Messages);
+        Assert.Contains("DATEX II econtrol-datex static publication read: 4 sites, 0 in other countries, 0 mirrored from another source, 0 outside the box, 1 skipped", logger.Messages);
         Assert.Contains("DATEX II econtrol-datex record AT-TS4-E1 skipped: Site without valid coordinates.", logger.Messages);
     }
 
@@ -290,7 +345,7 @@ public class DatexIIAdapterTests
         Assert.Empty(locations);
         Assert.Equal(DatexProvider.MaxPagesPerRun, handler.Requests.Count);
         Assert.Contains("DATEX II mobidata-bw static stopped after 100 pages before the end", logger.Messages);
-        Assert.Contains("DATEX II mobidata-bw static publication read: 100 sites, 0 in other countries, 100 outside the box, 0 skipped", logger.Messages);
+        Assert.Contains("DATEX II mobidata-bw static publication read: 100 sites, 0 in other countries, 0 mirrored from another source, 100 outside the box, 0 skipped", logger.Messages);
 
         var (inside, _) = Datex.Provider(profile with { PageSize = 0 }, new StubHandler(_ => StubHandler.Json(Datex.StaticPage(7, 1))));
         Assert.Single(await inside.FetchInventoryAsync(new InventoryQuery(Datex.Berlin, null, null), CancellationToken.None).ToListAsync());
