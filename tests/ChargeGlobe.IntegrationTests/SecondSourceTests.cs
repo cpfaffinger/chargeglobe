@@ -387,7 +387,7 @@ public class SecondSourceTests(IntegrationFactory factory) : IClassFixture<Integ
         var admin = await AdminAsync();
         var official = Read("econtrol", "search-wien.expected.json")[0];
         var evse = official.Evses[0];
-        // Source alpha owns two charge points; source beta delivers the same site with the EVSE-IDs written with dashes.
+        // Source alpha owns two charge points; source beta delivers the same site with the EVSE-IDs without the last separator.
         var alpha = official with
         {
             ExternalId = "alpha-1",
@@ -401,7 +401,7 @@ public class SecondSourceTests(IntegrationFactory factory) : IClassFixture<Integ
         {
             ExternalId = "beta-1",
             Coordinates = new GeoPoint(48.40001, 16.60001),
-            Evses = [evse with { ExternalId = "beta-1#1", EvseId = "AT-TST-ENOTE01-1" }, evse with { ExternalId = "beta-1#2", EvseId = "AT-TST-ENOTE02-1" }],
+            Evses = [evse with { ExternalId = "beta-1#1", EvseId = "AT*TST*ENOTE011" }, evse with { ExternalId = "beta-1#2", EvseId = "AT*TST*ENOTE021" }],
         };
         await IngestAsync("beta", [beta]);
         // A second run refreshes the open conflicts instead of adding more.
@@ -416,7 +416,7 @@ public class SecondSourceTests(IntegrationFactory factory) : IClassFixture<Integ
         var view = (await (await admin.GetAsync($"/api/v1/conflicts/{first.Id}")).ReadJsonAsync()).GetProperty("data");
         var values = view.GetProperty("values");
         Assert.Equal("AT*TST*ENOTE01*1", view.GetProperty("entityLabel").GetString());
-        Assert.Equal(("AT*TST*ENOTE01*1", "AT-TST-ENOTE01-1", "beta", "beta-1#1", location),
+        Assert.Equal(("AT*TST*ENOTE01*1", "AT*TST*ENOTE011", "beta", "beta-1#1", location),
             (values.GetProperty("stored").GetString(), values.GetProperty("beta").GetString(), values.GetProperty("source").GetString(), values.GetProperty("externalId").GetString(), values.GetProperty("locationId").GetGuid()));
         Assert.Equal(("same", 0.95), (view.GetProperty("suggestion").GetProperty("action").GetString(), view.GetProperty("suggestion").GetProperty("confidence").GetDouble()));
 
@@ -437,7 +437,7 @@ public class SecondSourceTests(IntegrationFactory factory) : IClassFixture<Integ
         // A record that sits elsewhere and later delivers the EVSE-ID of another location: the lower confidence.
         var gamma = official with { ExternalId = "gamma-1", Coordinates = new GeoPoint(48.50, 16.70), OperatorId = "GAM", OperatorName = "Gamma", Evses = [] };
         await IngestAsync("gamma", [gamma]);
-        await IngestAsync("gamma", [gamma with { ObservedAt = T0.AddDays(1), Evses = [evse with { ExternalId = "gamma-1#1", EvseId = "AT-TST-ENOTE01-1" }] }]);
+        await IngestAsync("gamma", [gamma with { ObservedAt = T0.AddDays(1), Evses = [evse with { ExternalId = "gamma-1#1", EvseId = "AT*TST*ENOTE011" }] }]);
         var far = (await (await admin.GetAsync("/api/v1/conflicts?attribute=evse_id&source=gamma")).ReadJsonAsync()).GetProperty("data");
         Assert.Equal(0.6, Assert.Single(far.EnumerateArray()).GetProperty("suggestion").GetProperty("confidence").GetDouble());
     }

@@ -142,7 +142,8 @@ describe('AdminConflictsPage', () => {
       'other',
     ]);
     expect(text(root(), '[data-conflict="c-1"] td:nth-child(5)')).toBe('eigener Standort');
-    expect(text(root(), '[data-conflict="c-2"] td:nth-child(5)')).toBe('gleicher Ladepunkt behalten');
+    expect(text(root(), '[data-conflict="c-2"] .same')).toBe('gleicher Ladepunkt');
+    expect(text(root(), '[data-conflict="c-2"] .keep')).toBe('behalten');
 
     root().querySelectorAll<HTMLButtonElement>('#conflict-filter button')[1].click();
     await flush();
