@@ -247,7 +247,7 @@ Das Flag `roaming` gilt je Ladepunkt: Bei KWMS, GENOL, Contipark, STROMBOX, vayl
 | `AT*KWS` | KWMS | 16 | Plattform mit Roaming je Ladepunkt; die 16 ohne Freigabe |
 | `AT*F9B` | CAS Immobilien | 16 | Register meldet 0,005 €/kWh (vermutlich Fehler) |
 
-Neu abgedeckt sind damit 762 Ladepunkte (SFP, MGA, SNL, GNL, FTR, EHB); bei den übrigen gibt es nur den Ad-hoc-Preis vor Ort.
+Neu abgedeckt sind damit 762 Ladepunkte (SFP, MGA, SNL, GNL, FTR, EHB): Nach dem Deploy (17.10.2026) sind **38.671 von 40.868 Ladepunkten** mit mindestens einer Ladekarte nutzbar; ohne Karte bleiben 1.421 Ladepunkte (vor allem Best in Parking 455, Green Business Center 73, vaylens 46) und die 776 von Tesla, dort gibt es nur den Ad-hoc-Preis vor Ort.
 
 #### Auslandspreise (Recherche 17.10.2026, Zonen mit `countries`)
 
