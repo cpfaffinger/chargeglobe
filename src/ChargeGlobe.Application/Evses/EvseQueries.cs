@@ -303,10 +303,12 @@ public interface IEvseQueries
     /// The cheapest ad-hoc price and the cheapest charging card of a session with <paramref name="kwh"/> (null: the
     /// scenario's) charged in <paramref name="minutes"/> (null: as long as it takes at each EVSE, <see cref="ChargingScenario"/>)
     /// at each of the locations, over their active EVSEs; the cards limited to the EMPs with the keys
-    /// <paramref name="cards"/> (null: all). Same rules as <see cref="PricesAsync"/>.
+    /// <paramref name="cards"/> (null: all), or – before them – to the tariffs <paramref name="tariffs"/> ("emp/tariff").
+    /// Same rules as <see cref="PricesAsync"/>.
     /// </summary>
     Task<LocationPricesPage> LocationPricesAsync(
-        IReadOnlyList<Guid> locationIds, decimal? kwh, int? minutes, IReadOnlyCollection<string>? cards, CancellationToken cancellationToken);
+        IReadOnlyList<Guid> locationIds, decimal? kwh, int? minutes, IReadOnlyCollection<string>? cards, CancellationToken cancellationToken,
+        IReadOnlyCollection<string>? tariffs = null);
 
     /// <summary>The sources with a record for the EVSE, from the table <c>source</c>.</summary>
     Task<IReadOnlyList<SourceAttribution>> AttributionAsync(Guid id, CancellationToken cancellationToken);

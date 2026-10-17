@@ -209,9 +209,11 @@ export class RoutesService {
     return firstValueFrom(this.http.post<ReachResponse>('/api/v1/routes/reach', { position, minutes }));
   }
 
-  /** The cheapest ad-hoc price and own card (EMP keys) of a session at each location (price:read). */
-  prices(locationIds: string[], cards: readonly string[]): Promise<LocationPricesResponse> {
-    return firstValueFrom(this.http.post<LocationPricesResponse>('/api/v1/locations/prices', { locationIds, cards }));
+  /** The cheapest ad-hoc price and own card (EMP keys, or before them the own tariffs "emp/tariff") of a session at each location (price:read). */
+  prices(locationIds: string[], cards: readonly string[], tariffs: readonly string[] = []): Promise<LocationPricesResponse> {
+    return firstValueFrom(
+      this.http.post<LocationPricesResponse>('/api/v1/locations/prices', { locationIds, cards, ...(tariffs.length > 0 ? { tariffs } : {}) }),
+    );
   }
 }
 

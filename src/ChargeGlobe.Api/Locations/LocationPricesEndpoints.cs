@@ -12,7 +12,9 @@ namespace ChargeGlobe.Api.Locations;
 /// <param name="EnergyKwh">Energy of the session (default: setting price.example_kwh).</param>
 /// <param name="DurationMinutes">Duration of the session; null: as long as the energy takes at each EVSE.</param>
 /// <param name="Cards">Keys of the EMPs whose cards count; null: all.</param>
-public sealed record LocationPricesRequest(IReadOnlyList<Guid>? LocationIds, decimal? EnergyKwh, int? DurationMinutes, IReadOnlyList<string>? Cards);
+/// <param name="Tariffs">The tariffs that count as "emp/tariff"; before <paramref name="Cards"/>; null: by the cards.</param>
+public sealed record LocationPricesRequest(
+    IReadOnlyList<Guid>? LocationIds, decimal? EnergyKwh, int? DurationMinutes, IReadOnlyList<string>? Cards, IReadOnlyList<string>? Tariffs = null);
 
 /// <param name="Minutes">The duration given in the request; null if it follows each EVSE.</param>
 public sealed record LocationPricesSession(decimal Kwh, int? Minutes);
@@ -29,6 +31,7 @@ public static class LocationPricesEndpoints
     public const int MaxEnergyKwh = 200;
     public const int MaxDurationMinutes = 600;
     public const int MaxCards = 20;
+    public const int MaxTariffs = 30;
 
     public static IEndpointRouteBuilder MapLocationPricesEndpoints(this IEndpointRouteBuilder endpoints)
     {
@@ -44,7 +47,9 @@ public static class LocationPricesEndpoints
                 "is the lowest cost without contract (`cost`, `currency`, `evseId` of the EVSE where it is lowest, `minutes` " +
                 "of the session there), `cheapestCard` the EMP tariff valid now with the lowest cost (`emp` key, `empName`, " +
                 "`tariffId`, `tariff`, `cost`, `currency`, `evseId`, `minutes`); monthly fees are not included. `cards` (at most 20 EMP keys from `listEmps`) " +
-                "limits the cards to those the user has; leave it out to compare all, an empty list gives no card. Either " +
+                "limits the cards to those the user has; leave it out to compare all, an empty list gives no card. `tariffs` (at " +
+                "most 30 \"emp/tariff\" from `listTariffs`, e.g. the own tariffs of `getPreferences`) limits them to these tariffs " +
+                "and goes before `cards`. Either " +
                 "is null if no price is known (also for unknown locations). `data` has one entry per distinct location in " +
                 "the order of the request; `meta.session` repeats `kwh` and the requested `minutes` (null = per EVSE), `meta.attribution` names the sources of the " +
                 "ad-hoc prices. The call changes nothing. 422 with field errors for values out of range.")
@@ -72,13 +77,18 @@ public static class LocationPricesEndpoints
             .Require(kwh is null or (> 0 and <= MaxEnergyKwh), "energyKwh", $"Must be a number above 0 and at most {MaxEnergyKwh}.")
             .Require(minutes is null or (>= 1 and <= MaxDurationMinutes), "durationMinutes", $"Must be between 1 and {MaxDurationMinutes}.")
             .Require(request.Cards is not { Count: > MaxCards } && (request.Cards ?? []).All(Emp.IsKey), "cards", $"At most {MaxCards} EMP keys from listEmps.")
+            .Require(
+                request.Tariffs is not { Count: > MaxTariffs } && (request.Tariffs ?? []).All(IsTariffKey), "tariffs", $"At most {MaxTariffs} tariffs as \"emp/tariff\" from listTariffs.")
             .ToResult();
         if (invalid is not null)
         {
             return invalid;
         }
 
-        var page = await queries.LocationPricesAsync(ids, kwh, minutes, request.Cards, cancellationToken);
+        var page = await queries.LocationPricesAsync(ids, kwh, minutes, request.Cards, cancellationToken, request.Tariffs);
         return Results.Ok(new LocationPricesResponse(page.Locations, new LocationPricesMeta(new LocationPricesSession(page.Kwh, minutes), page.Attribution)));
     }
+
+    /// <summary>"emp/tariff" with two keys.</summary>
+    private static bool IsTariffKey(string? value) => value?.Split('/') is [var emp, var tariff] && Emp.IsKey(emp) && Emp.IsKey(tariff);
 }

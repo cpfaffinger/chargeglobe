@@ -160,7 +160,8 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             note);
     }
     public async Task<LocationPricesPage> LocationPricesAsync(
-        IReadOnlyList<Guid> locationIds, decimal? kwh, int? minutes, IReadOnlyCollection<string>? cards, CancellationToken cancellationToken)
+        IReadOnlyList<Guid> locationIds, decimal? kwh, int? minutes, IReadOnlyCollection<string>? cards, CancellationToken cancellationToken,
+        IReadOnlyCollection<string>? tariffs = null)
     {
         var ids = locationIds.Distinct().ToList();
         var scenario = PriceScenario.From(config);
@@ -180,7 +181,11 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             .Where(price => bounds.Accepts(price.Components))
             .ToDictionary(price => price.EvseId);
         var all = await CurrentCatalogAsync(cancellationToken);
-        var tariffs = all with { Plans = [.. all.Plans.Where(row => cards is null || cards.Contains(row.Key))] };
+        // Own tariffs go before own providers: with them only these versions count.
+        var own = all with
+        {
+            Plans = [.. all.Plans.Where(row => tariffs is not null ? tariffs.Contains($"{row.Key}/{row.Plan.Key}") : cards is null || cards.Contains(row.Key))],
+        };
         var byLocation = evses.ToLookup(evse => evse.LocationId);
 
         var locations = ids.Select(id =>
@@ -195,7 +200,7 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
                 .FirstOrDefault();
             var cheapestCard = here
                 .Select(evse => (evse.EvseId, Session: Session(evse), Evse: evse))
-                .Select(item => (item.EvseId, item.Session, Card: EmpPrices(tariffs, item.Evse, item.Session, adHoc.GetValueOrDefault(item.Evse.Id)?.Components).Prices.FirstOrDefault()))
+                .Select(item => (item.EvseId, item.Session, Card: EmpPrices(own, item.Evse, item.Session, adHoc.GetValueOrDefault(item.Evse.Id)?.Components).Prices.FirstOrDefault()))
                 .Where(item => item.Card is not null)
                 .OrderBy(item => item.Card!.Price.ExampleCost)
                 .Select(item => new LocationCardPrice(

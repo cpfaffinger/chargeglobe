@@ -1267,6 +1267,17 @@ describe('HomePage (map)', () => {
           await settle();
         }
 
+        it('prices the stops with the own tariffs and says so', async () => {
+          TestBed.inject(CardsStore).set(['smatrics'], ['smatrics/charge-simple']);
+          await showRoute(['route:read', 'price:read']);
+
+          const request = http.expectOne('/api/v1/locations/prices');
+          expect(request.request.body).toEqual({ locationIds: ['loc-3', 'loc-4', 'loc-5', 'loc-1'], cards: ['smatrics'], tariffs: ['smatrics/charge-simple'] });
+          request.flush(pricesOf([price('loc-3', 17.7, 13.5), price('loc-4', 9), price('loc-5', null), price('loc-1', 12, 12)]));
+          await settle();
+          expect(text(root(), '#stops-own')).toBe('Preise mit deinen Tarifen');
+        });
+
         it('shows the lowest price of every stop with the own cards and sorts by it', async () => {
           TestBed.inject(CardsStore).set(['smatrics']);
           await showRoute(['route:read', 'price:read']);
@@ -1274,6 +1285,7 @@ describe('HomePage (map)', () => {
           const request = http.expectOne('/api/v1/locations/prices');
           expect(request.request.method).toBe('POST');
           expect(request.request.body).toEqual({ locationIds: ['loc-3', 'loc-4', 'loc-5', 'loc-1'], cards: ['smatrics'] });
+          expect(root().querySelector('#stops-own')).toBeNull();
           expect(prices()).toEqual([null, null, null, null]);
           request.flush(pricesOf([price('loc-3', 17.7, 13.5), price('loc-4', 9), price('loc-5', null), price('loc-1', 12, 12)]));
           await settle();
@@ -2014,6 +2026,13 @@ describe('RoutesService', () => {
     expect([request.request.method, request.request.body]).toEqual(['POST', { locationIds: ['loc-1'], cards: ['smatrics'] }]);
     request.flush({ data: [], meta: { session: { kwh: 30, minutes: null }, attribution: [] } });
     expect((await prices).meta.session.kwh).toBe(30);
+
+    // With own tariffs these go along.
+    const own = TestBed.inject(RoutesService).prices(['loc-1'], ['smatrics'], ['smatrics/charge-simple']);
+    const second = http.expectOne('/api/v1/locations/prices');
+    expect(second.request.body).toEqual({ locationIds: ['loc-1'], cards: ['smatrics'], tariffs: ['smatrics/charge-simple'] });
+    second.flush({ data: [], meta: { session: { kwh: 30, minutes: null }, attribution: [] } });
+    await own;
     http.verify();
   });
 
