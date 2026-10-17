@@ -17,6 +17,7 @@ Stack: **ASP.NET Core / C# / .NET 10 · Angular 22 / TypeScript mit Angular Mate
 | `docs/07-bestandsanalyse-apps-at.md` | Anbieter/Apps Österreich, Priorisierung, belegte Endpunkte |
 | `docs/08-datenquellen-und-recht.md` | E-Control-API, AFIR/NAP, DE/CH/IT, Rechtslage |
 | `docs/09-roadmap.md` | Phasen, offene Entscheidungen, Risiken |
+| `docs/10-afir-umsetzung-eu.md` | AFIR Art. 20 je EU-Land: NAP, Feeds (Inventar/Status/Preis), Zugang, Lizenz, IDRO; Deutschland mit Handlungsliste für den Betreiber |
 | `docs/adr/` | aktuell gültige Architekturentscheidungen |
 | `docs/templates/endpunkt-notiz.md` | Vorlage für die Dokumentation eines Quell-Endpunkts |
 
@@ -200,4 +201,4 @@ Vor einem neuen lokalen Coverage-Lauf alte Ergebnisse löschen (`tests/*/TestRes
 
 ## Nächste Schritte (Stand jetzt)
 
-Siehe `docs/09-roadmap.md`: Tarifkatalog aktuell halten (`src/ChargeGlobe.Providers.TariffCatalog/catalog/at/`, Checkliste in `docs/04`), ladetarif.at als Tarifquelle prüfen, OpenChargeMap-Key eintragen und den ersten Lauf auswerten, offene Konflikte unter /admin/conflicts entscheiden, Mail-Absender auf `chargeglobe.net`; außerdem Lizenz festlegen und die E-Control-Nutzungsbedingungen archivieren. API-Keys von Quellen werden nur im Admin-UI eingetragen (`provider.api_key`, Scope `provider:<key>`), nie in Dateien.
+Siehe `docs/09-roadmap.md`: für Deutschland Bundesnetzagentur-Adapter und DATEX-II-Adapter (zuerst MobiData BW) bauen, während der Betreiber Mobilithek-Organisation und Zertifikat beschafft (`docs/10-afir-umsetzung-eu.md` §3); Tarifkatalog aktuell halten (`src/ChargeGlobe.Providers.TariffCatalog/catalog/at/`, Checkliste in `docs/04`), ladetarif.at als Tarifquelle prüfen, OpenChargeMap-Key eintragen und den ersten Lauf auswerten, offene Konflikte unter /admin/conflicts entscheiden, Mail-Absender auf `chargeglobe.net`; außerdem Lizenz festlegen und die E-Control-Nutzungsbedingungen archivieren. API-Keys von Quellen werden nur im Admin-UI eingetragen (`provider.api_key`, Scope `provider:<key>`), nie in Dateien.
