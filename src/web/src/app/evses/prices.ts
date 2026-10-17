@@ -54,6 +54,17 @@ export interface EmpPrice {
   /** "Stand" of the provider (ISO date). */
   sourceDate: string | null;
   confidence: 'HIGH' | 'MEDIUM' | 'LOW';
+  /** Since when the prices of the tariff are as they are; null if they never changed. */
+  priceChangedAt?: string | null;
+}
+
+/** How long a price change is pointed out at a charge point. */
+export const RECENT_CHANGE_DAYS = 30;
+
+/** The day of a price change of the last RECENT_CHANGE_DAYS days, else null. */
+export function recentChange(card: Pick<EmpPrice, 'priceChangedAt'>, now = Date.now()): string | null {
+  const changed = card.priceChangedAt ? Date.parse(card.priceChangedAt) : NaN;
+  return now - changed <= RECENT_CHANGE_DAYS * 24 * 60 * 60 * 1000 ? card.priceChangedAt! : null;
 }
 
 /** A tariff valid now that cannot be used at the EVSE. */

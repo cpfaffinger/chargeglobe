@@ -75,6 +75,19 @@ public sealed record TariffView(
     DateTimeOffset? ValidTo,
     bool Stale);
 
+/// <summary>One price change from the version before (docs/06, "Tarife").</summary>
+/// <param name="Kind"><c>MONTHLY_FEE</c>, <c>ZONE_ADDED</c>, <c>ZONE_REMOVED</c>, <c>PRICE_ADDED</c>, <c>PRICE_REMOVED</c>, <c>PRICE_PER_KWH</c>, <c>PRICE_PER_MINUTE</c>, <c>SESSION_FEE</c>, <c>BLOCKING_FEE_PER_MINUTE</c>, <c>BLOCKING_AFTER_MINUTES</c>, <c>MAX_BLOCKING_FEE</c>, <c>MARKUP_PERCENT</c>, <c>MARKUP_SESSION_FEE</c>, <c>MARKUP_PER_KWH</c>.</param>
+/// <param name="Zone">The zone, e.g. "HOME evn" or "ROAMING (DE)"; null for the monthly fee.</param>
+/// <param name="Current"><c>AC</c> or <c>DC</c> for a price element; null otherwise.</param>
+public sealed record TariffChangeView(string Kind, string? Zone, string? Current, decimal? MinKw, decimal? From, decimal? To);
+
+/// <summary>One version of a tariff with its price changes from the version before (none for the first).</summary>
+public sealed record TariffVersionView(
+    Guid Id, DateTimeOffset ValidFrom, DateTimeOffset? ValidTo, DateOnly? SourceDate, DateOnly? CheckedOn, decimal? MonthlyFee, IReadOnlyList<TariffChangeView> Changes);
+
+/// <summary>The versions of one tariff, oldest first.</summary>
+public sealed record TariffHistory(string Emp, string EmpName, string Key, string Name, IReadOnlyList<TariffVersionView> Versions);
+
 /// <summary>What an import changed; with <paramref name="Issues"/> nothing was imported.</summary>
 /// <param name="Created">Tariffs that are new.</param>
 /// <param name="Changed">Tariffs with a new version.</param>
@@ -95,6 +108,9 @@ public interface ITariffCatalog
 
     /// <summary>All networks by key.</summary>
     Task<IReadOnlyList<NetworkView>> NetworksAsync(CancellationToken cancellationToken);
+
+    /// <summary>The versions of the tariff <paramref name="key"/> of the EMP <paramref name="emp"/> with their price changes; null if unknown.</summary>
+    Task<TariffHistory?> HistoryAsync(string emp, string key, CancellationToken cancellationToken);
 
     /// <summary>The current tariffs (with <paramref name="history"/> also the ended versions), of one EMP if given.</summary>
     Task<IReadOnlyList<TariffView>> TariffsAsync(string? emp, bool history, CancellationToken cancellationToken);

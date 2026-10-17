@@ -61,6 +61,8 @@
 - [x] „Passwort ändern“ auf `/account` (`POST /auth/password/change`, beendet die anderen Sitzungen)
 - [x] Einstellungen im Konto: `GET/PUT /me/preferences` mit Startposition, Filtern und Kartenoptionen, im Web nach dem Login geladen und 1 s nach jeder Änderung gespeichert; letzter Ausschnitt bleibt je Gerät
 - [x] Eigene Ladekarten des Nutzers (`cards` in `/me/preferences`, Auswahl unter „Mein Konto“, „deine Karte“ im Preisvergleich und „deine günstigste Karte“ in der Infokarte)
+- [x] Preisverlauf der Tarife (`getTariffHistory`, „Verlauf“ in `/admin/tariffs`, „Preis geändert am …“ in der Infokarte)
+- [x] Registerfehler melden: vermutlich gemeinter Preis und Mail-Entwurf je Betreiber in `/admin/prices` (nichts wird versendet)
 - [x] Eigene Tarife je Anbieter (`tariffs`, `onlyOwnTariffs` in `/me/preferences`): Ladepunkte zeigen per Vorgabe nur die eigenen Tarife, „Alle anzeigen“ je Ladepunkt
 - [x] Ingest-Durchsatz: Vorladen je Nachricht, ein Schreibvorgang je Nachricht; ein Register-Lauf ist in unter 3 min statt 16 min verarbeitet (docs/05)
 - [x] Ladeparks (Standorte desselben Betreibers ≤ 25 m), Marker am selben Punkt nebeneinander, Park-Marker ab 9 Stationen, Gesamtauslastung des Parks (`GET /locations/{id}/occupancy?park=true`)

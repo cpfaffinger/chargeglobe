@@ -8,7 +8,7 @@ import { attempt } from '../auth/problem';
 import { AppIcon } from '../design/icon';
 import { AppLoading } from '../design/loading';
 import { money } from '../evses/prices';
-import { Emp, Network, PriceElement, Tariff, TariffsService, ZONE_LABELS, Zone } from '../tariffs/tariffs.service';
+import { Emp, Network, PriceElement, Tariff, TariffHistory, TariffsService, ZONE_LABELS, Zone, changeText } from '../tariffs/tariffs.service';
 
 const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
@@ -103,6 +103,38 @@ function lastSeen(tariff: Tariff): string {
               @if (tariff.notes) {
                 <p class="muted">{{ tariff.notes }}</p>
               }
+              <details class="tariff-history" (toggle)="loadHistory(tariff)">
+                <summary>Verlauf</summary>
+                @switch (historyOf(tariff)) {
+                  @case ('loading') {
+                    <app-loading text="Verlauf wird geladen …" />
+                  }
+                  @case ('error') {
+                    <p class="error">Der Verlauf konnte nicht geladen werden.</p>
+                  }
+                  @case (undefined) {}
+                  @default {
+                    <ol class="versions">
+                      @for (version of versions(tariff); track version.id) {
+                        <li>
+                          ab {{ version.validFrom | date: 'dd.MM.yyyy' }}{{ version.validTo ? ' bis ' + (version.validTo | date: 'dd.MM.yyyy') : '' }}:
+                          @if ($first) {
+                            erste Version
+                          } @else if (version.changes.length === 0) {
+                            nur Texte oder Quelle geändert
+                          } @else {
+                            <ul>
+                              @for (change of version.changes; track $index) {
+                                <li>{{ describe(change) }}</li>
+                              }
+                            </ul>
+                          }
+                        </li>
+                      }
+                    </ol>
+                  }
+                }
+              </details>
             </section>
           }
         </mat-expansion-panel>
@@ -121,6 +153,9 @@ export class AdminTariffsPage {
   protected readonly tariffs = signal<Tariff[]>([]);
   protected readonly networks = signal<Network[]>([]);
   protected readonly loading = signal(false);
+  /** Loaded histories by "emp/key"; loaded once when "Verlauf" opens. */
+  private readonly histories = signal<Record<string, TariffHistory | 'loading' | 'error'>>({});
+  protected readonly describe = changeText;
   protected readonly errors = signal<string[]>([]);
   protected readonly staleCount = computed(() => this.tariffs().filter((tariff) => tariff.stale).length);
   protected readonly onlyStale = signal(false);
@@ -155,6 +190,28 @@ export class AdminTariffsPage {
       this.tariffs.set(tariffs);
       this.networks.set(networks);
     });
+  }
+
+  protected historyOf(tariff: Tariff): TariffHistory | 'loading' | 'error' | undefined {
+    return this.histories()[`${tariff.emp}/${tariff.key}`];
+  }
+
+  protected versions(tariff: Tariff): TariffHistory['versions'] {
+    return (this.historyOf(tariff) as TariffHistory).versions;
+  }
+
+  protected async loadHistory(tariff: Tariff): Promise<void> {
+    const key = `${tariff.emp}/${tariff.key}`;
+    if (this.histories()[key] !== undefined) {
+      return;
+    }
+    this.histories.update((all) => ({ ...all, [key]: 'loading' }));
+    try {
+      const history = await this.service.history(tariff.emp, tariff.key);
+      this.histories.update((all) => ({ ...all, [key]: history }));
+    } catch {
+      this.histories.update((all) => ({ ...all, [key]: 'error' }));
+    }
   }
 
   protected tariffsOf(emp: Emp): Tariff[] {

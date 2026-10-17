@@ -74,7 +74,7 @@ public class OpenApiContractTests(IntegrationFactory factory)
             new[]
             {
                 "addFavorite", "applyConflictSuggestions", "calculateReach", "calculateRoute", "changePassword", "confirmEmail", "createApiKey", "createInitialAdmin", "deleteMe", "deleteRole", "deleteUser", "exportEvses", "exportImplausiblePrices", "geocodeAddress", "getConflict", "getCrawlerFreshness", "getCrawlerStatus", "getEvse",
-                "getEvseOccupancy", "getEvsePrices", "getEvseStatusHistory", "getHealth", "getLocation", "getLocationOccupancy", "getMapConfig", "getMe", "getPreferences", "getSetting", "getSetupStatus", "getStats", "getUser", "importTariffCatalog",
+                "getEvseOccupancy", "getEvsePrices", "getEvseStatusHistory", "getHealth", "getLocation", "getLocationOccupancy", "getMapConfig", "getMe", "getPreferences", "getSetting", "getSetupStatus", "getStats", "getTariffHistory", "getUser", "importTariffCatalog",
                 "listApiKeys", "listAuditLog", "listConflicts", "listCrawlerRuns", "listEmps", "listEvses", "listFavorites", "listImplausiblePrices", "listLocationPrices", "listLocations", "listLocationsAlongRoute", "listLocationsInArea", "listMailOutbox", "listNetworks", "listOperators", "listPermissions", "listRoles", "listSettings",
                 "listTariffs", "listUserApiKeys", "listUsers", "login", "logout", "putPreferences", "putRole", "refreshToken", "register", "removeFavorite", "requestPasswordReset", "resendConfirmation",
                 "resetPassword", "resolveConflict", "resolveConflicts", "revokeApiKey", "revokeUserApiKey", "search", "sendTestMail", "sendUserConfirmationMail", "setUserApproval", "setUserEnabled", "setUserPermissions",

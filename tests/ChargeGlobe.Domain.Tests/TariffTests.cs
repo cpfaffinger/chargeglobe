@@ -57,6 +57,47 @@ public class TariffTests
     }
 
     [Fact]
+    public void The_changes_between_two_versions_name_zone_price_element_and_amounts()
+    {
+        var operatorPriced = new TariffZone(TariffZoneKind.ROAMING, [], [], [], [], [], null, TariffPricing.OPERATOR_AD_HOC, -10, 0.39m, Countries: ["DE"]);
+        var previous = Plan(
+            Zone(TariffZoneKind.HOME, ["evn"], ["AT*FTR"], Ac(0.45m), Dc(0.59m), Dc(0.69m, 150)),
+            Zone(TariffZoneKind.PARTNER, ["beoe"], [], Ac(0.49m)),
+            operatorPriced);
+        var next = TariffPlan.Create(
+            Guid.CreateVersion7(),
+            "tariff-catalog",
+            new TariffPlan.Content("basic", "Basic", "EUR", 5.9m, null, ["AT"], [
+                Zone(TariffZoneKind.HOME, ["evn"], ["AT*FTR"], Ac(0.49m), Dc(0.59m) with { BlockingFeePerMinute = 0.20m, BlockingAfterMinutes = 30, MaxBlockingFee = 12m, PricePerMinute = 0.01m, SessionFee = 1m }, Ac(0.29m) with { StartTime = new TimeOnly(22, 0), EndTime = new TimeOnly(8, 0) }),
+                Zone(TariffZoneKind.ROAMING, [], [], Ac(0.69m)),
+                operatorPriced with { MarkupPercent = -15, MarkupSessionFee = null, MarkupPerKwh = -0.05m },
+                operatorPriced with { Notes = "same key, second zone" },
+            ], "neu", "https://example.org/neu", null, TariffConfidence.LOW),
+            "hash2",
+            T0.AddDays(30));
+
+        var changes = next.ChangesTo(previous);
+
+        Assert.Equal(new TariffChange(TariffChangeKind.MONTHLY_FEE, null, null, null, 4.9m, 5.9m), changes[0]);
+        Assert.Contains(new TariffChange(TariffChangeKind.PRICE_PER_KWH, "HOME evn, AT*FTR", TariffCurrent.AC, null, 0.45m, 0.49m), changes);
+        Assert.Contains(new TariffChange(TariffChangeKind.BLOCKING_FEE_PER_MINUTE, "HOME evn, AT*FTR", TariffCurrent.DC, null, 0.10m, 0.20m), changes);
+        Assert.Contains(new TariffChange(TariffChangeKind.BLOCKING_AFTER_MINUTES, "HOME evn, AT*FTR", TariffCurrent.DC, null, 60, 30), changes);
+        Assert.Contains(new TariffChange(TariffChangeKind.MAX_BLOCKING_FEE, "HOME evn, AT*FTR", TariffCurrent.DC, null, null, 12m), changes);
+        Assert.Contains(new TariffChange(TariffChangeKind.PRICE_PER_MINUTE, "HOME evn, AT*FTR", TariffCurrent.DC, null, null, 0.01m), changes);
+        Assert.Contains(new TariffChange(TariffChangeKind.SESSION_FEE, "HOME evn, AT*FTR", TariffCurrent.DC, null, null, 1m), changes);
+        Assert.Contains(new TariffChange(TariffChangeKind.PRICE_ADDED, "HOME evn, AT*FTR", TariffCurrent.AC, null, null, 0.29m), changes);
+        Assert.Contains(new TariffChange(TariffChangeKind.PRICE_REMOVED, "HOME evn, AT*FTR", TariffCurrent.DC, 150m, 0.69m, null), changes);
+        Assert.Contains(new TariffChange(TariffChangeKind.ZONE_ADDED, "ROAMING", null, null, null, null), changes);
+        Assert.Contains(new TariffChange(TariffChangeKind.ZONE_REMOVED, "PARTNER beoe", null, null, null, null), changes);
+        Assert.Contains(new TariffChange(TariffChangeKind.MARKUP_PERCENT, "ROAMING (DE)", null, null, -10m, -15m), changes);
+        Assert.Contains(new TariffChange(TariffChangeKind.MARKUP_SESSION_FEE, "ROAMING (DE)", null, null, 0.39m, null), changes);
+        Assert.Contains(new TariffChange(TariffChangeKind.MARKUP_PER_KWH, "ROAMING (DE)", null, null, null, -0.05m), changes);
+        Assert.Equal(14, changes.Count);
+        // Texts and sources alone are no price change.
+        Assert.Empty(previous.ChangesTo(previous));
+    }
+
+    [Fact]
     public void A_zone_for_countries_applies_only_there_and_goes_before_the_one_for_every_country()
     {
         var abroad = new TariffZone(TariffZoneKind.ROAMING, [], [], [], [], [Ac(0.79m)], "Ausland", Countries: ["DE", "IT"]);

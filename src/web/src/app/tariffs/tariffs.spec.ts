@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AdminTariffsPage } from '../pages/admin-tariffs.page';
 import { flush, text } from '../testing';
-import { Emp, Network, Tariff, TariffsService } from './tariffs.service';
+import { Emp, Network, Tariff, TariffHistory, TariffsService, changeText } from './tariffs.service';
 
 const emp = (overrides: Partial<Emp> = {}): Emp => ({ key: 'evn', name: 'EVN', website: 'https://www.evn.at', country: 'AT', tariffs: 2, ...overrides });
 
@@ -113,6 +113,10 @@ describe('TariffsService', () => {
     const tariffs = service.tariffs();
     http.expectOne('/api/v1/tariffs').flush({ data: [tariff()] });
     expect((await tariffs)[0].zones.length).toBe(4);
+
+    const history = service.history('evn', 'drive smart');
+    http.expectOne('/api/v1/tariffs/evn/drive%20smart/history').flush({ data: { emp: 'evn', empName: 'EVN', key: 'drive smart', name: 'x', versions: [] } });
+    expect((await history).empName).toBe('EVN');
   });
 });
 
@@ -129,7 +133,7 @@ describe('AdminTariffsPage', () => {
   }
 
   beforeEach(() => {
-    service = jasmine.createSpyObj<TariffsService>('TariffsService', ['emps', 'networks', 'tariffs']);
+    service = jasmine.createSpyObj<TariffsService>('TariffsService', ['emps', 'networks', 'tariffs', 'history']);
     service.emps.and.resolveTo([emp(), emp({ key: 'oeamtc', name: 'ÖAMTC ePower', website: null, tariffs: 1 })]);
     service.networks.and.resolveTo([network('evn', 'EVN', ['AT*EVN']), network('tesla', 'Tesla Supercharger', ['AT*TSL'])]);
     service.tariffs.and.resolveTo([
@@ -228,6 +232,68 @@ describe('AdminTariffsPage', () => {
     root().querySelector<HTMLInputElement>('#only-stale input')!.click();
     await fixture.whenStable();
     expect(text(root(), '#no-emps')).toBe('Kein Tarif muss geprüft werden.');
+  });
+
+  it('shows the versions of a tariff with their price changes when "Verlauf" opens', async () => {
+    const history: TariffHistory = {
+      emp: 'evn',
+      empName: 'EVN',
+      key: 'drive-smart',
+      name: '#Drive Smart',
+      versions: [
+        { id: 'v-1', validFrom: '2026-07-01T00:00:00Z', validTo: '2026-10-01T00:00:00Z', sourceDate: null, checkedOn: null, monthlyFee: 4.95, changes: [] },
+        {
+          id: 'v-2',
+          validFrom: '2026-10-01T00:00:00Z',
+          validTo: '2026-10-10T00:00:00Z',
+          sourceDate: null,
+          checkedOn: null,
+          monthlyFee: 4.95,
+          changes: [{ kind: 'PRICE_PER_KWH', zone: 'HOME evn', current: 'DC', minKw: 150, from: 0.49, to: 0.52 }],
+        },
+        { id: 'v-3', validFrom: '2026-10-10T00:00:00Z', validTo: null, sourceDate: null, checkedOn: null, monthlyFee: 4.95, changes: [] },
+      ],
+    };
+    let answer!: (value: TariffHistory) => void;
+    service.history.and.returnValue(new Promise<TariffHistory>((resolve) => (answer = resolve)));
+    await render();
+
+    const details = root().querySelector<HTMLDetailsElement>('[data-tariff="drive-smart"] .tariff-history')!;
+    details.dispatchEvent(new Event('toggle'));
+    await fixture.whenStable();
+    expect(details.querySelector('app-loading')).not.toBeNull();
+    answer(history);
+    await flush();
+    await fixture.whenStable();
+    const items = Array.from(details.querySelectorAll('.versions > li')).map((item) => item.textContent!.replace(/\s+/g, ' ').trim());
+    expect(items).toEqual([
+      'ab 01.07.2026 bis 01.10.2026: erste Version',
+      'ab 01.10.2026 bis 10.10.2026: HOME evn · DC ab 150 kW: Energie 0,49 → 0,52 €/kWh',
+      'ab 10.10.2026: nur Texte oder Quelle geändert',
+    ]);
+    // Opened again: no second request.
+    details.dispatchEvent(new Event('toggle'));
+    await flush();
+    expect(service.history).toHaveBeenCalledTimes(1);
+
+    service.history.and.rejectWith(new HttpErrorResponse({ status: 500 }));
+    const other = root().querySelector<HTMLDetailsElement>('[data-tariff="epower"] .tariff-history')!;
+    other.dispatchEvent(new Event('toggle'));
+    await flush();
+    await fixture.whenStable();
+    expect(text(other, '.error')).toBe('Der Verlauf konnte nicht geladen werden.');
+  });
+
+  it('describes every kind of price change in short German', () => {
+    const change = (kind: string, from: number | null, to: number | null, zone: string | null = 'ROAMING (DE)') => changeText({ kind, zone, current: null, minKw: null, from, to });
+    expect(change('MONTHLY_FEE', 4.9, 5.9, null)).toBe('Grundgebühr 4,9 → 5,9 €/Monat');
+    expect(change('ZONE_ADDED', null, null)).toBe('Zone ROAMING (DE) neu');
+    expect(change('ZONE_REMOVED', null, null)).toBe('Zone ROAMING (DE) entfällt');
+    expect(change('MARKUP_PERCENT', -10, null)).toBe('ROAMING (DE): Aufschlag -10 → – %');
+    expect(change('BLOCKING_AFTER_MINUTES', 240, 180)).toBe('ROAMING (DE): Blockieren ab Minute 240 → 180');
+    expect(change('SOMETHING_NEW', 1, 2)).toBe('ROAMING (DE): SOMETHING_NEW 1 → 2');
+    expect(changeText({ kind: 'PRICE_ADDED', zone: 'HOME evn', current: 'AC', minKw: null, from: null, to: 0.29 })).toBe('HOME evn · AC: neuer Preis 0,29');
+    expect(changeText({ kind: 'PRICE_REMOVED', zone: 'HOME evn', current: 'DC', minKw: 150, from: 0.69, to: null })).toBe('HOME evn · DC ab 150 kW: Preis 0,69 entfällt');
   });
 
   it('reloads, reports errors and says when the catalog is empty', async () => {

@@ -120,6 +120,8 @@ Ein Anbieter, dessen Tarife alle beendet sind (z. B. eine eingestellte App), ble
 
 Preiselemente mit Zeitfenster oder Wochentagen gelten für eine Sitzung, die jetzt (Ortszeit Europe/Vienna) beginnt; Blockierminuten zählen nur, soweit sie ab diesem Beginn in das Blockier-Zeitfenster fallen, höchstens `maxBlockingMinutes`; die Blockiergebühr ist auf `maxBlockingFee` gedeckelt und entfällt in der Beispielsitzung, wenn sie erst ab Ladeende zählt.
 
+Den **Preisverlauf** eines Tarifs bilden seine Versionen in `tariff_plan`: `TariffPlan.ChangesTo(vorherige)` vergleicht Grundgebühr, Zonen (nach Art, Preisart, Netzen, Betreibern, Ausschlüssen, Ländern, Stromarten) und Preiselemente (nach Stromart, Mindestleistung, Zeitfenster, Wochentagen) und liefert die geänderten Beträge; Texte und Quellen zählen nicht. `getTariffHistory` zeigt die Änderungen je Version, `getEvsePrices` je Karte `priceChangedAt` (Beginn der jüngsten Version mit Preisänderung).
+
 Hat das Netz des Betreibers einen Preis-Hinweis, liefert `getEvsePrices` ihn als `priceNote` mit der Seite des nächsten Standorts (≤ 300 m) oder des Netzes.
 
 Das Land eines Ladepunkts für Zonen mit `countries` ist das Land seines Standorts (`location.country`), ohne Standortland der Länderteil der EVSE-ID; eine Zone eines Landes geht innerhalb ihrer Art der Zone für alle Länder vor.

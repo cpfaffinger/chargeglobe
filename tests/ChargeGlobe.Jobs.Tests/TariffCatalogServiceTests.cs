@@ -231,6 +231,8 @@ public class TariffCatalogServiceTests
 
         public Task<IReadOnlyCollection<string>> TariffKeysAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
 
+        public Task<TariffHistory?> HistoryAsync(string emp, string key, CancellationToken cancellationToken) => throw new NotSupportedException();
+
         public Task<CatalogImportResult> ImportAsync(string sourceKey, TariffCatalogSnapshot snapshot, Actor? actor, CancellationToken cancellationToken)
         {
             lock (_imported)

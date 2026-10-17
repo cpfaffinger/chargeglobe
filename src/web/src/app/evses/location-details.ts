@@ -22,7 +22,7 @@ import {
 import { Segment, combine, faultSource, sourceName, statusOf, timeline } from './status';
 import { OccupancyHeatmap, StatusTimeline } from './status-charts';
 import { CardsStore } from '../preferences/cards.store';
-import { EmpPrice, EmpUnavailable, EvsePricesResponse, implausibleText, isOwnCard, money, plausible, priceParts, sessionText, shownCards, zoneText } from './prices';
+import { EmpPrice, EmpUnavailable, EvsePricesResponse, implausibleText, isOwnCard, money, plausible, priceParts, recentChange, sessionText, shownCards, zoneText } from './prices';
 import { AVAILABILITY, busyText, tokenColor } from '../map/availability';
 import { connectorLabel, formatLabel } from './labels';
 import { LocationSummary } from '../map/locations.service';
@@ -263,7 +263,12 @@ type LoadState = 'loading' | 'error' | 'ready';
                           <tbody>
                             @for (card of shown(pricing, onlyOwn); track card.tariffId) {
                               <tr [class.own]="isOwn(card)">
-                                <th scope="row">{{ card.empName }} · {{ card.tariff }}</th>
+                                <th scope="row">
+                                  {{ card.empName }} · {{ card.tariff }}
+                                  @if (changedOn(card); as changed) {
+                                    <span class="price-changed">Preis geändert am {{ changed | date: 'dd.MM.yyyy' }}</span>
+                                  }
+                                </th>
                                 <td><span [class]="'zone zone-' + card.zone.toLowerCase()">{{ zoneLabel(card) }}</span></td>
                                 <td>{{ parts(card.price).join(' · ') }}</td>
                                 <td class="price-example">{{ money(card.price.exampleCost, card.price.currency) }}</td>
@@ -476,6 +481,7 @@ export class LocationDetails {
   protected readonly parts = priceParts;
   protected readonly money = money;
   protected readonly isPlausible = plausible;
+  protected readonly changedOn = (card: EmpPrice) => recentChange(card);
   protected readonly implausible = implausibleText;
 
   protected readonly timelineDays = TIMELINE_DAYS;

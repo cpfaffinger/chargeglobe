@@ -865,7 +865,11 @@ describe('LocationDetails with prices', () => {
     await settle();
     http.expectOne('/api/v1/locations/loc-1').flush({ data: { park: [], location: locationSummary(), evses: [evse()] }, meta: { attribution: [] } });
     await settle();
-    const response = prices(null, [card('own', 'HOME', 9, 4.9), { ...card('roam', 'ROAMING', 13, null), pricing: 'OPERATOR_AD_HOC' }]);
+    const recent = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+    const response = prices(null, [
+      { ...card('own', 'HOME', 9, 4.9), priceChangedAt: recent },
+      { ...card('roam', 'ROAMING', 13, null), pricing: 'OPERATOR_AD_HOC', priceChangedAt: '2025-01-01T00:00:00Z' },
+    ]);
     response.data.priceNote = { text: 'Preis laut E-Control; Tesla verlangt je nach Tageszeit abweichende Preise.', url: 'https://example.org/site' };
     response.data.priceUnknown = [{ emp: 'plugsurfing', empName: 'Plugsurfing', tariffKey: 'pay-per-use', tariff: 'Plugsurfing', zone: 'ROAMING' }];
     response.data.unavailable = [
@@ -877,6 +881,10 @@ describe('LocationDetails with prices', () => {
 
     expect(text(root(), '.all-tariffs summary')).toBe('Alle Ladekarten und Apps (2)');
     const rows = Array.from(root().querySelectorAll('.tariff-table tr'));
+    // A price change of the last 30 days is pointed out, an older one not.
+    expect(text(rows[0], '.price-changed')).toBe(`Preis geändert am ${new Date(recent).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' })}`);
+    expect(rows[1].querySelector('.price-changed')).toBeNull();
+    rows[0].querySelector('.price-changed')!.remove();
     expect(rows.map((row) => [text(row, 'th'), text(row, '.zone'), text(row, '.price-example'), text(row, '.monthly'), row.classList.contains('own')])).toEqual([
       ['OWN · Basic', 'Heimnetz', '9,00 €', '+ 4,90 €/Monat', true],
       ['ROAM · Basic', 'Roaming, Betreiberpreis', '13,00 €', '', false],

@@ -17,6 +17,8 @@ public sealed record TariffsResponse(IReadOnlyList<TariffView> Data);
 
 public sealed record CatalogImportResponse(CatalogImportResult Data);
 
+public sealed record TariffHistoryResponse(TariffHistory Data);
+
 /// <summary>
 /// Providers (charging cards and apps), the networks of operators and the tariffs with their zones (docs/06, "Tarife";
 /// docs/adr/0013). The data comes from tariff sources; <c>importTariffCatalog</c> is the generic way in.
@@ -116,6 +118,37 @@ public static class TariffsEndpoints
             .Produces<TariffsResponse>()
             .WithResponseExample(StatusCodes.Status200OK, new TariffsResponse([ExampleTariff]));
 
+        endpoints.MapGet("/api/v1/tariffs/{emp}/{key}/history", GetTariffHistoryAsync)
+            .WithTags("Tariffs")
+            .RequirePermission(Permissions.PriceRead)
+            .WithName("getTariffHistory")
+            .WithSummary("Get the versions of a tariff with their price changes")
+            .WithDescription(
+                "Returns the tariff `key` of the provider `emp` (as in `listTariffs`) with every version, oldest first: `id`, " +
+                "`validFrom`, `validTo` (null while current), `sourceDate`, `checkedOn`, `monthlyFee` and `changes[]` from the " +
+                "version before (empty for the first): `kind` (MONTHLY_FEE, ZONE_ADDED, ZONE_REMOVED, PRICE_ADDED, PRICE_REMOVED, " +
+                "PRICE_PER_KWH, PRICE_PER_MINUTE, SESSION_FEE, BLOCKING_FEE_PER_MINUTE, BLOCKING_AFTER_MINUTES, MAX_BLOCKING_FEE, " +
+                "MARKUP_PERCENT, MARKUP_SESSION_FEE, MARKUP_PER_KWH), `zone` (kind with networks, operators and countries, e.g. " +
+                "\"HOME evn\"; null for the monthly fee), `current` and `minKw` of the price element, `from` and `to` (null where " +
+                "there was or is none). Zones match by kind, pricing, networks, operators, exclusions, countries and currents, " +
+                "price elements by current, minimum power, time window and weekdays; a version that changed only texts or sources " +
+                "has no changes. 404 for an unknown provider or tariff.")
+            .Produces<TariffHistoryResponse>()
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .WithResponseExample(
+                StatusCodes.Status200OK,
+                new TariffHistoryResponse(new TariffHistory(
+                    "ionity",
+                    "IONITY",
+                    "motion",
+                    "IONITY Motion",
+                    [
+                        new TariffVersionView(Guid.Parse("01990c11-5b1d-7d42-8c3a-6e9f1a2b3c4e"), ExampleTime.AddDays(-30), ExampleTime, new DateOnly(2026, 7, 1), null, 5.99m, []),
+                        new TariffVersionView(
+                            Guid.Parse("01990c11-5b1d-7d42-8c3a-6e9f1a2b3c4f"), ExampleTime, null, new DateOnly(2026, 7, 1), new DateOnly(2026, 10, 17), 5.99m,
+                            [new TariffChangeView("PRICE_PER_KWH", "HOME ionity (AT)", "DC", null, 0.51m, 0.49m)]),
+                    ])));
+
         endpoints.MapPut("/api/v1/tariff-sources/{source}/catalog", ImportCatalogAsync)
             .WithTags("Tariffs")
             .RequirePermission(Permissions.TariffWrite)
@@ -144,6 +177,14 @@ public static class TariffsEndpoints
 
     private static async Task<IResult> ListTariffsAsync(string? emp, bool? history, ITariffCatalog catalog, CancellationToken cancellationToken) =>
         Results.Ok(new TariffsResponse(await catalog.TariffsAsync(string.IsNullOrWhiteSpace(emp) ? null : emp.Trim(), history ?? false, cancellationToken)));
+
+    private static async Task<IResult> GetTariffHistoryAsync(string emp, string key, ITariffCatalog catalog, CancellationToken cancellationToken) =>
+        await catalog.HistoryAsync(emp, key, cancellationToken) is { } history
+            ? Results.Ok(new TariffHistoryResponse(history))
+            : Results.Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "Not found",
+                detail: $"There is no tariff '{key}' of the provider '{emp}'. Use listTariffs to find tariffs.");
 
     private static async Task<IResult> ImportCatalogAsync(
         string source, TariffCatalogSnapshot? catalog, ClaimsPrincipal principal, ITariffCatalog tariffs, CancellationToken cancellationToken)
