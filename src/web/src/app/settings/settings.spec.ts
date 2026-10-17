@@ -397,6 +397,7 @@ describe('AdminSettingsPage', () => {
       setting({ key: 'ingest.max_attempts' }),
       setting({ key: 'address.refresh_days' }),
       setting({ key: 'price.example_kwh' }),
+      setting({ key: 'price.min_plausible_kwh' }),
     ]);
     await render();
 
@@ -411,6 +412,7 @@ describe('AdminSettingsPage', () => {
       ['Abfrageintervalle', ['provider.interval.status_minutes']],
       ['Budget und Pausen', ['provider.request_budget_per_hour']],
       ['Abrufprotokoll', ['crawler.run_retention_days']],
+      ['Plausibilität der Ad-hoc-Preise', ['price.min_plausible_kwh']],
       ['Beispielsitzung', ['price.example_kwh']],
       ['Ingest', ['ingest.max_attempts']],
       ['Adressregister', ['address.refresh_days']],

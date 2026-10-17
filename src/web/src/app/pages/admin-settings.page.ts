@@ -68,8 +68,9 @@ function groupsFor(rows: Row[]): Group[] {
     },
     {
       title: 'Preise',
-      summary: 'Beispielrechnung und Prüfung des Tarifkatalogs',
+      summary: 'Beispielrechnung, Plausibilität der Ad-hoc-Preise und Prüfung des Tarifkatalogs',
       sections: [
+        { title: 'Plausibilität der Ad-hoc-Preise', takes: keyIn('price.min_plausible_kwh', 'price.max_plausible_kwh') },
         { title: 'Beispielsitzung', takes: keyIn('price') },
         { title: 'Tarifkatalog', takes: keyIn('tariff') },
       ],

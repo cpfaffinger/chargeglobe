@@ -21,7 +21,15 @@ export interface PriceView {
   blockingEndTime?: string | null;
   /** Highest number of billed blocking minutes. */
   blockingMaxMinutes?: number | null;
+  /** False if the register's price is implausible (outside price.min/max_plausible_kwh, or 0 without free of charge). */
+  plausible?: boolean;
 }
+
+/** Shown instead of the cost of an implausible ad-hoc price. */
+export const IMPLAUSIBLE = 'Preis laut Register vermutlich falsch';
+
+/** Whether the price may be shown with its cost (missing flag: plausible). */
+export const plausible = (price: PriceView): boolean => price.plausible !== false;
 
 /** Price of a charging card or app at the EVSE (data.emps of GET /api/v1/evses/{evseId}/prices). */
 export interface EmpPrice {
@@ -120,7 +128,7 @@ export function comparison(data: EvsePricesResponse['data'], cards: readonly str
     return [];
   }
   const rows = [
-    ...(data.current ? [{ key: 'ad-hoc', label: 'Ad-hoc (ohne Vertrag)', price: data.current.price, monthlyFee: null, own: false }] : []),
+    ...(data.current && plausible(data.current.price) ? [{ key: 'ad-hoc', label: 'Ad-hoc (ohne Vertrag)', price: data.current.price, monthlyFee: null, own: false }] : []),
     ...data.emps.map((emp) => ({
       key: emp.tariffId,
       label: `${emp.empName} · ${emp.tariff} (${zoneText(emp)})`,

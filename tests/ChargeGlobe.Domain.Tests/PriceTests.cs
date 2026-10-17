@@ -9,6 +9,24 @@ public class PriceTests
     private static readonly PriceComponents Price = new("EUR", 0.59m, 0.02m, 0.50m, 0.10m, 30, false);
 
     [Fact]
+    public void A_price_is_plausible_within_the_bounds_or_with_a_time_price_or_free_of_charge()
+    {
+        var bounds = new PriceBounds(0.05m, 2.00m);
+        var none = new PriceComponents("EUR", null, null, null, null, null, false);
+
+        Assert.True(bounds.Accepts(Price));
+        Assert.False(bounds.Accepts(Price with { PricePerKwh = 0.005m }));
+        Assert.False(bounds.Accepts(Price with { PricePerKwh = 2.50m }));
+        Assert.True(bounds.Accepts(Price with { PricePerKwh = 2.00m }));
+        // Time-only prices are not judged by the energy bounds; nothing charged is an error unless free of charge.
+        Assert.True(bounds.Accepts(none with { PricePerKwh = 0m, PricePerMinute = 0.49m }));
+        Assert.True(bounds.Accepts(none with { SessionFee = 1m }));
+        Assert.False(bounds.Accepts(none));
+        Assert.False(bounds.Accepts(none with { PricePerKwh = 0m, PricePerMinute = 0m, SessionFee = 0m }));
+        Assert.True(bounds.Accepts(none with { FreeOfCharge = true }));
+    }
+
+    [Fact]
     public void A_session_costs_fee_energy_time_and_the_blocked_minutes()
     {
         // 0.50 + 30 × 0.59 + 40 × 0.02 + (40 − 30) × 0.10

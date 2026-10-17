@@ -799,9 +799,10 @@ describe('LocationDetails with prices', () => {
     await settle();
     http
       .expectOne('/api/v1/locations/loc-1')
-      .flush({ data: { park: [], location: locationSummary(), evses: [evse(), evse({ id: 'e-2' }), evse({ id: 'e-3' })] }, meta: { attribution: [] } });
+      .flush({ data: { park: [], location: locationSummary(), evses: [evse(), evse({ id: 'e-2' }), evse({ id: 'e-3' }), evse({ id: 'e-4' })] }, meta: { attribution: [] } });
     await settle();
     expect(Array.from(root().querySelectorAll('.price')).map((price) => price.textContent!.trim())).toEqual([
+      'Preis wird geladen …',
       'Preis wird geladen …',
       'Preis wird geladen …',
       'Preis wird geladen …',
@@ -824,6 +825,10 @@ describe('LocationDetails with prices', () => {
     };
     http.expectOne('/api/v1/evses/e-2/prices').flush(prices(null, [card]));
     http.expectOne('/api/v1/evses/e-3/prices').flush({ title: 'Error' }, { status: 500, statusText: 'Error' });
+    // An error of the register: the price without its cost.
+    http
+      .expectOne('/api/v1/evses/e-4/prices')
+      .flush(prices({ price: priceView({ pricePerKwh: 0.005, plausible: false }), since: '2026-10-01T00:00:00Z', observedAt: '2026-10-14T00:00:00Z' }));
     await settle();
 
     const lines = Array.from(root().querySelectorAll('.price')).map((price) => price.textContent!.replace(/\s+/g, ' ').trim());
@@ -832,6 +837,7 @@ describe('LocationDetails with prices', () => {
       'Kein Ad-hoc-Preis bekannt.',
       'günstigste Karte: SMATRICS (Basic) · 30 kWh in 40 min: 13,50 €',
       'Der Preis konnte nicht geladen werden.',
+      'Ad-hoc: 0,005 €/kWh · Blockiergebühr 0,10 €/min ab Minute 240 · Preis laut Register vermutlich falsch',
     ]);
     expect(root().querySelector('.timeline, #heatmap')).toBeNull();
     // Only the EVSE with a card gets the list of all cards.
@@ -999,6 +1005,8 @@ describe('price texts', () => {
       ['b', 'Karte · b (Roaming)', 2, false],
     ]);
     expect(comparison(data(null, [card('a', 13), card('b', 13)])).map((row) => row.cheapest)).toEqual([true, true]);
+    // An implausible ad-hoc price is left out of the comparison.
+    expect(comparison(data({ ...adHoc, price: { ...view(0.15), plausible: false } }, [card('a', 13)])).map((row) => row.key)).toEqual(['a']);
     // Own cards are marked; the ad-hoc price is never one.
     expect(comparison(data(adHoc, [{ ...card('a', 13), emp: 'mine' }, card('b', 20)]), ['mine']).map((row) => [row.key, row.own])).toEqual([
       ['ad-hoc', false],

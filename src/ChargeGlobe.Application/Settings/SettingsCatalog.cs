@@ -36,6 +36,8 @@ public static class SettingsCatalog
     public const string PriceVehicleAcKw = "price.vehicle_ac_kw";
     public const string PriceVehicleDcKw = "price.vehicle_dc_kw";
     public const string PriceDcTaperFactor = "price.dc_taper_factor";
+    public const string PriceMinPlausibleKwh = "price.min_plausible_kwh";
+    public const string PriceMaxPlausibleKwh = "price.max_plausible_kwh";
 
     public const string TariffStaleMonths = "tariff.stale_months";
 
@@ -178,6 +180,22 @@ public static class SettingsCatalog
         {
             Min = 1,
             Max = 3,
+        },
+
+        new(PriceMinPlausibleKwh, SettingType.Number, 0.05,
+            "Lowest plausible ad-hoc energy price in EUR per kWh. A lower price of the register (e.g. 0.005) counts as an error: " +
+            "getEvsePrices marks it plausible=false, it is left out of the price comparison, /admin/prices lists it and the " +
+            "worker logs the number once a day.")
+        {
+            Min = 0,
+            Max = 1,
+        },
+        new(PriceMaxPlausibleKwh, SettingType.Number, 2.0,
+            "Highest plausible ad-hoc energy price in EUR per kWh; a higher one counts as an error like one below " +
+            "price.min_plausible_kwh.")
+        {
+            Min = 0.5,
+            Max = 10,
         },
 
         new(TariffStaleMonths, SettingType.Int, 6,

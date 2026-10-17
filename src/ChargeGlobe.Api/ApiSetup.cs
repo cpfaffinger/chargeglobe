@@ -160,6 +160,7 @@ public static class ApiSetup
         app.MapRoutesEndpoints();
         app.MapGeocodeEndpoints();
         app.MapConflictsEndpoints();
+        app.MapPriceQualityEndpoints();
         return app;
     }
 }

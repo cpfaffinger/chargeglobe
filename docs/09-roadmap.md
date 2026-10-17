@@ -77,6 +77,7 @@
 - [ ] Freigabe von ladetarif.at bei der E-Control anfragen (Betreiber; Lesen, Weitergabe unter CC BY 4.0, Betreiber je Tarif), danach Adapter `ladetarif` als `ITariffSource`
 - [x] Tarifkatalog prüfen: `stale` in `GET /tariffs` und „Stand prüfen“ in `/admin/tariffs` (Stand unbekannt oder älter als `tariff.stale_months`) mit Filter und Sortierung nach Prüfdatum, tägliche Zahlen im Worker-Log (veraltet, bald zu prüfen)
 - [x] Eingestellte Anbieter (alle Tarife beendet) fehlen in `listEmps`; ihre Tarifhistorie bleibt
+- [x] Plausibilität der Ad-hoc-Preise: `plausible` in `getEvsePrices`, „vermutlich falsch“ in Karte und Detailseite, `/admin/prices`, tägliches Worker-Log (`price.min_plausible_kwh`/`price.max_plausible_kwh`)
 - [ ] Preisblatt-Scraper als `ITariffSource` für die großen Anbieter
 
 ### Phase 2 – Preise & Tier-1/2-Quellen

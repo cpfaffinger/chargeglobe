@@ -75,7 +75,7 @@ public class OpenApiContractTests(IntegrationFactory factory)
             {
                 "addFavorite", "calculateReach", "calculateRoute", "changePassword", "confirmEmail", "createApiKey", "createInitialAdmin", "deleteMe", "deleteRole", "deleteUser", "exportEvses", "geocodeAddress", "getCrawlerFreshness", "getCrawlerStatus", "getEvse",
                 "getEvseOccupancy", "getEvsePrices", "getEvseStatusHistory", "getHealth", "getLocation", "getLocationOccupancy", "getMapConfig", "getMe", "getPreferences", "getSetting", "getSetupStatus", "getStats", "getUser", "importTariffCatalog",
-                "listApiKeys", "listAuditLog", "listConflicts", "listCrawlerRuns", "listEmps", "listEvses", "listFavorites", "listLocationPrices", "listLocations", "listLocationsAlongRoute", "listLocationsInArea", "listMailOutbox", "listNetworks", "listOperators", "listPermissions", "listRoles", "listSettings",
+                "listApiKeys", "listAuditLog", "listConflicts", "listCrawlerRuns", "listEmps", "listEvses", "listFavorites", "listImplausiblePrices", "listLocationPrices", "listLocations", "listLocationsAlongRoute", "listLocationsInArea", "listMailOutbox", "listNetworks", "listOperators", "listPermissions", "listRoles", "listSettings",
                 "listTariffs", "listUserApiKeys", "listUsers", "login", "logout", "putPreferences", "putRole", "refreshToken", "register", "removeFavorite", "requestPasswordReset", "resendConfirmation",
                 "resetPassword", "resolveConflict", "revokeApiKey", "revokeUserApiKey", "search", "sendTestMail", "sendUserConfirmationMail", "setUserApproval", "setUserEnabled", "setUserPermissions",
                 "setUserRoles", "updateSetting",

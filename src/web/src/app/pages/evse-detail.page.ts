@@ -21,7 +21,7 @@ import {
 } from '../evses/labels';
 import { Segment, faultSource, sourceName, statusOf, timeline } from '../evses/status';
 import { OccupancyHeatmap, StatusTimeline } from '../evses/status-charts';
-import { EvsePricesResponse, comparison, money, priceParts, sessionText } from '../evses/prices';
+import { EvsePricesResponse, IMPLAUSIBLE, comparison, money, plausible, priceParts, sessionText } from '../evses/prices';
 import { MapLink, ShareResult } from '../map/map-link';
 import { CardsStore } from '../preferences/cards.store';
 
@@ -203,10 +203,14 @@ const SHARE_MESSAGES: Record<ShareResult, string | null> = {
                   @let pricing = priceData()!.data;
                   @if (pricing.current; as current) {
                     <p id="price-current">{{ parts(current.price).join(' · ') }}</p>
-                    <p id="price-example">
-                      {{ session(pricing.example) }}:
-                      <strong>{{ money(current.price.exampleCost, current.price.currency) }}</strong>
-                    </p>
+                    @if (isPlausible(current.price)) {
+                      <p id="price-example">
+                        {{ session(pricing.example) }}:
+                        <strong>{{ money(current.price.exampleCost, current.price.currency) }}</strong>
+                      </p>
+                    } @else {
+                      <p id="price-example" class="price-implausible">{{ implausible }}</p>
+                    }
                     <p class="lead" id="price-since">
                       gilt seit {{ current.since | date: 'dd.MM.yyyy HH:mm' }} · bestätigt {{ current.observedAt | date: 'dd.MM.yyyy HH:mm' }} ·
                       Quelle {{ current.price.source }}
@@ -264,7 +268,7 @@ const SHARE_MESSAGES: Record<ShareResult, string | null> = {
                             <td>{{ period.from | date: 'dd.MM.yyyy' }}</td>
                             <td>{{ period.to === null ? 'heute' : (period.to | date: 'dd.MM.yyyy') }}</td>
                             <td>{{ parts(period.price).join(' · ') }}</td>
-                            <td>{{ money(period.price.exampleCost, period.price.currency) }}</td>
+                            <td>{{ isPlausible(period.price) ? money(period.price.exampleCost, period.price.currency) : implausible }}</td>
                           </tr>
                         }
                       </tbody>
@@ -429,6 +433,8 @@ export class EvseDetailPage {
   protected readonly yesNo = yesNo;
   protected readonly parts = priceParts;
   protected readonly money = money;
+  protected readonly isPlausible = plausible;
+  protected readonly implausible = IMPLAUSIBLE;
   protected readonly session = sessionText;
   protected readonly compare = comparison;
   protected readonly cards = inject(CardsStore);

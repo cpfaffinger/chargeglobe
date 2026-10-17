@@ -1980,6 +1980,10 @@ app-admin-tariffs .stale-summary {
   color: var(--mat-sys-error);
 }
 
+.price-implausible {
+  color: var(--mat-sys-error);
+}
+
 .price-note {
   margin: 2px 0;
   color: var(--mat-sys-on-surface-variant);
