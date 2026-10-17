@@ -150,7 +150,9 @@ public class TariffCatalogServiceTests
         Assert.Equal((TariffZoneKind.HOME, 0.39m), Of(Match("ionity", "power", "AT*IOY", TariffCurrent.DC, 350)));
         // The yearly subscription: a twelfth of its price per month, a dearer kWh price since 1.7.2026.
         Assert.Equal((TariffZoneKind.HOME, 0.41m), Of(Match("ionity", "power-365", "AT*IOY", TariffCurrent.DC, 350)));
-        Assert.Equal((TariffZoneKind.ROAMING, 0.84m), Of(Match("oeamtc", "epower", "IT*ENX", TariffCurrent.DC, 150)));
+        Assert.Equal((TariffZoneKind.PARTNER, 0.84m), Of(Match("oeamtc", "epower", "IT*ENX", TariffCurrent.DC, 150)));
+        Assert.Equal((TariffZoneKind.PARTNER, 0.74m), Of(Match("oeamtc", "epower", "DE*IOY", TariffCurrent.DC, 50)));
+        Assert.Null(Match("oeamtc", "epower", "IT*XYZ", TariffCurrent.DC, 150));
         Assert.Equal((TariffZoneKind.PARTNER, 0.65m), Of(Match("smatrics", "charge-and-roam", "DE*EBW", TariffCurrent.DC, 150)));
         Assert.Equal((TariffZoneKind.ROAMING, 0.89m), Of(Match("smatrics", "charge-and-roam", "DE*ION", TariffCurrent.DC, 150)));
         // Operators without a card before: GENOL at Lagerhaus, Futuregrid in ÖAMTC's home network, the platforms at the operator's price.
