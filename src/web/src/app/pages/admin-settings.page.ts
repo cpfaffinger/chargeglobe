@@ -133,7 +133,7 @@ function groupsFor(rows: Row[]): Group[] {
         name="settings-filter"
         autocomplete="off"
         data-form-type="other"
-        [readOnly]="!searchArmed()"
+        [readonly]="!searchArmed()"
         [value]="query()"
         (focus)="searchArmed.set(true)"
         (input)="search($event)"

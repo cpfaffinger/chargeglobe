@@ -374,7 +374,7 @@ describe('AdminSettingsPage', () => {
     expect(search.readOnly).toBeFalse();
 
     await find('LIGHT MODE');
-    expect(titles()).toEqual(['Karte']);
+    expect(titles()).toEqual(['Karte und Status']);
     expect(keys()).toEqual(['map.style_url']);
     expect(root().querySelectorAll('mat-expansion-panel.mat-expanded').length).toBe(1);
 
