@@ -37,18 +37,29 @@ Konfiguration (Config-Service, Scope `provider:bnetza`): `provider.enabled` (Def
   - `Betreiber` ist bei vielen kleinen Anlagen eine natürliche Person (Pflichtangabe des Registers, CC BY 4.0); der Adapter übernimmt den Namen wie die E-Control-Quelle. `Public Key{n}` (Eichrecht, öffentlich) wird nicht übernommen, auch nicht in `raw_snapshot`.
 
 ### Mapping auf das Ingest-Modell (`BNetzAMapper`)
-- `Ladeeinrichtungs-ID` → `ProviderLocationSnapshot.ExternalId`; `Standortbezeichnung` → `Name` (meist leer); `Straße Hausnummer`, `Postleitzahl`, `Ort`, Land immer `DE` → `Address`; `Breitengrad`/`Längengrad` (Dezimalkomma) → `Coordinates`, ungültig oder 0/0 → Zeile wird mit `ProviderMappingIssue` übersprungen.
+- **Standort = Ladeeinrichtungen eines Betreibers an einer Position.** Das Register führt je Ladesäule eine Ladeeinrichtung; 55.690 der 116.443 Zeilen teilen ihre Koordinaten mit anderen (75.056 verschiedene Positionen, größte Gruppe 513 Zeilen), und die Zeilen einer Position stehen irgendwo in der Datei. Der Adapter lädt die Datei deshalb einmal in eine temporäre Datei, zählt im ersten Durchlauf die Zeilen je Position (Koordinaten auf 6 Dezimalstellen, ein Dictionary mit rund 75.000 Einträgen) und gibt im zweiten Durchlauf eine Position aus, sobald ihre letzte Zeile gelesen ist (`BNetzAMapper.Sites`: Zeilen einer Position nach Betreiber getrennt, `OperatorNames.Same`; Zeilen ohne Betreiber bilden eine eigene Gruppe). Zwischengespeichert werden nur unvollständige Gruppen; im schlechtesten Fall liegen alle 55.690 Mehrfachzeilen gleichzeitig im Speicher (rund 100 MB).
+- Je Gruppe (nach `Ladeeinrichtungs-ID` sortiert): die erste Ladeeinrichtung gibt `ExternalId` (kleinste ID), Adresse, Betreiber und Koordinaten; `Standortbezeichnung`, Parkraum und Öffnungszeiten kommen von der ersten Zeile, die sie nennt; jede Ladeeinrichtung wird eine Ladestation (`ProviderEvseSnapshot.StationExternalId` = `Ladeeinrichtungs-ID`, [03](../03-datenmodell.md) `charging_station`); `raw_snapshot` ist das JSON-Array der Zeilen. `Breitengrad`/`Längengrad` (Dezimalkomma) → `Coordinates`, ungültig oder 0/0 → Zeile wird mit `ProviderMappingIssue` übersprungen.
 - `Betreiber` → `OperatorName`; `OperatorId` und `OperatorCountry` aus der ersten gültigen EVSE-ID der Zeile (`DE*UFC*E01121*1` → `UFC`, `DE`), sonst `null` (Matching dann über den Namen, [03](../03-datenmodell.md)).
 - `Informationen zum Parkraum` → `Access` (Tabelle `parking-mapping.json`: `Keine Beschränkung` → `PUBLIC`, `Nur für Kunden/Besucher` → `RESTRICTED`, leer → `null`).
 - `Öffnungszeiten`: `247` → `TwentyFourSeven`; `Eingeschränkt` → Text aus Wochentagen und Tageszeiten (`Montag 05:30-22:00; …; Samstag 06:00-14:00`); `Keine Angabe` → `null`.
-- Je Ladepunkt `n` mit `Steckertypen{n}`: `EVSE-ID{n}` gültig → `ExternalId` = normalisierte EVSE-ID ohne `*` (`DEUFCE011211`), `EvseId` = roher Wert; sonst synthetischer Schlüssel `<Ladeeinrichtungs-ID>/LP<n>` ohne EVSE-ID (Matching über die Geo-Kaskade). Dieselbe EVSE-ID zweimal in einer Zeile → der zweite Ladepunkt bekommt den synthetischen Schlüssel (Issue im Log).
+- Je Ladepunkt `n` mit `Steckertypen{n}`: `EVSE-ID{n}` gültig → `ExternalId` = normalisierte EVSE-ID ohne `*` (`DEUFCE011211`), `EvseId` = roher Wert; sonst synthetischer Schlüssel `<Ladeeinrichtungs-ID>/LP<n>` ohne EVSE-ID (Matching über die Geo-Kaskade). Dieselbe EVSE-ID zweimal an einem Standort → der zweite Ladepunkt bekommt den synthetischen Schlüssel (Issue im Log).
 - `Steckertypen{n}` → je Steckertyp ein `Connector` (Tabelle unten), `Nennleistung Stecker{n}` je Stecker (ein Wert gilt für alle); `MaxPowerKw` des Ladepunkts = stärkster Stecker; `PowerType` = Stromart der Stecker, wenn eindeutig.
 - `Bezahlsysteme` → `AuthMethods` (Tabelle unten; leer → `null`), `Kostenlos`/`Kostenlos (Registrierung)` außerdem → `AdHocPrice` „kostenlos“ (`FreeOfCharge`). `Roaming` bleibt `null`, `Facilities` bleibt `null` (die Quelle sagt nichts dazu).
 - `Status` → Tabelle unten: `In Betrieb` ergibt keinen Status (Lebenszyklus `ACTIVE` folgt daraus, dass die Zeile geliefert wird), `In Wartung` → `INOPERATIVE` als Statusmeldung mit dem Rohwert.
 - `raw_snapshot`: alle befüllten Spalten der Zeile als JSON-Objekt (ohne `Public Key{n}`).
 
 ### Abdeckung einer Fläche
-Ein Inventar-Plan für alle Regionen aus `provider.regions` (Box = umschließendes Rechteck, [05](../05-crawling-konzept.md) Abschnitt 1): der Lauf liest die ganze Datei und behält die Zeilen in der Box; Zeilen außerhalb werden gezählt („Bundesnetzagentur register read: 116443 facilities, … outside the box, … skipped“). Mit allen 16 Bundesländern dauert der Merge eines Laufs im Worker etwa eine Stunde.
+Ein Inventar-Plan für alle Regionen aus `provider.regions` (Box = umschließendes Rechteck, [05](../05-crawling-konzept.md) Abschnitt 1): der Lauf liest die ganze Datei und behält die Zeilen in der Box; Zeilen außerhalb werden gezählt („Bundesnetzagentur register read: 116443 facilities, … outside the box, … sites, … skipped“). Mit allen 16 Bundesländern entstehen rund 75.000 Standorte; der Merge eines Laufs im Worker dauert etwa eine Stunde.
+
+Wechsel der Standortschlüssel: Vor dem 2026-10-17 war jede Ladeeinrichtung ein Standort. Beim ersten Lauf danach bekommt jede Gruppe den Schlüssel ihrer kleinsten ID (meist ein schon bekannter Standort), die Ladepunkte der übrigen Ladeeinrichtungen ziehen über ihre unveränderten EVSE-Schlüssel dorthin um (Attribut `location_id`), und die alten `source_record`-Einträge der übrigen IDs werden nicht mehr geliefert: nach `lifecycle.missing_runs` (Default 2) Inventarläufen setzt der Lebenszyklus ihre leeren Standorte auf `REMOVED` ([03](../03-datenmodell.md)). Wer nicht zwei Wochen warten will, löscht sie nach dem ersten Lauf von Hand (nur Standorte, die allein die Bundesnetzagentur kannte und die keine aktiven Ladepunkte mehr haben):
+
+```sql
+DELETE FROM location l
+WHERE NOT EXISTS (SELECT 1 FROM evse e WHERE e.location_id = l.id AND e.lifecycle = 'ACTIVE')
+  AND NOT EXISTS (SELECT 1 FROM source_record r WHERE r.entity_type = 'LOCATION' AND r.entity_id = l.id AND r.source_key <> 'bnetza')
+  AND EXISTS (SELECT 1 FROM source_record r WHERE r.entity_type = 'LOCATION' AND r.entity_id = l.id AND r.source_key = 'bnetza'
+              AND r.last_seen < (SELECT max(last_seen) FROM source_record WHERE source_key = 'bnetza' AND entity_type = 'LOCATION') - interval '1 hour');
+```
 
 ## Status-Mapping
 
@@ -100,5 +111,5 @@ Keine Preise außer „kostenlos“ (`Bezahlsysteme`). Ad-hoc-Preise für Deutsc
 ## Offene Punkte / Risiken
 - Tagesaktueller Webservice (OpenAPI-Beschreibung auf E-Mail-Anfrage an `ladesaeulenregister@bnetza.de`, [10 §3.2](../10-afir-umsetzung-eu.md)); solange gilt die monatliche Datei.
 - Der Link auf der Seite der Ladesäulenkarte ist der einzige Weg zur aktuellen Datei; ändert die Bundesnetzagentur die Seite, meldet die Probe „Unexpected format“ und der Lauf pausiert.
-- Nur 31 % der Ladepunkte tragen eine EVSE-ID; die übrigen werden mit den DATEX-II-Quellen über die Geo-Kaskade zusammengeführt (gleicher Betreibername im Umkreis von 50 m, [03](../03-datenmodell.md)); MobiData BW führt dieselben Ladeeinrichtungen unter `BNETZA*<Ladeeinrichtungs-ID>*<n>`.
+- Nur 31 % der Ladepunkte tragen eine EVSE-ID; die übrigen werden mit den DATEX-II-Quellen über die Geo-Kaskade zusammengeführt (gleicher Betreibername im Umkreis von 50 m; mehrere Standorte des Registers in einem Ladepark zählen nicht mehr als Konflikt, [03](../03-datenmodell.md)).
 - Ein voller Lauf schreibt 116.000 Rohdatensätze nach `raw_snapshot` (etwa 1 KB je Zeile); Aufbewahrung `ingest.snapshot_retention_days`.

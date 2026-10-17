@@ -1,3 +1,4 @@
+using ChargeGlobe.Domain;
 using ChargeGlobe.Domain.Provenance;
 using ChargeGlobe.Infrastructure.Ingest;
 

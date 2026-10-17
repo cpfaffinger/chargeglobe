@@ -32,6 +32,9 @@ public sealed class IngestProcessor(AppDbContext db)
     /// <summary>Confidence of a match by distance alone.</summary>
     public const double GeoOnlyConfidence = 0.6;
 
+    /// <summary>Confidence of a geo match that picked the nearest of several candidates of one charging park.</summary>
+    public const double GeoParkConfidence = 0.8;
+
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     {
         Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() },
@@ -458,7 +461,10 @@ public sealed class IngestProcessor(AppDbContext db)
     /// <summary>
     /// Matching steps 3 and 4 (docs/03): locations within <see cref="OperatorRadiusMeters"/> that this source does not
     /// know yet; one with the same operator and a similar number of EVSEs, otherwise the only one within
-    /// <see cref="GeoOnlyRadiusMeters"/> that has no other operator. Several candidates are recorded as conflict.
+    /// <see cref="GeoOnlyRadiusMeters"/> that has no other operator. Several candidates with the same operator are a
+    /// conflict unless they all belong to the same source and form one charging park (same <c>park_id</c>, or all
+    /// within <see cref="GeoOnlyRadiusMeters"/> of each other): then the nearest is taken (the Bundesnetzagentur lists
+    /// every charging station of a site as a facility of its own).
     /// </summary>
     private async Task<(GeoMatch? Match, bool Ambiguous)> GeoMatchAsync(
         string sourceKey, ProviderLocationSnapshot snapshot, DateTimeOffset at, CancellationToken cancellationToken)
@@ -469,7 +475,12 @@ public sealed class IngestProcessor(AppDbContext db)
                    ST_Distance(l.geom, ST_SetSRID(ST_MakePoint({longitude}, {latitude}), 4326)::geography) AS "Distance",
                    o.operator_id AS "OperatorCode",
                    o.name AS "OperatorName",
-                   (SELECT count(*) FROM evse e WHERE e.location_id = l.id AND e.lifecycle = 'ACTIVE')::int AS "Evses"
+                   (SELECT count(*) FROM evse e WHERE e.location_id = l.id AND e.lifecycle = 'ACTIVE')::int AS "Evses",
+                   l.park_id AS "ParkId",
+                   ST_Y(l.geom::geometry) AS "Latitude",
+                   ST_X(l.geom::geometry) AS "Longitude",
+                   (SELECT string_agg(DISTINCT r.source_key, ',') FROM source_record r
+                    WHERE r.entity_type = 'LOCATION' AND r.entity_id = l.id) AS "Sources"
             FROM location l
             LEFT JOIN operator o ON o.id = l.operator_id
             WHERE l.lifecycle = 'ACTIVE'
@@ -494,6 +505,11 @@ public sealed class IngestProcessor(AppDbContext db)
             return (new GeoMatch(found[0].Id, method, confidence), false);
         }
 
+        if (found.Count > 1 && method == MatchMethod.GEO_OPERATOR && OnePark(found))
+        {
+            return (new GeoMatch(found[0].Id, method, GeoParkConfidence), false);
+        }
+
         if (found.Count > 1)
         {
             AmbiguousConflict(sourceKey, snapshot, found, at);
@@ -501,6 +517,25 @@ public sealed class IngestProcessor(AppDbContext db)
         }
 
         return (null, false);
+    }
+
+    /// <summary>
+    /// Candidates that all come from one source and lie in one charging park: the same park, or every pair within
+    /// <see cref="GeoOnlyRadiusMeters"/> of each other.
+    /// </summary>
+    private static bool OnePark(List<GeoCandidate> candidates) =>
+        candidates[0].Sources is { } sources && !sources.Contains(',') && candidates.All(candidate => candidate.Sources == sources)
+        && (candidates[0].ParkId is { } park
+            ? candidates.All(candidate => candidate.ParkId == park)
+            : candidates.All(a => candidates.All(b => MetersBetween(a, b) <= GeoOnlyRadiusMeters)));
+
+    /// <summary>Great-circle distance of two candidates in metres (haversine, earth radius 6,371 km).</summary>
+    private static double MetersBetween(GeoCandidate a, GeoCandidate b)
+    {
+        var (lat1, lat2) = (a.Latitude * Math.PI / 180, b.Latitude * Math.PI / 180);
+        var (dLat, dLon) = ((b.Latitude - a.Latitude) * Math.PI / 180, (b.Longitude - a.Longitude) * Math.PI / 180);
+        var h = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) + Math.Cos(lat1) * Math.Cos(lat2) * Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+        return 2 * 6_371_000 * Math.Asin(Math.Sqrt(h));
     }
 
     /// <summary>True or false if both sides name an operator (code or name), null if one of them does not.</summary>
@@ -699,6 +734,15 @@ public sealed class IngestProcessor(AppDbContext db)
         public string? OperatorName { get; set; }
 
         public int Evses { get; set; }
+
+        public Guid? ParkId { get; set; }
+
+        public double Latitude { get; set; }
+
+        public double Longitude { get; set; }
+
+        /// <summary>Keys of the sources that know the location, comma-separated.</summary>
+        public string? Sources { get; set; }
     }
 
     /// <summary>

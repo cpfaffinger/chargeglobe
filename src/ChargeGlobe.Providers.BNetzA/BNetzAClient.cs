@@ -11,7 +11,8 @@ namespace ChargeGlobe.Providers.BNetzA;
 /// becomes a <see cref="ProviderHttpException"/> with the <c>Retry-After</c> of the source, a page without the link an
 /// <see cref="InvalidDataException"/> (unexpected format, docs/05).
 /// </summary>
-public sealed partial class BNetzAClient(HttpClient http, TimeProvider? timeProvider = null)
+/// <param name="tempDirectory">Where the CSV is downloaded to; the temporary directory of the process by default.</param>
+public sealed partial class BNetzAClient(HttpClient http, TimeProvider? timeProvider = null, string? tempDirectory = null)
 {
     public static readonly Uri BaseAddress = new("https://www.bundesnetzagentur.de/");
 
@@ -33,6 +34,28 @@ public sealed partial class BNetzAClient(HttpClient http, TimeProvider? timeProv
         return match.Success
             ? new Uri(match.Value.Replace("&amp;", "&", StringComparison.Ordinal))
             : throw new InvalidDataException("The register page of the Bundesnetzagentur has no link to the CSV.");
+    }
+
+    /// <summary>Downloads the CSV to a temporary file (the adapter reads it twice) and returns its path; the caller deletes it.</summary>
+    public async Task<string> DownloadCsvAsync(Uri csv, CancellationToken cancellationToken)
+    {
+        // A rejected request leaves no file behind; a copy that breaks off removes its fragment.
+        await using var source = await OpenCsvAsync(csv, cancellationToken);
+        var path = Path.Combine(tempDirectory ?? Path.GetTempPath(), $"bnetza-{Guid.NewGuid():N}.csv");
+        try
+        {
+            await using (var target = File.Create(path))
+            {
+                await source.CopyToAsync(target, cancellationToken);
+            }
+
+            return path;
+        }
+        catch
+        {
+            File.Delete(path);
+            throw;
+        }
     }
 
     /// <summary>The CSV as a stream (the response stays open until the stream is disposed).</summary>

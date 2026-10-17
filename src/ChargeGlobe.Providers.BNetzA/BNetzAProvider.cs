@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using ChargeGlobe.Domain.Provenance;
 using ChargeGlobe.Providers.Abstractions;
 using Microsoft.Extensions.Logging;
@@ -9,8 +10,10 @@ namespace ChargeGlobe.Providers.BNetzA;
 /// <summary>
 /// Register of the Bundesnetzagentur ("Ladesäulenregister", docs/08 section 4; endpoint note docs/endpunkte/bnetza.md):
 /// the official list of the public charging facilities of Germany as a monthly CSV (CC BY 4.0). Inventory only: one
-/// run streams the whole file (about 55 MB, 116,000 facilities) and keeps the facilities inside the box of the plan.
-/// No live status, no prices beyond "free of charge".
+/// run downloads the whole file (about 55 MB, 116,000 facilities) once to a temporary file and reads it twice: the
+/// first pass counts the facilities per position, the second emits sites (the facilities of one operator at one
+/// position, <see cref="BNetzAMapper.Sites"/>) inside the box of the plan as soon as all their facilities have been
+/// read. No live status, no prices beyond "free of charge".
 /// </summary>
 public sealed class BNetzAProvider(
     BNetzAClient client,
@@ -31,7 +34,7 @@ public sealed class BNetzAProvider(
         "CC BY 4.0",
         "Datenquelle: Bundesnetzagentur.de (CC BY 4.0)",
         [Country],
-        // The file changes once a month; a run merges 116,000 facilities, so once a week is enough.
+        // The file changes once a month; a run merges about 75,000 sites, so once a week is enough.
         new PollDefaults(TimeSpan.FromDays(7), null, null),
         // A run is two requests (page, file); the probe two more per hour.
         new RateLimitPolicy(PerMinute: 2, Burst: 2));
@@ -48,10 +51,23 @@ public sealed class BNetzAProvider(
 
         var csv = await client.FindCsvAsync(cancellationToken);
         logger.LogInformation("Bundesnetzagentur register: reading {Url}", csv);
-        var (rows, outside, skipped) = (0, 0, 0);
-        await using (var stream = await client.OpenCsvAsync(csv, cancellationToken))
+        var file = await client.DownloadCsvAsync(csv, cancellationToken);
+        try
         {
-            await foreach (var (row, raw) in RegisterCsv.ReadAsync(stream, cancellationToken))
+            // First pass: how many facilities share each position, so that the second pass can emit a site as soon
+            // as its last facility has been read (facilities of one site are spread over the whole file).
+            var expected = new Dictionary<string, int>(StringComparer.Ordinal);
+            await foreach (var (row, _) in RegisterCsv.ReadAsync(File.OpenRead(file), cancellationToken))
+            {
+                if (BNetzAMapper.SiteKey(row) is { } key)
+                {
+                    expected[key] = expected.GetValueOrDefault(key) + 1;
+                }
+            }
+
+            var (rows, outside, skipped, sites) = (0, 0, 0, 0);
+            var pending = new Dictionary<string, List<(FacilityRow Row, JsonElement Raw)>>(StringComparer.Ordinal);
+            await foreach (var (row, raw) in RegisterCsv.ReadAsync(File.OpenRead(file), cancellationToken))
             {
                 rows++;
                 if (query.Bbox is { } box && !Inside(box, row))
@@ -60,25 +76,57 @@ public sealed class BNetzAProvider(
                     continue;
                 }
 
-                var issues = new List<ProviderMappingIssue>();
-                var location = mapper.ToLocation(row, raw, timeProvider.GetUtcNow(), issues);
-                foreach (var issue in issues)
+                List<IReadOnlyList<(FacilityRow Row, JsonElement Raw)>> ready;
+                if (BNetzAMapper.SiteKey(row) is not { } key)
                 {
-                    logger.LogWarning("Bundesnetzagentur record {ExternalId}: {Problem}", issue.ExternalId, issue.Problem);
+                    // No position: no site; the mapper reports it.
+                    ready = [[(row, raw)]];
+                }
+                else if (expected[key] == 1)
+                {
+                    ready = [[(row, raw)]];
+                }
+                else
+                {
+                    var group = pending.TryGetValue(key, out var members) ? members : pending[key] = [];
+                    group.Add((row, raw));
+                    if (group.Count < expected[key])
+                    {
+                        continue;
+                    }
+
+                    pending.Remove(key);
+                    ready = [.. BNetzAMapper.Sites(group)];
                 }
 
-                if (location is null)
+                foreach (var site in ready)
                 {
-                    skipped++;
-                    continue;
-                }
+                    var issues = new List<ProviderMappingIssue>();
+                    var location = mapper.ToLocation(site, timeProvider.GetUtcNow(), issues);
+                    foreach (var issue in issues)
+                    {
+                        logger.LogWarning("Bundesnetzagentur record {ExternalId}: {Problem}", issue.ExternalId, issue.Problem);
+                    }
 
-                yield return location;
+                    if (location is null)
+                    {
+                        skipped++;
+                        continue;
+                    }
+
+                    sites++;
+                    yield return location;
+                }
             }
-        }
 
-        logger.LogInformation(
-            "Bundesnetzagentur register read: {Rows} facilities, {Outside} outside the box, {Skipped} skipped", rows, outside, skipped);
+            logger.LogInformation(
+                "Bundesnetzagentur register read: {Rows} facilities, {Outside} outside the box, {Sites} sites, {Skipped} skipped",
+                rows, outside, sites, skipped);
+        }
+        finally
+        {
+            File.Delete(file);
+        }
     }
 
     /// <summary>Finds the CSV link and reads the head of the file: healthy if the header row is there.</summary>

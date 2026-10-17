@@ -225,6 +225,51 @@ public class SecondSourceTests(IntegrationFactory factory) : IClassFixture<Integ
         Assert.Equal(HttpStatusCode.Forbidden, (await factory.Client((await factory.LoginAsync(email)).AccessToken).GetAsync("/api/v1/conflicts")).StatusCode);
     }
 
+    [Fact]
+    public async Task Candidates_of_one_source_that_form_a_charging_park_take_the_nearest_instead_of_a_conflict()
+    {
+        // Two facilities of one operator 6 m apart (the register lists every charging station on its own).
+        var facility = Read("econtrol", "search-wien.expected.json")[0] with { OperatorName = "Stadtwerke Test GmbH", OperatorId = null, Evses = [] };
+        await IngestAsync("register", [
+            facility with { ExternalId = "park-1", Coordinates = new GeoPoint(48.30, 16.50) },
+            facility with { ExternalId = "park-2", Coordinates = new GeoPoint(48.30005, 16.50) },
+        ]);
+        var site = Ocm().Single(item => item.ExternalId == "104") with { OperatorName = "Stadtwerke Test", ExternalId = "park-site", Coordinates = new GeoPoint(48.30001, 16.50) };
+
+        await IngestAsync("ocm", [site]);
+
+        var record = await RecordAsync("ocm", "park-site");
+        Assert.Equal(((await RecordAsync("register", "park-1")).EntityId, MatchMethod.GEO_OPERATOR, IngestProcessor.GeoParkConfidence), (record.EntityId, record.MatchMethod, record.MatchConfidence));
+        Assert.DoesNotContain(
+            await factory.WithDbAsync(db => db.SourceConflicts.Where(item => item.Attribute == "identity").ToListAsync()),
+            item => item.Values.Contains("park-site"));
+
+        // Farther apart than 25 m they are a park only if the park computation says so; from two sources never.
+        var far = facility with { OperatorName = "Energie Test AG" };
+        await IngestAsync("register", [
+            far with { ExternalId = "far-1", Coordinates = new GeoPoint(48.31, 16.51) },
+            far with { ExternalId = "far-2", Coordinates = new GeoPoint(48.31035, 16.51) },
+        ]);
+        var farSite = site with { OperatorName = "Energie Test", ExternalId = "far-site", Coordinates = new GeoPoint(48.31017, 16.51) };
+        await IngestAsync("ocm", [farSite]);
+        Assert.Contains(
+            await factory.WithDbAsync(db => db.SourceConflicts.Where(item => item.Attribute == "identity").ToListAsync()),
+            item => item.Values.Contains("far-site"));
+        var park = Guid.NewGuid();
+        await factory.WithDbAsync(db => db.Database.ExecuteSqlAsync(
+            $"UPDATE location SET park_id = {park} WHERE id IN (SELECT entity_id FROM source_record WHERE source_key = 'register' AND external_id IN ('far-1', 'far-2'))"));
+        await IngestAsync("ocm", [farSite with { ExternalId = "far-site-2" }]);
+        Assert.Equal(((await RecordAsync("register", "far-2")).EntityId, IngestProcessor.GeoParkConfidence), ((await RecordAsync("ocm", "far-site-2")).EntityId, (await RecordAsync("ocm", "far-site-2")).MatchConfidence));
+
+        var mixed = facility with { OperatorName = "Mixed Test GmbH" };
+        await IngestAsync("register", [mixed with { ExternalId = "mixed-1", Coordinates = new GeoPoint(48.32, 16.52) }]);
+        await IngestAsync("register-2", [mixed with { ExternalId = "mixed-2", Coordinates = new GeoPoint(48.32005, 16.52) }]);
+        await IngestAsync("ocm", [site with { OperatorName = "Mixed Test", ExternalId = "mixed-site", Coordinates = new GeoPoint(48.32001, 16.52) }]);
+        Assert.Contains(
+            await factory.WithDbAsync(db => db.SourceConflicts.Where(item => item.Attribute == "identity").ToListAsync()),
+            item => item.Values.Contains("mixed-site"));
+    }
+
     /// <summary>Two locations of another source next to each other and an OCM site between them: an open identity conflict.</summary>
     private async Task<SourceConflict> AmbiguousAsync(string name, double latitude, double longitude)
     {
