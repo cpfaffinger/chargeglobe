@@ -1,10 +1,11 @@
+using ChargeGlobe.Application.Identity;
 using ChargeGlobe.Application.Ingest;
 
 namespace ChargeGlobe.Jobs;
 
 /// <summary>
 /// Worker role: drains the ingest queue every <see cref="Interval"/>, message by message; once a day one
-/// worker (job lease <c>ingest-retention</c>) deletes processed messages and old raw snapshots.
+/// worker (job lease <c>ingest-retention</c>) deletes processed messages, old raw snapshots and old audit entries.
 /// </summary>
 public sealed class IngestWorkerService(
     IServiceScopeFactory scopeFactory,
@@ -59,6 +60,8 @@ public sealed class IngestWorkerService(
                 {
                     var purged = await scope.ServiceProvider.GetRequiredService<IIngestQueue>().PurgeAsync(stoppingToken);
                     logger.LogInformation("Ingest retention removed {Count} row(s)", purged);
+                    var entries = await scope.ServiceProvider.GetRequiredService<IAuditRetention>().PurgeAsync(stoppingToken);
+                    logger.LogInformation("Audit retention removed {Count} entr(ies)", entries);
                 }
             }
         }

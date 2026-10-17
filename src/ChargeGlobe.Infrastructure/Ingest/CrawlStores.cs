@@ -292,7 +292,13 @@ public sealed class CrawlerRunLog(AppDbContext db, TimeProvider timeProvider) : 
 
 /// <summary>Read model of the admin view of the crawlers.</summary>
 public sealed class CrawlerMonitor(
-    AppDbContext db, IAppConfig config, IPollTileStore tiles, IProviderBackoff backoff, ICrawlerRunLog runs, TimeProvider timeProvider)
+    AppDbContext db,
+    DbContextOptions<AppDbContext> options,
+    IAppConfig config,
+    IPollTileStore tiles,
+    IProviderBackoff backoff,
+    ICrawlerRunLog runs,
+    TimeProvider timeProvider)
     : ICrawlerMonitor
 {
     public async Task<CrawlerStatus> StatusAsync(CancellationToken cancellationToken)
@@ -336,19 +342,30 @@ public sealed class CrawlerMonitor(
         return new CrawlerStatus(now, providers, new IngestQueueStatus(pending, failed));
     }
 
+    /// <summary>
+    /// Three parts: the fault phases of the operators run on a connection of their own (a second context on the same
+    /// options) while the regions and the sources are read; together they take about as long as the slowest part.
+    /// </summary>
     public async Task<DataFreshness> FreshnessAsync(CancellationToken cancellationToken)
     {
         var now = timeProvider.GetUtcNow();
-        var (fresh20, fresh60, since) = (now.AddMinutes(-20), now.AddMinutes(-60), now - ICrawlerMonitor.FaultWindow);
+        var operatorsTask = OperatorFaultsAsync(now, cancellationToken);
+        var (fresh20, fresh60) = (now.AddMinutes(-20), now.AddMinutes(-60));
+        // Counted per region first, then joined with the regions: no row per EVSE and region.
         var regions = await db.Database.SqlQuery<RegionRow>($"""
-            SELECT r.code AS "Code", r.name AS "Name", count(e.id)::int AS "Evses", count(c.evse_id)::int AS "WithStatus",
-                   (count(*) FILTER (WHERE c.observed_at >= {fresh20}))::int AS "Fresh20",
-                   (count(*) FILTER (WHERE c.observed_at >= {fresh60}))::int AS "Fresh60"
+            WITH counts AS (
+                SELECT l.region_code, count(*)::int AS evses, count(c.evse_id)::int AS with_status,
+                       (count(*) FILTER (WHERE c.observed_at >= {fresh20}))::int AS fresh20,
+                       (count(*) FILTER (WHERE c.observed_at >= {fresh60}))::int AS fresh60
+                FROM evse e
+                JOIN location l ON l.id = e.location_id AND l.lifecycle = 'ACTIVE'
+                LEFT JOIN evse_status_current c ON c.evse_id = e.id
+                WHERE e.lifecycle = 'ACTIVE' AND l.region_code IS NOT NULL
+                GROUP BY l.region_code)
+            SELECT r.code AS "Code", r.name AS "Name", coalesce(n.evses, 0) AS "Evses", coalesce(n.with_status, 0) AS "WithStatus",
+                   coalesce(n.fresh20, 0) AS "Fresh20", coalesce(n.fresh60, 0) AS "Fresh60"
             FROM region r
-            LEFT JOIN location l ON l.region_code = r.code AND l.lifecycle = 'ACTIVE'
-            LEFT JOIN evse e ON e.location_id = l.id AND e.lifecycle = 'ACTIVE'
-            LEFT JOIN evse_status_current c ON c.evse_id = e.id
-            GROUP BY r.code, r.name
+            LEFT JOIN counts n ON n.region_code = r.code
             ORDER BY r.code
             """).ToListAsync(cancellationToken);
         var sources = new List<SourceFreshness>();
@@ -374,31 +391,41 @@ public sealed class CrawlerMonitor(
                     : new PriorityPoll(priority, 0, 0, null))]));
         }
 
-        // Phases that began in the window; the operator is the part of the EVSE-ID (surrogates have none).
-        var operators = await db.Database.SqlQuery<OperatorRow>($"""
-            WITH phase AS (
-                SELECT split_part(e.evse_id_display, '*', 1) AS country, split_part(e.evse_id_display, '*', 2) AS party,
-                       i.evse_id, i.valid_to, extract(epoch FROM i.valid_to - i.valid_from) / 60 AS minutes
-                FROM evse_status_interval i
-                JOIN evse e ON e.id = i.evse_id
-                WHERE i.valid_from >= {since} AND i.valid_from <= {now}
-                  AND i.status IN ('OUTOFORDER', 'INOPERATIVE') AND e.identity_kind = 'EVSE_ID')
-            SELECT p.country || '*' || p.party AS "Prefix",
-                   (SELECT o.name FROM operator o WHERE o.country = p.country AND o.operator_id = p.party) AS "Name",
-                   count(*)::int AS "Phases", count(DISTINCT p.evse_id)::int AS "Evses",
-                   (count(*) FILTER (WHERE p.valid_to IS NULL OR p.valid_to > {now}))::int AS "Ongoing",
-                   (percentile_cont(0.5) WITHIN GROUP (ORDER BY p.minutes) FILTER (WHERE p.valid_to <= {now}))::float8 AS "MedianMinutes"
-            FROM phase p
-            GROUP BY p.country, p.party
-            ORDER BY 3 DESC, 1
-            LIMIT {ICrawlerMonitor.TopOperators}
-            """).ToListAsync(cancellationToken);
+        var operators = await operatorsTask;
         return new DataFreshness(
             now,
             [.. regions.Select(row => new RegionFreshness(row.Code, row.Name, row.Evses, row.WithStatus, Percent(row.Fresh20, row.Evses), Percent(row.Fresh60, row.Evses)))],
             sources,
             [.. operators.Select(row => new OperatorFaults(
                 row.Prefix, row.Name, row.Phases, row.Evses, row.Ongoing, row.MedianMinutes is { } median ? Math.Round(median, 1) : null))]);
+    }
+
+    /// <summary>
+    /// Phases that began in the window, over the partial index on the start of the fault intervals; the operator is the
+    /// country and operator part of the normalized EVSE-ID (surrogates have none).
+    /// </summary>
+    private async Task<List<OperatorRow>> OperatorFaultsAsync(DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var since = now - ICrawlerMonitor.FaultWindow;
+        await using var own = new AppDbContext(options);
+        return await own.Database.SqlQuery<OperatorRow>($"""
+            WITH phase AS (
+                SELECT left(e.evse_id_norm, 5) AS prefix, i.evse_id, i.valid_from, i.valid_to
+                FROM evse_status_interval i
+                JOIN evse e ON e.id = i.evse_id
+                WHERE i.status IN ('OUTOFORDER', 'INOPERATIVE') AND i.valid_from >= {since} AND i.valid_from <= {now}
+                  AND e.identity_kind = 'EVSE_ID')
+            SELECT left(p.prefix, 2) || '*' || substr(p.prefix, 3) AS "Prefix",
+                   (SELECT o.name FROM operator o WHERE o.country = left(p.prefix, 2) AND o.operator_id = substr(p.prefix, 3)) AS "Name",
+                   count(*)::int AS "Phases", count(DISTINCT p.evse_id)::int AS "Evses",
+                   (count(*) FILTER (WHERE p.valid_to IS NULL OR p.valid_to > {now}))::int AS "Ongoing",
+                   (extract(epoch FROM percentile_cont(0.5) WITHIN GROUP (ORDER BY p.valid_to - p.valid_from)
+                        FILTER (WHERE p.valid_to <= {now})) / 60)::float8 AS "MedianMinutes"
+            FROM phase p
+            GROUP BY p.prefix
+            ORDER BY 3 DESC, 1
+            LIMIT {ICrawlerMonitor.TopOperators}
+            """).ToListAsync(cancellationToken);
     }
 
     private static double Percent(int part, int total) => total == 0 ? 0 : Math.Round(100.0 * part / total, 1);

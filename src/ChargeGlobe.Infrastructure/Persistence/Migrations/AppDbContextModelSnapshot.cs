@@ -349,6 +349,10 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasFilter("valid_to IS NULL");
 
+                    b.HasIndex("ValidFrom")
+                        .HasDatabaseName("IX_evse_status_interval_fault_valid_from")
+                        .HasFilter("status IN ('OUTOFORDER', 'INOPERATIVE')");
+
                     b.ToTable("evse_status_interval", (string)null);
                 });
 

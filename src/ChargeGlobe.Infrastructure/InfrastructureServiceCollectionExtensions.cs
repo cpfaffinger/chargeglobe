@@ -50,6 +50,7 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddScoped<AuditLog>();
         services.AddScoped<AuditLogQueries>();
+        services.AddScoped<IAuditRetention, AuditRetention>();
         services.AddScoped<ISourceRegistry, SourceRegistry>();
         services.AddScoped<ILocationQueries, LocationQueries>();
         services.AddScoped<IStatsQueries, StatsQueries>();

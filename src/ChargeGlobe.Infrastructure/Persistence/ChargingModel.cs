@@ -214,6 +214,10 @@ internal static class ChargingModel
             entity.HasKey(interval => new { interval.EvseId, interval.ValidFrom });
             // At most one open interval per EVSE.
             entity.HasIndex(interval => interval.EvseId).IsUnique().HasFilter("valid_to IS NULL");
+            // Fault phases of the last 48 hours for the data freshness of the admin view.
+            entity.HasIndex(interval => interval.ValidFrom)
+                .HasFilter("status IN ('OUTOFORDER', 'INOPERATIVE')")
+                .HasDatabaseName("IX_evse_status_interval_fault_valid_from");
             entity.HasOne<Evse>().WithMany().HasForeignKey(interval => interval.EvseId).OnDelete(DeleteBehavior.Cascade);
         });
 

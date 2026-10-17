@@ -47,6 +47,8 @@ public static class SettingsCatalog
 
     public const string CrawlerRunRetentionDays = "crawler.run_retention_days";
 
+    public const string AuditRetentionDays = "audit.retention_days";
+
     public const string IngestMaxAttempts = "ingest.max_attempts";
     public const string IngestQueueRetentionDays = "ingest.queue_retention_days";
     public const string IngestSnapshotRetentionDays = "ingest.snapshot_retention_days";
@@ -228,6 +230,12 @@ public static class SettingsCatalog
         {
             Min = 1,
             Max = 20,
+        },
+        new(AuditRetentionDays, SettingType.Int, 365,
+            "Days after which entries of the audit log (GET /audit-log) are deleted; checked once a day by the worker.")
+        {
+            Min = 1,
+            Max = 3650,
         },
         new(IngestQueueRetentionDays, SettingType.Int, 7, "Days after which processed ingest messages are deleted.")
         {

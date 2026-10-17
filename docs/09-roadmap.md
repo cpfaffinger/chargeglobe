@@ -32,6 +32,7 @@
 - [ ] Adapter **OpenStreetMap** (Overpass) als Ergänzung/Plausibilisierung
 - [x] Passive Statusabfrage: Stundenbudget je Quelle clusterweit, Abfragepunkte aus den bekannten Standorten mit Priorität nach Aktivität (5/15/60 min, nachts ×3), Abruf bei Bedarf beim Öffnen eines Standorts, linear wachsende Pause nach Fehlern und Sperre bei abgelehntem Key, Lauf-Protokoll `crawler_run`, strukturierte Crawler-Logs, Live-Ansicht `/admin/crawler` ([05](05-crawling-konzept.md))
 - [x] Störungsglättung: Störungen kürzer als `status.fault_grace_minutes` (Default 10) zählen auf Karte, Infokarte, Favoriten, Suche und Statistik noch nicht; Hinweis „kurz gestört“
+- [x] Aufbewahrung des Audit-Logs (`audit.retention_days`, täglich im Worker); Datenfrische ungecacht unter 100 ms (Teilindex, parallele Abfragen)
 - [x] Datenfrische im Admin (`/admin/crawler`, `GET /admin/crawler/freshness`): Anteil frischer Status je Region, ältester Abfragepunkt je Priorität, Budget, Störungsphasen je Betreiber (48 h)
 - [ ] Metriken (OpenTelemetry → Prometheus/Grafana): Requests, Fehlerquote, Datenfrische je Quelle
 - [x] API v1: `GET /evses/{evseId}` (EVSE-ID in jeder Schreibweise oder UUID), Statushistorie, Belegung (`evse:read`)
