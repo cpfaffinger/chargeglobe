@@ -15,6 +15,51 @@
         {
           "reference": {
             "targetClass": "FacilityObject",
+            "idG": "1077306",
+            "versionG": "2026-10-13T08:17:55.655899+00:00"
+          },
+          "lastUpdated": "2026-10-13T08:17:55.655899+00:00",
+          "energyInfrastructureStationStatus": [
+            {
+              "reference": {
+                "targetClass": "FacilityObject",
+                "idG": "1077306",
+                "versionG": "2026-10-13T08:17:55.655899+00:00"
+              },
+              "refillPointStatus": [
+                {
+                  "aegiRefillPointStatus": {
+                    "reference": {
+                      "targetClass": "FacilityObject",
+                      "idG": "BNETZA*1077306*1",
+                      "versionG": "2026-10-13T08:17:55.649092+00:00"
+                    },
+                    "lastUpdated": "2026-10-13T08:17:55.649092+00:00",
+                    "status": {
+                      "value": "inoperative"
+                    }
+                  }
+                },
+                {
+                  "aegiRefillPointStatus": {
+                    "reference": {
+                      "targetClass": "FacilityObject",
+                      "idG": "BNETZA*1077306*2",
+                      "versionG": "2026-10-13T08:17:55.655899+00:00"
+                    },
+                    "lastUpdated": "2026-10-13T08:17:55.655899+00:00",
+                    "status": {
+                      "value": "inoperative"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "reference": {
+            "targetClass": "FacilityObject",
             "idG": "CH*CCC*E50080",
             "versionG": "2026-10-17T01:53:41.946835+00:00"
           },

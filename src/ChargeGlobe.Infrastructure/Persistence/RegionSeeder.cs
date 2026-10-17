@@ -19,6 +19,9 @@ public sealed class RegionSeeder(AppDbContext db, ILogger<RegionSeeder> logger)
         "ChargeGlobe.Infrastructure.Persistence.Seed.regions-de.geojson",
     ];
 
+    /// <summary>Time the recomputation of the region of every location may take.</summary>
+    public static readonly TimeSpan RecomputeTimeout = TimeSpan.FromMinutes(30);
+
     /// <summary>Number of inserted or updated regions.</summary>
     public async Task<int> SeedAsync(CancellationToken cancellationToken)
     {
@@ -45,6 +48,9 @@ public sealed class RegionSeeder(AppDbContext db, ILogger<RegionSeeder> logger)
 
         if (changed > 0)
         {
+            // Touching every location fires the region trigger for each of them; with hundreds of thousands of
+            // locations that takes minutes, far beyond the default command timeout of 30 s.
+            db.Database.SetCommandTimeout(RecomputeTimeout);
             var locations = await db.Database.ExecuteSqlRawAsync("UPDATE location SET geom = geom", cancellationToken);
             logger.LogInformation(
                 "Region seed: {Regions} regions inserted or updated, region of {Locations} locations recomputed", changed, locations);

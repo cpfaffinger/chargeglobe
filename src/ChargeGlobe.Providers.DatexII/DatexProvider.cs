@@ -21,8 +21,11 @@ public sealed class DatexProvider(
     TimeProvider timeProvider,
     ILogger<DatexProvider> logger) : IInventorySource, IStatusSource, IPriceSource, IProviderHealth
 {
-    /// <summary>Pages one run may read; Germany takes about 25 with 5,000 sites per page.</summary>
-    public const int MaxPagesPerRun = 100;
+    /// <summary>Pages one run may read; the table publication of Germany takes about 55 with 2,000 sites per page.</summary>
+    public const int MaxPagesPerRun = 200;
+
+    /// <summary>Requests for one page before a 5xx of the source fails the run.</summary>
+    public const int PageAttempts = 3;
 
     public ProviderDescriptor Descriptor => profile.Descriptor;
 
@@ -36,13 +39,19 @@ public sealed class DatexProvider(
             yield break;
         }
 
-        var (sites, foreign, outside, skipped) = (0, 0, 0, 0);
-        await foreach (var site in PagesAsync(profile.StaticUrl, DatexParser.ParseTable, "static", cancellationToken))
+        var (sites, foreign, mirrored, outside, skipped) = (0, 0, 0, 0, 0);
+        await foreach (var site in PagesAsync(profile.StaticUrl, profile.PageSize, DatexParser.ParseTable, "static", cancellationToken))
         {
             sites++;
             if (site.Country is { } country && !profile.Countries.Contains(country))
             {
                 foreign++;
+                continue;
+            }
+
+            if (IsMirrored(site))
+            {
+                mirrored++;
                 continue;
             }
 
@@ -70,8 +79,8 @@ public sealed class DatexProvider(
         }
 
         logger.LogInformation(
-            "DATEX II {Provider} static publication read: {Sites} sites, {Foreign} in other countries, {Outside} outside the box, {Skipped} skipped",
-            profile.Key, sites, foreign, outside, skipped);
+            "DATEX II {Provider} static publication read: {Sites} sites, {Foreign} in other countries, {Mirrored} mirrored from another source, {Outside} outside the box, {Skipped} skipped",
+            profile.Key, sites, foreign, mirrored, outside, skipped);
     }
 
     /// <summary>The status of every refill point of the countries of the profile; the box of the query plays no role.</summary>
@@ -79,8 +88,8 @@ public sealed class DatexProvider(
         StatusQuery query, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var realtime = profile.RealtimeUrl ?? throw new NotSupportedException($"DATEX II {profile.Key} has no status publication.");
-        var (points, foreign) = (0, 0);
-        await foreach (var site in PagesAsync(realtime, DatexParser.ParseStatus, "realtime", cancellationToken))
+        var (points, foreign, mirrored) = (0, 0, 0);
+        await foreach (var site in PagesAsync(realtime, profile.StatusPageSize ?? profile.PageSize, DatexParser.ParseStatus, "realtime", cancellationToken))
         {
             foreach (var status in mapper.ToStatuses(site, timeProvider.GetUtcNow()))
             {
@@ -90,13 +99,20 @@ public sealed class DatexProvider(
                     continue;
                 }
 
+                if (profile.IsMirrored(status.ExternalId))
+                {
+                    mirrored++;
+                    continue;
+                }
+
                 points++;
                 yield return status;
             }
         }
 
         logger.LogInformation(
-            "DATEX II {Provider} status publication read: {Points} refill points, {Foreign} of other countries skipped", profile.Key, points, foreign);
+            "DATEX II {Provider} status publication read: {Points} refill points, {Foreign} of other countries and {Mirrored} of another source skipped",
+            profile.Key, points, foreign, mirrored);
     }
 
     /// <summary>Ad-hoc prices that the status publication carries (E-Control); nothing for sources without one.</summary>
@@ -108,9 +124,9 @@ public sealed class DatexProvider(
             yield break;
         }
 
-        await foreach (var site in PagesAsync(realtime, DatexParser.ParseStatus, "realtime", cancellationToken))
+        await foreach (var site in PagesAsync(realtime, profile.StatusPageSize ?? profile.PageSize, DatexParser.ParseStatus, "realtime", cancellationToken))
         {
-            foreach (var price in mapper.ToPrices(site, timeProvider.GetUtcNow()).Where(price => Keeps(price.ExternalId)))
+            foreach (var price in mapper.ToPrices(site, timeProvider.GetUtcNow()).Where(price => Keeps(price.ExternalId) && !profile.IsMirrored(price.ExternalId)))
             {
                 yield return price;
             }
@@ -142,14 +158,41 @@ public sealed class DatexProvider(
 
     /// <summary>
     /// Statuses carry no address: a refill point is foreign only if its EVSE-ID names another country; IDs without
-    /// an EVSE-ID (synthetic keys such as <c>BNETZA*1002913*1</c> or <c>1347</c>) are kept and matched by the ingest.
+    /// an EVSE-ID (synthetic keys such as <c>1347</c>) are kept and matched by the ingest.
     /// </summary>
     public bool Keeps(string pointId) =>
         DatexMapper.EvseIdOf(pointId) is not { } evseId || profile.Countries.Contains(evseId.CountryCode);
 
+    /// <summary>A site all of whose refill points carry a mirrored prefix (<see cref="DatexProfile.MirroredIdPrefixes"/>).</summary>
+    public bool IsMirrored(DatexSite site)
+    {
+        var points = site.Stations.SelectMany(station => station.Points).ToList();
+        return points.Count > 0 && points.All(point => profile.IsMirrored(point.Id));
+    }
+
+    /// <summary>One page; a 5xx of the source is tried again after <see cref="DatexProfile.PageRetryDelay"/>, twice at most.</summary>
+    private async Task<System.Text.Json.Nodes.JsonNode> GetPageAsync(Uri publication, int offset, int pageSize, string name, int page, CancellationToken cancellationToken)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                return await client.GetAsync(publication, offset, pageSize, cancellationToken);
+            }
+            catch (ProviderHttpException exception) when (attempt < PageAttempts && (int?)exception.StatusCode >= 500)
+            {
+                var delay = profile.PageRetryDelay ?? TimeSpan.Zero;
+                logger.LogWarning(
+                    "DATEX II {Provider} {Publication} page {Page} returned {Status}; requesting it again in {Seconds} s",
+                    profile.Key, name, page, (int?)exception.StatusCode, (int)delay.TotalSeconds);
+                await Task.Delay(delay, timeProvider, cancellationToken);
+            }
+        }
+    }
+
     /// <summary>The items of a publication page by page: until a page is short, or at once without paging.</summary>
     private async IAsyncEnumerable<T> PagesAsync<T>(
-        Uri publication, Func<System.Text.Json.Nodes.JsonNode, IReadOnlyList<T>> parse, string name, [EnumeratorCancellation] CancellationToken cancellationToken)
+        Uri publication, int pageSize, Func<System.Text.Json.Nodes.JsonNode, IReadOnlyList<T>> parse, string name, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var (offset, pages) = (0, 0);
         while (true)
@@ -160,7 +203,7 @@ public sealed class DatexProvider(
                 yield break;
             }
 
-            var items = parse(await client.GetAsync(publication, offset, profile.PageSize, cancellationToken));
+            var items = parse(await GetPageAsync(publication, offset, pageSize, name, pages + 1, cancellationToken));
             pages++;
             logger.LogInformation("DATEX II {Provider} {Publication} page {Page}: {Items} sites from {Offset}", profile.Key, name, pages, items.Count, offset);
             foreach (var item in items)
@@ -168,12 +211,12 @@ public sealed class DatexProvider(
                 yield return item;
             }
 
-            if (profile.PageSize == 0 || items.Count < profile.PageSize)
+            if (pageSize == 0 || items.Count < pageSize)
             {
                 yield break;
             }
 
-            offset += profile.PageSize;
+            offset += pageSize;
         }
     }
 }
