@@ -361,8 +361,17 @@ describe('AdminSettingsPage', () => {
       await fixture.whenStable();
     };
 
-    expect(titles()).toEqual(['Datenquellen', 'E-Mail (SMTP)', 'Karte', 'Weitere']);
+    expect(titles()).toEqual(['Datenquellen', 'Karte und Status', 'E-Mail (SMTP)', 'Weitere']);
     expect(root().querySelectorAll('mat-expansion-panel.mat-expanded').length).toBe(1);
+    // Sub-groups: one per source, then the defaults of all sources (none here).
+    const sections = () => Array.from(root().querySelectorAll('.settings-section h2')).map((heading) => heading.textContent!.trim());
+    expect(sections()).toEqual(['E-Control (provider:econtrol)', 'Kartenstil', 'SMTP-Server']);
+
+    // Read-only until focused, so that a browser does not fill a saved login into it.
+    expect(search.readOnly).toBeTrue();
+    search.dispatchEvent(new Event('focus'));
+    await fixture.whenStable();
+    expect(search.readOnly).toBeFalse();
 
     await find('LIGHT MODE');
     expect(titles()).toEqual(['Karte']);
@@ -375,6 +384,37 @@ describe('AdminSettingsPage', () => {
     await find('gibt es nicht');
     expect(titles()).toEqual([]);
     expect(text(root(), '#no-match')).toBe('Keine Einstellung passt zu „gibt es nicht“.');
+  });
+
+  it('puts the settings of every source into a sub-group of its own', async () => {
+    auth.hasPermission.and.returnValue(false);
+    service.list.and.resolveTo([
+      providerSetting({ key: 'provider.enabled', scopes: ['global', 'provider:econtrol', 'provider:ocm'] }),
+      providerSetting({ key: 'provider.api_key', scopes: ['global', 'provider:econtrol', 'provider:ocm'] }),
+      setting({ key: 'provider.interval.status_minutes' }),
+      setting({ key: 'provider.request_budget_per_hour' }),
+      setting({ key: 'crawler.run_retention_days' }),
+      setting({ key: 'ingest.max_attempts' }),
+      setting({ key: 'address.refresh_days' }),
+      setting({ key: 'price.example_kwh' }),
+    ]);
+    await render();
+
+    const sections = Array.from(root().querySelectorAll<HTMLElement>('.settings-section')).map((section) => [
+      text(section, 'h2'),
+      Array.from(section.querySelectorAll('app-setting-row h3')).map((heading) => heading.textContent!.replace(/\s+/g, ' ').trim()),
+    ]);
+    expect(sections).toEqual([
+      ['E-Control (provider:econtrol)', ['provider.enabled provider:econtrol', 'provider.api_key provider:econtrol']],
+      ['Open Charge Map (provider:ocm)', ['provider.enabled provider:ocm', 'provider.api_key provider:ocm']],
+      ['Standard für alle Quellen', ['provider.enabled', 'provider.api_key']],
+      ['Abfrageintervalle', ['provider.interval.status_minutes']],
+      ['Budget und Pausen', ['provider.request_budget_per_hour']],
+      ['Abrufprotokoll', ['crawler.run_retention_days']],
+      ['Beispielsitzung', ['price.example_kwh']],
+      ['Ingest', ['ingest.max_attempts']],
+      ['Adressregister', ['address.refresh_days']],
+    ]);
   });
 
   it('shows the error when the settings cannot be loaded', async () => {

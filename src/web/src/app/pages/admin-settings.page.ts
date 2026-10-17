@@ -10,25 +10,105 @@ import { AppIcon } from '../design/icon';
 import { SettingRow } from '../settings/setting-row';
 import { Setting, SettingsService } from '../settings/settings.service';
 
-/** Panels of the page by the first part of the key; unknown prefixes are listed under "Weitere". */
-const GROUPS: { prefix: string; title: string; summary: string }[] = [
-  { prefix: 'provider', title: 'Datenquellen', summary: 'Zugang, Regionen und Abfrageintervalle je Quelle' },
-  { prefix: 'mail', title: 'E-Mail (SMTP)', summary: 'Versand von Bestätigungs- und Passwort-Mails' },
-  { prefix: 'map', title: 'Karte', summary: 'Kartenstil hell und dunkel, Start-Ausschnitt, Status-Alter' },
-  { prefix: 'auth', title: 'Anmeldung', summary: 'Rate-Limit der Anmeldung' },
-  { prefix: 'ingest', title: 'Ingest', summary: 'Wiederholungen und Aufbewahrung' },
-  { prefix: 'price', title: 'Preise', summary: 'Beispielrechnung: Energie und Ladeleistung des Beispielautos' },
-];
-
 interface Row {
   setting: Setting;
   scope: string;
 }
 
+/** A sub-group of a panel: the rows it takes, in catalog order. */
+interface Section {
+  title: string;
+  takes: (row: Row) => boolean;
+}
+
+interface Group {
+  title: string;
+  summary: string;
+  sections: Section[];
+}
+
+/** Names of the source adapters of the provider settings ("provider:econtrol"). */
+const PROVIDER_NAMES: Record<string, string> = { econtrol: 'E-Control', ocm: 'Open Charge Map' };
+
+const keyIn = (...keys: string[]) => (row: Row) => keys.some((key) => row.setting.key === key || row.setting.key.startsWith(`${key}.`));
+const globalKeyIn = (...keys: string[]) => (row: Row) => row.scope === 'global' && keyIn(...keys)(row);
+
+/**
+ * Panels and their sub-groups. A row goes to the first section that takes it; the settings of one source adapter
+ * (scope provider:<key>) form a section of their own, created from the scopes that exist. Rows no section takes are
+ * listed under "Weitere".
+ */
+function groupsFor(rows: Row[]): Group[] {
+  const providerScopes = [...new Set(rows.map((row) => row.scope).filter((scope) => scope.startsWith('provider:')))].sort();
+  return [
+    {
+      title: 'Datenquellen',
+      summary: 'Zugang je Quelle, Intervalle, Budget und Pausen',
+      sections: [
+        ...providerScopes.map((scope) => {
+          const key = scope.slice('provider:'.length);
+          return { title: `${PROVIDER_NAMES[key] ?? key} (${scope})`, takes: (row: Row) => row.scope === scope };
+        }),
+        { title: 'Standard für alle Quellen', takes: globalKeyIn('provider.enabled', 'provider.api_key', 'provider.referer', 'provider.regions') },
+        { title: 'Abfrageintervalle', takes: globalKeyIn('provider.interval', 'provider.tile_interval_hot_minutes', 'provider.tile_interval_normal_minutes', 'provider.tile_interval_quiet_minutes') },
+        { title: 'Budget und Pausen', takes: globalKeyIn('provider.request_budget_per_hour', 'provider.cooldown_step_minutes', 'provider.cooldown_max_minutes') },
+        { title: 'Weitere Quelleneinstellungen', takes: keyIn('provider') },
+        { title: 'Abrufprotokoll', takes: keyIn('crawler') },
+      ],
+    },
+    {
+      title: 'Karte und Status',
+      summary: 'Kartenstil, Start-Ausschnitt, Alter und Glättung des Status',
+      sections: [
+        { title: 'Kartenstil', takes: keyIn('map.style_url', 'map.style_url_dark', 'map.attribution') },
+        { title: 'Start-Ausschnitt', takes: keyIn('map.start') },
+        { title: 'Status', takes: keyIn('map.status_max_age_minutes', 'status') },
+        { title: 'Weitere Karteneinstellungen', takes: keyIn('map') },
+      ],
+    },
+    {
+      title: 'Preise',
+      summary: 'Beispielrechnung: Energie und Ladeleistung des Beispielautos',
+      sections: [{ title: 'Beispielsitzung', takes: keyIn('price') }],
+    },
+    {
+      title: 'Anmeldung und Konten',
+      summary: 'Bestätigung, Freischaltung, Rate-Limit',
+      sections: [
+        { title: 'Neue Konten', takes: keyIn('auth.require_confirmed_email', 'auth.require_admin_approval') },
+        { title: 'Schutz', takes: keyIn('auth') },
+      ],
+    },
+    {
+      title: 'E-Mail (SMTP)',
+      summary: 'Versand von Bestätigungs- und Passwort-Mails',
+      sections: [
+        { title: 'Versand', takes: keyIn('mail.enabled', 'mail.max_attempts', 'mail.retention_days') },
+        { title: 'SMTP-Server', takes: keyIn('mail.smtp') },
+        { title: 'Absender', takes: keyIn('mail.from') },
+        { title: 'Weitere Mail-Einstellungen', takes: keyIn('mail') },
+      ],
+    },
+    {
+      title: 'Daten und Aufbewahrung',
+      summary: 'Ingest, Lebenszyklus, Ladeparks, Adressregister, Audit-Log',
+      sections: [
+        { title: 'Ingest', takes: keyIn('ingest') },
+        { title: 'Lebenszyklus und Ladeparks', takes: keyIn('lifecycle', 'location') },
+        { title: 'Adressregister', takes: keyIn('address') },
+        { title: 'Audit-Log', takes: keyIn('audit') },
+      ],
+    },
+  ];
+}
+
+
 /**
  * Admin page of the central config service, rendered generically from GET /settings: one expansion panel per group
- * of keys, a search over key, scope and description. Readable with settings:read (route guard); editing needs
- * settings:manage.
+ * of keys with sub-groups (one per source adapter), a search over key, scope and description. Readable with
+ * settings:read (route guard); editing needs settings:manage. The search field stays read-only until it gets the focus:
+ * browsers fill saved logins into a text field before a password field (the secret settings) even with
+ * autocomplete="off", which would filter the page by the user's e-mail address.
  */
 @Component({
   imports: [AppIcon, MatExpansionModule, MatFormFieldModule, MatInputModule, MatProgressBarModule, RouterLink, SettingRow],
@@ -47,7 +127,17 @@ interface Row {
     <mat-form-field id="settings-search" subscriptSizing="dynamic">
       <app-icon matPrefix name="search" />
       <mat-label>Einstellung suchen</mat-label>
-      <input matInput type="search" autocomplete="off" [value]="query()" (input)="search($event)" />
+      <input
+        matInput
+        type="search"
+        name="settings-filter"
+        autocomplete="off"
+        data-form-type="other"
+        [readOnly]="!searchArmed()"
+        [value]="query()"
+        (focus)="searchArmed.set(true)"
+        (input)="search($event)"
+      />
     </mat-form-field>
     @if (busy()) {
       <mat-progress-bar mode="indeterminate" aria-label="Einstellungen werden geladen" />
@@ -62,13 +152,20 @@ interface Row {
             <mat-panel-title>{{ group.title }}</mat-panel-title>
             <mat-panel-description>{{ group.summary }}</mat-panel-description>
           </mat-expansion-panel-header>
-          @for (row of group.rows; track row.setting.key + row.scope) {
-            <app-setting-row
-              [setting]="row.setting"
-              [scope]="row.scope"
-              [canManage]="auth.hasPermission('settings:manage')"
-              (changed)="replace($event)"
-            />
+          @for (section of group.sections; track section.title) {
+            <section class="settings-section">
+              @if (group.sections.length > 1 || section.title !== group.title) {
+                <h2>{{ section.title }}</h2>
+              }
+              @for (row of section.rows; track row.setting.key + row.scope) {
+                <app-setting-row
+                  [setting]="row.setting"
+                  [scope]="row.scope"
+                  [canManage]="auth.hasPermission('settings:manage')"
+                  (changed)="replace($event)"
+                />
+              }
+            </section>
           }
         </mat-expansion-panel>
       }
@@ -85,22 +182,33 @@ export class AdminSettingsPage {
   protected readonly query = signal('');
   protected readonly busy = signal(false);
   protected readonly errors = signal<string[]>([]);
+  /** False until the search field gets the focus (no autofill into a read-only field). */
+  protected readonly searchArmed = signal(false);
 
-  /** Rows per group in catalog order; while searching only matches, with their panels open. */
+  /** Rows per group and section in catalog order; while searching only matches, with their panels open. */
   protected readonly groups = computed(() => {
     const term = this.query().trim().toLowerCase();
     const rows: Row[] = this.settings()
       .flatMap((setting) => setting.scopes.map((scope) => ({ setting, scope })))
       .filter(({ setting, scope }) => !term || `${setting.key} ${scope} ${setting.description}`.toLowerCase().includes(term));
-    const known = GROUPS.map((group) => group.prefix);
-    const prefixOf = (row: Row) => row.setting.key.split('.')[0];
-    return [...GROUPS, { prefix: '', title: 'Weitere', summary: 'Ohne eigene Gruppe' }]
-      .map((group) => ({
-        ...group,
-        expanded: term !== '' || group.prefix === 'provider',
-        rows: rows.filter((row) => (group.prefix ? prefixOf(row) === group.prefix : !known.includes(prefixOf(row)))),
-      }))
-      .filter((group) => group.rows.length > 0);
+    const groups = groupsFor(rows);
+    const placed = new Set<Row>();
+    const take = (section: Section) => {
+      const taken = rows.filter((row) => !placed.has(row) && section.takes(row));
+      taken.forEach((row) => placed.add(row));
+      return { title: section.title, rows: taken };
+    };
+    const filled = groups.map((group, index) => ({
+      title: group.title,
+      summary: group.summary,
+      expanded: term !== '' || index === 0,
+      sections: group.sections.map(take).filter((section) => section.rows.length > 0),
+    }));
+    const rest = rows.filter((row) => !placed.has(row));
+    return [
+      ...filled,
+      { title: 'Weitere', summary: 'Ohne eigene Gruppe', expanded: term !== '', sections: [{ title: 'Weitere', rows: rest }].filter((section) => section.rows.length > 0) },
+    ].filter((group) => group.sections.length > 0);
   });
 
   constructor() {
