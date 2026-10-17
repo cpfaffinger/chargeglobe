@@ -48,6 +48,18 @@ public sealed record PriceBounds(decimal MinKwh, decimal MaxKwh)
     }
 
     public bool Accepts(PriceComponents price) => IssueOf(price) is null;
+
+    /// <summary>
+    /// The energy price probably meant by an implausible one: cents entered as euros (×100) or euros as cents (÷100), if
+    /// that lands within the bounds; null otherwise.
+    /// </summary>
+    public decimal? IntendedKwh(decimal? pricePerKwh) =>
+        pricePerKwh switch
+        {
+            > 0 and var kwh when kwh < MinKwh && kwh * 100 is var up && up >= MinKwh && up <= MaxKwh => up,
+            { } kwh when kwh > MaxKwh && kwh / 100 is var down && down >= MinKwh && down <= MaxKwh => down,
+            _ => null,
+        };
 }
 
 /// <summary>Price components of a charging session; amounts in <see cref="Currency"/>, null if the source does not tell.</summary>

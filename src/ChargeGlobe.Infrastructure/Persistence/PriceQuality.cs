@@ -26,7 +26,8 @@ public sealed class PriceQuality(AppDbContext db, IAppConfig config, TimeProvide
                     .GroupBy(row => (row.PricePerKwh, row.PricePerMinute, row.SessionFee, row.Reason))
                     .OrderByDescending(prices => prices.Count())
                     .Take(MaxExamples)
-                    .Select(prices => new PriceSample(prices.Key.PricePerKwh, prices.Key.PricePerMinute, prices.Key.SessionFee, prices.Count(), prices.Key.Reason))],
+                    .Select(prices => new PriceSample(
+                        prices.Key.PricePerKwh, prices.Key.PricePerMinute, prices.Key.SessionFee, prices.Count(), prices.Key.Reason, bounds.IntendedKwh(prices.Key.PricePerKwh)))],
                 group.Max(row => row.ObservedAt)))
             .OrderByDescending(item => item.Evses)
             .ThenBy(item => item.OperatorId, StringComparer.Ordinal)];
@@ -39,7 +40,7 @@ public sealed class PriceQuality(AppDbContext db, IAppConfig config, TimeProvide
     {
         var bounds = PricePlausibility.From(config);
         var (min, max) = (bounds.MinKwh, bounds.MaxKwh);
-        return await db.Database.SqlQuery<ImplausibleEvse>($"""
+        var rows = await db.Database.SqlQuery<EvseRow>($"""
             WITH newest AS (
                 SELECT DISTINCT ON (p.evse_id) p.evse_id, p.source_key, p.price_per_kwh, p.price_per_minute, p.session_fee,
                        p.blocking_fee_per_minute, p.free_of_charge, p.observed_at
@@ -69,5 +70,22 @@ public sealed class PriceQuality(AppDbContext db, IAppConfig config, TimeProvide
             WHERE j.reason IS NOT NULL
             ORDER BY j.operator NULLS LAST, j.evse_id_display
             """).ToListAsync(cancellationToken);
+        return [.. rows.Select(row => new ImplausibleEvse(
+            row.OperatorId, row.OperatorName, row.EvseId, row.LocationName, row.City, row.Reason, row.PricePerKwh, row.PricePerMinute, row.SessionFee,
+            row.BlockingFeePerMinute, row.Source, row.ObservedAt, bounds.IntendedKwh(row.PricePerKwh)))];
     }
+
+    private sealed record EvseRow(
+        string? OperatorId,
+        string? OperatorName,
+        string EvseId,
+        string? LocationName,
+        string? City,
+        string Reason,
+        decimal? PricePerKwh,
+        decimal? PricePerMinute,
+        decimal? SessionFee,
+        decimal? BlockingFeePerMinute,
+        string Source,
+        DateTimeOffset ObservedAt);
 }

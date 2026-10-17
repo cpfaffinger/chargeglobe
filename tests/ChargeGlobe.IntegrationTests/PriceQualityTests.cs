@@ -137,7 +137,8 @@ public class PriceQualityTests(IntegrationFactory factory) : IClassFixture<Integ
         var operators = data.GetProperty("operators").EnumerateArray().ToList();
         var ts2 = operators.Single(item => item.GetProperty("operatorId").GetString() == "AT*TS2");
         Assert.Equal((1, "NO_AMOUNT"), (ts2.GetProperty("evses").GetInt32(), ts2.GetProperty("examples")[0].GetProperty("reason").GetString()));
-        Assert.Contains(operators, item => item.GetProperty("examples").EnumerateArray().Any(sample => sample.GetProperty("reason").GetString() == "BELOW_MIN"));
+        var below = operators.SelectMany(item => item.GetProperty("examples").EnumerateArray()).Single(sample => sample.GetProperty("reason").GetString() == "BELOW_MIN");
+        Assert.Equal(0.5m, below.GetProperty("intendedPricePerKwh").GetDecimal());
         Assert.Equal(3, operators.Sum(item => item.GetProperty("evses").GetInt32()));
         Assert.True(operators[0].GetProperty("evses").GetInt32() >= operators[^1].GetProperty("evses").GetInt32());
         Assert.True(ts2.GetProperty("lastObservedAt").GetDateTimeOffset() > DateTimeOffset.UtcNow.AddDays(-1));
@@ -155,8 +156,8 @@ public class PriceQualityTests(IntegrationFactory factory) : IClassFixture<Integ
         var lines = (await response.Content.ReadAsStringAsync()).Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(line => line.TrimEnd('\r')).ToList();
         Assert.Equal(ChargeGlobe.Api.Admin.PriceQualityEndpoints.CsvHeader, lines[0]);
         Assert.Equal(4, lines.Count);
-        Assert.Contains(lines, line => line.StartsWith($"AT*TST,", StringComparison.Ordinal) && line.Contains($",{Cheap},", StringComparison.Ordinal) && line.Contains(",BELOW_MIN,0.005,", StringComparison.Ordinal));
-        Assert.Contains(lines, line => line.Contains($",{Zero},", StringComparison.Ordinal) && line.Contains(",NO_AMOUNT,0,0,0,0,econtrol,", StringComparison.Ordinal));
+        Assert.Contains(lines, line => line.StartsWith($"AT*TST,", StringComparison.Ordinal) && line.Contains($",{Cheap},", StringComparison.Ordinal) && line.Contains(",BELOW_MIN,0.005,0.5,", StringComparison.Ordinal));
+        Assert.Contains(lines, line => line.Contains($",{Zero},", StringComparison.Ordinal) && line.Contains(",NO_AMOUNT,0,,0,0,0,econtrol,", StringComparison.Ordinal));
         Assert.Contains(lines, line => line.Contains(",ABOVE_MAX,2.5,", StringComparison.Ordinal));
     }
 }

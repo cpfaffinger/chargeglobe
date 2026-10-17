@@ -32,6 +32,11 @@ public class PriceTests
         Assert.True(none.HasNoAmount());
         Assert.False((none with { FreeOfCharge = true }).HasNoAmount());
         Assert.False((none with { BlockingFeePerMinute = 0.10m }).HasNoAmount());
+
+        // The price probably meant: cents as euros or euros as cents, if that lands within the bounds.
+        Assert.Equal(
+            [0.59m, 0.59m, null, null, null, null],
+            new[] { bounds.IntendedKwh(0.0059m), bounds.IntendedKwh(59m), bounds.IntendedKwh(0.0001m), bounds.IntendedKwh(2.50m), bounds.IntendedKwh(0.30m), bounds.IntendedKwh(null) });
     }
 
     [Fact]

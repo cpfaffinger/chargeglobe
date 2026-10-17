@@ -16,7 +16,7 @@ public static class PriceQualityEndpoints
 
     /// <summary>Header of the CSV report, one row per EVSE.</summary>
     public const string CsvHeader =
-        "operator_id,operator_name,evse_id,location_name,city,reason,price_per_kwh,price_per_minute,session_fee,blocking_fee_per_minute,source,observed_at";
+        "operator_id,operator_name,evse_id,location_name,city,reason,price_per_kwh,intended_price_per_kwh,price_per_minute,session_fee,blocking_fee_per_minute,source,observed_at";
 
     public static IEndpointRouteBuilder MapPriceQualityEndpoints(this IEndpointRouteBuilder endpoints)
     {
@@ -33,7 +33,8 @@ public static class PriceQualityEndpoints
                 "`reason` in `getEvsePrices` and left out of the price comparison. Returns the bounds, the implausible EVSEs in " +
                 "total and per reason (`noAmount`, `belowMin`, `aboveMax`) and `operators[]`, most EVSEs first: `operatorId` " +
                 "(country and operator part of the EVSE-ID, null if unknown), `name`, `evses`, up to three `examples` (the most " +
-                "frequent prices with their `reason` and number of EVSEs) and `lastObservedAt`. `exportImplausiblePrices` gives " +
+                "frequent prices with their `reason`, number of EVSEs and `intendedPricePerKwh`, the energy price probably meant – " +
+                "×100 or ÷100 if that lands within the bounds, else null) and `lastObservedAt`. `exportImplausiblePrices` gives " +
                 "the EVSEs one by one as CSV.")
             .Produces<ImplausiblePricesResponse>()
             .WithResponseExample(
@@ -46,7 +47,7 @@ public static class PriceQualityEndpoints
                     0,
                     16,
                     0,
-                    [new OperatorImplausiblePrices("AT*F9B", "CAS Immobilien GmbH", 16, [new PriceSample(0.005m, null, null, 16, "BELOW_MIN")], ExampleTime.AddMinutes(-42))])));
+                    [new OperatorImplausiblePrices("AT*F9B", "CAS Immobilien GmbH", 16, [new PriceSample(0.005m, null, null, 16, "BELOW_MIN", 0.50m)], ExampleTime.AddMinutes(-42))])));
 
         endpoints.MapGet("/api/v1/admin/prices/implausible/export", ExportImplausibleAsync)
             .WithTags("Crawler")
@@ -56,7 +57,8 @@ public static class PriceQualityEndpoints
             .WithDescription(
                 "The report behind `listImplausiblePrices`, one row per EVSE, as a basis for telling the source (for the " +
                 "E-Control register the operator) about the errors: CSV (RFC 4180, UTF-8, comma-separated) with the header " + CsvHeader +
-                ". Sorted by operator and EVSE-ID; amounts in EUR with a dot, empty if the source does not tell; `reason` " +
+                ". Sorted by operator and EVSE-ID; amounts in EUR with a dot, empty if the source does not tell; " +
+                "`intended_price_per_kwh` the energy price probably meant (empty if none fits); `reason` " +
                 "NO_AMOUNT, BELOW_MIN or ABOVE_MAX; `observed_at` ISO 8601 in UTC.")
             .Produces(StatusCodes.Status200OK, contentType: "text/csv");
         return endpoints;
@@ -92,6 +94,7 @@ public static class PriceQualityEndpoints
             Field(row.City),
             row.Reason,
             Amount(row.PricePerKwh),
+            Amount(row.IntendedPricePerKwh),
             Amount(row.PricePerMinute),
             Amount(row.SessionFee),
             Amount(row.BlockingFeePerMinute),
