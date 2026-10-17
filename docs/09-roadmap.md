@@ -95,11 +95,16 @@
 
 ### Phase 3 – DACH
 - [ ] Generischer **OCPI-Adapter** (zuerst für die Schweizer BFE-API, die ab November 2026 öffentlich OCPI liefert)
-- [ ] Generischer **DATEX-II-Adapter** (Mobilithek-AFIR-Angebote, Bundesnetzagentur-Register als Inventar-Fallback), getestet an den DATEX-v3.5-Publikationen der E-Control
+- [ ] Adapter **Bundesnetzagentur** (Inventar aus CSV, später Webservice; EVSE-ID zuerst, sonst Geo + Betreiber + Stecker; Region-Seed der 16 Bundesländer; Betreiber-Seed aus der BDEW-Operator-ID-Liste) – Tier 0, ohne Zugangsdaten startbar ([10 §3](10-afir-umsetzung-eu.md))
+- [ ] Generischer **DATEX-II-Adapter** mit konfigurierbarem Profil: zuerst **MobiData BW** (`static`/`realtime`, JSON v3.5, ohne Key, DL-DE-BY 2.0), dann Mobilithek-Pull je Subscription-ID mit Client-Zertifikat; getestet an den DATEX-v3.5-Publikationen der E-Control
+- [ ] Betreiber: Mobilithek-Organisation, Maschinenzertifikat und Abonnements der `AFIR-recharging-*`-Angebote beschaffen; BNetzA-Webservice beantragen; MobiData-BW-Nutzungsbedingungen klären (Schritte in [10 §3.2](10-afir-umsetzung-eu.md))
 - [ ] Mehrsprachigkeit (de/en/it/fr) in API-Texten und Frontend
 
 ### Phase 4 – Italien
-- [ ] PUN/NAP-Zugang klären (vermutlich Anfrage an GSE/MIT nötig), Südtirol als Pilot über OCM/OSM + CPO-Web-Karten
+- [ ] PUN-Zugang klären: die PUN ist nur eine Webkarte ohne Download oder DATEX II, der ITS-NAP (CCISS) führt keine Ladedaten; Anfrage an MASE/GSE und MIT nötig ([10](10-afir-umsetzung-eu.md)); Südtirol als Pilot über OCM/OSM + CPO-Web-Karten
+
+### Weitere EU-Länder (nach Bedarf)
+- [ ] Ohne Vertrag anbindbar: Finnland und Litauen (OCPI/DATEX II, CC BY 4.0), Portugal (DATEX II mit Status, Lizenz klären), Griechenland (JSON mit Status, CC BY 4.0), Niederlande (OCPI, Lizenz klären), Frankreich (CSV ohne Preise), Spanien (nur Inventar), Polen (EIPA), Schweden (NOBIL); Reihenfolge und Lücken je Land in [10 §7](10-afir-umsetzung-eu.md)
 
 ## Offene Entscheidungen
 

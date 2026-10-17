@@ -33,6 +33,7 @@ Anbieter und Tarifmodelle hinweg. Alles wird über eine öffentliche API und ein
 | [07 – Bestandsanalyse Apps/Anbieter Österreich](docs/07-bestandsanalyse-apps-at.md) | EVN, ÖAMTC ePower, Verbund/SMATRICS, Electroverse, Tesla, Wien Energie, Linz AG, Energie AG, Energie Burgenland, … |
 | [08 – Datenquellen & Rechtsrahmen](docs/08-datenquellen-und-recht.md) | E-Control Ladestellenverzeichnis, AFIR/NAP, Open Data, DE/CH/IT, rechtliche Leitplanken |
 | [09 – Roadmap](docs/09-roadmap.md) | Phasen, Meilensteine, offene Entscheidungen |
+| [10 – AFIR in den EU-Ländern](docs/10-afir-umsetzung-eu.md) | Bericht je EU-Land: nationaler Zugangspunkt, Feeds für Inventar/Status/Preis, Zugang, Lizenz, IDRO; Deutschland mit Handlungsliste für den Betreiber |
 | [ADRs](docs/adr/) | Architekturentscheidungen |
 
 ## Schnellstart

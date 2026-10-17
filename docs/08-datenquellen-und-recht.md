@@ -1,6 +1,6 @@
 # 08 – Datenquellen & Rechtsrahmen
 
-Stand: 13. Oktober 2026. Kennzeichnung: **[V]** verifiziert über Primärquelle, **[V-sek]** über belastbare Sekundärquelle (z. B. Quellcode einer Open-Source-Integration), **[U]** unsicher/nicht belegbar.
+Stand: 17. Oktober 2026. Kennzeichnung: **[V]** verifiziert über Primärquelle, **[V-sek]** über belastbare Sekundärquelle (z. B. Quellcode einer Open-Source-Integration), **[U]** unsicher/nicht belegbar.
 
 ## 1. Österreich – das Rückgrat: E-Control Ladestellenverzeichnis
 
@@ -51,6 +51,7 @@ Inventar und Preise kosten mit dem Register 17 Requests je Lauf; das Budget geh�
 
 - **AFIR (EU) 2023/1804 Art. 20**: seit 14.04.2025 müssen Betreiber statische und dynamische Daten kostenlos und diskriminierungsfrei über den NAP bereitstellen. **Durchführungs-VO (EU) 2025/655**: ab 14.04.2026 im Format DATEX II (CEN/TS 16157-10); statisch ≤ 24 h, dynamisch (Status, Verfügbarkeit, **Ad-hoc-Preis inkl. aller Komponenten**) ≤ 1 min. [EUR-Lex 2025/655](https://eur-lex.europa.eu/eli/reg_impl/2025/655/oj/eng) · [Zusammenfassung NDW](https://docs.ndw.nu/en/data-uitwisseling/interface-beschrijvingen/dafne-api/VerplichtingConformUitvoeringsverordeningEU2025/) [V-sek]
 - **NAP Österreich: [mobilitaetsdaten.gv.at](https://www.mobilitaetsdaten.gv.at/)** (AustriaTech). Datensatz [„Ladestellenverzeichnis der E-Control (nationales Ladepunkteregister)“](https://www.mobilitaetsdaten.gv.at/daten/ladestellenverzeichnis-der-e-control-nationales-ladepunkteregister): DATEX II v3.2, XML, HTTP-Pull, „bei Änderung“, Zugang über dieselbe E-Control-API-Registrierung. **Der NAP hostet keine eigene Kopie; E-Control ist die AFIR-Quelle und erzeugt DATEX II selbst.** [V]
+- **Alle anderen EU-Länder** (NAP, Rechtsgrundlage, zentraler Feed oder Betreiber-Feeds, Format, Zugang, Lizenz, IDRO, Stand 10/2026) stehen im Bericht [10 – AFIR Art. 20 in den EU-Ländern](10-afir-umsetzung-eu.md).
 - Für chargeglobe heißt das: die E-Control-API liefert DATEX II v3.5 selbst (Table-Publication 217 MB, Status-Publication 74 MB, beide mit dem Key erreichbar). Die Status-Publikation ist aber ein Stunden alter Snapshot; Inventar und Preise kommen deshalb aus dem Register (`GET /search/stations`, 17 Seiten), der Live-Status weiter aus `GET /search` ([Endpunkt-Notiz](endpunkte/econtrol.md)). Die DATEX-Publikationen der E-Control sind das Testobjekt für den generischen DATEX-II-Adapter (Phase 3).
 
 ## 3. Weitere Quellen Österreich
@@ -69,9 +70,14 @@ Inventar und Preise kosten mit dem Register 17 Requests je Lauf; das Budget geh�
 
 ## 4. Deutschland (Phase 3)
 
-- **Bundesnetzagentur Ladesäulenregister**: CSV/XLSX-Download (tagesaktuell), **CC BY 4.0**; Felder je Ladeeinrichtung (Betreiber, Status, Art, Anzahl Ladepunkte, Nennleistung, Steckertypen je Punkt), **keine EVSE-IDs belegt** → Matching über Geo + Betreiber + Steckerkonfiguration. Webservice-Doku nur auf Anfrage. [BNetzA](https://www.bundesnetzagentur.de/DE/Fachthemen/ElektrizitaetundGas/E-Mobilitaet/DownloadundKontakt.html) [V]
-- **Mobilithek (NAP)**: AFIR-Angebote **pro Betreiber** als DATEX-II-Pull (Subscription-ID + Client-Zertifikat); Profil v01-00-00 mit JSON-Schemas für `EnergyInfrastructureTablePublication`/`StatusPublication`. [GitHub MobilithekDE](https://github.com/MobilithekDE/AFIR-DATEX-II-Recharging-Profil/) [V]. Lizenz der einzelnen Angebote [U].
-- Regionale Echtzeitquellen: MobiData BW (OCPI-Beispielformat), Bonn (`https://new-poi.chargecloud.de/bonn`, CC BY).
+Ausführlich mit Handlungsliste für den Betreiber in [10 §3](10-afir-umsetzung-eu.md). Kurzfassung:
+
+- **Bundesnetzagentur Ladesäulenregister**: CSV (51 MB) und XLSX (28 MB), **monatlich**, **CC BY 4.0** (Quellenvermerk „Bundesnetzagentur.de“); eine Zeile je Ladeeinrichtung mit stabiler 7-stelliger `Ladeeinrichtungs-ID` und bis zu 6 Ladepunkten mit Steckertyp, Leistung und **`EVSE-ID{n}`** (im Meldeportal optional, daher nur teilweise befüllt → EVSE-ID zuerst, sonst Geo + Betreiber + Steckerkonfiguration). Kein Echtzeitstatus (`Status` ist der Lebenszyklus). Tagesaktueller **Webservice** mit OpenAPI-Beschreibung nur auf E-Mail-Anfrage an `ladesaeulenregister@bnetza.de`. [Ladesäulenkarte](https://www.bundesnetzagentur.de/DE/Fachthemen/ElektrizitaetundGas/E-Mobilitaet/Ladesaeulenkarte/start.html), [Schnittstellen](https://www.bundesnetzagentur.de/DE/Fachthemen/ElektrizitaetundGas/E-Mobilitaet/Schnittstellen/start.html) [V]
+- **Mobilithek (NAP)**: Status und Ad-hoc-Preis nur als AFIR-Angebote **je Betreiber oder Dienstleister** (`AFIR-recharging-stat-*` und `-dyn-*`, DATEX II v3.5 als **JSON**, Profil v01-00-00), Pull mit **Client-Zertifikat** und Subscription-ID (`Accept-Encoding: gzip` Pflicht, Delta-Pakete über `If-Modified-Since`) oder Push; kein zentrales Aggregat, kein API-Key. Zugang nur für registrierte Organisationen mit institutioneller E-Mail. Lizenzen je Angebot: überwiegend CC0, teils CC BY 4.0, einige geschlossen. Angebote über die [GovData-CKAN-API](https://www.govdata.de/ckan/api/3/action/package_search?q=AFIR-recharging&rows=200) enumerierbar. [GitHub MobilithekDE](https://github.com/MobilithekDE/AFIR-DATEX-II-Recharging-Profil/), [Schnittstellenbeschreibung 1.3.2](https://mobilithek.info/cms/assets/65545c25-c155-488c-9c7c-b9da1c7685b5?download=) [V]
+- **MobiData BW** (NVBW): frei zugänglicher Aggregator der wichtigsten Mobilithek-Feeds (chargecloud, e-clearing.net, Eco-Movement, EnBW, Midorion, TC-Backend, Tesla) plus BNetzA-Inventar für **ganz Deutschland**: DATEX II v3.5 JSON `static`/`realtime` und OCPI 3.0 unter `api.mobidata-bw.de`, ohne Key, **DL-DE-BY 2.0**; Rate-Limits nicht dokumentiert. Erste Quelle für den DATEX-II-Adapter. [Datensatz](https://mobidata-bw.de/dataset/e-ladesaulen) [V]
+- **EVSE-ID**: IDRO ist die Energie Codes und Services GmbH (BDEW); [Operator-ID-Liste](https://bdew-codes.de/Codenumbers/EMobilityId/OperatorIdList) mit Excel-Export ohne Konto (1.743 Einträge, 10/2026). [V]
+- **Recht**: Verordnung zur Neuordnung des Ladesäulenrechts (BGBl. 2025 I Nr. 367, seit 01.01.2026): Anzeigepflicht an die BNetzA, Betriebsuntersagung bei AFIR-Verstößen; keine Regelung zu dynamischen Daten. Art. 20 läuft unmittelbar über die Mobilithek; ein IVSG als gesetzliche Grundlage ist seit 29.10.2025 im Verfahren [U]. [V]
+- Regional: Bonn (`https://new-poi.chargecloud.de/bonn`, Echtzeit, Lizenz widersprüchlich), Hamburg (eRound über Mobilithek), Berlin (nur statisch).
 
 ## 5. Schweiz (Phase 3)
 
@@ -79,7 +85,7 @@ Inventar und Preise kosten mit dem Register 17 Requests je Lauf; das Budget geh�
 
 ## 6. Italien (Phase 4)
 
-- **PUN (Piattaforma Unica Nazionale)**, MASE/GSE/RSE, Portal seit März 2024 mit Status; **keine Open-Data-API gefunden** [U]. NAP [nap.mit.gov.it](https://nap.mit.gov.it) (JS-only, AFIR-Inhalte nicht verifizierbar). Vorgehen: Anfrage an GSE/MIT; Südtirol-Pilot über OCM/OSM + CPO-Web-Karten.
+- **PUN (Piattaforma Unica Nazionale)**, MASE/GSE/RSE, [piattaformaunicanazionale.it](https://www.piattaformaunicanazionale.it/): zentrales Register (DM MASE 16.03.2023, 78.939 Ladepunkte 10/2026) mit Status als Tagesmomentaufnahme, ohne Preise, **nur als Webkarte; kein Open-Data-Download, kein DATEX II** [V]. Der ITS-NAP ist das CCISS des MIT ([cciss.it](https://www.cciss.it/)) ohne Ladepunkt-Datensatz; keine IDRO benannt [V]. Vorgehen: Anfrage an MASE/GSE und MIT; Südtirol-Pilot über OCM/OSM + CPO-Web-Karten. Details in [10](10-afir-umsetzung-eu.md).
 
 ## 7. Standards (Mapping-Grundlage)
 
