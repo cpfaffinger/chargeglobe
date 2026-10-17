@@ -75,4 +75,20 @@ public class PriceTests
         // Counted from the end of charging: the example unplugs then and pays none.
         Assert.Equal(13.50m, (price with { BlockingFrom = TariffBlockingFrom.CHARGING_END }).CostOf(30, 164));
     }
+
+    [Fact]
+    public void Blocked_minutes_count_only_in_the_window_and_up_to_the_limit()
+    {
+        // 0.07 €/min after 210 minutes, billed only 08:00–23:00.
+        var price = new PriceComponents("EUR", 0.69m, null, null, 0.07m, 210, false, BlockingStartTime: new TimeOnly(8, 0), BlockingEndTime: new TimeOnly(23, 0));
+        var evening = new DateTime(2026, 10, 17, 19, 0, 0);
+        // Session 19:00–23:30: minutes 210–270 lie 22:30–23:30, 30 of them before 23:00.
+        Assert.Equal(20.70m + 2.10m, price.CostOf(30, 270, evening));
+        Assert.Equal(20.70m + 4.20m, price.CostOf(30, 270));
+        // A window across midnight, and a limit of billed minutes.
+        var night = price with { BlockingStartTime = new TimeOnly(22, 0), BlockingEndTime = new TimeOnly(6, 0), BlockingMaxMinutes = 20 };
+        Assert.Equal(20.70m + 1.40m, night.CostOf(30, 270, evening));
+        Assert.True(TimeWindow.Contains(new TimeOnly(22, 0), new TimeOnly(6, 0), new TimeOnly(1, 0)));
+        Assert.False(TimeWindow.Contains(new TimeOnly(8, 0), new TimeOnly(23, 0), new TimeOnly(23, 0)));
+    }
 }

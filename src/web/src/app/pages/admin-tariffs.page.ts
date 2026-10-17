@@ -8,6 +8,8 @@ import { AppLoading } from '../design/loading';
 import { money } from '../evses/prices';
 import { Emp, Network, PriceElement, Tariff, TariffsService, ZONE_LABELS, Zone } from '../tariffs/tariffs.service';
 
+const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+
 const CONFIDENCE: Record<Tariff['confidence'], string> = { HIGH: 'aus dem Preisblatt', MEDIUM: 'abgeleitet', LOW: 'unsicher' };
 
 /**
@@ -169,11 +171,14 @@ export class AdminTariffsPage {
             ? `Blockieren ${money(price.blockingFeePerMinute, currency)}/min` +
               (price.blockingAfterMinutes !== null ? ` ab Min. ${price.blockingAfterMinutes}` : '') +
               (price.blockingFrom === 'CHARGING_END' ? ' nach Ladeende' : '') +
+              (price.blockingStartTime ? ` ${price.blockingStartTime}–${price.blockingEndTime} Uhr` : '') +
+              (price.maxBlockingMinutes ? ` (max. ${price.maxBlockingMinutes} min)` : '') +
               (price.maxBlockingFee ? ` (max. ${money(price.maxBlockingFee, currency)})` : '')
             : null,
         ].filter((piece) => piece !== null);
         const window = price.startTime ? `${price.startTime}–${price.endTime} Uhr ` : '';
-        return `${window}${price.minKw ? `ab ${price.minKw} kW ` : ''}${pieces.join(', ')}`;
+        const days = price.days?.length ? `${price.days.map((day) => WEEKDAYS[day - 1]).join(', ')} ` : '';
+        return `${days}${window}${price.minKw ? `ab ${price.minKw} kW ` : ''}${pieces.join(', ')}`;
       });
     return parts.length > 0 ? parts.join(' · ') : '–';
   }

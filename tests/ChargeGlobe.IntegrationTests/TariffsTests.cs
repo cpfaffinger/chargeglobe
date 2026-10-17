@@ -31,7 +31,7 @@ public class TariffsTests(IntegrationFactory factory)
     {
         var tariffs = new JsonArray(Tariff("basic", " Basic ", null,
             new { kind = "HOME", networks = new[] { network }, prices = new object[] { new { current = "AC", pricePerKwh = basic, blockingFeePerMinute = 0.10m, blockingAfterMinutes = 240, maxBlockingFee = 30m, blockingFrom = "CHARGING_END" }, new { current = "DC", pricePerKwh = 0.65m } } },
-            new { kind = "ROAMING", excludedOperators = new[] { "at*tsl" }, prices = new object[] { new { current = "AC", pricePerKwh = 0.59m }, new { current = "DC", minKw = 100, pricePerKwh = 0.89m }, new { current = "AC", pricePerKwh = 0.49m, startTime = "22:00", endTime = "08:00" } }, notes = "Partnerladenetz" }));
+            new { kind = "ROAMING", excludedOperators = new[] { "at*tsl" }, prices = new object[] { new { current = "AC", pricePerKwh = 0.59m }, new { current = "DC", minKw = 100, pricePerKwh = 0.89m }, new { current = "AC", pricePerKwh = 0.49m, startTime = "22:00", endTime = "08:00" }, new { current = "AC", pricePerKwh = 0.39m, days = new[] { 7, 6 }, blockingFeePerMinute = 0.07m, blockingAfterMinutes = 210, blockingStartTime = "08:00", blockingEndTime = "23:00", maxBlockingMinutes = 500 } }, notes = "Partnerladenetz" }));
         if (withPlus)
         {
             tariffs.Add(Tariff("plus", "Plus", 4.95m, new { kind = "OPERATOR", operators = new[] { "AT*IOY" }, prices = new object[] { new { current = "DC", pricePerMinute = 0.5m, sessionFee = 1m } } }));
@@ -125,6 +125,9 @@ public class TariffsTests(IntegrationFactory factory)
         Assert.Equal((30m, "CHARGING_END", JsonValueKind.Null), (home.GetProperty("maxBlockingFee").GetDecimal(), home.GetProperty("blockingFrom").GetString(), home.GetProperty("startTime").ValueKind));
         var night = zones[1].GetProperty("prices")[2];
         Assert.Equal(("22:00", "08:00", "SESSION_START"), (night.GetProperty("startTime").GetString(), night.GetProperty("endTime").GetString(), night.GetProperty("blockingFrom").GetString()));
+        var weekend = zones[1].GetProperty("prices")[3];
+        Assert.Equal([6, 7], weekend.GetProperty("days").EnumerateArray().Select(day => day.GetInt32()));
+        Assert.Equal(("08:00", "23:00", 500), (weekend.GetProperty("blockingStartTime").GetString(), weekend.GetProperty("blockingEndTime").GetString(), weekend.GetProperty("maxBlockingMinutes").GetInt32()));
         Assert.Equal((100m, 0.89m), (zones[1].GetProperty("prices")[1].GetProperty("minKw").GetDecimal(), zones[1].GetProperty("prices")[1].GetProperty("pricePerKwh").GetDecimal()));
         Assert.Equal(4.95m, tariffs[1].GetProperty("monthlyFee").GetDecimal());
 
@@ -251,6 +254,9 @@ public class TariffsTests(IntegrationFactory factory)
         { "price.endTime=8 Uhr", "startTime and endTime come together" },
         { "price2.maxBlockingFee=5", "maxBlockingFee needs a blocking fee" },
         { "price.blockingFrom=LATER", "blockingFrom must be SESSION_START or CHARGING_END" },
+        { "price.days=8", "days must be distinct ISO weekdays" },
+        { "price.blockingStartTime=08:00", "blockingStartTime and blockingEndTime come together" },
+        { "price2.maxBlockingMinutes=500", "maxBlockingMinutes needs a blocking fee" },
         { "zone.currents=HPC", "currents must be AC and/or DC" },
         { "zone.currents=", "currents must be AC and/or DC" },
         { "zone.pricing=PER_MINUTE", "the pricing must be FIXED, OPERATOR_AD_HOC or UNKNOWN" },
@@ -320,9 +326,10 @@ public class TariffsTests(IntegrationFactory factory)
 
         target[property] = property switch
         {
+            "days" => new JsonArray(int.Parse(value, System.Globalization.CultureInfo.InvariantCulture)),
             "operators" or "excludedOperators" or "networks" or "markets" or "currents" => value == "" ? new JsonArray() : new JsonArray(value),
             "prices" or "zones" => new JsonArray(),
-            "monthlyFee" or "minKw" or "blockingAfterMinutes" or "pricePerKwh" or "markupPercent" or "markupSessionFee" or "maxBlockingFee" => value == "" ? null : JsonValue.Create(decimal.Parse(value, System.Globalization.CultureInfo.InvariantCulture)),
+            "monthlyFee" or "minKw" or "blockingAfterMinutes" or "pricePerKwh" or "markupPercent" or "markupSessionFee" or "maxBlockingFee" or "maxBlockingMinutes" => value == "" ? null : JsonValue.Create(decimal.Parse(value, System.Globalization.CultureInfo.InvariantCulture)),
             _ => value,
         };
     }

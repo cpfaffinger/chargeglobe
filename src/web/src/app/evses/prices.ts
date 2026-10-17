@@ -16,6 +16,11 @@ export interface PriceView {
   blockingFeeMax?: number | null;
   /** CHARGING_END: blockingAfterMinutes count from the end of charging. */
   blockingFrom?: 'SESSION_START' | 'CHARGING_END';
+  /** Blocked minutes are billed only in this local window "HH:mm". */
+  blockingStartTime?: string | null;
+  blockingEndTime?: string | null;
+  /** Highest number of billed blocking minutes. */
+  blockingMaxMinutes?: number | null;
 }
 
 /** Price of a charging card or app at the EVSE (data.emps of GET /api/v1/evses/{evseId}/prices). */
@@ -143,8 +148,10 @@ export function priceParts(price: PriceView): string[] {
   if (price.blockingFeePerMinute) {
     const end = price.blockingFrom === 'CHARGING_END' ? ' nach Ladeende' : '';
     const from = price.blockingAfterMinutes === null ? '' : ` ab Minute ${price.blockingAfterMinutes}${end}`;
+    const window = price.blockingStartTime ? ` (${price.blockingStartTime}–${price.blockingEndTime} Uhr)` : '';
+    const minutes = price.blockingMaxMinutes ? `, max. ${price.blockingMaxMinutes} min` : '';
     const cap = price.blockingFeeMax ? `, max. ${money(price.blockingFeeMax, price.currency)}` : '';
-    parts.push(`Blockiergebühr ${money(price.blockingFeePerMinute, price.currency)}/min${from}${cap}`);
+    parts.push(`Blockiergebühr ${money(price.blockingFeePerMinute, price.currency)}/min${from}${window}${minutes}${cap}`);
   }
   return parts.length > 0 ? parts : ['keine Angaben'];
 }
