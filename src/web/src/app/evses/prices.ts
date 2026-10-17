@@ -90,6 +90,8 @@ export interface EvsePricesResponse {
     emps: EmpPrice[];
     /** Tariffs that cannot be used at the EVSE. */
     unavailable: EmpUnavailable[];
+    /** Hint of the operator's network about the prices here (e.g. Tesla), with the operator's page. */
+    priceNote?: { text: string; url: string | null } | null;
     /** Tariffs usable at the EVSE at an unknown price: the operator's price without a known ad-hoc price, or unpublished. */
     priceUnknown: (EmpUnavailable & { zone: ZoneKind })[];
   };

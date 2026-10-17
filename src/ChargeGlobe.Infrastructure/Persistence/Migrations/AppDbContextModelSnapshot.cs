@@ -54,6 +54,19 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                         .HasColumnType("text[]")
                         .HasColumnName("operators");
 
+                    b.Property<string>("PriceNote")
+                        .HasColumnType("text")
+                        .HasColumnName("price_note");
+
+                    b.Property<string>("PriceUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("price_url");
+
+                    b.Property<string>("Sites")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("sites");
+
                     b.Property<string>("SourceKey")
                         .IsRequired()
                         .HasColumnType("text")

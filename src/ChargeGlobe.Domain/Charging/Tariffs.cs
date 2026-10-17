@@ -121,6 +121,32 @@ public sealed partial class ChargingNetwork
     /// <summary>Key of the tariff source that maintains the network.</summary>
     public string SourceKey { get; private set; } = null!;
 
+    /// <summary>Hint about the prices of the network's charge points (e.g. prices by time of day not in the register); null for none.</summary>
+    public string? PriceNote { get; private set; }
+
+    /// <summary>Page of the operator with its prices, the link of <see cref="PriceNote"/>.</summary>
+    public string? PriceUrl { get; private set; }
+
+    /// <summary>Sites of the operator with their own price page; a charge point links the nearest one.</summary>
+    public List<NetworkSite> Sites { get; private set; } = [];
+
+    /// <summary>Distance up to which a charge point belongs to a site.</summary>
+    public const double SiteRadiusMeters = 300;
+
+    /// <summary>Sets the price hint with its link and the sites with their own pages.</summary>
+    public void SetPriceNote(string? note, string? url, IEnumerable<NetworkSite> sites)
+    {
+        PriceNote = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
+        PriceUrl = string.IsNullOrWhiteSpace(url) ? null : url.Trim();
+        Sites = [.. sites];
+    }
+
+    /// <summary>The page of the nearest site within <see cref="SiteRadiusMeters"/> of <paramref name="at"/>, else <see cref="PriceUrl"/>.</summary>
+    public string? PriceUrlNear(GeoPoint? at) =>
+        at is { } point
+            ? Sites.Select(site => (site.Url, Meters: site.MetersTo(point))).Where(item => item.Meters <= SiteRadiusMeters).OrderBy(item => item.Meters).Select(item => item.Url).FirstOrDefault() ?? PriceUrl
+            : PriceUrl;
+
     /// <summary>Whether <paramref name="value"/> is an operator ID such as <c>AT*EVN</c>.</summary>
     public static bool IsOperatorId(string? value) => value is not null && OperatorIdPattern().IsMatch(value);
 
@@ -146,6 +172,22 @@ public sealed partial class ChargingNetwork
 
     [GeneratedRegex("^[A-Z]{2}\\*[A-Z0-9]{3}$")]
     private static partial Regex OperatorIdPattern();
+}
+
+/// <summary>A site of a network with its own price page (e.g. a Tesla Supercharger).</summary>
+public sealed record NetworkSite(string Name, double Latitude, double Longitude, string Url)
+{
+    private const double EarthRadiusMeters = 6_371_000;
+
+    /// <summary>Great-circle distance to <paramref name="point"/>.</summary>
+    public double MetersTo(GeoPoint point)
+    {
+        static double Radians(double degrees) => degrees * Math.PI / 180;
+        var (lat1, lat2) = (Radians(Latitude), Radians(point.Latitude));
+        var (dLat, dLon) = (lat2 - lat1, Radians(point.Longitude - Longitude));
+        var a = (Math.Sin(dLat / 2) * Math.Sin(dLat / 2)) + (Math.Cos(lat1) * Math.Cos(lat2) * Math.Sin(dLon / 2) * Math.Sin(dLon / 2));
+        return 2 * EarthRadiusMeters * Math.Asin(Math.Sqrt(a));
+    }
 }
 
 /// <summary>

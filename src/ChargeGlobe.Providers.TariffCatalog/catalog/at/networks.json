@@ -173,6 +173,340 @@
       "country": "AT",
       "operators": [
         "AT*TSL"
+      ],
+      "priceNote": "Preis laut E-Control; Tesla verlangt je nach Tageszeit und Leistung abweichende Preise.",
+      "priceUrl": "https://www.tesla.com/de_AT/findus/list/superchargers/Austria",
+      "sites": [
+        {
+          "name": "Hartberg",
+          "latitude": 47.281417,
+          "longitude": 15.993674,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/105091"
+        },
+        {
+          "name": "Trieben",
+          "latitude": 47.492391,
+          "longitude": 14.483625,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/1682"
+        },
+        {
+          "name": "Rankweil",
+          "latitude": 47.272881,
+          "longitude": 9.617597,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/208112"
+        },
+        {
+          "name": "Wienerberg City",
+          "latitude": 48.16733,
+          "longitude": 16.347869,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/20812"
+        },
+        {
+          "name": "Kiefersfelden",
+          "latitude": 47.649045,
+          "longitude": 12.197744,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/262856"
+        },
+        {
+          "name": "Webling",
+          "latitude": 47.033469,
+          "longitude": 15.414681,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/285358"
+        },
+        {
+          "name": "Zeltweg, Austria",
+          "latitude": 47.194066,
+          "longitude": 14.72281,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/286035"
+        },
+        {
+          "name": "Inning",
+          "latitude": 48.18366,
+          "longitude": 15.417941,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/297327"
+        },
+        {
+          "name": "Heiterwang",
+          "latitude": 47.437134,
+          "longitude": 10.766057,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/300615"
+        },
+        {
+          "name": "Wiener Neudorf",
+          "latitude": 48.102744,
+          "longitude": 16.318268,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/30071"
+        },
+        {
+          "name": "St. Michael im Lungau",
+          "latitude": 47.096645,
+          "longitude": 13.632776,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/300868"
+        },
+        {
+          "name": "Imst",
+          "latitude": 47.218694,
+          "longitude": 10.731602,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/301208"
+        },
+        {
+          "name": "Garmisch-Partenkirchen",
+          "latitude": 47.325477,
+          "longitude": 11.19907,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/30412"
+        },
+        {
+          "name": "Wels - Welas Park",
+          "latitude": 48.180337,
+          "longitude": 14.063523,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/30767"
+        },
+        {
+          "name": "Wels - Shoppingcity",
+          "latitude": 48.145888,
+          "longitude": 13.975182,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/30840"
+        },
+        {
+          "name": "Steyr (Leiner)",
+          "latitude": 48.049339,
+          "longitude": 14.414522,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/32601"
+        },
+        {
+          "name": "Stockerau (Kika)",
+          "latitude": 48.388568,
+          "longitude": 16.180951,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/32603"
+        },
+        {
+          "name": "Wien-Baumgarten (Leiner)",
+          "latitude": 48.19306,
+          "longitude": 16.277092,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/32605"
+        },
+        {
+          "name": "Klagenfurt (Kika)",
+          "latitude": 46.627257,
+          "longitude": 14.344531,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/32609"
+        },
+        {
+          "name": "TA - Ganz (N)",
+          "latitude": 47.468968,
+          "longitude": 15.345028,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/34091"
+        },
+        {
+          "name": "Pasching - PlusCity",
+          "latitude": 48.244954,
+          "longitude": 14.234209,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/401267"
+        },
+        {
+          "name": "80 Badstubenweg",
+          "latitude": 46.630902,
+          "longitude": 13.825855,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/436258"
+        },
+        {
+          "name": "15 Andiesen",
+          "latitude": 48.394199,
+          "longitude": 13.426246,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/440655"
+        },
+        {
+          "name": "111 Oiden",
+          "latitude": 48.132023,
+          "longitude": 14.840874,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/449655"
+        },
+        {
+          "name": "146 Ruster Str.",
+          "latitude": 47.825668,
+          "longitude": 16.531907,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/453335"
+        },
+        {
+          "name": "19 Garnisonstraße",
+          "latitude": 48.302146,
+          "longitude": 14.310321,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/455113"
+        },
+        {
+          "name": "Ratzendorf",
+          "latitude": 46.730353,
+          "longitude": 14.378649,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/561818"
+        },
+        {
+          "name": "Eberstalzell Self Serve Demo Test Drive",
+          "latitude": 48.039388,
+          "longitude": 13.991249,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/EberstalzellSelfServeDemoTestDrive"
+        },
+        {
+          "name": "Meggenhofen Trappenhof Self Serve Demo Drive",
+          "latitude": 48.183507,
+          "longitude": 13.785961,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/MeggenhofenTrappenhofSelfServeDemoDrive"
+        },
+        {
+          "name": "Parndorf, Austria -Frunpark",
+          "latitude": 47.979202,
+          "longitude": 16.844121,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/Parndorf422"
+        },
+        {
+          "name": "Spittal an der Drau - Self Serve Demo Drive",
+          "latitude": 46.786377,
+          "longitude": 13.522176,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/SpittalanderDrau-SelfServeDemoDrive"
+        },
+        {
+          "name": "Stumm im Zillertal - Self Serve Demo Drive",
+          "latitude": 47.289944,
+          "longitude": 11.887698,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/StummimZillertal-SelfServeDemoDrive"
+        },
+        {
+          "name": "Völkermarkt, Austria",
+          "latitude": 46.682278,
+          "longitude": 14.679155,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/Veldensupercharger"
+        },
+        {
+          "name": "Wien - Gewerbepark Stadlau Supercharger",
+          "latitude": 48.247118,
+          "longitude": 16.46433,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/WienDonaustadtatsupercharger"
+        },
+        {
+          "name": "Asten Supercharger",
+          "latitude": 48.221313,
+          "longitude": 14.406676,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/astensupercharger"
+        },
+        {
+          "name": "Bregenz Supercharger",
+          "latitude": 47.488546,
+          "longitude": 9.740102,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/bregenzsupercharger"
+        },
+        {
+          "name": "Flachau Supercharger",
+          "latitude": 47.354639,
+          "longitude": 13.386025,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/flachausupercharger"
+        },
+        {
+          "name": "Hall in Tirol Supercharger",
+          "latitude": 47.273253,
+          "longitude": 11.475203,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/hallintirol"
+        },
+        {
+          "name": "Innsbruck Supercharger",
+          "latitude": 47.264877,
+          "longitude": 11.428412,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/innsbrucksupercharger"
+        },
+        {
+          "name": "Kalwang Supercharger",
+          "latitude": 47.422799,
+          "longitude": 14.759236,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/kalwangsupercharger"
+        },
+        {
+          "name": "Kapfenberg Supercharger",
+          "latitude": 47.450384,
+          "longitude": 15.317603,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/kapfenbergsupercharger"
+        },
+        {
+          "name": "Kitzbühel Supercharger",
+          "latitude": 47.459233,
+          "longitude": 12.386017,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/kitzbuhelsupercharger"
+        },
+        {
+          "name": "Laßnitzhöhe Supercharger",
+          "latitude": 47.070936,
+          "longitude": 15.578137,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/labnitzhohesupercharger"
+        },
+        {
+          "name": "Langkampfen Supercharger",
+          "latitude": 47.534742,
+          "longitude": 12.092998,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/langkampfensupercharger"
+        },
+        {
+          "name": "Lermoos Supercharger",
+          "latitude": 47.394949,
+          "longitude": 10.88752,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/lermoossupercharger"
+        },
+        {
+          "name": "Liezen Supercharger",
+          "latitude": 47.559363,
+          "longitude": 14.252549,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/liezensupercharger"
+        },
+        {
+          "name": "Poysdorf Supercharger",
+          "latitude": 48.676467,
+          "longitude": 16.622823,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/poysdorfsupercharger"
+        },
+        {
+          "name": "Salzburg Nord Supercharger",
+          "latitude": 47.836027,
+          "longitude": 13.059072,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/salzburgnordsupercharger"
+        },
+        {
+          "name": "Salzburg Supercharger",
+          "latitude": 47.727015,
+          "longitude": 13.060535,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/salzburgsupercharger"
+        },
+        {
+          "name": "St. Anton Supercharger",
+          "latitude": 47.130931,
+          "longitude": 10.271067,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/stantonsupercharger"
+        },
+        {
+          "name": "St. Georgen Supercharger",
+          "latitude": 47.928729,
+          "longitude": 13.502278,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/stgeorgensupercharger"
+        },
+        {
+          "name": "St. Pölten Supercharger",
+          "latitude": 48.205766,
+          "longitude": 15.618465,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/stpoltensupercharger"
+        },
+        {
+          "name": "Villach-Ost Supercharger",
+          "latitude": 46.601751,
+          "longitude": 13.883314,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/villachostsupercharger"
+        },
+        {
+          "name": "Villach Supercharger",
+          "latitude": 46.604075,
+          "longitude": 13.869057,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/villachsupercharger"
+        },
+        {
+          "name": "Wiener Neustadt Supercharger",
+          "latitude": 47.804514,
+          "longitude": 16.210569,
+          "url": "https://www.tesla.com/de_AT/findus/location/supercharger/wienerneustadtsupercharger"
+        }
       ]
     },
     {

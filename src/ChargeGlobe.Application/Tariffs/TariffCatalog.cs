@@ -7,7 +7,9 @@ namespace ChargeGlobe.Application.Tariffs;
 public sealed record EmpView(string Key, string Name, string? Website, string Country, int Tariffs);
 
 /// <summary>A network of operators (by the operator part of their EVSE-IDs) that zones of tariffs refer to.</summary>
-public sealed record NetworkView(string Key, string Name, string Country, IReadOnlyList<string> Operators);
+/// <param name="PriceNote">Hint shown with the prices of the network's charge points; null for none.</param>
+/// <param name="Sites">Number of sites with their own price page.</param>
+public sealed record NetworkView(string Key, string Name, string Country, IReadOnlyList<string> Operators, string? PriceNote, string? PriceUrl, int Sites);
 
 /// <param name="Current"><c>AC</c> or <c>DC</c>.</param>
 /// <param name="MinKw">From this maximum power of the EVSE on (HPC stages); null for any.</param>

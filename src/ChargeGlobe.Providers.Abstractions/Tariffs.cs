@@ -35,7 +35,20 @@ public sealed record TariffCatalogSnapshot(IReadOnlyList<NetworkRecord> Networks
 
 /// <param name="Key">Stable short name, e.g. <c>wien-energie</c>.</param>
 /// <param name="Operators">Operator IDs of the EVSE-ID prefix, e.g. <c>AT*VIE</c>.</param>
-public sealed record NetworkRecord(string Key, string Name, string Country, IReadOnlyList<string> Operators);
+/// <param name="PriceNote">Hint shown with the prices of the network's charge points, e.g. that the register price differs by time of day.</param>
+/// <param name="PriceUrl">Page with the operator's prices, linked with the hint.</param>
+/// <param name="Sites">Sites with their own price page; a charge point within 300 m links its site instead of <paramref name="PriceUrl"/>.</param>
+public sealed record NetworkRecord(
+    string Key,
+    string Name,
+    string Country,
+    IReadOnlyList<string> Operators,
+    string? PriceNote = null,
+    string? PriceUrl = null,
+    IReadOnlyList<SiteRecord>? Sites = null);
+
+/// <summary>A site of a network with its own price page.</summary>
+public sealed record SiteRecord(string Name, double Latitude, double Longitude, string Url);
 
 /// <param name="Key">Stable short name of the provider, e.g. <c>evn</c>.</param>
 public sealed record EmpRecord(string Key, string Name, string? Website, string Country, IReadOnlyList<TariffRecord> Tariffs);

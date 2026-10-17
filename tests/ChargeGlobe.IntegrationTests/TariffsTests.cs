@@ -107,6 +107,7 @@ public class TariffsTests(IntegrationFactory factory)
         Assert.Equal((2, 0, 0, 0), Counts(await ImportAsync(admin, source, Catalog(network, emp))));
         var listedNetwork = (await (await admin.GetAsync("/api/v1/networks")).ReadJsonAsync()).GetProperty("data").EnumerateArray().Single(item => item.GetProperty("key").GetString() == network);
         Assert.Equal(["AT*TS2", "AT*TST"], listedNetwork.GetProperty("operators").EnumerateArray().Select(item => item.GetString()));
+        Assert.Equal((JsonValueKind.Null, 0), (listedNetwork.GetProperty("priceNote").ValueKind, listedNetwork.GetProperty("sites").GetInt32()));
         var listedEmp = (await (await admin.GetAsync("/api/v1/emps")).ReadJsonAsync()).GetProperty("data").EnumerateArray().Single(item => item.GetProperty("key").GetString() == emp);
         Assert.Equal(("Test EMP", "AT", 2), (listedEmp.GetProperty("name").GetString(), listedEmp.GetProperty("country").GetString(), listedEmp.GetProperty("tariffs").GetInt32()));
 
@@ -257,6 +258,9 @@ public class TariffsTests(IntegrationFactory factory)
         { "price.days=8", "days must be distinct ISO weekdays" },
         { "price.blockingStartTime=08:00", "blockingStartTime and blockingEndTime come together" },
         { "price2.maxBlockingMinutes=500", "maxBlockingMinutes needs a blocking fee" },
+        { "network.priceNote=", "priceNote has 1 to 300 characters" },
+        { "network.priceUrl=ftp://example.org", "priceUrl must be an http(s) URL" },
+        { "network.sites=bad", "sites need a priceNote" },
         { "zone.currents=HPC", "currents must be AC and/or DC" },
         { "zone.currents=", "currents must be AC and/or DC" },
         { "zone.pricing=PER_MINUTE", "the pricing must be FIXED, OPERATOR_AD_HOC or UNKNOWN" },
@@ -326,6 +330,7 @@ public class TariffsTests(IntegrationFactory factory)
 
         target[property] = property switch
         {
+            "sites" => new JsonArray(JsonSerializer.SerializeToNode(new { name = "x", latitude = 48.2, longitude = 16.3, url = "ftp://example.org" })),
             "days" => new JsonArray(int.Parse(value, System.Globalization.CultureInfo.InvariantCulture)),
             "operators" or "excludedOperators" or "networks" or "markets" or "currents" => value == "" ? new JsonArray() : new JsonArray(value),
             "prices" or "zones" => new JsonArray(),

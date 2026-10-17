@@ -32,6 +32,15 @@ internal static class ChargingModel
         zones => System.Text.Json.JsonSerializer.Serialize(zones, ChargeGlobe.Providers.Abstractions.TariffCatalogSnapshot.Json),
         json => System.Text.Json.JsonSerializer.Deserialize<List<TariffZone>>(json, ChargeGlobe.Providers.Abstractions.TariffCatalogSnapshot.Json)!);
 
+    private static readonly ValueConverter<List<NetworkSite>, string> SitesConverter = new(
+        sites => System.Text.Json.JsonSerializer.Serialize(sites, ChargeGlobe.Providers.Abstractions.TariffCatalogSnapshot.Json),
+        json => System.Text.Json.JsonSerializer.Deserialize<List<NetworkSite>>(json, ChargeGlobe.Providers.Abstractions.TariffCatalogSnapshot.Json)!);
+
+    private static readonly ValueComparer<List<NetworkSite>> SitesComparer = new(
+        (left, right) => left!.SequenceEqual(right!),
+        sites => sites.Count,
+        sites => sites.ToList());
+
     private static readonly ValueComparer<List<TariffZone>> ZonesComparer = new(
         (left, right) => System.Text.Json.JsonSerializer.Serialize(left, ChargeGlobe.Providers.Abstractions.TariffCatalogSnapshot.Json)
             == System.Text.Json.JsonSerializer.Serialize(right, ChargeGlobe.Providers.Abstractions.TariffCatalogSnapshot.Json),
@@ -201,6 +210,7 @@ internal static class ChargingModel
             entity.HasIndex(network => network.Key).IsUnique();
             entity.Property(network => network.Country).HasMaxLength(2);
             entity.Property(network => network.Operators).HasColumnType("text[]");
+            entity.Property(network => network.Sites).HasConversion(SitesConverter, SitesComparer).HasColumnType("jsonb");
         });
 
         builder.Entity<TariffPlan>(entity =>

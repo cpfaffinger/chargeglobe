@@ -160,13 +160,18 @@ public sealed record EmpPriceUnknown(string Emp, string EmpName, string TariffKe
 /// <param name="Emps">Prices of the EMP tariffs that apply at the EVSE, cheapest example first.</param>
 /// <param name="Unavailable">Tariffs valid now that do not apply at the EVSE.</param>
 /// <param name="PriceUnknown">Tariffs that apply at the operator's price, without a known ad-hoc price.</param>
+/// <param name="PriceNote">Hint of the operator's network about the prices here, with the operator's price page.</param>
 public sealed record EvsePrices(
     SessionExample Example,
     CurrentPrice? Current,
     IReadOnlyList<PricePeriod> History,
     IReadOnlyList<EmpPrice> Emps,
     IReadOnlyList<EmpUnavailable> Unavailable,
-    IReadOnlyList<EmpPriceUnknown> PriceUnknown);
+    IReadOnlyList<EmpPriceUnknown> PriceUnknown,
+    PriceNote? PriceNote = null);
+
+/// <summary>A hint about the prices of a network (e.g. Tesla: prices by time of day) with the operator's price page.</summary>
+public sealed record PriceNote(string Text, string? Url);
 
 /// <summary>The lowest ad-hoc cost of a session at a location: the EVSE where it costs least.</summary>
 /// <param name="EvseId">EVSE-ID of that EVSE.</param>

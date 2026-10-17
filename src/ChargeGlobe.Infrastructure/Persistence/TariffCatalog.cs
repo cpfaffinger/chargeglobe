@@ -22,6 +22,9 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, IAppC
     /// <summary>Highest amount of a price component; protects the comparison from typos such as 45 instead of 0.45.</summary>
     public const decimal MaxAmount = 1000;
 
+    /// <summary>Longest price hint of a network.</summary>
+    public const int MaxNoteLength = 300;
+
     /// <summary>Range of the markup on the operator's price: discounts up to half, commissions up to the double.</summary>
     public const decimal MinMarkupPercent = -50;
 
@@ -36,7 +39,7 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, IAppC
 
     public async Task<IReadOnlyList<NetworkView>> NetworksAsync(CancellationToken cancellationToken) =>
         (await db.ChargingNetworks.AsNoTracking().OrderBy(network => network.Key).ToListAsync(cancellationToken))
-        .Select(network => new NetworkView(network.Key, network.Name, network.Country, network.Operators))
+        .Select(network => new NetworkView(network.Key, network.Name, network.Country, network.Operators, network.PriceNote, network.PriceUrl, network.Sites.Count))
         .ToList();
 
     public async Task<IReadOnlyList<TariffView>> TariffsAsync(string? emp, bool history, CancellationToken cancellationToken)
@@ -83,14 +86,14 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, IAppC
         var networks = await db.ChargingNetworks.Where(network => network.SourceKey == sourceKey).ToDictionaryAsync(network => network.Key, cancellationToken);
         foreach (var record in snapshot.Networks)
         {
-            if (networks.Remove(record.Key, out var network))
+            if (!networks.Remove(record.Key, out var network))
             {
-                network.Update(record.Name, record.Country, record.Operators, sourceKey);
+                network = ChargingNetwork.Create(record.Key, record.Name, record.Country, record.Operators, sourceKey);
+                db.ChargingNetworks.Add(network);
             }
-            else
-            {
-                db.ChargingNetworks.Add(ChargingNetwork.Create(record.Key, record.Name, record.Country, record.Operators, sourceKey));
-            }
+
+            network.Update(record.Name, record.Country, record.Operators, sourceKey);
+            network.SetPriceNote(record.PriceNote, record.PriceUrl, (record.Sites ?? []).Select(site => new NetworkSite(site.Name.Trim(), site.Latitude, site.Longitude, site.Url.Trim())));
         }
 
         // Networks the source no longer lists go; zones that name them cover nothing.
@@ -165,6 +168,11 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, IAppC
             Require(!string.IsNullOrWhiteSpace(network.Name), $"{where}: a name is required.");
             Require(IsCountry(network.Country), $"{where}: the country must be ISO 3166-1 alpha-2, e.g. AT.");
             Require(network.Operators is { Count: > 0 } operators && operators.All(IsOperator), $"{where}: operators must be IDs such as AT*EVN.");
+            Require(network.PriceNote is null || network.PriceNote.Trim().Length is > 0 and <= MaxNoteLength, $"{where}: priceNote has 1 to {MaxNoteLength} characters.");
+            Require(network.PriceUrl is null || IsWebUrl(network.PriceUrl), $"{where}: priceUrl must be an http(s) URL.");
+            Require(
+                network.Sites is null || (network.PriceNote is not null && network.Sites.All(site => !string.IsNullOrWhiteSpace(site.Name) && site.Latitude is >= -90 and <= 90 && site.Longitude is >= -180 and <= 180 && IsWebUrl(site.Url))),
+                $"{where}: sites need a priceNote, a name, coordinates and an http(s) URL.");
         }
 
         var empKeys = new HashSet<string>(StringComparer.Ordinal);
@@ -186,7 +194,7 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, IAppC
                 Require(tariff.Currency is not null && CurrencyPattern().IsMatch(tariff.Currency), $"{at}: the currency must be ISO 4217, e.g. EUR.");
                 Require(tariff.MonthlyFee is null or (>= 0 and <= MaxAmount), $"{at}: the monthly fee must lie between 0 and {MaxAmount}.");
                 Require(tariff.Markets is { Count: > 0 } markets && markets.All(IsCountry), $"{at}: markets must be countries such as AT.");
-                Require(Uri.TryCreate(tariff.SourceUrl, UriKind.Absolute, out var url) && url.Scheme is "https" or "http", $"{at}: the source must be an http(s) URL.");
+                Require(IsWebUrl(tariff.SourceUrl), $"{at}: the source must be an http(s) URL.");
                 Require(Enum.TryParse<TariffConfidence>(tariff.Confidence, false, out _), $"{at}: the confidence must be HIGH, MEDIUM or LOW.");
                 Require(tariff.Zones is { Count: > 0 }, $"{at}: at least one zone is required.");
                 foreach (var zone in tariff.Zones ?? [])
@@ -251,6 +259,8 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, IAppC
     /// <summary>A local time "HH:mm"; null for anything else.</summary>
     private static TimeOnly? ParseTime(string? value) =>
         TimeOnly.TryParseExact(value, "HH:mm", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var time) ? time : null;
+
+    private static bool IsWebUrl(string? value) => Uri.TryCreate(value, UriKind.Absolute, out var url) && url.Scheme is "https" or "http";
 
     private static bool IsCountry(string? value) => value is { Length: 2 } && value.All(char.IsAsciiLetterUpper);
 
