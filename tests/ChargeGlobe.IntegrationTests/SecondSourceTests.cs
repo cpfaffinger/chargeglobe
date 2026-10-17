@@ -317,8 +317,9 @@ public class SecondSourceTests(IntegrationFactory factory) : IClassFixture<Integ
         client.PostAsJsonAsync($"/api/v1/conflicts/{id}/resolve", body);
 
     /// <summary>
-    /// Two locations of one operator next to each other with two and one charge points, and a community site of the
-    /// operator with two charge points between them: an open identity conflict whose suggestion is the first location.
+    /// Two locations of one operator 39 m apart (too far for one charging park) with two and one charge points, and a
+    /// community site of the operator with two charge points between them: an open identity conflict whose suggestion
+    /// is the first location.
     /// </summary>
     private async Task<SourceConflict> SuggestedAsync(string name, double latitude, double longitude)
     {
@@ -336,7 +337,7 @@ public class SecondSourceTests(IntegrationFactory factory) : IClassFixture<Integ
             pair with
             {
                 ExternalId = $"{name}-2",
-                Coordinates = new GeoPoint(latitude + 0.00006, longitude + 0.00006),
+                Coordinates = new GeoPoint(latitude + 0.00035, longitude),
                 Evses = [evse with { ExternalId = $"{name}-2#1", EvseId = $"{prefix}2*1" }],
             },
         ]);
@@ -345,7 +346,7 @@ public class SecondSourceTests(IntegrationFactory factory) : IClassFixture<Integ
             ExternalId = name,
             OperatorId = "TST",
             OperatorName = "Teststation GmbH",
-            Coordinates = new GeoPoint(latitude + 0.00002, longitude + 0.00002),
+            Coordinates = new GeoPoint(latitude + 0.00017, longitude),
         };
         await IngestAsync("ocm", [site]);
         return Assert.Single(
