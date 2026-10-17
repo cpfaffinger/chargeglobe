@@ -116,7 +116,9 @@
                   "current": "AC",
                   "pricePerKwh": 0.69,
                   "blockingFeePerMinute": 0.07,
-                  "blockingAfterMinutes": 210
+                  "blockingAfterMinutes": 210,
+                  "blockingStartTime": "09:00",
+                  "blockingEndTime": "21:00"
                 },
                 {
                   "current": "DC",
@@ -127,7 +129,7 @@
               ]
             }
           ],
-          "notes": "AC-Blockiergebühr nur 9–21 Uhr.",
+          "notes": "AC-Blockierfenster laut Website 9–21 Uhr (Preisblatt 6/2025: 8–23 Uhr).",
           "sourceUrl": "https://www.audi.at/elektromobilitaet/laden/unterwegs-laden",
           "sourceDate": null,
           "confidence": "MEDIUM",

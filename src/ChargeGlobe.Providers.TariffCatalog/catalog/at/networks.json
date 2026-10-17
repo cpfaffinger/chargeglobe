@@ -121,7 +121,8 @@
       "country": "AT",
       "operators": [
         "AT*LNK",
-        "AT*WSG"
+        "AT*WSG",
+        "AT*ELN"
       ]
     },
     {

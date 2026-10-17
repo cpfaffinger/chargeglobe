@@ -31,6 +31,12 @@
                   "maxBlockingFee": 24
                 },
                 {
+                  "current": "AC",
+                  "pricePerKwh": 0.5,
+                  "startTime": "20:00",
+                  "endTime": "05:00"
+                },
+                {
                   "current": "DC",
                   "pricePerKwh": 0.58,
                   "blockingFeePerMinute": 0.12,
@@ -45,7 +51,8 @@
                   "blockingAfterMinutes": 60,
                   "maxBlockingFee": 24
                 }
-              ]
+              ],
+              "notes": "Charge&Sleep: AC-Start 20–5 Uhr ohne Standgebühr."
             },
             {
               "kind": "ROAMING",
@@ -95,7 +102,7 @@
               "notes": "Roaming in ganz Österreich je Minute nach der Leistung des Ladepunkts."
             }
           ],
-          "notes": "Charge&Sleep: AC-Start 20–5 Uhr ohne Standgebühr. Partner-Stationen in Parkgaragen mit eigenen Preisen (nicht abgebildet).",
+          "notes": "Partner-Stationen in Parkgaragen mit eigenen Preisen (nicht abgebildet).",
           "sourceUrl": "https://www.salzburg-ag.at/content/dam/web18/dokumente/e-mobilit%C3%A4t/Produktblatt_Stromladen_Ladetarife.pdf",
           "sourceDate": "2026-07-01",
           "confidence": "HIGH",
@@ -125,6 +132,12 @@
                   "maxBlockingFee": 24
                 },
                 {
+                  "current": "AC",
+                  "pricePerKwh": 0.45,
+                  "startTime": "20:00",
+                  "endTime": "05:00"
+                },
+                {
                   "current": "DC",
                   "pricePerKwh": 0.52,
                   "blockingFeePerMinute": 0.12,
@@ -139,7 +152,8 @@
                   "blockingAfterMinutes": 60,
                   "maxBlockingFee": 24
                 }
-              ]
+              ],
+              "notes": "Charge&Sleep: AC-Start 20–5 Uhr ohne Standgebühr."
             },
             {
               "kind": "ROAMING",
@@ -189,7 +203,7 @@
               "notes": "Roaming in ganz Österreich je Minute nach der Leistung des Ladepunkts."
             }
           ],
-          "notes": "Charge&Sleep: AC-Start 20–5 Uhr ohne Standgebühr. Partner-Stationen in Parkgaragen mit eigenen Preisen (nicht abgebildet).",
+          "notes": "Partner-Stationen in Parkgaragen mit eigenen Preisen (nicht abgebildet).",
           "sourceUrl": "https://www.salzburg-ag.at/content/dam/web18/dokumente/e-mobilit%C3%A4t/Produktblatt_Stromladen_Ladetarife.pdf",
           "sourceDate": "2026-07-01",
           "confidence": "HIGH",
