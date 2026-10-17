@@ -263,10 +263,11 @@ public class SecondSourceTests(IntegrationFactory factory) : IClassFixture<Integ
         var parked = await RecordAsync("ocm", "far-site-2");
         Assert.Equal(((await RecordAsync("register", "far-1")).EntityId, IngestProcessor.GeoParkConfidence), (parked.EntityId, parked.MatchConfidence));
 
+        // Two sources 67 m apart (too far to match each other), a site 33 m from both: a conflict as before.
         var mixed = facility with { OperatorName = "Mixed Test GmbH" };
         await IngestAsync("register", [mixed with { ExternalId = "mixed-1", Coordinates = new GeoPoint(48.32, 16.52) }]);
-        await IngestAsync("register-2", [mixed with { ExternalId = "mixed-2", Coordinates = new GeoPoint(48.32005, 16.52) }]);
-        await IngestAsync("ocm", [site with { OperatorName = "Mixed Test", ExternalId = "mixed-site", Coordinates = new GeoPoint(48.32001, 16.52) }]);
+        await IngestAsync("register-2", [mixed with { ExternalId = "mixed-2", Coordinates = new GeoPoint(48.3206, 16.52) }]);
+        await IngestAsync("ocm", [site with { OperatorName = "Mixed Test", ExternalId = "mixed-site", Coordinates = new GeoPoint(48.3203, 16.52) }]);
         Assert.Contains(
             await factory.WithDbAsync(db => db.SourceConflicts.Where(item => item.Attribute == "identity").ToListAsync()),
             item => item.Values.Contains("mixed-site"));
