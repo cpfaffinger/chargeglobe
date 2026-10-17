@@ -139,7 +139,8 @@ public class SecondSourceTests(IntegrationFactory factory) : IClassFixture<Integ
         await IngestAsync("pair", [pair with { ExternalId = "pair-1", Coordinates = new GeoPoint(48.25, 16.45) }, pair with { ExternalId = "pair-2", Coordinates = new GeoPoint(48.25004, 16.45004) }]);
         var locations = await factory.WithDbAsync(db => db.Locations.CountAsync());
 
-        await IngestAsync("ocm", [.. Ocm(), between]);
+        // The record twice in one message (a source may repeat itself) and again with the next run: one open conflict.
+        await IngestAsync("ocm", [.. Ocm(), between, between]);
         await IngestAsync("ocm", [.. Ocm().Select(site => site with { ObservedAt = T0.AddDays(1) }), between]);
 
         Assert.Equal(locations, await factory.WithDbAsync(db => db.Locations.CountAsync()));
@@ -150,6 +151,9 @@ public class SecondSourceTests(IntegrationFactory factory) : IClassFixture<Integ
             item => JsonDocument.Parse(item.Values).RootElement.GetProperty("externalId").GetString() == "between");
         var values = JsonDocument.Parse(conflict.Values).RootElement;
         Assert.Equal(("ocm", "between", 2), (values.GetProperty("source").GetString(), values.GetProperty("externalId").GetString(), values.GetProperty("candidates").GetArrayLength()));
+        // The conflict carries the record as the source delivered it, refreshed by the second run.
+        var record = values.GetProperty("record");
+        Assert.Equal((between.Name, between.OperatorName, 0), (record.GetProperty("name").GetString(), record.GetProperty("operatorName").GetString(), record.GetProperty("evses").GetArrayLength()));
         Assert.Equal(1, await factory.WithDbAsync(db => db.SourceRecords.CountAsync(record => record.SourceKey == "ocm" && record.ExternalId == "101")));
     }
 
@@ -219,6 +223,24 @@ public class SecondSourceTests(IntegrationFactory factory) : IClassFixture<Integ
         Assert.Equal((resolved.Id, "merged by hand"), (done.GetProperty("id").GetGuid(), done.GetProperty("resolution").GetString()));
 
         await (await admin.GetAsync("/api/v1/conflicts?limit=0")).AssertProblemAsync(HttpStatusCode.UnprocessableEntity);
+        await (await admin.GetAsync("/api/v1/conflicts?attribute=other")).AssertProblemAsync(HttpStatusCode.UnprocessableEntity);
+        await (await admin.GetAsync("/api/v1/conflicts?cursor=garbage")).AssertProblemAsync(HttpStatusCode.UnprocessableEntity);
+
+        // Filters: the attribute, the source of the record; paging with the cursor; one conflict on its own.
+        var evseOnly = (await (await admin.GetAsync("/api/v1/conflicts?attribute=evse_id")).ReadJsonAsync()).GetProperty("data");
+        Assert.Contains(conflicts[1].Id, evseOnly.EnumerateArray().Select(item => item.GetProperty("id").GetGuid()));
+        Assert.All(evseOnly.EnumerateArray(), item => Assert.Equal("evse_id", item.GetProperty("attribute").GetString()));
+        var page = await (await admin.GetAsync("/api/v1/conflicts?source=test&limit=2")).ReadJsonAsync();
+        Assert.Equal([conflicts[0].Id, conflicts[2].Id], page.GetProperty("data").EnumerateArray().Select(item => item.GetProperty("id").GetGuid()));
+        var cursor = page.GetProperty("meta").GetProperty("nextCursor").GetString();
+        var rest = await (await admin.GetAsync($"/api/v1/conflicts?source=test&limit=2&cursor={Uri.EscapeDataString(cursor!)}")).ReadJsonAsync();
+        Assert.Equal([conflicts[3].Id], rest.GetProperty("data").EnumerateArray().Select(item => item.GetProperty("id").GetGuid()));
+        Assert.Equal(JsonValueKind.Null, rest.GetProperty("meta").GetProperty("nextCursor").ValueKind);
+        // None of them has candidates or the location of the record, so none has a suggestion.
+        Assert.Equal(0, (await (await admin.GetAsync("/api/v1/conflicts?source=test&suggested=true")).ReadJsonAsync()).GetProperty("data").GetArrayLength());
+        var single = (await (await admin.GetAsync($"/api/v1/conflicts/{conflicts[1].Id}")).ReadJsonAsync()).GetProperty("data");
+        Assert.Equal(("AT*TST*ETEST0001*1", JsonValueKind.Null), (single.GetProperty("entityLabel").GetString(), single.GetProperty("suggestion").ValueKind));
+        await (await admin.GetAsync($"/api/v1/conflicts/{Guid.NewGuid()}")).AssertProblemAsync(HttpStatusCode.NotFound);
         Assert.Equal(HttpStatusCode.Unauthorized, (await factory.Client().GetAsync("/api/v1/conflicts")).StatusCode);
         var email = $"conflicts-{Guid.NewGuid():N}@chargeglobe.test";
         await factory.CreateConfirmedUserAsync(email);
@@ -246,6 +268,181 @@ public class SecondSourceTests(IntegrationFactory factory) : IClassFixture<Integ
     private static Task<HttpResponseMessage> ResolveAsync(HttpClient client, Guid id, object body) =>
         client.PostAsJsonAsync($"/api/v1/conflicts/{id}/resolve", body);
 
+    /// <summary>
+    /// Two locations of one operator next to each other with two and one charge points, and a community site of the
+    /// operator with two charge points between them: an open identity conflict whose suggestion is the first location.
+    /// </summary>
+    private async Task<SourceConflict> SuggestedAsync(string name, double latitude, double longitude)
+    {
+        var official = Read("econtrol", "search-wien.expected.json")[0];
+        var evse = official.Evses[0];
+        var prefix = $"AT*TST*E{name.Replace("-", "", StringComparison.Ordinal).ToUpperInvariant()}";
+        var pair = official with { OperatorName = "Teststation GmbH", OperatorId = "TST" };
+        await IngestAsync(name, [
+            pair with
+            {
+                ExternalId = $"{name}-1",
+                Coordinates = new GeoPoint(latitude, longitude),
+                Evses = [evse with { ExternalId = $"{name}-1#1", EvseId = $"{prefix}1*1" }, evse with { ExternalId = $"{name}-1#2", EvseId = $"{prefix}1*2" }],
+            },
+            pair with
+            {
+                ExternalId = $"{name}-2",
+                Coordinates = new GeoPoint(latitude + 0.00006, longitude + 0.00006),
+                Evses = [evse with { ExternalId = $"{name}-2#1", EvseId = $"{prefix}2*1" }],
+            },
+        ]);
+        var site = Ocm().Single(item => item.ExternalId == "104") with
+        {
+            ExternalId = name,
+            OperatorId = "TST",
+            OperatorName = "Teststation GmbH",
+            Coordinates = new GeoPoint(latitude + 0.00002, longitude + 0.00002),
+        };
+        await IngestAsync("ocm", [site]);
+        return Assert.Single(
+            await factory.WithDbAsync(db => db.SourceConflicts.Where(item => item.Attribute == "identity").ToListAsync()),
+            item => JsonDocument.Parse(item.Values).RootElement.GetProperty("externalId").GetString() == name);
+    }
+
+    [Fact]
+    public async Task Suggestions_are_listed_applied_in_batches_and_decisions_come_in_batches()
+    {
+        var admin = await AdminAsync();
+        var first = await SuggestedAsync("sugg-a", 48.30, 16.50);
+        var second = await SuggestedAsync("sugg-b", 48.31, 16.51);
+        var target = (await RecordAsync("sugg-b", "sugg-b-1")).EntityId;
+
+        // Newest first, one per page: the suggestion names the only candidate with the same number of charge points.
+        var page = await (await admin.GetAsync("/api/v1/conflicts?suggested=true&source=ocm&limit=1")).ReadJsonAsync();
+        var listed = Assert.Single(page.GetProperty("data").EnumerateArray());
+        Assert.Equal(second.Id, listed.GetProperty("id").GetGuid());
+        Assert.NotEqual(JsonValueKind.Null, page.GetProperty("meta").GetProperty("nextCursor").ValueKind);
+        var suggestion = listed.GetProperty("suggestion");
+        Assert.Equal(("merge", target, 0.8), (suggestion.GetProperty("action").GetString(), suggestion.GetProperty("targetId").GetGuid(), suggestion.GetProperty("confidence").GetDouble()));
+        Assert.StartsWith("The only candidate of the operator Teststation GmbH with the same number of charge points (2)", suggestion.GetProperty("reason").GetString(), StringComparison.Ordinal);
+        var candidates = listed.GetProperty("candidates").EnumerateArray().ToList();
+        Assert.Equal([2, 1], candidates.Select(candidate => candidate.GetProperty("evses").GetInt32()));
+        Assert.All(candidates, candidate => Assert.True(candidate.GetProperty("sameOperator").GetBoolean()));
+        Assert.Equal(("TST", 0), (candidates[0].GetProperty("operatorId").GetString(), candidates[0].GetProperty("surrogateEvses").GetInt32()));
+        Assert.Equal(["AT*TST*ESUGGB1*1", "AT*TST*ESUGGB1*2"], candidates[0].GetProperty("evseIds").EnumerateArray().Select(id => id.GetString()));
+        var record = listed.GetProperty("record");
+        Assert.Equal(("ocm", "sugg-b", "TST", 2), (record.GetProperty("source").GetString(), record.GetProperty("externalId").GetString(), record.GetProperty("operatorId").GetString(), record.GetProperty("evses").GetArrayLength()));
+
+        // Below the threshold nothing happens; at 0.8 the newest is decided with the reason in its resolution.
+        var none = await (await admin.PostAsJsonAsync("/api/v1/conflicts/apply-suggestions", new { source = "ocm" })).ReadJsonAsync();
+        Assert.Equal(0, none.GetProperty("meta").GetProperty("returned").GetInt32());
+        var applied = await (await admin.PostAsJsonAsync("/api/v1/conflicts/apply-suggestions", new { source = "ocm", minConfidence = 0.8, limit = 1, note = "Agent." })).ReadJsonAsync();
+        var item = Assert.Single(applied.GetProperty("data").EnumerateArray());
+        Assert.Equal((second.Id, "resolved"), (item.GetProperty("id").GetGuid(), item.GetProperty("outcome").GetString()));
+        var resolution = item.GetProperty("conflict").GetProperty("resolution").GetString()!;
+        Assert.StartsWith($"Merged into location {target}. Suggestion (0.80): The only candidate", resolution, StringComparison.Ordinal);
+        Assert.EndsWith(" Agent.", resolution, StringComparison.Ordinal);
+        Assert.Equal((1, 1, 0, 0), Counts(applied));
+        Assert.Equal((target, MatchMethod.MANUAL), ((await RecordAsync("ocm", "sugg-b")).EntityId, (await RecordAsync("ocm", "sugg-b")).MatchMethod));
+
+        // Many decisions at once: the other conflict separate, the decided one again, an unknown one.
+        var batch = await (await admin.PostAsJsonAsync("/api/v1/conflicts/resolve", new
+        {
+            decisions = new object[]
+            {
+                new { id = first.Id, action = "separate", note = "Eigener Hof." },
+                new { id = second.Id, action = "separate" },
+                new { id = Guid.NewGuid(), action = "keep" },
+            },
+        })).ReadJsonAsync();
+        Assert.Equal(["resolved", "alreadyResolved", "notFound"], batch.GetProperty("data").EnumerateArray().Select(entry => entry.GetProperty("outcome").GetString()));
+        Assert.Equal("Kept as a location of its own. Eigener Hof.", batch.GetProperty("data")[0].GetProperty("conflict").GetProperty("resolution").GetString());
+        Assert.Equal(JsonValueKind.Null, batch.GetProperty("data")[2].GetProperty("conflict").ValueKind);
+        Assert.Equal((3, 1, 1, 1), Counts(batch));
+        Assert.Equal(0, (await (await admin.PostAsJsonAsync("/api/v1/conflicts/apply-suggestions", new { source = "ocm", minConfidence = 0.5 })).ReadJsonAsync()).GetProperty("meta").GetProperty("returned").GetInt32());
+
+        // What the batches reject.
+        async Task FieldAsync(string path, object body, string field)
+        {
+            var problem = await (await admin.PostAsJsonAsync(path, body)).AssertProblemAsync(HttpStatusCode.UnprocessableEntity);
+            Assert.True(problem.GetProperty("errors").TryGetProperty(field, out _), field);
+        }
+
+        await FieldAsync("/api/v1/conflicts/resolve", new { }, "decisions");
+        await FieldAsync("/api/v1/conflicts/resolve", new { decisions = Enumerable.Repeat(new { id = first.Id, action = "keep" }, 201) }, "decisions");
+        await FieldAsync("/api/v1/conflicts/resolve", new { decisions = new[] { new { action = "merge" } } }, "decisions[0].id");
+        await FieldAsync("/api/v1/conflicts/resolve", new { decisions = new[] { new { id = first.Id, action = "drop" } } }, "decisions[0].action");
+        await FieldAsync("/api/v1/conflicts/resolve", new { decisions = new[] { new { id = first.Id, action = "merge" } } }, "decisions[0].targetId");
+        await FieldAsync("/api/v1/conflicts/resolve", new { decisions = new[] { new { id = first.Id, action = "keep", note = new string('x', 501) } } }, "decisions[0].note");
+        await FieldAsync("/api/v1/conflicts/apply-suggestions", new { attribute = "other" }, "attribute");
+        await FieldAsync("/api/v1/conflicts/apply-suggestions", new { minConfidence = 0.4 }, "minConfidence");
+        await FieldAsync("/api/v1/conflicts/apply-suggestions", new { limit = 0 }, "limit");
+        await FieldAsync("/api/v1/conflicts/apply-suggestions", new { note = new string('x', 501) }, "note");
+    }
+
+    private static (int Returned, int Resolved, int AlreadyResolved, int Rejected) Counts(JsonElement response)
+    {
+        var meta = response.GetProperty("meta");
+        return (meta.GetProperty("returned").GetInt32(), meta.GetProperty("resolved").GetInt32(), meta.GetProperty("alreadyResolved").GetInt32(), meta.GetProperty("rejected").GetInt32());
+    }
+
+    [Fact]
+    public async Task Another_notation_of_a_stored_EVSE_ID_is_mapped_to_the_EVSE_or_kept_apart()
+    {
+        var admin = await AdminAsync();
+        var official = Read("econtrol", "search-wien.expected.json")[0];
+        var evse = official.Evses[0];
+        // Source alpha owns two charge points; source beta delivers the same site with the EVSE-IDs without the last separator.
+        var alpha = official with
+        {
+            ExternalId = "alpha-1",
+            Coordinates = new GeoPoint(48.40, 16.60),
+            Evses = [evse with { ExternalId = "alpha-1#1", EvseId = "AT*TST*ENOTE01*1" }, evse with { ExternalId = "alpha-1#2", EvseId = "AT*TST*ENOTE02*1" }],
+        };
+        await IngestAsync("alpha", [alpha]);
+        var stored = (await RecordAsync("alpha", "alpha-1#1", EntityType.EVSE)).EntityId;
+        var kept = (await RecordAsync("alpha", "alpha-1#2", EntityType.EVSE)).EntityId;
+        var beta = alpha with
+        {
+            ExternalId = "beta-1",
+            Coordinates = new GeoPoint(48.40001, 16.60001),
+            Evses = [evse with { ExternalId = "beta-1#1", EvseId = "AT*TST*ENOTE011" }, evse with { ExternalId = "beta-1#2", EvseId = "AT*TST*ENOTE021" }],
+        };
+        await IngestAsync("beta", [beta]);
+        // A second run refreshes the open conflicts instead of adding more.
+        await IngestAsync("beta", [beta with { ObservedAt = T0.AddDays(1) }]);
+
+        Task<List<SourceConflict>> OpenAsync() =>
+            factory.WithDbAsync(db => db.SourceConflicts.Where(item => item.ResolvedAt == null && item.Attribute == "evse_id" && (item.EntityId == stored || item.EntityId == kept)).ToListAsync());
+        var open = await OpenAsync();
+        var first = Assert.Single(open, item => item.EntityId == stored);
+        var second = Assert.Single(open, item => item.EntityId == kept);
+        var location = (await RecordAsync("beta", "beta-1")).EntityId;
+        var view = (await (await admin.GetAsync($"/api/v1/conflicts/{first.Id}")).ReadJsonAsync()).GetProperty("data");
+        var values = view.GetProperty("values");
+        Assert.Equal("AT*TST*ENOTE01*1", view.GetProperty("entityLabel").GetString());
+        Assert.Equal(("AT*TST*ENOTE01*1", "AT*TST*ENOTE011", "beta", "beta-1#1", location),
+            (values.GetProperty("stored").GetString(), values.GetProperty("beta").GetString(), values.GetProperty("source").GetString(), values.GetProperty("externalId").GetString(), values.GetProperty("locationId").GetGuid()));
+        Assert.Equal(("same", 0.95), (view.GetProperty("suggestion").GetProperty("action").GetString(), view.GetProperty("suggestion").GetProperty("confidence").GetDouble()));
+
+        // same: the record of beta is the stored EVSE from now on; keep: the other stays apart and is not raised again.
+        var same = await (await ResolveAsync(admin, first.Id, new { action = "same" })).ReadJsonAsync();
+        Assert.Equal("Mapped to EVSE AT*TST*ENOTE01*1.", same.GetProperty("data").GetProperty("resolution").GetString());
+        var mapped = await RecordAsync("beta", "beta-1#1", EntityType.EVSE);
+        Assert.Equal((stored, MatchMethod.MANUAL), (mapped.EntityId, mapped.MatchMethod));
+        Assert.Equal("Kept as stored.", (await (await ResolveAsync(admin, second.Id, new { action = "keep" })).ReadJsonAsync()).GetProperty("data").GetProperty("resolution").GetString());
+        Assert.Equal(MatchDecision.Keep, (await factory.WithDbAsync(db => db.MatchDecisions.SingleAsync(item => item.SourceKey == "beta" && item.ExternalId == "beta-1#2"))).Decision);
+
+        await IngestAsync("beta", [beta with { ObservedAt = T0.AddDays(2) }]);
+
+        Assert.Empty(await OpenAsync());
+        Assert.Equal(stored, (await RecordAsync("beta", "beta-1#1", EntityType.EVSE)).EntityId);
+        Assert.False(await factory.WithDbAsync(db => db.SourceRecords.AnyAsync(item => item.SourceKey == "beta" && item.ExternalId == "beta-1#2")));
+
+        // A record that sits elsewhere and later delivers the EVSE-ID of another location: the lower confidence.
+        var gamma = official with { ExternalId = "gamma-1", Coordinates = new GeoPoint(48.50, 16.70), OperatorId = "GAM", OperatorName = "Gamma", Evses = [] };
+        await IngestAsync("gamma", [gamma]);
+        await IngestAsync("gamma", [gamma with { ObservedAt = T0.AddDays(1), Evses = [evse with { ExternalId = "gamma-1#1", EvseId = "AT*TST*ENOTE011" }] }]);
+        var far = (await (await admin.GetAsync("/api/v1/conflicts?attribute=evse_id&source=gamma")).ReadJsonAsync()).GetProperty("data");
+        Assert.Equal(0.6, Assert.Single(far.EnumerateArray()).GetProperty("suggestion").GetProperty("confidence").GetDouble());
+    }
+
     [Fact]
     public async Task Merging_maps_the_record_to_the_chosen_candidate_for_the_next_runs()
     {
@@ -260,6 +457,11 @@ public class SecondSourceTests(IntegrationFactory factory) : IClassFixture<Integ
         Assert.Equal(2, candidates.Count);
         Assert.All(candidates, candidate => Assert.InRange(candidate.GetProperty("distanceMeters").GetDouble(), 1, 5));
         Assert.StartsWith("Teststation Stephansplatz", candidates[0].GetProperty("label").GetString(), StringComparison.Ordinal);
+        // Each candidate tells its operator, charge points and sources; the pair has no operator, so nothing is suggested.
+        Assert.All(candidates, candidate => Assert.Equal(["merge-site"], candidate.GetProperty("sources").EnumerateArray().Select(source => source.GetString())));
+        Assert.Equal((JsonValueKind.Null, 0, 0), (candidates[0].GetProperty("sameOperator").ValueKind, candidates[0].GetProperty("evses").GetInt32(), candidates[0].GetProperty("evseIds").GetArrayLength()));
+        Assert.Equal(("Hotel Musterhof", 2), (listed.GetProperty("record").GetProperty("name").GetString(), listed.GetProperty("record").GetProperty("evses").GetArrayLength()));
+        Assert.Equal(JsonValueKind.Null, listed.GetProperty("suggestion").ValueKind);
 
         // The record may have been given to another location before (e.g. created by an earlier run): it moves over.
         var earlier = (await RecordAsync("merge-site", "merge-site-1")).EntityId;
@@ -335,9 +537,20 @@ public class SecondSourceTests(IntegrationFactory factory) : IClassFixture<Integ
         await FieldAsync(identity.Id, new { action = "merge" }, "targetId");
         await FieldAsync(identity.Id, new { action = "merge", targetId = Guid.NewGuid() }, "targetId");
         await FieldAsync(identity.Id, new { action = "keep" }, "action");
+        await FieldAsync(identity.Id, new { action = "same" }, "action");
         await FieldAsync(evseConflict.Id, new { action = "separate" }, "action");
+        // A conflict recorded without the record of the source can be kept, but not mapped.
+        await FieldAsync(evseConflict.Id, new { action = "same" }, "action");
         await FieldAsync(identity.Id, new { action = "separate", note = new string('x', 501) }, "note");
         await (await ResolveAsync(admin, Guid.NewGuid(), new { action = "keep" })).AssertProblemAsync(HttpStatusCode.NotFound);
+        var bare = SourceConflict.Create(EntityType.LOCATION, null, "identity", """{"candidates":[]}""", T0);
+        await factory.WithDbAsync(db =>
+        {
+            db.SourceConflicts.Add(bare);
+            return db.SaveChangesAsync();
+        });
+        await FieldAsync(bare.Id, new { action = "separate" }, "action");
+        Assert.Equal("Kept as stored.", (await (await ResolveAsync(admin, evseConflict.Id, new { action = "keep" })).ReadJsonAsync()).GetProperty("data").GetProperty("resolution").GetString());
         // A candidate that is no longer active cannot be chosen.
         var gone = (await RecordAsync("checks-site", "checks-site-1")).EntityId;
         await factory.WithDbAsync(db => db.Locations.Where(location => location.Id == gone).ExecuteUpdateAsync(set => set.SetProperty(location => location.Lifecycle, Lifecycle.REMOVED)));

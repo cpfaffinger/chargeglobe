@@ -113,10 +113,17 @@ public class ProvenanceTests
         Assert.Equal((EntityType.EVSE, (Guid?)entityId, "evse_id", T0), (conflict.EntityType, conflict.EntityId, conflict.Attribute, conflict.DetectedAt));
         Assert.Null(conflict.ResolvedAt);
 
+        // Raised again by the source: the values follow its latest record, the conflict stays the same.
+        var moved = Guid.CreateVersion7();
+        conflict.Refresh(moved, """{"econtrol":"AT*EVN*E12*34","ocm":"AT-EVN-E12-34"}""");
+        Assert.Equal(((Guid?)moved, """{"econtrol":"AT*EVN*E12*34","ocm":"AT-EVN-E12-34"}"""), (conflict.EntityId, conflict.Values));
+        Assert.Throws<ArgumentException>(() => conflict.Refresh(moved, " "));
+
         conflict.Resolve("kept econtrol", T0.AddDays(1));
 
         Assert.Equal(("kept econtrol", (DateTimeOffset?)T0.AddDays(1)), (conflict.Resolution, conflict.ResolvedAt));
         Assert.Throws<InvalidOperationException>(() => conflict.Resolve("again", T0.AddDays(2)));
+        Assert.Throws<InvalidOperationException>(() => conflict.Refresh(null, "{}"));
         Assert.Throws<ArgumentException>(() => SourceConflict.Create(EntityType.EVSE, null, "evse_id", "", T0));
     }
 }

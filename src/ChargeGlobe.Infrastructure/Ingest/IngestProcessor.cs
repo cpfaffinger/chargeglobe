@@ -48,9 +48,16 @@ public sealed class IngestProcessor(AppDbContext db)
     /// <summary>Records of the message a maintainer declared locations of their own (match decision SEPARATE).</summary>
     private HashSet<string> _separate = [];
 
+    /// <summary>Charge points of the message whose EVSE-ID conflict a maintainer closed for good (match decision KEEP).</summary>
+    private HashSet<string> _kept = [];
+
+    /// <summary>Conflicts this message raised already (attribute, source and external id), so that a record raises each once.</summary>
+    private readonly HashSet<string> _raised = [];
+
     public async Task<IngestResult> ProcessAsync(string sourceKey, IngestBatch batch, CancellationToken cancellationToken)
     {
         _locations = _evses = _statuses = _unknownEvses = _conflicts = _skipped = 0;
+        _raised.Clear();
         await PrefetchAsync(sourceKey, batch, cancellationToken);
         var readings = new List<StatusReading>();
         foreach (var item in batch.Locations)
@@ -126,6 +133,10 @@ public sealed class IngestProcessor(AppDbContext db)
         _tiers = await db.Sources.AsNoTracking().ToDictionaryAsync(source => source.Key, source => source.Tier, cancellationToken);
         _separate = [.. await db.MatchDecisions
             .Where(decision => decision.SourceKey == sourceKey && decision.Decision == MatchDecision.Separate && locationKeys.Contains(decision.ExternalId))
+            .Select(decision => decision.ExternalId)
+            .ToListAsync(cancellationToken)];
+        _kept = [.. await db.MatchDecisions
+            .Where(decision => decision.SourceKey == sourceKey && decision.Decision == MatchDecision.Keep && evseKeys.Contains(decision.ExternalId))
             .Select(decision => decision.ExternalId)
             .ToListAsync(cancellationToken)];
     }
@@ -338,7 +349,7 @@ public sealed class IngestProcessor(AppDbContext db)
                 if (evse is not null && evse.EvseIdDisplay != evseId!.Display)
                 {
                     // Same normalized form, different separators: possibly a collision (docs/03), not merged.
-                    Conflict(evse.Id, evse.EvseIdDisplay, evseId.Display, sourceKey, at);
+                    await ConflictAsync(evse, evseId.Display, sourceKey, snapshot.ExternalId, locationId, at, cancellationToken);
                     return null;
                 }
 
@@ -367,7 +378,7 @@ public sealed class IngestProcessor(AppDbContext db)
             {
                 if (await FindEvseAsync(item => item.EvseIdNorm == evseId!.Normalized, cancellationToken) is { } holder)
                 {
-                    Conflict(evse.Id, holder.EvseIdDisplay, evseId!.Display, sourceKey, at);
+                    await ConflictAsync(holder, evseId!.Display, sourceKey, snapshot.ExternalId, locationId, at, cancellationToken);
                 }
                 else
                 {
@@ -496,7 +507,7 @@ public sealed class IngestProcessor(AppDbContext db)
 
         if (found.Count > 1)
         {
-            AmbiguousConflict(sourceKey, snapshot, found, at);
+            await AmbiguousConflictAsync(sourceKey, snapshot, found, at, cancellationToken);
             return (null, true);
         }
 
@@ -515,31 +526,62 @@ public sealed class IngestProcessor(AppDbContext db)
     private static bool SimilarCount(int delivered, int known) =>
         delivered == 0 || known == 0 || Math.Min(delivered, known) * 2 >= Math.Max(delivered, known);
 
-    /// <summary>A record that fits several locations; the same open conflict is not recorded twice.</summary>
-    private void AmbiguousConflict(string sourceKey, ProviderLocationSnapshot snapshot, List<GeoCandidate> candidates, DateTimeOffset at)
+    /// <summary>
+    /// A record that fits several locations. The values carry the position and the details of the record, so that the
+    /// conflict list can show how far each candidate is away and what the source delivered (docs/03). A record has one
+    /// open conflict: a later run refreshes it instead of adding another.
+    /// </summary>
+    private async Task AmbiguousConflictAsync(
+        string sourceKey, ProviderLocationSnapshot snapshot, List<GeoCandidate> candidates, DateTimeOffset at, CancellationToken cancellationToken)
     {
-        // The position of the record lets the conflict list show how far each candidate is away.
-        var values = JsonSerializer.Serialize(new Dictionary<string, object>
-        {
-            ["source"] = sourceKey,
-            ["externalId"] = snapshot.ExternalId,
-            ["latitude"] = snapshot.Coordinates.Latitude,
-            ["longitude"] = snapshot.Coordinates.Longitude,
-            ["candidates"] = candidates.Select(candidate => candidate.Id).Order().ToList(),
-        });
-        if (OpenConflictExists("identity", values))
+        var values = JsonSerializer.Serialize(
+            new Dictionary<string, object>
+            {
+                ["source"] = sourceKey,
+                ["externalId"] = snapshot.ExternalId,
+                ["latitude"] = snapshot.Coordinates.Latitude,
+                ["longitude"] = snapshot.Coordinates.Longitude,
+                ["candidates"] = candidates.Select(candidate => candidate.Id).Order().ToList(),
+                ["record"] = new
+                {
+                    snapshot.Name,
+                    Address = snapshot.Address?.Street,
+                    snapshot.Address?.PostalCode,
+                    snapshot.Address?.City,
+                    snapshot.OperatorId,
+                    snapshot.OperatorName,
+                    Evses = snapshot.Evses.Select(evse => new { evse.EvseId, evse.MaxPowerKw }).ToList(),
+                },
+            },
+            Json);
+        await RaiseAsync("identity", sourceKey, snapshot.ExternalId, EntityType.LOCATION, candidates[0].Id, values, at, cancellationToken);
+    }
+
+    /// <summary>
+    /// Adds the conflict, or refreshes the open one the same record raised before (every run of a source repeats it).
+    /// A record raises a conflict once per message.
+    /// </summary>
+    private async Task RaiseAsync(
+        string attribute, string sourceKey, string externalId, EntityType entityType, Guid entityId, string values, DateTimeOffset at, CancellationToken cancellationToken)
+    {
+        if (!_raised.Add($"{attribute}|{sourceKey}|{externalId}"))
         {
             return;
         }
 
-        db.SourceConflicts.Add(SourceConflict.Create(EntityType.LOCATION, candidates[0].Id, "identity", values, at));
+        var key = JsonSerializer.Serialize(new Dictionary<string, string> { ["source"] = sourceKey, ["externalId"] = externalId });
+        var open = await db.SourceConflicts
+            .Where(conflict => conflict.ResolvedAt == null && conflict.Attribute == attribute && EF.Functions.JsonContains(conflict.Values, key))
+            .FirstOrDefaultAsync(cancellationToken);
+        if (open is not null)
+        {
+            open.Refresh(entityId, values);
+            return;
+        }
+
+        db.SourceConflicts.Add(SourceConflict.Create(entityType, entityId, attribute, values, at));
         _conflicts++;
     }
-
-    /// <summary>Whether the same conflict is open already (in this message or stored); every run of a source repeats it.</summary>
-    private bool OpenConflictExists(string attribute, string values) =>
-        db.SourceConflicts.Local.Any(conflict => conflict.ResolvedAt == null && conflict.Attribute == attribute && conflict.Values == values)
-        || db.SourceConflicts.Any(conflict => conflict.ResolvedAt == null && conflict.Attribute == attribute && conflict.Values == values);
 
     private Task<bool> OtherSourcesHaveEvsesAsync(string sourceKey, Guid locationId, CancellationToken cancellationToken) =>
         db.Evses.AnyAsync(
@@ -629,16 +671,29 @@ public sealed class IngestProcessor(AppDbContext db)
         }
     }
 
-    private void Conflict(Guid evseId, string stored, string delivered, string sourceKey, DateTimeOffset at)
+    /// <summary>
+    /// The delivered EVSE-ID equals a stored one apart from separators. The values name the stored notation, the
+    /// delivered one under the key of the source, the record of the source and the location it was delivered at, so
+    /// that a maintainer can map the record to the stored EVSE (<c>same</c>). A record a maintainer decided to keep apart
+    /// (match decision KEEP) raises nothing.
+    /// </summary>
+    private async Task ConflictAsync(
+        Evse stored, string delivered, string sourceKey, string externalId, Guid locationId, DateTimeOffset at, CancellationToken cancellationToken)
     {
-        var values = JsonSerializer.Serialize(new Dictionary<string, string> { ["stored"] = stored, [sourceKey] = delivered });
-        if (OpenConflictExists("evse_id", values))
+        if (_kept.Contains(externalId))
         {
             return;
         }
 
-        db.SourceConflicts.Add(SourceConflict.Create(EntityType.EVSE, evseId, "evse_id", values, at));
-        _conflicts++;
+        var values = JsonSerializer.Serialize(new Dictionary<string, object>
+        {
+            ["stored"] = stored.EvseIdDisplay,
+            [sourceKey] = delivered,
+            ["source"] = sourceKey,
+            ["externalId"] = externalId,
+            ["locationId"] = locationId,
+        });
+        await RaiseAsync("evse_id", sourceKey, externalId, EntityType.EVSE, stored.Id, values, at, cancellationToken);
     }
 
     private static void Reactivate(Location location)

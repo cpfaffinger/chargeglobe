@@ -62,6 +62,9 @@ public sealed class MatchDecision
     public const string Merge = "MERGE";
     public const string Separate = "SEPARATE";
 
+    /// <summary>An <c>evse_id</c> conflict a maintainer closed: the record of the source is not merged and raises no conflict.</summary>
+    public const string Keep = "KEEP";
+
     public required string SourceKey { get; set; }
 
     public required string ExternalId { get; set; }
