@@ -139,7 +139,8 @@ public class SecondSourceTests(IntegrationFactory factory) : IClassFixture<Integ
         await IngestAsync("pair", [pair with { ExternalId = "pair-1", Coordinates = new GeoPoint(48.25, 16.45) }, pair with { ExternalId = "pair-2", Coordinates = new GeoPoint(48.25004, 16.45004) }]);
         var locations = await factory.WithDbAsync(db => db.Locations.CountAsync());
 
-        await IngestAsync("ocm", [.. Ocm(), between]);
+        // The record twice in one message (a source may repeat itself) and again with the next run: one open conflict.
+        await IngestAsync("ocm", [.. Ocm(), between, between]);
         await IngestAsync("ocm", [.. Ocm().Select(site => site with { ObservedAt = T0.AddDays(1) }), between]);
 
         Assert.Equal(locations, await factory.WithDbAsync(db => db.Locations.CountAsync()));

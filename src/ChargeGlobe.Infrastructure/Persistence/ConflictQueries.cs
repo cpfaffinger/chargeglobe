@@ -329,11 +329,8 @@ public sealed class ConflictResolution(AppDbContext db, IConflictQueries queries
                     string.IsNullOrWhiteSpace(request.Note) ? note : $"{note} {request.Note.Trim()}",
                     actor,
                     cancellationToken);
+                // A page holds at most as many conflicts as are left of the limit.
                 items.Add(new ResolvedItem(view.Id, result.Outcome, result.Conflict));
-                if (items.Count == request.Limit)
-                {
-                    break;
-                }
             }
 
             if (page.Next is null)
