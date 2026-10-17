@@ -65,7 +65,7 @@ Inventar und Preise kosten mit dem Register 17 Requests je Lauf; das Budget geh�
 | **Stadt Wien OGD** | WFS `ogdwien:ELADESTELLEOGD` (nur städtische 22-kW-Punkte, ~1.200) | CC BY 3.0 AT | gering, da in E-Control enthalten |
 | Land NÖ/OÖ/Bgld, Wien Energie, Linz AG | keine Ladestations-Open-Data gefunden [U] | – | – |
 | **BEÖ** | Karte nutzt selbst E-Control-Daten; Statistiken | – | Branchenkontext |
-| **ladetarif.at** (E-Control Tarifkalkulator) | 22 Anbieter, 44 Produkte (02/2026) – EMP-Tarife! | eigene Schnittstellen-Nutzungsbedingungen (Weitergabe des Zugangs untersagt) | wichtigste Quelle für **EMP-Tarifmodelle** in AT; Nutzung vorab mit E-Control klären |
+| **ladetarif.at** (E-Control Tarifkalkulator) | 22 Anbieter, 43 Produkte (10/2026) – EMP-Tarife, anonyme JSON-API mit OpenAPI-Beschreibung | keine Nutzungsbedingungen und keine Lizenz; robots.txt sperrt nur `/admin/`; Weiterverbreitung nicht freigegeben ([Endpunkt-Notiz](endpunkte/ladetarif.md)) | wichtigste Quelle für **EMP-Tarifmodelle** in AT; nur manueller Abgleich des Katalogs (`scripts/tariffs/compare-ladetarif.py`), Adapter erst nach schriftlicher Freigabe der E-Control |
 | BWB Branchenuntersuchung E-Ladeinfrastruktur | Markt-/Preisanalyse | – | Kontext für Tarifmodell |
 
 ## 4. Deutschland (Phase 3)
