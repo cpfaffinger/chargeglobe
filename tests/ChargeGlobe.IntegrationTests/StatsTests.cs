@@ -86,9 +86,9 @@ public class StatsTests(IntegrationFactory factory) : IClassFixture<IntegrationF
             Pairs(data.GetProperty("evsesPerSite"), "size", "count"));
         Assert.Equal([("0", 0), ("1", 2), ("2", 2), ("3_PLUS", 0)], Pairs(data.GetProperty("connectorsPerEvse"), "size", "count"));
 
-        // All regions of the seed, the fixture lies in Vienna.
+        // All regions of the seeds (Austria and Germany), the fixture lies in Vienna.
         var regions = data.GetProperty("byRegion").EnumerateArray().ToList();
-        Assert.Equal(9, regions.Count);
+        Assert.Equal(RegionBounds.All.Count, regions.Count);
         var vienna = Assert.Single(regions, region => region.GetProperty("code").GetString() == "AT-9");
         Assert.Equal((2, 4), (vienna.GetProperty("locations").GetInt32(), vienna.GetProperty("evses").GetInt32()));
         Assert.Equal(4, regions.Sum(region => region.GetProperty("evses").GetInt32()));
