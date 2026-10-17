@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
 namespace ChargeGlobe.Domain.Charging;
@@ -22,6 +23,13 @@ public enum TariffCurrent
 {
     AC,
     DC,
+}
+
+/// <summary>Where the price of a zone comes from: its own price elements, or the ad-hoc price of the EVSE's operator.</summary>
+public enum TariffPricing
+{
+    FIXED,
+    OPERATOR_AD_HOC,
 }
 
 /// <summary>How sure the curated values are: read from the provider's price sheet, derived, or unclear.</summary>
@@ -150,8 +158,11 @@ public sealed record TariffPriceElement(
 
 /// <summary>
 /// A zone of a tariff: the operators it covers (by network key or operator ID; none for <see cref="TariffZoneKind.ROAMING"/>
-/// means every operator), the ones it leaves out, and its price elements.
+/// means every operator), the ones it leaves out, and its price elements – or, with <see cref="TariffPricing.OPERATOR_AD_HOC"/>,
+/// the ad-hoc price of the EVSE with a markup (providers that pass on the operator's price, e.g. Electroverse).
 /// </summary>
+/// <param name="MarkupPercent">With operator pricing: percent on every amount of the ad-hoc price (−10 = 10 % off).</param>
+/// <param name="MarkupSessionFee">With operator pricing: fee of the provider per session on top.</param>
 public sealed record TariffZone(
     TariffZoneKind Kind,
     IReadOnlyList<string> Networks,
@@ -159,8 +170,34 @@ public sealed record TariffZone(
     IReadOnlyList<string> ExcludedNetworks,
     IReadOnlyList<string> ExcludedOperators,
     IReadOnlyList<TariffPriceElement> Prices,
-    string? Notes)
+    string? Notes,
+    // Left out of the stored JSON when unset, so that fixed zones keep their content hash.
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] TariffPricing Pricing = TariffPricing.FIXED,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] decimal? MarkupPercent = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] decimal? MarkupSessionFee = null)
 {
+    /// <summary>
+    /// The price of an operator-priced zone from the ad-hoc price of the EVSE: every amount with <see cref="MarkupPercent"/>,
+    /// plus <see cref="MarkupSessionFee"/> per session. A free EVSE stays free.
+    /// </summary>
+    public PriceComponents MarkUp(PriceComponents adHoc)
+    {
+        if (adHoc.FreeOfCharge)
+        {
+            return adHoc;
+        }
+
+        var factor = 1 + ((MarkupPercent ?? 0) / 100);
+        decimal? Scale(decimal? amount) => amount is { } value ? Math.Round(value * factor, 4) : null;
+        return adHoc with
+        {
+            PricePerKwh = Scale(adHoc.PricePerKwh),
+            PricePerMinute = Scale(adHoc.PricePerMinute),
+            SessionFee = MarkupSessionFee is { } fee ? (Scale(adHoc.SessionFee) ?? 0) + fee : Scale(adHoc.SessionFee),
+            BlockingFeePerMinute = Scale(adHoc.BlockingFeePerMinute),
+        };
+    }
+
     /// <summary>Whether the zone covers the operator; <paramref name="members"/> resolves a network key to its operator IDs.</summary>
     public bool Covers(string? operatorId, Func<string, IReadOnlyCollection<string>> members)
     {
@@ -188,8 +225,8 @@ public sealed record TariffZone(
     }
 }
 
-/// <summary>What a tariff charges at one EVSE: the zone it falls into and the price element.</summary>
-public sealed record TariffMatch(TariffZone Zone, TariffPriceElement Price);
+/// <summary>What a tariff charges at one EVSE: the zone it falls into and the price element; none for an operator-priced zone.</summary>
+public sealed record TariffMatch(TariffZone Zone, TariffPriceElement? Price);
 
 /// <summary>
 /// A tariff (product) of an EMP, one version of it: the price elements per zone, the monthly fee, and where the values
@@ -305,6 +342,11 @@ public sealed class TariffPlan
             .OrderBy(item => item.Kind)
             .ThenBy(item => item.Networks.Count + item.Operators.Count == 0)
             .FirstOrDefault(item => item.Covers(operatorId, members));
+        if (zone?.Pricing == TariffPricing.OPERATOR_AD_HOC)
+        {
+            return new TariffMatch(zone, null);
+        }
+
         return zone?.PriceFor(current, maxPowerKw) is { } price ? new TariffMatch(zone, price) : null;
     }
 }

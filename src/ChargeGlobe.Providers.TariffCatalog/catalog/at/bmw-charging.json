@@ -1,0 +1,91 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "bmw-charging",
+      "name": "BMW Charging",
+      "website": "https://bmw-public-charging.com/web/de/bmw-at/tariffs",
+      "country": "DE",
+      "tariffs": [
+        {
+          "key": "flex",
+          "name": "BMW Charging Flex",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "My BMW App oder BMW Charging Card.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Flexible Preise: Preis des Betreibers.",
+              "pricing": "OPERATOR_AD_HOC"
+            }
+          ],
+          "notes": "Zubuchbar: IONITY Plus (5,99 €/Monat, 0,45 €/kWh an IONITY), nicht abgebildet.",
+          "sourceUrl": "https://bmw-public-charging.com/web/de/bmw-at/tariffs",
+          "sourceDate": null,
+          "confidence": "HIGH"
+        },
+        {
+          "key": "active",
+          "name": "BMW Charging Active",
+          "currency": "EUR",
+          "monthlyFee": 4.99,
+          "prerequisites": "Mindestlaufzeit 1 Monat; für neue Elektroautos 6 Monate ohne Grundgebühr.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "PARTNER",
+              "networks": [
+                "evn",
+                "mer",
+                "electra",
+                "kelag",
+                "shell",
+                "da-emobil",
+                "salzburg-ag"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.45,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 120
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.49,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 30
+                }
+              ],
+              "notes": "Preferred Partner Network laut Logos der Tarifseite."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Flexible Preise der übrigen Betreiber mit 15 % Rabatt.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPercent": -15
+            }
+          ],
+          "notes": "Zubuchbar: IONITY Plus (5,99 €/Monat, 0,45 €/kWh an IONITY), nicht abgebildet.",
+          "sourceUrl": "https://bmw-public-charging.com/web/de/bmw-at/tariffs",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}

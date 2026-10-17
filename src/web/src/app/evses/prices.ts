@@ -23,6 +23,8 @@ export interface EmpPrice {
   tariff: string;
   /** Where the EVSE lies for the tariff: special price of its operator, home or partner network, roaming. */
   zone: ZoneKind;
+  /** OPERATOR_AD_HOC: the operator's ad-hoc price with the provider's markup. */
+  pricing: 'FIXED' | 'OPERATOR_AD_HOC';
   /** Base fee per month of the card, not part of exampleCost. */
   monthlyFee: number | null;
   price: PriceView;
@@ -46,6 +48,11 @@ export interface SessionExample {
   minutes: number;
   powerKw: number | null;
   basis: 'EVSE' | 'VEHICLE' | 'REQUEST';
+}
+
+/** "Roaming" or, at the operator's price, "Roaming, Betreiberpreis". */
+export function zoneText(card: Pick<EmpPrice, 'zone' | 'pricing'>): string {
+  return card.pricing === 'OPERATOR_AD_HOC' ? `${ZONE_LABELS[card.zone]}, Betreiberpreis` : ZONE_LABELS[card.zone];
 }
 
 /** "16 min", "2 h", "2 h 44 min". */
@@ -74,6 +81,8 @@ export interface EvsePricesResponse {
     emps: EmpPrice[];
     /** Tariffs that cannot be used at the EVSE. */
     unavailable: EmpUnavailable[];
+    /** Tariffs at the operator's price without a known ad-hoc price of the EVSE. */
+    priceUnknown: (EmpUnavailable & { zone: ZoneKind })[];
   };
   meta: { attribution: { source: string; text: string; license: string }[] };
 }
@@ -103,7 +112,7 @@ export function comparison(data: EvsePricesResponse['data'], cards: readonly str
     ...(data.current ? [{ key: 'ad-hoc', label: 'Ad-hoc (ohne Vertrag)', price: data.current.price, monthlyFee: null, own: false }] : []),
     ...data.emps.map((emp) => ({
       key: emp.tariffId,
-      label: `${emp.empName} · ${emp.tariff} (${ZONE_LABELS[emp.zone]})`,
+      label: `${emp.empName} · ${emp.tariff} (${zoneText(emp)})`,
       price: emp.price,
       monthlyFee: emp.monthlyFee,
       own: cards.includes(emp.emp),

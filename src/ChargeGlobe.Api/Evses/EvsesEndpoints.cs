@@ -54,7 +54,8 @@ public sealed record EvsePricesData(
     CurrentPrice? Current,
     IReadOnlyList<PricePeriod> History,
     IReadOnlyList<EmpPrice> Emps,
-    IReadOnlyList<EmpUnavailable> Unavailable);
+    IReadOnlyList<EmpUnavailable> Unavailable,
+    IReadOnlyList<EmpPriceUnknown> PriceUnknown);
 
 public sealed record EvsePricesResponse(EvsePricesData Data, AttributionMeta Meta);
 
@@ -168,7 +169,9 @@ public static class EvsesEndpoints
                 "power) `emp` (key), `empName`, `tariffId`, `tariffKey`, `tariff`, `zone` (OPERATOR, HOME, PARTNER or " +
                 "ROAMING), `monthlyFee` (not part of the example), `price` (source `emp:<key>`), `sourceUrl`, `sourceDate` " +
                 "(\"Stand\" of the provider) and `confidence`, sorted by `price.exampleCost`. `unavailable` lists the tariffs " +
-                "valid now that cannot be used at the EVSE (operator not covered or no cards of other providers). 422 for " +
+                "valid now that cannot be used at the EVSE (operator not covered or no cards of other providers). A card with " +
+                "`pricing` OPERATOR_AD_HOC charges the operator's ad-hoc price of the EVSE with the provider's markup; without " +
+                "a known ad-hoc price it is listed in `priceUnknown` (`emp`, `empName`, `tariffKey`, `tariff`, `zone`). 422 for " +
                 "invalid or too long ranges; 404 for an unknown EVSE. `meta.attribution` names the sources.")
             .Produces<EvsePricesResponse>()
             .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
@@ -190,15 +193,16 @@ public static class EvsesEndpoints
                         ],
                         [
                             new EmpPrice(
-                                "wien-energie", "Wien Energie", Guid.Parse("01990a3e-7c00-7a10-9b2c-3d4e5f6a7b8c"), "tanke-basis", "TANKE Basis", "HOME", null,
+                                "wien-energie", "Wien Energie", Guid.Parse("01990a3e-7c00-7a10-9b2c-3d4e5f6a7b8c"), "tanke-basis", "TANKE Basis", "HOME", "FIXED", null,
                                 new PriceView("emp:wien-energie", "EUR", 0.45m, null, null, 0.10m, 120, false, 13.50m),
                                 "https://www.wienenergie.at/privat/produkte/e-mobilitaet/", new DateOnly(2026, 7, 1), "HIGH"),
                             new EmpPrice(
-                                "oeamtc", "ÖAMTC ePower", Guid.Parse("01990a3e-7c00-7a10-9b2c-3d4e5f6a7b8d"), "mitglied", "Mitglied", "ROAMING", null,
+                                "oeamtc", "ÖAMTC ePower", Guid.Parse("01990a3e-7c00-7a10-9b2c-3d4e5f6a7b8d"), "mitglied", "Mitglied", "ROAMING", "FIXED", null,
                                 new PriceView("emp:oeamtc", "EUR", 0.55m, null, null, null, null, false, 16.50m),
                                 "https://www.oeamtc.at/epower", new DateOnly(2026, 4, 1), "MEDIUM"),
                         ],
-                        [new EmpUnavailable("tesla", "Tesla", "supercharging", "Supercharging")]),
+                        [new EmpUnavailable("tesla", "Tesla", "supercharging", "Supercharging")],
+                        [new EmpPriceUnknown("octopus-electroverse", "Octopus Electroverse", "electroverse", "Electroverse", "ROAMING")]),
                     ExampleMeta));
 
         evses.MapGet("/{evseId}/status/history", GetStatusHistoryAsync)
@@ -323,7 +327,7 @@ public static class EvsesEndpoints
         return Results.Ok(new EvsePricesResponse(
             new EvsePricesData(
                 evse.Id, evse.EvseId, nameof(TariffKind.AD_HOC), start.Value, end.Value, prices.Example,
-                prices.Current, prices.History, prices.Emps, prices.Unavailable),
+                prices.Current, prices.History, prices.Emps, prices.Unavailable, prices.PriceUnknown),
             new AttributionMeta(await queries.AttributionAsync(evse.Id, cancellationToken))));
     }
 

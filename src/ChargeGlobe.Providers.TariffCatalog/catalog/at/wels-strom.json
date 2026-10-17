@@ -53,9 +53,18 @@
                 }
               ],
               "notes": "kWh-Preis plus Zeitpreis je Stunde (0,45 / 0,96 / 9,90 / 30 / 60 €/h) vom Anstecken bis zum Abstecken."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Andere Stationen über das Monta-Netz zum Preis des jeweiligen Betreibers.",
+              "pricing": "OPERATOR_AD_HOC"
             }
           ],
-          "notes": "Andere Stationen über Monta zum Preis des jeweiligen Betreibers (nicht abgebildet).",
+          "notes": null,
           "sourceUrl": "https://www.eww.at/fileadmin/emobil-link/emobil.link/datenblaetter/emobil-Preisblatt-eLadekarte-2025.pdf",
           "sourceDate": "2025-01-01",
           "confidence": "HIGH"

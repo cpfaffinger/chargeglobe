@@ -133,9 +133,9 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             .OrderBy(period => period.From)
             .ToList();
         var catalog = await CurrentCatalogAsync(cancellationToken);
-        var prices = EmpPrices(catalog, evse, example).ToList();
+        var (prices, unknown) = EmpPrices(catalog, evse, example, current?.Components);
         var unavailable = catalog.Plans
-            .Where(row => prices.All(price => price.TariffId != row.Plan.Id))
+            .Where(row => prices.All(price => price.TariffId != row.Plan.Id) && unknown.All(item => item.Plan.Id != row.Plan.Id))
             .OrderBy(row => row.Name, StringComparer.Ordinal)
             .ThenBy(row => row.Plan.Name, StringComparer.Ordinal)
             .Select(row => new EmpUnavailable(row.Key, row.Name, row.Plan.Key, row.Plan.Name))
@@ -145,7 +145,8 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             current is null ? null : new CurrentPrice(View(current.SourceKey, current.Components, example), current.Since, current.ObservedAt),
             history,
             prices,
-            unavailable);
+            unavailable,
+            [.. unknown.Select(item => new EmpPriceUnknown(item.Key, item.Name, item.Plan.Key, item.Plan.Name, item.Zone.ToString()))]);
     }
     public async Task<LocationPricesPage> LocationPricesAsync(
         IReadOnlyList<Guid> locationIds, decimal? kwh, int? minutes, IReadOnlyCollection<string>? cards, CancellationToken cancellationToken)
@@ -179,7 +180,7 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
                 .FirstOrDefault();
             var cheapestCard = here
                 .Select(evse => (evse.EvseId, Session: Session(evse), Evse: evse))
-                .Select(item => (item.EvseId, item.Session, Card: EmpPrices(tariffs, item.Evse, item.Session).FirstOrDefault()))
+                .Select(item => (item.EvseId, item.Session, Card: EmpPrices(tariffs, item.Evse, item.Session, adHoc.GetValueOrDefault(item.Evse.Id)?.Components).Prices.FirstOrDefault()))
                 .Where(item => item.Card is not null)
                 .OrderBy(item => item.Card!.Price.ExampleCost)
                 .Select(item => new LocationCardPrice(
@@ -248,28 +249,47 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
 
     /// <summary>
     /// The tariffs that apply at the EVSE: per tariff the first zone that covers its operator (special price, home network,
-    /// partner network, roaming if the EVSE accepts other cards) and the price element for its current and power,
-    /// cheapest session first.
+    /// partner network, roaming if the EVSE accepts other cards) and the price element for its current and power, or for
+    /// an operator-priced zone the ad-hoc price of the EVSE with the markup; cheapest session first. Operator-priced
+    /// tariffs at an EVSE without ad-hoc price come as unknown.
     /// </summary>
-    private static IEnumerable<EmpPrice> EmpPrices(CurrentCatalog catalog, TariffTarget evse, SessionExample example) =>
-        catalog.Plans
+    private static (List<EmpPrice> Prices, List<UnknownPrice> Unknown) EmpPrices(
+        CurrentCatalog catalog, TariffTarget evse, SessionExample example, PriceComponents? adHoc)
+    {
+        var matches = catalog.Plans
             .Select(row => (Row: row, Match: row.Plan.MatchAt(evse.OperatorId, evse.Roaming, evse.Current, evse.MaxPowerKw, catalog.Members)))
             .Where(item => item.Match is not null)
+            .Select(item => (item.Row, Zone: item.Match!.Zone, Price: item.Match.Price is { } price
+                ? price.Components(item.Row.Plan.Currency)
+                : adHoc is null ? null : item.Match.Zone.MarkUp(adHoc)))
+            .ToList();
+        List<EmpPrice> prices = [.. matches
+            .Where(item => item.Price is not null)
             .Select(item => new EmpPrice(
                 item.Row.Key,
                 item.Row.Name,
                 item.Row.Plan.Id,
                 item.Row.Plan.Key,
                 item.Row.Plan.Name,
-                item.Match!.Zone.Kind.ToString(),
+                item.Zone.Kind.ToString(),
+                item.Zone.Pricing.ToString(),
                 item.Row.Plan.MonthlyFee,
-                View($"emp:{item.Row.Key}", item.Match.Price.Components(item.Row.Plan.Currency), example),
+                View($"emp:{item.Row.Key}", item.Price!, example),
                 item.Row.Plan.SourceUrl,
                 item.Row.Plan.SourceDate,
                 item.Row.Plan.Confidence.ToString()))
             .OrderBy(price => price.Price.ExampleCost)
             .ThenBy(price => price.EmpName, StringComparer.Ordinal)
-            .ThenBy(price => price.Tariff, StringComparer.Ordinal);
+            .ThenBy(price => price.Tariff, StringComparer.Ordinal)];
+        List<UnknownPrice> unknown = [.. matches
+            .Where(item => item.Price is null)
+            .OrderBy(item => item.Row.Name, StringComparer.Ordinal)
+            .ThenBy(item => item.Row.Plan.Name, StringComparer.Ordinal)
+            .Select(item => new UnknownPrice(item.Row.Plan, item.Row.Key, item.Row.Name, item.Zone.Kind))];
+        return (prices, unknown);
+    }
+
+    private sealed record UnknownPrice(TariffPlan Plan, string Key, string Name, TariffZoneKind Zone);
 
     private static PriceView View(string source, PriceComponents price, SessionExample example) =>
         new(source, price.Currency, price.PricePerKwh, price.PricePerMinute, price.SessionFee, price.BlockingFeePerMinute,

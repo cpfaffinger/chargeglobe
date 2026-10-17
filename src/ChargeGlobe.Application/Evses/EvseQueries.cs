@@ -122,7 +122,8 @@ public sealed record PricePeriod(PriceView Price, DateTimeOffset From, DateTimeO
 /// <param name="TariffKey">Key of the tariff within the EMP.</param>
 /// <param name="Zone">Where the EVSE lies for this tariff: <c>OPERATOR</c> (special price of its operator), <c>HOME</c>, <c>PARTNER</c> or <c>ROAMING</c>.</param>
 /// <param name="MonthlyFee">Base fee per month of the card; not part of <see cref="PriceView.ExampleCost"/>.</param>
-/// <param name="Price">The price element for the current and power of the EVSE; source <c>emp:&lt;key&gt;</c>.</param>
+/// <param name="Price">The price element for the current and power of the EVSE, or the marked-up ad-hoc price; source <c>emp:&lt;key&gt;</c>.</param>
+/// <param name="Pricing"><c>FIXED</c> (price of the tariff) or <c>OPERATOR_AD_HOC</c> (the operator's ad-hoc price with the provider's markup).</param>
 /// <param name="SourceDate">Date the provider states for the prices ("Stand").</param>
 /// <param name="Confidence"><c>HIGH</c>, <c>MEDIUM</c> or <c>LOW</c>.</param>
 public sealed record EmpPrice(
@@ -132,6 +133,7 @@ public sealed record EmpPrice(
     string TariffKey,
     string Tariff,
     string Zone,
+    string Pricing,
     decimal? MonthlyFee,
     PriceView Price,
     string SourceUrl,
@@ -141,11 +143,21 @@ public sealed record EmpPrice(
 /// <summary>A tariff valid now that cannot be used at the EVSE (operator not covered, or no card acceptance).</summary>
 public sealed record EmpUnavailable(string Emp, string EmpName, string TariffKey, string Tariff);
 
+/// <summary>A tariff that can be used at the EVSE at the operator's price, but no ad-hoc price of the EVSE is known.</summary>
+public sealed record EmpPriceUnknown(string Emp, string EmpName, string TariffKey, string Tariff, string Zone);
+
 /// <param name="Example">The session all costs are for: the energy of the scenario at the power of this EVSE.</param>
 /// <param name="Current">The newest ad-hoc price of the sources; null if none is known.</param>
 /// <param name="Emps">Prices of the EMP tariffs that apply at the EVSE, cheapest example first.</param>
 /// <param name="Unavailable">Tariffs valid now that do not apply at the EVSE.</param>
-public sealed record EvsePrices(SessionExample Example, CurrentPrice? Current, IReadOnlyList<PricePeriod> History, IReadOnlyList<EmpPrice> Emps, IReadOnlyList<EmpUnavailable> Unavailable);
+/// <param name="PriceUnknown">Tariffs that apply at the operator's price, without a known ad-hoc price.</param>
+public sealed record EvsePrices(
+    SessionExample Example,
+    CurrentPrice? Current,
+    IReadOnlyList<PricePeriod> History,
+    IReadOnlyList<EmpPrice> Emps,
+    IReadOnlyList<EmpUnavailable> Unavailable,
+    IReadOnlyList<EmpPriceUnknown> PriceUnknown);
 
 /// <summary>The lowest ad-hoc cost of a session at a location: the EVSE where it costs least.</summary>
 /// <param name="EvseId">EVSE-ID of that EVSE.</param>

@@ -1,0 +1,194 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "mercedes-charge",
+      "name": "MB.CHARGE Public",
+      "website": "https://eu.charge.mercedes-benz.com/web/de/mb-at/tariffs",
+      "country": "DE",
+      "tariffs": [
+        {
+          "key": "public-s",
+          "name": "MB.CHARGE Public S",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Mercedes-Benz App oder Ladekarte.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Flexible Preise: Preis des Betreibers, angezeigt in der App.",
+              "pricing": "OPERATOR_AD_HOC"
+            }
+          ],
+          "notes": null,
+          "sourceUrl": "https://eu.charge.mercedes-benz.com/api/public/v1/at/tariffs/pdf?locale=de_AT",
+          "sourceDate": null,
+          "confidence": "HIGH"
+        },
+        {
+          "key": "public-m",
+          "name": "MB.CHARGE Public M",
+          "currency": "EUR",
+          "monthlyFee": 4.9,
+          "prerequisites": "Mindestlaufzeit 1 Monat.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "mercedes-hpc"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39
+                }
+              ],
+              "notes": "Mercedes-Benz Charging Network."
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.49
+                }
+              ]
+            },
+            {
+              "kind": "PARTNER",
+              "networks": [
+                "evn",
+                "mer",
+                "electra",
+                "kelag",
+                "shell",
+                "da-emobil",
+                "salzburg-ag"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.57,
+                  "blockingFeePerMinute": 0.09,
+                  "blockingAfterMinutes": 90
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.57,
+                  "blockingFeePerMinute": 0.09,
+                  "blockingAfterMinutes": 90
+                }
+              ],
+              "notes": "Preferred Partner Network laut Logos der Tarifseite."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Flexible Preise der übrigen Betreiber mit 10 % Rabatt.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPercent": -10
+            }
+          ],
+          "notes": null,
+          "sourceUrl": "https://eu.charge.mercedes-benz.com/web/de/mb-at/tariffs",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "public-l",
+          "name": "MB.CHARGE Public L",
+          "currency": "EUR",
+          "monthlyFee": 9.9,
+          "prerequisites": "Mindestlaufzeit 1 Monat; für manche neue Elektroautos 3 Monate ohne Grundgebühr.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "mercedes-hpc"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39
+                }
+              ],
+              "notes": "Mercedes-Benz Charging Network."
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.45
+                }
+              ]
+            },
+            {
+              "kind": "PARTNER",
+              "networks": [
+                "evn",
+                "mer",
+                "electra",
+                "kelag",
+                "shell",
+                "da-emobil",
+                "salzburg-ag"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.51,
+                  "blockingFeePerMinute": 0.09,
+                  "blockingAfterMinutes": 90
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.51,
+                  "blockingFeePerMinute": 0.09,
+                  "blockingAfterMinutes": 90
+                }
+              ],
+              "notes": "Preferred Partner Network laut Logos der Tarifseite."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Flexible Preise der übrigen Betreiber mit 15 % Rabatt.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPercent": -15
+            }
+          ],
+          "notes": null,
+          "sourceUrl": "https://eu.charge.mercedes-benz.com/web/de/mb-at/tariffs",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}

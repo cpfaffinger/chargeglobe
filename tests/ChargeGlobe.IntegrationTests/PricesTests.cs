@@ -130,7 +130,7 @@ public class PricesTests(IntegrationFactory factory) : IClassFixture<Integration
     [Fact]
     public async Task A_free_charge_point_costs_nothing_and_one_without_price_has_none()
     {
-        var surrogate = await factory.WithDbAsync(db => db.Evses.Where(evse => evse.IdentityKind == IdentityKind.SURROGATE).Select(evse => evse.Id).SingleAsync());
+        var surrogate = await factory.WithDbAsync(db => db.Evses.Where(evse => evse.IdentityKind == IdentityKind.SURROGATE && evse.Roaming == false).Select(evse => evse.Id).SingleAsync());
 
         var free = (await PricesAsync(surrogate.ToString())).GetProperty("data").GetProperty("current").GetProperty("price");
         Assert.True(free.GetProperty("freeOfCharge").GetBoolean());
@@ -166,7 +166,8 @@ public class PricesTests(IntegrationFactory factory) : IClassFixture<Integration
 
         // AC with roaming: home network, roaming with start fee (1 + 30 × 0.40), the home price everywhere; not the other network.
         var available = await PricesAsync(Available);
-        Assert.Equal([("own", "HOME", 9.00m), ("roam", "ROAMING", 13.00m), ("every", "HOME", 21.00m)], Emps(available));
+        // flex: the ad-hoc price 0.59 + 10 % = 0.649 €/kWh plus 0.39 € per session.
+        Assert.Equal([("own", "HOME", 9.00m), ("roam", "ROAMING", 13.00m), ("flex", "ROAMING", 19.86m), ("every", "HOME", 21.00m)], Emps(available));
         Assert.Equal(["other"], Unavailable(available));
         var own = available.GetProperty("data").GetProperty("emps")[0];
         Assert.Equal(("OWN", "Tarif", "tarif", 5m), (own.GetProperty("empName").GetString(), own.GetProperty("tariff").GetString(), own.GetProperty("tariffKey").GetString(), own.GetProperty("monthlyFee").GetDecimal()));
@@ -176,7 +177,7 @@ public class PricesTests(IntegrationFactory factory) : IClassFixture<Integration
         Assert.Equal(17.70m, available.GetProperty("data").GetProperty("current").GetProperty("price").GetProperty("exampleCost").GetDecimal());
 
         // DC: the DC prices, below the 300 kW stage of the roaming card.
-        Assert.Equal([("own", "HOME", 15.00m), ("roam", "ROAMING", 19.00m), ("every", "HOME", 21.00m)], Emps(await PricesAsync(Fast)));
+        Assert.Equal([("own", "HOME", 15.00m), ("roam", "ROAMING", 19.00m), ("every", "HOME", 21.00m), ("flex", "ROAMING", 23.16m)], Emps(await PricesAsync(Fast)));
 
         // Without roaming and without a type: only the home networks of the operator TST of the location, AC prices.
         var surrogate = await factory.WithDbAsync(db => db.Evses
@@ -185,11 +186,28 @@ public class PricesTests(IntegrationFactory factory) : IClassFixture<Integration
             .SingleAsync());
         var local = await PricesAsync(surrogate.ToString());
         Assert.Equal([("own", "HOME", 9.00m), ("every", "HOME", 21.00m)], Emps(local));
-        Assert.Equal(["other", "roam"], Unavailable(local).Order());
+        Assert.Equal(["flex", "other", "roam"], Unavailable(local).Order());
+
+        // Without an ad-hoc price the operator's price is unknown: the card applies, but without a price.
+        var location = await factory.WithDbAsync(db => db.Locations.Where(item => item.Name == "Teststation Stephansplatz").Select(item => item.Id).SingleAsync());
+        var bare = Evse.WithSurrogate(location, DateTimeOffset.UtcNow);
+        await factory.WithDbAsync(db =>
+        {
+            db.Evses.Add(bare);
+            return db.SaveChangesAsync();
+        });
+        var unpriced = (await PricesAsync(bare.Id.ToString())).GetProperty("data");
+        Assert.Equal(["own", "roam", "every"], unpriced.GetProperty("emps").EnumerateArray().Select(emp => emp.GetProperty("emp").GetString()));
+        var unknown = Assert.Single(unpriced.GetProperty("priceUnknown").EnumerateArray());
+        Assert.Equal(("flex", "FLEX", "tarif", "Tarif", "ROAMING"), (
+            unknown.GetProperty("emp").GetString(), unknown.GetProperty("empName").GetString(), unknown.GetProperty("tariffKey").GetString(),
+            unknown.GetProperty("tariff").GetString(), unknown.GetProperty("zone").GetString()));
+        Assert.Equal(["other"], unpriced.GetProperty("unavailable").EnumerateArray().Select(tariff => tariff.GetProperty("emp").GetString()));
+        Assert.Equal("FIXED", unpriced.GetProperty("emps")[0].GetProperty("pricing").GetString());
 
         // A new catalog of the source replaces the tariff: the new price applies at once.
         await TestTariffs.ImportAsync(admin, "test", TestTariffs.Cards(everyPrice: 0.20m));
-        Assert.Equal([("every", "HOME", 6.00m), ("own", "HOME", 9.00m), ("roam", "ROAMING", 13.00m)], Emps(await PricesAsync(Available)));
+        Assert.Equal([("every", "HOME", 6.00m), ("own", "HOME", 9.00m), ("roam", "ROAMING", 13.00m), ("flex", "ROAMING", 19.86m)], Emps(await PricesAsync(Available)));
     }
 
     [Theory]

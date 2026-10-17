@@ -398,7 +398,7 @@ describe('EvseDetailPage with prices', () => {
     history: EvsePricesResponse['data']['history'],
     emps: EmpPrice[] = [],
   ): EvsePricesResponse => ({
-    data: { id: 'e-1', evseId: 'AT*VIE*E1234*1', tariffKind: 'AD_HOC', from: '', to: '', example: { kwh: 30, minutes: 40, powerKw: null, basis: 'REQUEST' }, current, history, emps, unavailable: [] },
+    data: { id: 'e-1', evseId: 'AT*VIE*E1234*1', tariffKind: 'AD_HOC', from: '', to: '', example: { kwh: 30, minutes: 40, powerKw: null, basis: 'REQUEST' }, current, history, emps, unavailable: [], priceUnknown: [] },
     meta: { attribution: [] },
   });
 
@@ -463,6 +463,7 @@ describe('EvseDetailPage with prices', () => {
       tariff: 'Basic',
       tariffKey: 'basic',
       zone: 'ROAMING',
+      pricing: 'FIXED',
       sourceUrl: 'https://example.org/preise',
       sourceDate: null,
       confidence: 'HIGH',

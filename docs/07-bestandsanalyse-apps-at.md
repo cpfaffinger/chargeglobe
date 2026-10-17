@@ -187,13 +187,15 @@ Erhoben am 17.10.2026 aus Preisblättern und Tarifseiten, abgelegt im kuratierte
 | benannte Partnerliste, kein weiteres Roaming | ÖAMTC ePower (27 Netze inkl. IONITY, Mer, Lidl), Kelag ePlus/eMax, IKB, Energie AG (Partner je Minute) | `HOME` + `PARTNER` mit Netzliste |
 | Roamingpreis je Betreiber | da emobil, TIWAG mobil | je Preisgruppe eine `ROAMING`-Zone mit Netzen; nicht gelistete Betreiber nicht nutzbar |
 | Roaming je Minute, Ausnahmen je kWh | Salzburg AG (PLUS-Partner IONITY, Shell, Mer, OMV je kWh), Burgenland Energie (benannte Partner je Minute) | benannte `ROAMING`-Zone vor der offenen |
+| Preis des Betreibers weitergereicht | Octopus Electroverse, Plugsurfing, Chargemap (+10 %, mit Boost 0 %), Wels Strom (Monta-Roaming), MB.CHARGE Public S/M/L (−0/−10/−15 % neben festen Preisen für Mercedes-HPC, IONITY und Partnernetz), BMW Charging Flex/Active, Elli Base/IONITY Boost/Ultra (+0,39 € je Ladevorgang), Shell-Roaming (+0,35 €) | Zone mit `pricing` `OPERATOR_AD_HOC` und Aufschlag auf den Ad-hoc-Preis des Ladepunkts |
 | nur eigenes Netz | EVN #Drive Easy, Kelag eStart, Energie Klagenfurt, Stadtwerke Kufstein, Wels Strom, IONITY, Shell, Mer, Electra, Allego, Lidl | nur `HOME` |
 
 Befunde:
 - **BEÖ**: kein gemeinsamer Partnerpreis der Landesenergieversorger; der Zugang läuft über Hubject/intercharge, jeder Anbieter bepreist die anderen in seiner eigenen Partner- oder Roamingzone (immer über dem Heimnetz). Nur IKB hat einen Partnerpreis für fast alle BEÖ-Mitglieder.
 - **Betreiber-weite Gültigkeit bestätigt**: Kein Anbieter unterscheidet innerhalb eines Partner- oder Roaming-Betreibers nach Standort; ein Betreiber in der Zone gilt für alle seine Ladepunkte. Ausnahmen sind Leistungsstufen (HPC ab 75/150/201 kW) und Sonderstandorte (da emobil „Alte Hauptpost“, Salzburg AG Parkgaragen-Partner) – als Hinweis vermerkt.
 - **Tesla** (`AT*TSL`): Preise je Standort und Tageszeit (0,35–0,65 €/kWh für Fremdmarken auf den öffentlichen Standortseiten), keine österreichische Ladekarte listet Supercharger als Roaming-Partner → in offenen Roamingzonen ausgeschlossen; eigener Adapter für die Standortpreise vorgesehen.
-- **Nicht im Katalog**: Anbieter mit Betreiberpreis (Octopus Electroverse, Plugsurfing, Chargemap, Monta-Roaming von Wels Strom, MB.CHARGE/BMW Flex, Elli Base, Shell-Roaming „ab“-Preise), EnBW mobility+ (Österreich-Preise unklar), Maingau (deutsche USt), Energie Graz (Preisblatt hinter einer Bot-Abfrage), MOON und ENIO (Preise je Standortbetreiber, Ad-hoc aus der E-Control), Tesla.
+- **MAINGAU Autostrom** (deutscher Anbieter, Preise „für ganz Europa“ inkl. deutscher USt) ist mit Standard- und Hochpreis im Katalog; ob in Österreich wohnende Kunden abschließen können, ist offen.
+- **Nicht im Katalog**: EnBW mobility+ (Österreich-Preise unklar), Energie Graz (Preisblatt hinter einer Bot-Abfrage), MOON und ENIO (Preise je Standortbetreiber, Ad-hoc aus der E-Control), Tesla.
 - **Präfixe ohne Bestätigung**: Burgenland Energie `AT*EBM` (BE Solution), Wels Strom `AT*LNK`/`AT*WSG`; Leikermoser `AT*LME` ist noch in keinen Daten.
 
 ## Nächste Schritte aus der Bestandsanalyse

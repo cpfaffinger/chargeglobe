@@ -1,0 +1,38 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "plugsurfing",
+      "name": "Plugsurfing",
+      "website": "https://www.plugsurfing.com",
+      "country": "DE",
+      "tariffs": [
+        {
+          "key": "pay-per-use",
+          "name": "Plugsurfing",
+          "currency": "EUR",
+          "monthlyFee": null,
+          "prerequisites": "App oder Ladeschlüssel; Kartenpreis nicht angegeben.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Preis je Ladepunkt laut App; für Österreich keine Preisliste veröffentlicht.",
+              "pricing": "OPERATOR_AD_HOC"
+            }
+          ],
+          "notes": "Ob eine Servicegebühr dazukommt, ist nicht veröffentlicht.",
+          "sourceUrl": "https://www.plugsurfing.com",
+          "sourceDate": null,
+          "confidence": "LOW"
+        }
+      ]
+    }
+  ]
+}

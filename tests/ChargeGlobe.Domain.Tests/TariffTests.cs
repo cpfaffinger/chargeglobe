@@ -53,7 +53,7 @@ public class TariffTests
         // A zone without a price for the current does not apply.
         Assert.Null(Plan(Zone(TariffZoneKind.HOME, ["evn"], [], Ac(0.39m))).MatchAt("AT*EVN", true, TariffCurrent.DC, 50, Members));
         // Below the lowest power stage the lowest one applies.
-        Assert.Equal(0.99m, Plan(Zone(TariffZoneKind.ROAMING, [], [], Dc(0.99m, 100))).MatchAt("AT*SMA", true, TariffCurrent.DC, 50, Members)!.Price.PricePerKwh);
+        Assert.Equal(0.99m, Plan(Zone(TariffZoneKind.ROAMING, [], [], Dc(0.99m, 100))).MatchAt("AT*SMA", true, TariffCurrent.DC, 50, Members)!.Price!.PricePerKwh);
     }
 
     [Fact]
@@ -66,8 +66,8 @@ public class TariffTests
 
         // A roaming price per operator goes before the general roaming price, whatever the order in the tariff.
         var perOperator = Plan(Zone(TariffZoneKind.ROAMING, [], [], Ac(0.69m)), Zone(TariffZoneKind.ROAMING, [], ["AT*EVN"], Ac(0.75m)));
-        Assert.Equal(0.75m, perOperator.MatchAt("AT*EVN", true, TariffCurrent.AC, 11, Members)!.Price.PricePerKwh);
-        Assert.Equal(0.69m, perOperator.MatchAt("AT*VIE", true, TariffCurrent.AC, 11, Members)!.Price.PricePerKwh);
+        Assert.Equal(0.75m, perOperator.MatchAt("AT*EVN", true, TariffCurrent.AC, 11, Members)!.Price!.PricePerKwh);
+        Assert.Equal(0.69m, perOperator.MatchAt("AT*VIE", true, TariffCurrent.AC, 11, Members)!.Price!.PricePerKwh);
 
         var limited = Plan(Zone(TariffZoneKind.ROAMING, ["beoe"], [], Ac(0.69m)));
         Assert.NotNull(limited.MatchAt("AT*VIE", true, TariffCurrent.AC, 11, Members));
@@ -126,5 +126,21 @@ public class TariffTests
         Assert.False(ChargingNetwork.IsOperatorId(null));
     }
 
-    private static (TariffZoneKind, decimal?) Of(TariffMatch? match) => (match!.Zone.Kind, match.Price.PricePerKwh);
+    [Fact]
+    public void An_operator_priced_zone_charges_the_ad_hoc_price_with_the_markup()
+    {
+        var zone = new TariffZone(TariffZoneKind.ROAMING, [], [], ["tesla"], [], [], null, TariffPricing.OPERATOR_AD_HOC, 10, 0.39m);
+        var match = Plan(zone).MatchAt("AT*EVN", true, TariffCurrent.DC, 150, Members);
+        Assert.Same(zone, match!.Zone);
+        Assert.Null(match.Price);
+        Assert.Null(Plan(zone).MatchAt("AT*TSL", true, TariffCurrent.DC, 150, Members));
+
+        var adHoc = new PriceComponents("EUR", 0.59m, 0.02m, null, 0.10m, 240, false);
+        Assert.Equal(new PriceComponents("EUR", 0.649m, 0.022m, 0.39m, 0.11m, 240, false), zone.MarkUp(adHoc));
+        Assert.Equal(adHoc with { SessionFee = 0.5m }, (zone with { MarkupPercent = null, MarkupSessionFee = null }).MarkUp(adHoc with { SessionFee = 0.5m }));
+        var free = new PriceComponents("EUR", null, null, null, null, null, true);
+        Assert.Same(free, zone.MarkUp(free));
+    }
+
+    private static (TariffZoneKind, decimal?) Of(TariffMatch? match) => (match!.Zone.Kind, match.Price!.PricePerKwh);
 }
