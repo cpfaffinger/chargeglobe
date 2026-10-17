@@ -23,8 +23,9 @@
                 "ionity"
               ],
               "prices": [],
-              "notes": "IONITY zum flexiblen IONITY-Preis.",
-              "pricing": "OPERATOR_AD_HOC"
+              "notes": "IONITY zum flexiblen IONITY-Preis plus 0,59 € je Ladevorgang (die Gebühr entfällt laut Paketbedingungen nur mit IONITY-Paket).",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupSessionFee": 0.59
             },
             {
               "kind": "ROAMING",
@@ -37,7 +38,7 @@
               "markupSessionFee": 0.59
             }
           ],
-          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert. IONITY-Pakete (−0,25/−0,35 €/kWh) sind nicht abgebildet.",
+          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert. IONITY-Pakete als eigene Tarife.",
           "sourceUrl": "https://chargemyhyundai.com/web/de/hyundai-at/tariffs",
           "sourceDate": null,
           "confidence": "MEDIUM",
@@ -68,7 +69,10 @@
               "prices": [],
               "notes": "Preferred Partner Network: 30 % Rabatt.",
               "pricing": "OPERATOR_AD_HOC",
-              "markupPercent": -30
+              "markupPercent": -30,
+              "countries": [
+                "AT"
+              ]
             },
             {
               "kind": "ROAMING",
@@ -78,12 +82,271 @@
               "prices": [],
               "notes": "Übrige Ladepunkte: 15 % Rabatt.",
               "pricing": "OPERATOR_AD_HOC",
-              "markupPercent": -15
+              "markupPercent": -15,
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Ausland: flexible Preise plus 0,59 € je Ladevorgang, ohne Rabatt.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupSessionFee": 0.59
+            }
+          ],
+          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert. Im Ausland flexible Preise plus 0,59 € je Ladevorgang, ohne Smart-Rabatte.",
+          "sourceUrl": "https://chargemyhyundai.com/web/de/hyundai-at/tariffs",
+          "sourceDate": "2026-07-01",
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
+        },
+        {
+          "key": "flex-ionity-premium",
+          "name": "Charge myHyundai Flex + IONITY Premium",
+          "currency": "EUR",
+          "monthlyFee": 6.98,
+          "prerequisites": "Basistarif Flex mit Paket IONITY Premium (6,98 €/Monat, Mindestlaufzeit 1 Monat)",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [],
+              "notes": "IONITY Premium: 0,25 €/kWh weniger als der flexible IONITY-Preis, ohne Gebühr je Ladevorgang, nur in Österreich.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPerKwh": -0.25,
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [],
+              "notes": "IONITY zum flexiblen IONITY-Preis plus 0,59 € je Ladevorgang (die Gebühr entfällt laut Paketbedingungen nur mit IONITY-Paket).",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupSessionFee": 0.59
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Flexible Preise plus 0,59 € je Ladevorgang.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupSessionFee": 0.59
             }
           ],
           "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert.",
-          "sourceUrl": "https://chargemyhyundai.com/web/de/hyundai-at/tariffs",
-          "sourceDate": "2026-07-01",
+          "sourceUrl": "https://chargemyhyundai.com/api/public/v1/at/tariffs?locale=de_AT",
+          "sourceDate": null,
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
+        },
+        {
+          "key": "flex-ionity-pro",
+          "name": "Charge myHyundai Flex + IONITY Pro",
+          "currency": "EUR",
+          "monthlyFee": 11.99,
+          "prerequisites": "Basistarif Flex mit Paket IONITY Pro (11,99 €/Monat, Mindestlaufzeit 1 Monat)",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [],
+              "notes": "IONITY Pro: 0,35 €/kWh weniger als der flexible IONITY-Preis, ohne Gebühr je Ladevorgang, nur in Österreich.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPerKwh": -0.35,
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [],
+              "notes": "IONITY zum flexiblen IONITY-Preis plus 0,59 € je Ladevorgang (die Gebühr entfällt laut Paketbedingungen nur mit IONITY-Paket).",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupSessionFee": 0.59
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Flexible Preise plus 0,59 € je Ladevorgang.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupSessionFee": 0.59
+            }
+          ],
+          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert.",
+          "sourceUrl": "https://chargemyhyundai.com/api/public/v1/at/tariffs?locale=de_AT",
+          "sourceDate": null,
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
+        },
+        {
+          "key": "smart-ionity-premium",
+          "name": "Charge myHyundai Smart + IONITY Premium",
+          "currency": "EUR",
+          "monthlyFee": 16.96,
+          "prerequisites": "Basistarif Smart mit Paket IONITY Premium (6,98 €/Monat, Mindestlaufzeit 1 Monat)",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [],
+              "notes": "IONITY Premium: 0,25 €/kWh weniger als der flexible IONITY-Preis, ohne Gebühr je Ladevorgang, nur in Österreich.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPerKwh": -0.25,
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "PARTNER",
+              "networks": [
+                "ionity",
+                "evn",
+                "electra",
+                "mer",
+                "kelag",
+                "shell",
+                "da-emobil",
+                "salzburg-ag"
+              ],
+              "prices": [],
+              "notes": "Preferred Partner Network: 30 % Rabatt.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPercent": -30,
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Übrige Ladepunkte: 15 % Rabatt.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPercent": -15,
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Ausland: flexible Preise plus 0,59 € je Ladevorgang, ohne Rabatt.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupSessionFee": 0.59
+            }
+          ],
+          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert.",
+          "sourceUrl": "https://chargemyhyundai.com/api/public/v1/at/tariffs?locale=de_AT",
+          "sourceDate": null,
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
+        },
+        {
+          "key": "smart-ionity-pro",
+          "name": "Charge myHyundai Smart + IONITY Pro",
+          "currency": "EUR",
+          "monthlyFee": 21.97,
+          "prerequisites": "Basistarif Smart mit Paket IONITY Pro (11,99 €/Monat, Mindestlaufzeit 1 Monat)",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [],
+              "notes": "IONITY Pro: 0,35 €/kWh weniger als der flexible IONITY-Preis, ohne Gebühr je Ladevorgang, nur in Österreich.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPerKwh": -0.35,
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "PARTNER",
+              "networks": [
+                "ionity",
+                "evn",
+                "electra",
+                "mer",
+                "kelag",
+                "shell",
+                "da-emobil",
+                "salzburg-ag"
+              ],
+              "prices": [],
+              "notes": "Preferred Partner Network: 30 % Rabatt.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPercent": -30,
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Übrige Ladepunkte: 15 % Rabatt.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPercent": -15,
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Ausland: flexible Preise plus 0,59 € je Ladevorgang, ohne Rabatt.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupSessionFee": 0.59
+            }
+          ],
+          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert.",
+          "sourceUrl": "https://chargemyhyundai.com/api/public/v1/at/tariffs?locale=de_AT",
+          "sourceDate": null,
           "confidence": "MEDIUM",
           "checkedOn": "2026-10-17"
         }

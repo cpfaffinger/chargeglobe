@@ -58,7 +58,10 @@
               "prices": [],
               "notes": "Preferred Partner Network: 30 % Rabatt.",
               "pricing": "OPERATOR_AD_HOC",
-              "markupPercent": -30
+              "markupPercent": -30,
+              "countries": [
+                "AT"
+              ]
             },
             {
               "kind": "ROAMING",
@@ -66,7 +69,7 @@
                 "tesla"
               ],
               "prices": [],
-              "notes": "Übrige Ladepunkte zum flexiblen Preis.",
+              "notes": "Übrige Ladepunkte und Ausland zum flexiblen Preis.",
               "pricing": "OPERATOR_AD_HOC"
             }
           ],

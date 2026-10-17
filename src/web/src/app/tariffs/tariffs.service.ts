@@ -60,6 +60,8 @@ export interface Zone {
   markupPercent: number | null;
   /** Fee of the provider per session on top of the operator's price. */
   markupSessionFee: number | null;
+  /** With OPERATOR_AD_HOC: EUR per kWh on the operator's energy price, e.g. −0.25. */
+  markupPerKwh?: number | null;
   /** The zone applies only to EVSEs of these currents; null for both. */
   currents?: ('AC' | 'DC')[] | null;
   /** The zone applies only to EVSEs in these countries (ISO 3166-1 alpha-2, prices abroad); null for every country. */

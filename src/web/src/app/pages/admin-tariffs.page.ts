@@ -193,6 +193,7 @@ export class AdminTariffsPage {
       return [
         'Preis des Betreibers',
         zone.markupPercent ? `${zone.markupPercent > 0 ? '+' : '−'}${Math.abs(zone.markupPercent).toLocaleString('de-DE')} %` : null,
+        zone.markupPerKwh ? `${zone.markupPerKwh > 0 ? '+' : '−'}${money(Math.abs(zone.markupPerKwh), currency)}/kWh` : null,
         zone.markupSessionFee ? `+ ${money(zone.markupSessionFee, currency)} je Ladevorgang` : null,
       ]
         .filter((part) => part !== null)

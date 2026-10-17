@@ -58,6 +58,104 @@
                   "blockingStartTime": "06:00",
                   "blockingEndTime": "22:00"
                 }
+              ],
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.53,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 60,
+                  "blockingStartTime": "06:00",
+                  "blockingEndTime": "22:00"
+                }
+              ],
+              "countries": [
+                "DE"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.62,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 60,
+                  "blockingStartTime": "06:00",
+                  "blockingEndTime": "22:00"
+                }
+              ],
+              "countries": [
+                "IT"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.55,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 60,
+                  "blockingStartTime": "06:00",
+                  "blockingEndTime": "22:00"
+                }
+              ],
+              "countries": [
+                "SI"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.54,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 60,
+                  "blockingStartTime": "06:00",
+                  "blockingEndTime": "22:00"
+                }
+              ],
+              "countries": [
+                "HR"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.5,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 60,
+                  "blockingStartTime": "06:00",
+                  "blockingEndTime": "22:00"
+                }
+              ],
+              "countries": [
+                "SK"
               ]
             },
             {
@@ -101,6 +199,104 @@
                   "blockingStartTime": "06:00",
                   "blockingEndTime": "22:00"
                 }
+              ],
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.42,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 60,
+                  "blockingStartTime": "06:00",
+                  "blockingEndTime": "22:00"
+                }
+              ],
+              "countries": [
+                "DE"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.5,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 60,
+                  "blockingStartTime": "06:00",
+                  "blockingEndTime": "22:00"
+                }
+              ],
+              "countries": [
+                "IT"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.44,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 60,
+                  "blockingStartTime": "06:00",
+                  "blockingEndTime": "22:00"
+                }
+              ],
+              "countries": [
+                "SI"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.42,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 60,
+                  "blockingStartTime": "06:00",
+                  "blockingEndTime": "22:00"
+                }
+              ],
+              "countries": [
+                "HR"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.4,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 60,
+                  "blockingStartTime": "06:00",
+                  "blockingEndTime": "22:00"
+                }
+              ],
+              "countries": [
+                "SK"
               ]
             },
             {
@@ -142,6 +338,94 @@
                   "blockingFeePerMinute": 0.15,
                   "blockingAfterMinutes": 90
                 }
+              ],
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.48,
+                  "blockingFeePerMinute": 0.15,
+                  "blockingAfterMinutes": 90
+                }
+              ],
+              "countries": [
+                "DE"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.58,
+                  "blockingFeePerMinute": 0.15,
+                  "blockingAfterMinutes": 90
+                }
+              ],
+              "countries": [
+                "IT"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.49,
+                  "blockingFeePerMinute": 0.15,
+                  "blockingAfterMinutes": 90
+                }
+              ],
+              "countries": [
+                "SI"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.49,
+                  "blockingFeePerMinute": 0.15,
+                  "blockingAfterMinutes": 90
+                }
+              ],
+              "countries": [
+                "HR"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.45,
+                  "blockingFeePerMinute": 0.15,
+                  "blockingAfterMinutes": 90
+                }
+              ],
+              "countries": [
+                "SK"
               ]
             },
             {
@@ -165,7 +449,62 @@
                   "blockingAfterMinutes": 90
                 }
               ],
-              "notes": "Ausgewähltes Partnernetz."
+              "notes": "Ausgewähltes Partnernetz.",
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "mer-de"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.55,
+                  "blockingFeePerMinute": 0.07,
+                  "blockingAfterMinutes": 210,
+                  "blockingStartTime": "08:00",
+                  "blockingEndTime": "23:00"
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.55,
+                  "blockingFeePerMinute": 0.15,
+                  "blockingAfterMinutes": 90
+                }
+              ],
+              "notes": "Ausgewähltes Partnernetz.",
+              "countries": [
+                "DE"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "enbw-de"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.83,
+                  "blockingFeePerMinute": 0.07,
+                  "blockingAfterMinutes": 210,
+                  "blockingStartTime": "08:00",
+                  "blockingEndTime": "23:00"
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.83,
+                  "blockingFeePerMinute": 0.15,
+                  "blockingAfterMinutes": 90
+                }
+              ],
+              "notes": "EnBW in Deutschland.",
+              "countries": [
+                "DE"
+              ]
             },
             {
               "kind": "ROAMING",
@@ -187,10 +526,147 @@
                   "blockingFeePerMinute": 0.15,
                   "blockingAfterMinutes": 90
                 }
+              ],
+              "countries": [
+                "AT"
               ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.5,
+                  "blockingFeePerMinute": 0.07,
+                  "blockingAfterMinutes": 210,
+                  "blockingStartTime": "08:00",
+                  "blockingEndTime": "23:00"
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.69,
+                  "blockingFeePerMinute": 0.15,
+                  "blockingAfterMinutes": 90
+                }
+              ],
+              "countries": [
+                "DE"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.64,
+                  "blockingFeePerMinute": 0.07,
+                  "blockingAfterMinutes": 210,
+                  "blockingStartTime": "08:00",
+                  "blockingEndTime": "23:00"
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.74,
+                  "blockingFeePerMinute": 0.15,
+                  "blockingAfterMinutes": 90
+                }
+              ],
+              "countries": [
+                "IT"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.49,
+                  "blockingFeePerMinute": 0.07,
+                  "blockingAfterMinutes": 210,
+                  "blockingStartTime": "08:00",
+                  "blockingEndTime": "23:00"
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.74,
+                  "blockingFeePerMinute": 0.15,
+                  "blockingAfterMinutes": 90
+                }
+              ],
+              "countries": [
+                "SI"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.39,
+                  "blockingFeePerMinute": 0.07,
+                  "blockingAfterMinutes": 210,
+                  "blockingStartTime": "08:00",
+                  "blockingEndTime": "23:00"
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.64,
+                  "blockingFeePerMinute": 0.15,
+                  "blockingAfterMinutes": 90
+                }
+              ],
+              "countries": [
+                "HR"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.39,
+                  "blockingFeePerMinute": 0.07,
+                  "blockingAfterMinutes": 210,
+                  "blockingStartTime": "08:00",
+                  "blockingEndTime": "23:00"
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.59,
+                  "blockingFeePerMinute": 0.15,
+                  "blockingAfterMinutes": 90
+                }
+              ],
+              "countries": [
+                "SK"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Übrige Länder: Preise je Land laut Preisblatt, im Katalog nicht abgebildet.",
+              "pricing": "UNKNOWN"
             }
           ],
-          "notes": null,
+          "notes": "Preise je Land der Ladestation laut Preisblatt (gültig ab 3.7.2026); Blockiergebühren wie in Österreich.",
           "sourceUrl": "https://www.elli.eco/de/privatkunden/produkte/ladetarife?country=AT",
           "sourceDate": "2026-07-03",
           "confidence": "MEDIUM",

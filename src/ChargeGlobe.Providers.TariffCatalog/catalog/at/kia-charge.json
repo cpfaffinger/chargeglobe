@@ -23,8 +23,9 @@
                 "ionity"
               ],
               "prices": [],
-              "notes": "IONITY zum flexiblen IONITY-Preis.",
-              "pricing": "OPERATOR_AD_HOC"
+              "notes": "IONITY zum flexiblen IONITY-Preis plus 0,59 € je Ladevorgang (die Gebühr entfällt laut Paketbedingungen nur mit IONITY-Paket).",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupSessionFee": 0.59
             },
             {
               "kind": "ROAMING",
@@ -37,7 +38,7 @@
               "markupSessionFee": 0.59
             }
           ],
-          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert. IONITY-Pakete (−0,25/−0,35 €/kWh) sind nicht abgebildet.",
+          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert. IONITY-Pakete als eigene Tarife.",
           "sourceUrl": "https://kiacharge.com/web/de/kia-at/tariffs",
           "sourceDate": null,
           "confidence": "MEDIUM",
@@ -60,7 +61,10 @@
               ],
               "prices": [],
               "notes": "IONITY ohne Plus-Rabatt.",
-              "pricing": "OPERATOR_AD_HOC"
+              "pricing": "OPERATOR_AD_HOC",
+              "countries": [
+                "AT"
+              ]
             },
             {
               "kind": "ROAMING",
@@ -70,11 +74,254 @@
               "prices": [],
               "notes": "15 % Rabatt auf den flexiblen Preis.",
               "pricing": "OPERATOR_AD_HOC",
-              "markupPercent": -15
+              "markupPercent": -15,
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Ausland: flexible Preise plus 0,59 € je Ladevorgang, ohne Rabatt.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupSessionFee": 0.59
+            }
+          ],
+          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert. Im Ausland flexible Preise plus 0,59 € je Ladevorgang, ohne Plus-Rabatt.",
+          "sourceUrl": "https://kiacharge.com/web/de/kia-at/tariffs",
+          "sourceDate": null,
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
+        },
+        {
+          "key": "easy-ionity-power",
+          "name": "Kia Charge Easy + IONITY Power",
+          "currency": "EUR",
+          "monthlyFee": 6.99,
+          "prerequisites": "Basistarif Easy mit Paket IONITY Power (6,99 €/Monat, Mindestlaufzeit 1 Monat)",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [],
+              "notes": "IONITY Power: 0,25 €/kWh weniger als der flexible IONITY-Preis, ohne Gebühr je Ladevorgang, nur in Österreich.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPerKwh": -0.25,
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [],
+              "notes": "IONITY zum flexiblen IONITY-Preis plus 0,59 € je Ladevorgang (die Gebühr entfällt laut Paketbedingungen nur mit IONITY-Paket).",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupSessionFee": 0.59
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Flexible Preise plus 0,59 € je Ladevorgang.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupSessionFee": 0.59
             }
           ],
           "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert.",
-          "sourceUrl": "https://kiacharge.com/web/de/kia-at/tariffs",
+          "sourceUrl": "https://kiacharge.com/api/public/v1/at/tariffs?locale=de_AT",
+          "sourceDate": null,
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
+        },
+        {
+          "key": "easy-ionity-ultra",
+          "name": "Kia Charge Easy + IONITY Ultra",
+          "currency": "EUR",
+          "monthlyFee": 11.99,
+          "prerequisites": "Basistarif Easy mit Paket IONITY Ultra (11,99 €/Monat, Mindestlaufzeit 1 Monat)",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [],
+              "notes": "IONITY Ultra: 0,35 €/kWh weniger als der flexible IONITY-Preis, ohne Gebühr je Ladevorgang, nur in Österreich.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPerKwh": -0.35,
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [],
+              "notes": "IONITY zum flexiblen IONITY-Preis plus 0,59 € je Ladevorgang (die Gebühr entfällt laut Paketbedingungen nur mit IONITY-Paket).",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupSessionFee": 0.59
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Flexible Preise plus 0,59 € je Ladevorgang.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupSessionFee": 0.59
+            }
+          ],
+          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert.",
+          "sourceUrl": "https://kiacharge.com/api/public/v1/at/tariffs?locale=de_AT",
+          "sourceDate": null,
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
+        },
+        {
+          "key": "plus-ionity-power",
+          "name": "Kia Charge Plus + IONITY Power",
+          "currency": "EUR",
+          "monthlyFee": 11.98,
+          "prerequisites": "Basistarif Plus mit Paket IONITY Power (6,99 €/Monat, Mindestlaufzeit 1 Monat)",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [],
+              "notes": "IONITY Power: 0,25 €/kWh weniger als der flexible IONITY-Preis, ohne Gebühr je Ladevorgang, nur in Österreich.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPerKwh": -0.25,
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [],
+              "notes": "IONITY ohne Plus-Rabatt.",
+              "pricing": "OPERATOR_AD_HOC",
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "15 % Rabatt auf den flexiblen Preis.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPercent": -15,
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Ausland: flexible Preise plus 0,59 € je Ladevorgang, ohne Rabatt.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupSessionFee": 0.59
+            }
+          ],
+          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert.",
+          "sourceUrl": "https://kiacharge.com/api/public/v1/at/tariffs?locale=de_AT",
+          "sourceDate": null,
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
+        },
+        {
+          "key": "plus-ionity-ultra",
+          "name": "Kia Charge Plus + IONITY Ultra",
+          "currency": "EUR",
+          "monthlyFee": 16.98,
+          "prerequisites": "Basistarif Plus mit Paket IONITY Ultra (11,99 €/Monat, Mindestlaufzeit 1 Monat)",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [],
+              "notes": "IONITY Ultra: 0,35 €/kWh weniger als der flexible IONITY-Preis, ohne Gebühr je Ladevorgang, nur in Österreich.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPerKwh": -0.35,
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [],
+              "notes": "IONITY ohne Plus-Rabatt.",
+              "pricing": "OPERATOR_AD_HOC",
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "15 % Rabatt auf den flexiblen Preis.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPercent": -15,
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Ausland: flexible Preise plus 0,59 € je Ladevorgang, ohne Rabatt.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupSessionFee": 0.59
+            }
+          ],
+          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert.",
+          "sourceUrl": "https://kiacharge.com/api/public/v1/at/tariffs?locale=de_AT",
           "sourceDate": null,
           "confidence": "MEDIUM",
           "checkedOn": "2026-10-17"

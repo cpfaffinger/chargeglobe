@@ -30,6 +30,9 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, IAppC
 
     public const decimal MaxMarkupPercent = 100;
 
+    /// <summary>Range of the amount per kWh on the operator's price, in both directions.</summary>
+    public const decimal MaxMarkupPerKwh = 2;
+
     public async Task<IReadOnlyList<EmpView>> EmpsAsync(CancellationToken cancellationToken) =>
         await db.Emps.AsNoTracking()
             .Where(emp => db.TariffPlans.Any(plan => plan.EmpId == emp.Id && plan.ValidTo == null))
@@ -232,7 +235,8 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, IAppC
                     var fixedPrices = pricing == TariffPricing.FIXED;
                     Require(!fixedPrices || zone.Prices is { Count: > 0 }, $"{z}: at least one price is required.");
                     Require(fixedPrices || zone.Prices is null or { Count: 0 }, $"{z}: a zone with the operator's or an unknown price has no prices of its own.");
-                    Require(pricing == TariffPricing.OPERATOR_AD_HOC || zone.MarkupPercent is null && zone.MarkupSessionFee is null, $"{z}: markups need the pricing OPERATOR_AD_HOC.");
+                    Require(pricing == TariffPricing.OPERATOR_AD_HOC || zone.MarkupPercent is null && zone.MarkupSessionFee is null && zone.MarkupPerKwh is null, $"{z}: markups need the pricing OPERATOR_AD_HOC.");
+                    Require(zone.MarkupPerKwh is null or (>= -MaxMarkupPerKwh and <= MaxMarkupPerKwh), $"{z}: markupPerKwh must lie between -{MaxMarkupPerKwh} and {MaxMarkupPerKwh}.");
                     Require(zone.MarkupPercent is null or (>= MinMarkupPercent and <= MaxMarkupPercent), $"{z}: markupPercent must lie between {MinMarkupPercent} and {MaxMarkupPercent}.");
                     Require(zone.MarkupSessionFee is null or (>= 0 and <= MaxAmount), $"{z}: markupSessionFee must lie between 0 and {MaxAmount}.");
                     Require(zone.Currents is null || (zone.Currents.Count > 0 && zone.Currents.All(item => Enum.TryParse<TariffCurrent>(item, false, out _))), $"{z}: currents must be AC and/or DC.");
@@ -312,7 +316,8 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, IAppC
                 zone.MarkupPercent,
                 zone.MarkupSessionFee,
                 zone.Currents is null ? null : [.. zone.Currents.Select(Enum.Parse<TariffCurrent>)],
-                zone.Countries is null ? null : [.. zone.Countries.Distinct().Order(StringComparer.Ordinal)]))],
+                zone.Countries is null ? null : [.. zone.Countries.Distinct().Order(StringComparer.Ordinal)],
+                zone.MarkupPerKwh))],
             record.Notes,
             record.SourceUrl,
             record.SourceDate,
@@ -344,7 +349,8 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, IAppC
                 zone.MarkupPercent,
                 zone.MarkupSessionFee,
                 zone.Currents is null ? null : [.. zone.Currents.Select(current => current.ToString())],
-                zone.Countries))],
+                zone.Countries,
+                zone.MarkupPerKwh))],
             plan.Notes,
             plan.SourceUrl,
             plan.SourceDate,

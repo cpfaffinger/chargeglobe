@@ -1,6 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { AuthService } from '../auth/auth.service';
 import { attempt } from '../auth/problem';
 import { AppIcon } from '../design/icon';
 import { AppLoading } from '../design/loading';
@@ -19,10 +20,15 @@ import { ImplausiblePrices, PriceQualityService, PriceSample, sampleText } from 
     <p class="muted">
       Ladepunkte, deren Ad-hoc-Preis laut Register vermutlich falsch ist: unter oder über der Spanne der Einstellungen
       <code>price.min_plausible_kwh</code> und <code>price.max_plausible_kwh</code> oder ganz ohne Preis, obwohl nicht kostenlos.
-      Diese Preise zeigt die Karte als „vermutlich falsch“ und lässt sie im Preisvergleich weg. Korrigieren kann sie nur die
-      Quelle (bei der E-Control der Betreiber).
+      Diese Preise zeigt die Karte als „vermutlich falsch“ bzw. „kein Preis gemeldet“ und lässt sie im Preisvergleich weg.
+      Korrigieren kann sie nur die Quelle (bei der E-Control der Betreiber); die CSV-Datei listet jeden Ladepunkt für die Meldung.
     </p>
-    <button matButton type="button" id="reload" [disabled]="loading()" (click)="load()"><app-icon name="refresh" />Aktualisieren</button>
+    <div class="tariff-tools">
+      <button matButton type="button" id="reload" [disabled]="loading()" (click)="load()"><app-icon name="refresh" />Aktualisieren</button>
+      @if (canExport) {
+        <button matButton type="button" id="export" [disabled]="loading()" (click)="download()"><app-icon name="download" />Als CSV für die Meldung</button>
+      }
+    </div>
     @for (error of errors(); track error) {
       <p class="error" role="alert">{{ error }}</p>
     }
@@ -34,6 +40,9 @@ import { ImplausiblePrices, PriceQualityService, PriceSample, sampleText } from 
         Spanne {{ amount(data.minKwh) }}–{{ amount(data.maxKwh) }} €/kWh:
         <strong>{{ data.evses }}</strong> {{ data.evses === 1 ? 'Ladepunkt' : 'Ladepunkte' }} bei {{ data.operators.length }}
         {{ data.operators.length === 1 ? 'Betreiber' : 'Betreibern' }} · Stand {{ data.at | date: 'dd.MM.yyyy HH:mm' }}
+      </p>
+      <p id="prices-reasons" class="muted">
+        kein Preis gemeldet: {{ data.noAmount }} · unter der Spanne: {{ data.belowMin }} · über der Spanne: {{ data.aboveMax }}
       </p>
       @if (data.operators.length > 0) {
         <div class="table-box">
@@ -71,6 +80,9 @@ import { ImplausiblePrices, PriceQualityService, PriceSample, sampleText } from 
 export class AdminPricesPage {
   private readonly service = inject(PriceQualityService);
 
+  /** The CSV report needs export:read besides jobs:read. */
+  protected readonly canExport = inject(AuthService).hasPermission('export:read');
+
   protected readonly result = signal<ImplausiblePrices | null>(null);
   protected readonly loading = signal(false);
   protected readonly errors = signal<string[]>([]);
@@ -81,6 +93,18 @@ export class AdminPricesPage {
 
   protected load(): Promise<void> {
     return attempt(this.loading, this.errors, async () => this.result.set(await this.service.implausible()));
+  }
+
+  /** Saves the CSV report as implausible-prices.csv. */
+  protected download(): Promise<void> {
+    return attempt(this.loading, this.errors, async () => {
+      const url = URL.createObjectURL(await this.service.export());
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'implausible-prices.csv';
+      link.click();
+      URL.revokeObjectURL(url);
+    });
   }
 
   protected amount(value: number): string {

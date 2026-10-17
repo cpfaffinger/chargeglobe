@@ -162,6 +162,12 @@ public class TariffTests
         Assert.Equal((TariffPricing.UNKNOWN, null), (Plan(unknown).MatchAt("AT*EVN", true, TariffCurrent.AC, 11, Members)!.Zone.Pricing, Plan(unknown).MatchAt("AT*EVN", true, TariffCurrent.AC, 11, Members)!.Price));
         var free = new PriceComponents("EUR", null, null, null, null, null, true);
         Assert.Same(free, zone.MarkUp(free));
+
+        // A fixed amount per kWh on the energy price (an IONITY package), not below 0; a time-only price stays without.
+        var package = zone with { MarkupPercent = null, MarkupSessionFee = null, MarkupPerKwh = -0.25m };
+        Assert.Equal(0.34m, package.MarkUp(adHoc).PricePerKwh);
+        Assert.Equal(0m, package.MarkUp(adHoc with { PricePerKwh = 0.10m }).PricePerKwh);
+        Assert.Null(package.MarkUp(adHoc with { PricePerKwh = null }).PricePerKwh);
     }
 
     [Fact]

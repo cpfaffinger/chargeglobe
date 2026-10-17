@@ -21,7 +21,7 @@ import {
 } from '../evses/labels';
 import { Segment, faultSource, sourceName, statusOf, timeline } from '../evses/status';
 import { OccupancyHeatmap, StatusTimeline } from '../evses/status-charts';
-import { EvsePricesResponse, IMPLAUSIBLE, comparison, money, plausible, priceParts, sessionText } from '../evses/prices';
+import { EvsePricesResponse, implausibleText, comparison, money, plausible, priceParts, sessionText } from '../evses/prices';
 import { MapLink, ShareResult } from '../map/map-link';
 import { CardsStore } from '../preferences/cards.store';
 
@@ -209,7 +209,7 @@ const SHARE_MESSAGES: Record<ShareResult, string | null> = {
                         <strong>{{ money(current.price.exampleCost, current.price.currency) }}</strong>
                       </p>
                     } @else {
-                      <p id="price-example" class="price-implausible">{{ implausible }}</p>
+                      <p id="price-example" class="price-implausible">{{ implausible(current.price) }}</p>
                     }
                     <p class="lead" id="price-since">
                       gilt seit {{ current.since | date: 'dd.MM.yyyy HH:mm' }} · bestätigt {{ current.observedAt | date: 'dd.MM.yyyy HH:mm' }} ·
@@ -268,7 +268,7 @@ const SHARE_MESSAGES: Record<ShareResult, string | null> = {
                             <td>{{ period.from | date: 'dd.MM.yyyy' }}</td>
                             <td>{{ period.to === null ? 'heute' : (period.to | date: 'dd.MM.yyyy') }}</td>
                             <td>{{ parts(period.price).join(' · ') }}</td>
-                            <td>{{ isPlausible(period.price) ? money(period.price.exampleCost, period.price.currency) : implausible }}</td>
+                            <td>{{ isPlausible(period.price) ? money(period.price.exampleCost, period.price.currency) : implausible(period.price) }}</td>
                           </tr>
                         }
                       </tbody>
@@ -434,7 +434,7 @@ export class EvseDetailPage {
   protected readonly parts = priceParts;
   protected readonly money = money;
   protected readonly isPlausible = plausible;
-  protected readonly implausible = IMPLAUSIBLE;
+  protected readonly implausible = implausibleText;
   protected readonly session = sessionText;
   protected readonly compare = comparison;
   protected readonly cards = inject(CardsStore);

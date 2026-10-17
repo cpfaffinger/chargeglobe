@@ -299,10 +299,23 @@ public sealed class IngestProcessor(AppDbContext db)
         }
     }
 
-    /// <summary>Keeps the current ad-hoc price of the EVSE; a changed price also goes into the history.</summary>
+    /// <summary>
+    /// Keeps the current ad-hoc price of the EVSE; a changed price also goes into the history. A price without any amount
+    /// (not free of charge) means the source tells none: it is not kept, and an earlier price of the source ends.
+    /// </summary>
     private async Task ApplyPriceAsync(Guid evseId, string sourceKey, PriceComponents price, DateTimeOffset at, CancellationToken cancellationToken)
     {
         var current = await db.EvsePriceCurrent.FindAsync([evseId, sourceKey, TariffKind.AD_HOC], cancellationToken);
+        if (price.HasNoAmount())
+        {
+            if (current is not null)
+            {
+                db.EvsePriceCurrent.Remove(current);
+            }
+
+            return;
+        }
+
         if (current is null)
         {
             db.EvsePriceCurrent.Add(EvsePriceCurrent.Create(evseId, sourceKey, TariffKind.AD_HOC, price, at));

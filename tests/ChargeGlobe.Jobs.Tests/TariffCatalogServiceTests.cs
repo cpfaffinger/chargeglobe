@@ -59,7 +59,7 @@ public class TariffCatalogServiceTests
         const string stale = "Tariff catalog: 4 tariffs older than the setting tariff.stale_months or without date";
         Assert.Equal(1, logger.Messages.Count(message => message == stale));
         Assert.Equal(1, logger.Messages.Count(message => message == "Tariff catalog: 3 tariffs to check soon"));
-        Assert.Equal(1, logger.Messages.Count(message => message == "Ad-hoc prices: 20 implausible at 2 operators: AT*F9B 16, ? 4"));
+        Assert.Equal(1, logger.Messages.Count(message => message == "Ad-hoc prices: 20 implausible (4 without amount, 16 below, 0 above the bounds) at 2 operators: AT*F9B 16, ? 4"));
 
         // The stale tariffs once a day: again after midnight (02:00), not at 08:00 of the same day.
         time.Advance(TariffCatalogService.Interval);
@@ -159,6 +159,14 @@ public class TariffCatalogServiceTests
         Assert.Equal((TariffZoneKind.HOME, 0.57m), Of(Match("genol", "power", "AT*GNL", TariffCurrent.DC, 50)));
         Assert.Equal((TariffZoneKind.HOME, 0.44m), Of(Match("oeamtc", "epower", "AT*FTR")));
         Assert.Equal(TariffPricing.OPERATOR_AD_HOC, Match("smart-fuel-pass", "app", "AT*SNL")!.Zone.Pricing);
+        // IONITY packages of Kia: an amount per kWh off in Austria, abroad the base tariff with its session fee.
+        Assert.Equal((-0.25m, null), (Match("kia-charge", "easy-ionity-power", "AT*IOY", TariffCurrent.DC, 350)!.Zone.MarkupPerKwh, Match("kia-charge", "easy-ionity-power", "AT*IOY", TariffCurrent.DC, 350)!.Zone.MarkupSessionFee));
+        Assert.Equal((null, 0.59m), (Match("kia-charge", "easy-ionity-power", "DE*IOY", TariffCurrent.DC, 350)!.Zone.MarkupPerKwh, Match("kia-charge", "easy-ionity-power", "DE*IOY", TariffCurrent.DC, 350)!.Zone.MarkupSessionFee));
+        // DCS discounts only in Austria; Elli with the IONITY price of the country; Audi abroad unknown.
+        Assert.Equal(-15m, Match("charge-myhyundai", "smart", "AT*VIE")!.Zone.MarkupPercent);
+        Assert.Equal((null, 0.59m), (Match("charge-myhyundai", "smart", "DE*ION")!.Zone.MarkupPercent, Match("charge-myhyundai", "smart", "DE*ION")!.Zone.MarkupSessionFee));
+        Assert.Equal((TariffZoneKind.OPERATOR, 0.42m), Of(Match("elli", "ionity-ultra", "DE*IOY", TariffCurrent.DC, 350)));
+        Assert.Equal(TariffPricing.UNKNOWN, Match("audi-charging", "pro", "IT*ENX", TariffCurrent.DC, 150)!.Zone.Pricing);
     }
 
     private static async Task WaitUntilAsync(Func<bool> condition, string expectation)
@@ -184,10 +192,12 @@ public class TariffCatalogServiceTests
     private sealed class PriceQualityStub : IPriceQuality
     {
         public Task<ImplausiblePrices> ImplausibleAsync(CancellationToken cancellationToken) =>
-            Task.FromResult(new ImplausiblePrices(T0, 0.05m, 2m, 20, [
+            Task.FromResult(new ImplausiblePrices(T0, 0.05m, 2m, 20, 4, 16, 0, [
                 new OperatorImplausiblePrices("AT*F9B", "CAS", 16, [], T0),
                 new OperatorImplausiblePrices(null, null, 4, [], T0),
             ]));
+
+        public Task<IReadOnlyList<ImplausibleEvse>> ImplausibleEvsesAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
     private sealed class CatalogStub : ITariffCatalog

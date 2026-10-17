@@ -120,10 +120,16 @@ Preise sind fachlich der schwierigste Teil, weil Apps sie unterschiedlich zeigen
 
 ### Plausibilität der Ad-hoc-Preise
 
-Das Register enthält Eingabefehler der Betreiber (z. B. 0,005 €/kWh, ein Preis ohne jeden Betrag, obwohl nicht kostenlos). Ein Ad-hoc-Preis gilt als **unplausibel**, wenn er nicht kostenlos ist und entweder einen Energiepreis außerhalb der Einstellungen `price.min_plausible_kwh`–`price.max_plausible_kwh` (Default 0,05–2,00 €/kWh) hat oder weder Energie- noch Zeitpreis noch Startgebühr berechnet; reine Zeitpreise misst die Spanne nicht (Regel `PriceBounds.Accepts` im Domain-Modell, dieselbe Regel in SQL in `PriceQuality`). Unplausible Preise bleiben gespeichert (die Quelle bestimmt den Preis), werden aber markiert:
-- `getEvsePrices` liefert `plausible: false` an `current.price` und den betroffenen Perioden; Karte und Detailseite zeigen „Preis laut Register vermutlich falsch“ statt der Kosten.
+Das Register enthält Eingabefehler der Betreiber (z. B. 0,005 €/kWh) und Ladepunkte ohne Preis. **Kein Preis** ist ein Preis ohne jeden Betrag (Energie, Zeit, Startgebühr, Blockiergebühr 0 oder fehlend) und nicht kostenlos: Die E-Control sendet dann `startFeeCent: 0` als Vorgabe. Der E-Control-Adapter liefert dafür keinen Preis, der Ingest speichert solche Preise von keiner Quelle und beendet einen früheren Preis derselben Quelle (`PriceComponents.HasNoAmount`); die Migration `DropAdHocPricesWithoutAmount` hat die vorher gespeicherten entfernt, ihre Historie bleibt.
+
+Ein Ad-hoc-Preis gilt als **unplausibel** (`PriceBounds.IssueOf` im Domain-Modell, dieselbe Regel in SQL in `PriceQuality`), wenn er nicht kostenlos ist und
+- einen Energiepreis unter `price.min_plausible_kwh` (Default 0,05 €/kWh, Grund `BELOW_MIN`) oder über `price.max_plausible_kwh` (Default 2,00 €/kWh, `ABOVE_MAX`) hat oder
+- keinen Betrag hat (`NO_AMOUNT`; nur noch bei Altdaten oder Quellen, deren Preise vor dieser Regel gespeichert wurden).
+
+Reine Zeitpreise misst die Spanne nicht. Unplausible Preise bleiben gespeichert (die Quelle bestimmt den Preis), werden aber markiert:
+- `getEvsePrices` liefert `plausible: false` und `reason` an `current.price` und den betroffenen Perioden; Karte und Detailseite zeigen „Preis laut Register vermutlich falsch“ bzw. bei `NO_AMOUNT` „kein Preis gemeldet“ statt der Kosten.
 - Im Preisvergleich zählen sie nicht: weder als günstigster Ad-hoc-Preis eines Standorts (`listLocationPrices`) noch als Basis eines Anbieters mit Betreiberpreis (der Tarif steht dann in `priceUnknown`).
-- Der Worker loggt einmal täglich `Ad-hoc prices: N implausible at M operators: AT*F9B 16, …` (die zehn Betreiber mit den meisten Ladepunkten), `/admin/prices` (`GET /admin/prices/implausible`, `jobs:read`) listet sie je Betreiber mit Beispielwerten und letzter Meldung. Korrigieren kann nur die Quelle; bei der E-Control meldet der Betreiber seine Preise selbst.
+- Der Worker loggt einmal täglich `Ad-hoc prices: N implausible (A without amount, B below, C above the bounds) at M operators: AT*F9B 16, …` (die zehn Betreiber mit den meisten Ladepunkten). `/admin/prices` (`GET /admin/prices/implausible`, `jobs:read`) zeigt sie je Betreiber mit Grund, Beispielwerten und letzter Meldung; `GET /admin/prices/implausible/export` (`export:read`) liefert sie je Ladepunkt als CSV für die Meldung an die Quelle. Korrigieren kann nur die Quelle; bei der E-Control meldet der Betreiber seine Preise selbst.
 
 Poll-Frequenz: Preise ändern sich selten, aber zu Monatsanfang gehäuft → 1×/Tag je EVSE, zusätzlich am 1. und 2. jedes Monats 3×/Tag.
 

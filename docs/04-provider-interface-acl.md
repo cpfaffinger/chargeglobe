@@ -185,7 +185,8 @@ public sealed record ZoneRecord(string Kind, IReadOnlyList<string>? Networks, IR
     string? Pricing = null,                                // FIXED (Default) | OPERATOR_AD_HOC (Ad-hoc-Preis des Ladepunkts) | UNKNOWN
     decimal? MarkupPercent = null, decimal? MarkupSessionFee = null,   // nur mit OPERATOR_AD_HOC
     IReadOnlyList<string>? Currents = null,                // AC und/oder DC: Zone nur für diese Stromart
-    IReadOnlyList<string>? Countries = null);              // ISO 3166-1 alpha-2: Zone nur für Ladepunkte in diesen Ländern (Auslandspreise)
+    IReadOnlyList<string>? Countries = null,               // ISO 3166-1 alpha-2: Zone nur für Ladepunkte in diesen Ländern (Auslandspreise)
+    decimal? MarkupPerKwh = null);                         // nur mit OPERATOR_AD_HOC: € je kWh auf den Energiepreis, −2…+2
 public sealed record PriceRecord(string Current, decimal? MinKw, decimal? PricePerKwh, decimal? PricePerMinute,
     decimal? SessionFee, decimal? BlockingFeePerMinute, int? BlockingAfterMinutes,   // Current: AC | DC
     string? StartTime = null, string? EndTime = null,      // Zeitfenster "HH:mm" (Ortszeit Wien), z. B. 22:00–08:00
