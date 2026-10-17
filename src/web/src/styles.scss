@@ -1987,6 +1987,18 @@ app-admin-prices .mail-draft {
   font: var(--mat-sys-body-small);
 }
 
+.price-changed {
+  display: block;
+  color: var(--mat-sys-tertiary);
+  font: var(--mat-sys-label-small);
+}
+
+app-admin-tariffs .tariff-history .versions {
+  margin: 4px 0 0;
+  padding-left: 20px;
+  font: var(--mat-sys-body-small);
+}
+
 .price-implausible {
   color: var(--mat-sys-error);
 }

@@ -70,6 +70,39 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, IAppC
             .Select(row => View(row.Plan, row.Key, row.Name, cutoff))];
     }
 
+    public async Task<TariffHistory?> HistoryAsync(string emp, string key, CancellationToken cancellationToken)
+    {
+        var owner = await db.Emps.AsNoTracking().SingleOrDefaultAsync(item => item.Key == emp, cancellationToken);
+        if (owner is null)
+        {
+            return null;
+        }
+
+        var versions = await db.TariffPlans.AsNoTracking()
+            .Where(plan => plan.EmpId == owner.Id && plan.Key == key)
+            .OrderBy(plan => plan.ValidFrom)
+            .ToListAsync(cancellationToken);
+        return versions.Count == 0
+            ? null
+            : new TariffHistory(
+                owner.Key,
+                owner.Name,
+                key,
+                versions[^1].Name,
+                [.. versions.Select((plan, index) => new TariffVersionView(
+                    plan.Id,
+                    plan.ValidFrom,
+                    plan.ValidTo,
+                    plan.SourceDate,
+                    plan.CheckedOn,
+                    plan.MonthlyFee,
+                    index == 0 ? [] : [.. plan.ChangesTo(versions[index - 1]).Select(ChangeView)]))]);
+    }
+
+    /// <summary>A price change for the API.</summary>
+    public static TariffChangeView ChangeView(TariffChange change) =>
+        new(change.Kind.ToString(), change.Zone, change.Current?.ToString(), change.MinKw, change.From, change.To);
+
     public Task<int> StaleCountAsync(CancellationToken cancellationToken)
     {
         var cutoff = StaleBefore();

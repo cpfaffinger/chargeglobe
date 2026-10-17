@@ -231,7 +231,8 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
         public string? OperatorId => HasEvseId && EvseId.Split('*') is [var country, var party, ..] ? $"{country}*{party}" : OperatorParty;
     }
 
-    private sealed record PlanRow(TariffPlan Plan, string Key, string Name);
+    /// <param name="PriceChangedAt">Start of the newest version whose prices differ from the version before; null if the prices never changed.</param>
+    private sealed record PlanRow(TariffPlan Plan, string Key, string Name, DateTimeOffset? PriceChangedAt = null);
 
     /// <summary>The current tariff versions with their EMP and the operators of every network; few rows, used in memory.</summary>
     /// <param name="LocalTime">Now in Europe/Vienna: the start of the example session for prices with a time window or weekdays.</param>
@@ -269,12 +270,22 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             .Where(plan => plan.ValidFrom <= now && (plan.ValidTo == null || plan.ValidTo > now))
             .Join(db.Emps, plan => plan.EmpId, emp => emp.Id, (plan, emp) => new PlanRow(plan, emp.Key, emp.Name))
             .ToListAsync(cancellationToken);
+        // The ended versions (a few hundred) give the date of the last price change of each current tariff.
+        var ended = (await db.TariffPlans.AsNoTracking().Where(plan => plan.ValidTo != null).ToListAsync(cancellationToken))
+            .ToLookup(plan => (plan.EmpId, plan.Key));
         var all = await db.ChargingNetworks.AsNoTracking().ToListAsync(cancellationToken);
         return new CurrentCatalog(
-            plans,
+            [.. plans.Select(row => row with { PriceChangedAt = PriceChangedAt(row.Plan, ended[(row.Plan.EmpId, row.Plan.Key)]) })],
             all.ToDictionary(network => network.Key, network => (IReadOnlyCollection<string>)network.Operators),
             TimeZoneInfo.ConvertTime(now, Vienna).DateTime,
             [.. all.Where(network => network.PriceNote is not null)]);
+    }
+
+    /// <summary>The start of the newest version of the tariff whose prices differ from the version before; null if none does.</summary>
+    private static DateTimeOffset? PriceChangedAt(TariffPlan current, IEnumerable<TariffPlan> ended)
+    {
+        List<TariffPlan> versions = [.. ended.Append(current).OrderByDescending(plan => plan.ValidFrom)];
+        return versions.Zip(versions.Skip(1)).FirstOrDefault(pair => pair.First.ChangesTo(pair.Second).Count > 0) is ({ } changed, _) ? changed.ValidFrom : null;
     }
 
     /// <summary>
@@ -307,7 +318,8 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
                 View($"emp:{item.Row.Key}", item.Price!, example, catalog.LocalTime),
                 item.Row.Plan.SourceUrl,
                 item.Row.Plan.SourceDate,
-                item.Row.Plan.Confidence.ToString()))
+                item.Row.Plan.Confidence.ToString(),
+                item.Row.PriceChangedAt))
             .OrderBy(price => price.Price.ExampleCost)
             .ThenBy(price => price.EmpName, StringComparer.Ordinal)
             .ThenBy(price => price.Tariff, StringComparer.Ordinal)];

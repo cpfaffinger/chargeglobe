@@ -321,6 +321,36 @@ public sealed record TariffZone(
 /// <summary>What a tariff charges at one EVSE: the zone it falls into and the price element; none for an operator-priced zone.</summary>
 public sealed record TariffMatch(TariffZone Zone, TariffPriceElement? Price);
 
+#pragma warning disable CA1707 // Identifiers should not contain underscores: names as in the API.
+
+/// <summary>What changed in a price between two versions of a tariff.</summary>
+public enum TariffChangeKind
+{
+    MONTHLY_FEE,
+    ZONE_ADDED,
+    ZONE_REMOVED,
+    PRICE_ADDED,
+    PRICE_REMOVED,
+    PRICE_PER_KWH,
+    PRICE_PER_MINUTE,
+    SESSION_FEE,
+    BLOCKING_FEE_PER_MINUTE,
+    BLOCKING_AFTER_MINUTES,
+    MAX_BLOCKING_FEE,
+    MARKUP_PERCENT,
+    MARKUP_SESSION_FEE,
+    MARKUP_PER_KWH,
+}
+#pragma warning restore CA1707
+
+/// <summary>
+/// One change of a price from one version of a tariff to the next: in the zone (kind, with its networks, operators,
+/// countries) and price element (current, minimum power) it concerns, with the old and new amount. Notes, sources and
+/// texts are no price change.
+/// </summary>
+/// <param name="Zone">Short description of the zone, e.g. "HOME evn" or "ROAMING (DE, IT)"; null for the monthly fee.</param>
+public sealed record TariffChange(TariffChangeKind Kind, string? Zone, TariffCurrent? Current, decimal? MinKw, decimal? From, decimal? To);
+
 /// <summary>
 /// A tariff (product) of an EMP, one version of it: the price elements per zone, the monthly fee, and where the values
 /// come from. A changed tariff is a new version; the old one ends with <see cref="ValidTo"/>.
@@ -423,6 +453,84 @@ public sealed class TariffPlan
     }
 
     public bool IsValidAt(DateTimeOffset at) => ValidFrom <= at && (ValidTo is null || at < ValidTo);
+
+    /// <summary>
+    /// The price changes from <paramref name="previous"/> (the version before) to this one: monthly fee, zones and price
+    /// elements added or removed, and changed amounts. Zones match by kind, pricing, networks, operators, exclusions,
+    /// countries and currents; price elements by current, minimum power, time window and weekdays.
+    /// </summary>
+    public IReadOnlyList<TariffChange> ChangesTo(TariffPlan previous)
+    {
+        var changes = new List<TariffChange>();
+        if (previous.MonthlyFee != MonthlyFee)
+        {
+            changes.Add(new TariffChange(TariffChangeKind.MONTHLY_FEE, null, null, null, previous.MonthlyFee, MonthlyFee));
+        }
+
+        var before = previous.Zones.GroupBy(ZoneKey).ToDictionary(group => group.Key, group => group.First());
+        var after = Zones.GroupBy(ZoneKey).ToDictionary(group => group.Key, group => group.First());
+        foreach (var (key, zone) in after)
+        {
+            if (!before.TryGetValue(key, out var old))
+            {
+                changes.Add(new TariffChange(TariffChangeKind.ZONE_ADDED, ZoneLabel(zone), null, null, null, null));
+                continue;
+            }
+
+            var label = ZoneLabel(zone);
+            Compare(TariffChangeKind.MARKUP_PERCENT, label, null, null, old.MarkupPercent, zone.MarkupPercent);
+            Compare(TariffChangeKind.MARKUP_SESSION_FEE, label, null, null, old.MarkupSessionFee, zone.MarkupSessionFee);
+            Compare(TariffChangeKind.MARKUP_PER_KWH, label, null, null, old.MarkupPerKwh, zone.MarkupPerKwh);
+            var oldPrices = old.Prices.GroupBy(PriceKey).ToDictionary(group => group.Key, group => group.First());
+            var newPrices = zone.Prices.GroupBy(PriceKey).ToDictionary(group => group.Key, group => group.First());
+            foreach (var (priceKey, price) in newPrices)
+            {
+                if (!oldPrices.TryGetValue(priceKey, out var oldPrice))
+                {
+                    changes.Add(new TariffChange(TariffChangeKind.PRICE_ADDED, label, price.Current, price.MinKw, null, price.PricePerKwh ?? price.PricePerMinute));
+                    continue;
+                }
+
+                Compare(TariffChangeKind.PRICE_PER_KWH, label, price.Current, price.MinKw, oldPrice.PricePerKwh, price.PricePerKwh);
+                Compare(TariffChangeKind.PRICE_PER_MINUTE, label, price.Current, price.MinKw, oldPrice.PricePerMinute, price.PricePerMinute);
+                Compare(TariffChangeKind.SESSION_FEE, label, price.Current, price.MinKw, oldPrice.SessionFee, price.SessionFee);
+                Compare(TariffChangeKind.BLOCKING_FEE_PER_MINUTE, label, price.Current, price.MinKw, oldPrice.BlockingFeePerMinute, price.BlockingFeePerMinute);
+                Compare(TariffChangeKind.BLOCKING_AFTER_MINUTES, label, price.Current, price.MinKw, oldPrice.BlockingAfterMinutes, price.BlockingAfterMinutes);
+                Compare(TariffChangeKind.MAX_BLOCKING_FEE, label, price.Current, price.MinKw, oldPrice.MaxBlockingFee, price.MaxBlockingFee);
+            }
+
+            changes.AddRange(oldPrices.Where(item => !newPrices.ContainsKey(item.Key)).Select(item => new TariffChange(
+                TariffChangeKind.PRICE_REMOVED, label, item.Value.Current, item.Value.MinKw, item.Value.PricePerKwh ?? item.Value.PricePerMinute, null)));
+        }
+
+        changes.AddRange(before.Where(item => !after.ContainsKey(item.Key)).Select(item => new TariffChange(TariffChangeKind.ZONE_REMOVED, ZoneLabel(item.Value), null, null, null, null)));
+        return changes;
+
+        void Compare(TariffChangeKind kind, string zone, TariffCurrent? current, decimal? minKw, decimal? from, decimal? to)
+        {
+            if (from != to)
+            {
+                changes.Add(new TariffChange(kind, zone, current, minKw, from, to));
+            }
+        }
+    }
+
+    private static string List(IEnumerable<string>? values) => values is null ? "" : string.Join(",", values.Order(StringComparer.Ordinal));
+
+    private static string ZoneKey(TariffZone zone) =>
+        string.Join("|", zone.Kind, zone.Pricing, List(zone.Networks), List(zone.Operators), List(zone.ExcludedNetworks), List(zone.ExcludedOperators),
+            List(zone.Countries), List(zone.Currents?.Select(current => current.ToString())));
+
+    private static string PriceKey(TariffPriceElement price) =>
+        string.Join("|", price.Current, price.MinKw, price.StartTime, price.EndTime, List(price.Days?.Select(day => day.ToString(System.Globalization.CultureInfo.InvariantCulture))));
+
+    /// <summary>"HOME evn, AT*FTR", "ROAMING (DE, IT)", "ROAMING".</summary>
+    private static string ZoneLabel(TariffZone zone)
+    {
+        var targets = string.Join(", ", zone.Networks.Concat(zone.Operators));
+        var countries = zone.Countries is { Count: > 0 } list ? $" ({string.Join(", ", list)})" : "";
+        return $"{zone.Kind}{(targets.Length > 0 ? " " + targets : "")}{countries}";
+    }
 
     /// <summary>Ends this version.</summary>
     public void Close(DateTimeOffset at)

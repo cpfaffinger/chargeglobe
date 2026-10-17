@@ -146,6 +146,18 @@ public class TariffsTests(IntegrationFactory factory)
         Assert.Equal(2, history.Count(item => item.GetProperty("validTo").ValueKind != JsonValueKind.Null));
         Assert.Equal(3, await factory.WithDbAsync(db => db.AuditLog.CountAsync(entry => entry.Action == "tariff.import" && entry.Target == $"tariff-source:{source}")));
 
+        // The versions of basic with the price change from the version before.
+        var basicHistory = (await (await admin.GetAsync($"/api/v1/tariffs/{emp}/basic/history")).ReadJsonAsync()).GetProperty("data");
+        var versions = basicHistory.GetProperty("versions").EnumerateArray().ToList();
+        Assert.Equal((emp, "Test EMP", "Basic", 2), (basicHistory.GetProperty("emp").GetString(), basicHistory.GetProperty("empName").GetString(), basicHistory.GetProperty("name").GetString(), versions.Count));
+        Assert.Empty(versions[0].GetProperty("changes").EnumerateArray());
+        var change = Assert.Single(versions[1].GetProperty("changes").EnumerateArray());
+        Assert.Equal(("PRICE_PER_KWH", $"HOME {network}", "AC", 0.45m, 0.39m), (
+            change.GetProperty("kind").GetString(), change.GetProperty("zone").GetString(), change.GetProperty("current").GetString(),
+            change.GetProperty("from").GetDecimal(), change.GetProperty("to").GetDecimal()));
+        await (await admin.GetAsync($"/api/v1/tariffs/{emp}/nope/history")).AssertProblemAsync(HttpStatusCode.NotFound);
+        await (await admin.GetAsync($"/api/v1/tariffs/{NewKey("emp")}/basic/history")).AssertProblemAsync(HttpStatusCode.NotFound);
+
         // An empty catalog ends every tariff of the source and removes its networks; the provider stays for the history
         // of its tariffs but leaves listEmps.
         Assert.Equal((0, 0, 1, 0), Counts(await ImportAsync(admin, source, new JsonObject { ["networks"] = new JsonArray(), ["emps"] = new JsonArray() })));

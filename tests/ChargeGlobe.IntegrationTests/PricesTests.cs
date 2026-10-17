@@ -217,8 +217,14 @@ public class PricesTests(IntegrationFactory factory) : IClassFixture<Integration
         Assert.Equal("FIXED", unpriced.GetProperty("emps")[0].GetProperty("pricing").GetString());
 
         // A new catalog of the source replaces the tariff: the new price applies at once.
+        Assert.All(available.GetProperty("data").GetProperty("emps").EnumerateArray(), emp => Assert.Equal(JsonValueKind.Null, emp.GetProperty("priceChangedAt").ValueKind));
         await TestTariffs.ImportAsync(admin, "test", TestTariffs.Cards(everyPrice: 0.20m));
-        Assert.Equal([("every", "HOME", 6.00m), ("own", "HOME", 9.00m), ("roam", "ROAMING", 13.00m), ("flex", "ROAMING", 19.86m)], Emps(await PricesAsync(Available)));
+        var changed = await PricesAsync(Available);
+        Assert.Equal([("every", "HOME", 6.00m), ("own", "HOME", 9.00m), ("roam", "ROAMING", 13.00m), ("flex", "ROAMING", 19.86m)], Emps(changed));
+        // The new price of "every" since the import, the others unchanged.
+        var every = changed.GetProperty("data").GetProperty("emps")[0];
+        Assert.True(every.GetProperty("priceChangedAt").GetDateTimeOffset() > DateTimeOffset.UtcNow.AddMinutes(-5));
+        Assert.Equal(JsonValueKind.Null, changed.GetProperty("data").GetProperty("emps")[1].GetProperty("priceChangedAt").ValueKind);
     }
 
     [Theory]

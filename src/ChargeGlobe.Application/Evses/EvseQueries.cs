@@ -139,6 +139,7 @@ public sealed record PricePeriod(PriceView Price, DateTimeOffset From, DateTimeO
 /// <param name="Pricing"><c>FIXED</c> (price of the tariff) or <c>OPERATOR_AD_HOC</c> (the operator's ad-hoc price with the provider's markup).</param>
 /// <param name="SourceDate">Date the provider states for the prices ("Stand").</param>
 /// <param name="Confidence"><c>HIGH</c>, <c>MEDIUM</c> or <c>LOW</c>.</param>
+/// <param name="PriceChangedAt">Since when the prices of the tariff are as they are (start of the newest version with a price change); null if they never changed.</param>
 public sealed record EmpPrice(
     string Emp,
     string EmpName,
@@ -151,7 +152,8 @@ public sealed record EmpPrice(
     PriceView Price,
     string SourceUrl,
     DateOnly? SourceDate,
-    string Confidence);
+    string Confidence,
+    DateTimeOffset? PriceChangedAt = null);
 
 /// <summary>A tariff valid now that cannot be used at the EVSE (operator not covered, or no card acceptance).</summary>
 public sealed record EmpUnavailable(string Emp, string EmpName, string TariffKey, string Tariff);

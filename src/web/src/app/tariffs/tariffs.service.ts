@@ -99,6 +99,67 @@ export interface Tariff {
   stale: boolean;
 }
 
+/** One price change from the version before (GET /tariffs/{emp}/{key}/history). */
+export interface TariffChange {
+  kind: string;
+  zone: string | null;
+  current: 'AC' | 'DC' | null;
+  minKw: number | null;
+  from: number | null;
+  to: number | null;
+}
+
+export interface TariffVersion {
+  id: string;
+  validFrom: string;
+  validTo: string | null;
+  sourceDate: string | null;
+  checkedOn: string | null;
+  monthlyFee: number | null;
+  changes: TariffChange[];
+}
+
+export interface TariffHistory {
+  emp: string;
+  empName: string;
+  key: string;
+  name: string;
+  versions: TariffVersion[];
+}
+
+const CHANGE_LABELS: Record<string, [string, string]> = {
+  MONTHLY_FEE: ['Grundgebühr', '€/Monat'],
+  PRICE_PER_KWH: ['Energie', '€/kWh'],
+  PRICE_PER_MINUTE: ['Zeit', '€/min'],
+  SESSION_FEE: ['Startgebühr', '€'],
+  BLOCKING_FEE_PER_MINUTE: ['Blockiergebühr', '€/min'],
+  BLOCKING_AFTER_MINUTES: ['Blockieren ab Minute', ''],
+  MAX_BLOCKING_FEE: ['Deckel Blockiergebühr', '€'],
+  MARKUP_PERCENT: ['Aufschlag', '%'],
+  MARKUP_SESSION_FEE: ['Aufschlag je Ladevorgang', '€'],
+  MARKUP_PER_KWH: ['Aufschlag je kWh', '€/kWh'],
+};
+
+/** "HOME evn · AC ab 150 kW: Energie 0,45 → 0,49 €/kWh", "Zone ROAMING (DE) neu", "PARTNER beoe entfällt". */
+export function changeText(change: TariffChange): string {
+  const value = (amount: number | null) => (amount === null ? '–' : new Intl.NumberFormat('de-DE', { maximumFractionDigits: 4 }).format(amount));
+  const where = [change.zone, change.current ? `${change.current}${change.minKw ? ` ab ${change.minKw} kW` : ''}` : null].filter((part) => part).join(' · ');
+  switch (change.kind) {
+    case 'ZONE_ADDED':
+      return `Zone ${change.zone} neu`;
+    case 'ZONE_REMOVED':
+      return `Zone ${change.zone} entfällt`;
+    case 'PRICE_ADDED':
+      return `${where}: neuer Preis ${value(change.to)}`;
+    case 'PRICE_REMOVED':
+      return `${where}: Preis ${value(change.from)} entfällt`;
+    default: {
+      const [label, unit] = CHANGE_LABELS[change.kind] ?? [change.kind, ''];
+      return `${where ? `${where}: ` : ''}${label} ${value(change.from)} → ${value(change.to)}${unit ? ` ${unit}` : ''}`;
+    }
+  }
+}
+
 /** German names of the zones, as the providers call them. */
 export const ZONE_LABELS: Record<ZoneKind, string> = {
   OPERATOR: 'Sonderpreis',
@@ -122,5 +183,9 @@ export class TariffsService {
 
   async tariffs(): Promise<Tariff[]> {
     return (await firstValueFrom(this.http.get<{ data: Tariff[] }>('/api/v1/tariffs'))).data;
+  }
+
+  async history(emp: string, key: string): Promise<TariffHistory> {
+    return (await firstValueFrom(this.http.get<{ data: TariffHistory }>(`/api/v1/tariffs/${encodeURIComponent(emp)}/${encodeURIComponent(key)}/history`))).data;
   }
 }
