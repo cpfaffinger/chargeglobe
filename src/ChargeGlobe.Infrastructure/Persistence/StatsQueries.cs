@@ -35,6 +35,7 @@ public sealed class StatsQueries(AppDbContext db, IAppConfig config, TimeProvide
     {
         var now = timeProvider.GetUtcNow();
         var fresh = now.AddMinutes(-config.Get<int>(SettingsCatalog.MapStatusMaxAgeMinutes));
+        var grace = StatusGrace.Since(config, now);
 
         // The same scope for every query: active locations (of the region) and their active EVSEs.
         var totals = await db.Database.SqlQuery<TotalsRow>($"""
@@ -122,7 +123,7 @@ public sealed class StatsQueries(AppDbContext db, IAppConfig config, TimeProvide
                    percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM ({now} - c.observed_at)) / 60) AS "P50",
                    percentile_cont(0.9) WITHIN GROUP (ORDER BY extract(epoch FROM ({now} - c.observed_at)) / 60) AS "P90"
             FROM evse e JOIN loc ON loc.id = e.location_id
-            LEFT JOIN evse_status_current c ON c.evse_id = e.id
+            LEFT JOIN (SELECT evse_id, observed_at, evse_shown_status(status, previous_status, since, {grace}::timestamptz) AS status FROM evse_status_current) c ON c.evse_id = e.id
             WHERE e.lifecycle = 'ACTIVE'
             """).SingleAsync(cancellationToken);
 

@@ -89,6 +89,7 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
         var anyId = ids is null;
         Guid[] wanted = ids ?? [];
         var fresh = FreshSince();
+        var grace = StatusGrace.Since(config, timeProvider.GetUtcNow());
         string[] connectors = [.. filter.Connectors];
         var operatorPattern = filter.Operator is null ? null : LikePattern.Contains(filter.Operator);
         Guid[] operatorIds = [.. filter.OperatorIds];
@@ -129,7 +130,7 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
                 FROM location l
                 LEFT JOIN operator o ON o.id = l.operator_id
                 LEFT JOIN evse e ON e.location_id = l.id AND e.lifecycle = 'ACTIVE'
-                LEFT JOIN evse_status_current c ON c.evse_id = e.id
+                LEFT JOIN (SELECT evse_id, observed_at, evse_shown_status(status, previous_status, since, {grace}::timestamptz) AS status FROM evse_status_current) c ON c.evse_id = e.id
                 WHERE ({anyLifecycle} OR l.lifecycle = 'ACTIVE')
                   AND ({anyBox} OR l.geom && ST_MakeEnvelope({box.MinLongitude}, {box.MinLatitude}, {box.MaxLongitude}, {box.MaxLatitude}, 4326)::geography)
                   AND ({anyId} OR l.id = ANY({wanted}::uuid[]))
@@ -182,15 +183,18 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
             .Where(station => stationIds.Contains(station.Id))
             .ToDictionaryAsync(station => station.Id, station => station.Label, cancellationToken);
         var fresh = FreshSince();
+        var (now, grace) = (timeProvider.GetUtcNow(), StatusGrace.Span(config));
         EvseStatusCurrent? FreshStatus(Guid evseId) =>
             statuses.TryGetValue(evseId, out var current) && current.ObservedAt >= fresh ? current : null;
+        // A short fault shows the status before it; the fault itself is reported apart (docs/03, "Störungsglättung").
+        EvseStatusCurrent? Brief(Guid evseId) => FreshStatus(evseId) is { } current && current.InFaultGrace(now, grace) ? current : null;
 
         var details = evses.Select(evse => new EvseDetail(
                 evse.Id,
                 evse.EvseIdDisplay,
                 evse.IdentityKind == IdentityKind.EVSE_ID,
-                FreshStatus(evse.Id)?.Status.ToString() ?? nameof(EvseStatus.UNKNOWN),
-                statuses.GetValueOrDefault(evse.Id)?.Since,
+                FreshStatus(evse.Id)?.ShownStatus(now, grace).ToString() ?? nameof(EvseStatus.UNKNOWN),
+                Brief(evse.Id)?.PreviousSince ?? statuses.GetValueOrDefault(evse.Id)?.Since,
                 statuses.GetValueOrDefault(evse.Id)?.ObservedAt,
                 FreshStatus(evse.Id)?.SourceKey,
                 evse.MaxPowerKw,
@@ -199,7 +203,9 @@ public sealed class LocationQueries(AppDbContext db, IAppConfig config, TimeProv
                     connector.Standard.ToString(), connector.Format?.ToString(), connector.PowerType?.ToString(), connector.MaxPowerKw))],
                 [.. evse.AuthMethods.Select(method => method.ToString())],
                 evse.Roaming,
-                evse.ChargingStationId is { } stationId ? stations.GetValueOrDefault(stationId) : null))
+                evse.ChargingStationId is { } stationId ? stations.GetValueOrDefault(stationId) : null,
+                Brief(evse.Id)?.Status.ToString(),
+                Brief(evse.Id)?.Since))
             .ToList();
         var summary = new LocationSummary(
             location.Id,

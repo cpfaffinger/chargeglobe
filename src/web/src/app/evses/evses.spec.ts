@@ -504,6 +504,25 @@ describe('LocationDetails (info card)', () => {
     expect(root().querySelector('.timeline, .timeline-state, #heatmap')).toBeNull();
   });
 
+  it('shows a short fault of the source as a hint next to the status before it', async () => {
+    fixture = TestBed.createComponent(LocationDetails);
+    await show('loc-1');
+    http
+      .expectOne('/api/v1/locations/loc-1')
+      .flush(
+        response('loc-1', [
+          evse({ status: 'AVAILABLE', reportedStatus: 'OUTOFORDER', reportedSince: '2026-10-14T08:12:00Z' }),
+          evse({ id: 'e-2', evseId: 'AT*VIE*E1*2', reportedStatus: null, reportedSince: null }),
+        ]),
+      );
+    await settle();
+
+    const evses = Array.from(root().querySelectorAll('.evse'));
+    expect(text(evses[0], '.status')).toBe('frei');
+    expect(text(evses[0], '.brief-fault')).toMatch(/^kurz gestört laut E-Control seit \d{2}:12 – zählt erst nach längerer Dauer als Störung$/);
+    expect(evses[1].querySelector('.brief-fault')).toBeNull();
+  });
+
   it('starts over for another location and drops the answers for the one before', async () => {
     auth.hasPermission.and.returnValue(true);
     fixture = TestBed.createComponent(LocationDetails);

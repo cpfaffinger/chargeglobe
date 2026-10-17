@@ -223,6 +223,34 @@ public class ChargingTests
     }
 
     [Fact]
+    public void EvseStatusCurrent_keeps_the_status_before_and_shows_it_during_a_short_fault()
+    {
+        var grace = TimeSpan.FromMinutes(10);
+        var current = EvseStatusCurrent.Create(Guid.CreateVersion7(), EvseStatus.AVAILABLE, "econtrol", T0);
+        Assert.Equal(((EvseStatus?)null, (DateTimeOffset?)null), (current.PreviousStatus, current.PreviousSince));
+
+        current.Observe(EvseStatus.OUTOFORDER, "econtrol", T0.AddMinutes(30));
+        Assert.Equal((EvseStatus.AVAILABLE, T0), (current.PreviousStatus!.Value, current.PreviousSince!.Value));
+
+        // 5 minutes into the fault: still the status before; at 10 minutes and later the fault.
+        Assert.True(current.InFaultGrace(T0.AddMinutes(35), grace));
+        Assert.Equal(EvseStatus.AVAILABLE, current.ShownStatus(T0.AddMinutes(35), grace));
+        Assert.Equal(EvseStatus.OUTOFORDER, current.ShownStatus(T0.AddMinutes(40), grace));
+        Assert.Equal(EvseStatus.OUTOFORDER, current.ShownStatus(T0.AddMinutes(35), TimeSpan.Zero));
+
+        // A fault after a fault is no new short fault.
+        current.Observe(EvseStatus.INOPERATIVE, "econtrol", T0.AddMinutes(45));
+        Assert.Equal(EvseStatus.OUTOFORDER, current.PreviousStatus);
+        Assert.False(current.InFaultGrace(T0.AddMinutes(46), grace));
+
+        // No fault, and a fault without status before it, are shown as they are.
+        current.Observe(EvseStatus.CHARGING, "econtrol", T0.AddMinutes(50));
+        Assert.Equal(EvseStatus.CHARGING, current.ShownStatus(T0.AddMinutes(51), grace));
+        var first = EvseStatusCurrent.Create(Guid.CreateVersion7(), EvseStatus.OUTOFORDER, "econtrol", T0);
+        Assert.Equal(EvseStatus.OUTOFORDER, first.ShownStatus(T0.AddMinutes(1), grace));
+    }
+
+    [Fact]
     public void LocationStatusObservation_requires_a_possible_count()
     {
         var locationId = Guid.CreateVersion7();
