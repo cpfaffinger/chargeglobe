@@ -48,15 +48,9 @@
               "networks": [
                 "ionity"
               ],
-              "prices": [
-                {
-                  "current": "DC",
-                  "pricePerKwh": 0.49
-                }
-              ],
-              "countries": [
-                "AT"
-              ]
+              "prices": [],
+              "notes": "Österreichische Preise nur in der MY CUPRA App; die Website zeigt frühere deutsche Preise.",
+              "pricing": "UNKNOWN"
             },
             {
               "kind": "ROAMING",
@@ -71,7 +65,7 @@
           "notes": "„Flexible Preise“ je Betreiber, angezeigt in der App; hier mit dem Ad-hoc-Preis angenähert.",
           "sourceUrl": "https://www.cupraofficial.at/e-mobilitaet/ladetarife",
           "sourceDate": null,
-          "confidence": "MEDIUM",
+          "confidence": "LOW",
           "checkedOn": "2026-10-17"
         },
         {
@@ -89,15 +83,9 @@
               "networks": [
                 "ionity"
               ],
-              "prices": [
-                {
-                  "current": "DC",
-                  "pricePerKwh": 0.39
-                }
-              ],
-              "countries": [
-                "AT"
-              ]
+              "prices": [],
+              "notes": "Österreichische Preise nur in der MY CUPRA App; die Website zeigt frühere deutsche Preise.",
+              "pricing": "UNKNOWN"
             },
             {
               "kind": "ROAMING",
@@ -112,7 +100,7 @@
           "notes": "„Flexible Preise“ je Betreiber, angezeigt in der App; hier mit dem Ad-hoc-Preis angenähert.",
           "sourceUrl": "https://www.cupraofficial.at/e-mobilitaet/ladetarife",
           "sourceDate": null,
-          "confidence": "MEDIUM",
+          "confidence": "LOW",
           "checkedOn": "2026-10-17"
         },
         {
@@ -130,66 +118,9 @@
               "networks": [
                 "ionity"
               ],
-              "prices": [
-                {
-                  "current": "DC",
-                  "pricePerKwh": 0.39
-                }
-              ],
-              "countries": [
-                "AT"
-              ]
-            },
-            {
-              "kind": "OPERATOR",
-              "networks": [
-                "mer"
-              ],
-              "prices": [
-                {
-                  "current": "DC",
-                  "pricePerKwh": 0.55
-                }
-              ],
-              "notes": "Selected Partner Network.",
-              "countries": [
-                "AT"
-              ]
-            },
-            {
-              "kind": "OPERATOR",
-              "operators": [
-                "AT*SME"
-              ],
-              "prices": [
-                {
-                  "current": "DC",
-                  "pricePerKwh": 0.87
-                }
-              ],
-              "notes": "EnBW-Preis laut Tarifseite (Einheit abgeschnitten).",
-              "countries": [
-                "AT"
-              ]
-            },
-            {
-              "kind": "ROAMING",
-              "excludedNetworks": [
-                "tesla"
-              ],
-              "prices": [
-                {
-                  "current": "AC",
-                  "pricePerKwh": 0.5
-                },
-                {
-                  "current": "DC",
-                  "pricePerKwh": 0.69
-                }
-              ],
-              "countries": [
-                "AT"
-              ]
+              "prices": [],
+              "notes": "Österreichische Preise nur in der MY CUPRA App; die Website zeigt frühere deutsche Preise.",
+              "pricing": "UNKNOWN"
             },
             {
               "kind": "ROAMING",
@@ -197,11 +128,11 @@
                 "tesla"
               ],
               "prices": [],
-              "notes": "Ausland: Preise je Land, für österreichische Verträge nicht (aktuell) veröffentlicht.",
+              "notes": "Österreichische Preise nur in der MY CUPRA App; die Website zeigt frühere deutsche Preise.",
               "pricing": "UNKNOWN"
             }
           ],
-          "notes": "Blockiergebühren nur in der App. Die Preise der Tarifseite entsprechen den deutschen Premium-Preisen von Elli und Audi; für Österreich vermutlich nicht richtig.",
+          "notes": "Blockiergebühren nur in der App.",
           "sourceUrl": "https://www.cupraofficial.at/e-mobilitaet/ladetarife",
           "sourceDate": null,
           "confidence": "LOW",

@@ -25,8 +25,101 @@
               "prices": [
                 {
                   "current": "DC",
-                  "pricePerKwh": 0.73
+                  "pricePerKwh": 0.784
                 }
+              ],
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.82
+                }
+              ],
+              "countries": [
+                "BE"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.774
+                }
+              ],
+              "countries": [
+                "DE"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.721
+                }
+              ],
+              "countries": [
+                "ES"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.647
+                }
+              ],
+              "countries": [
+                "FR"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.954
+                }
+              ],
+              "countries": [
+                "IT"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.86
+                }
+              ],
+              "countries": [
+                "NL"
               ]
             },
             {
@@ -39,9 +132,9 @@
               "pricing": "OPERATOR_AD_HOC"
             }
           ],
-          "notes": null,
-          "sourceUrl": "https://cdn.group.renault.com/mob/at/mobilize-charge-pass-preisliste.pdf",
-          "sourceDate": "2026-01-28",
+          "notes": "IONITY zu Preisen je Land der Ladestation; Blockier- und Standgebühren nur in der App.",
+          "sourceUrl": "https://cdn.group.renault.com/ren/at/renaultat/mobilize-dokumente/preisliste_052026.pdf.asset.pdf/a670fc889c.pdf",
+          "sourceDate": "2026-07-01",
           "confidence": "MEDIUM",
           "checkedOn": "2026-10-17"
         },
@@ -63,8 +156,101 @@
               "prices": [
                 {
                   "current": "DC",
+                  "pricePerKwh": 0.42
+                }
+              ],
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.43
+                }
+              ],
+              "countries": [
+                "BE"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.44
+                }
+              ],
+              "countries": [
+                "DE"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
                   "pricePerKwh": 0.39
                 }
+              ],
+              "countries": [
+                "ES"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.44
+                }
+              ],
+              "countries": [
+                "FR"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.54
+                }
+              ],
+              "countries": [
+                "IT"
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.47
+                }
+              ],
+              "countries": [
+                "NL"
               ]
             },
             {
@@ -73,14 +259,14 @@
                 "tesla"
               ],
               "prices": [],
-              "notes": "Übrige Netze: 9 % Rabatt.",
+              "notes": "Übrige Netze: 9 % Rabatt gegenüber BASIC.",
               "pricing": "OPERATOR_AD_HOC",
               "markupPercent": -9
             }
           ],
-          "notes": null,
-          "sourceUrl": "https://cdn.group.renault.com/mob/at/mobilize-charge-pass-preisliste.pdf",
-          "sourceDate": "2026-01-28",
+          "notes": "IONITY zu Preisen je Land der Ladestation; Blockier- und Standgebühren nur in der App.",
+          "sourceUrl": "https://cdn.group.renault.com/ren/at/renaultat/mobilize-dokumente/preisliste_052026.pdf.asset.pdf/a670fc889c.pdf",
+          "sourceDate": "2026-07-01",
           "confidence": "MEDIUM",
           "checkedOn": "2026-10-17"
         }
