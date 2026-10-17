@@ -27,16 +27,17 @@
                   "current": "DC",
                   "pricePerKwh": 0.56,
                   "blockingFeePerMinute": 0.07,
-                  "blockingAfterMinutes": 120
+                  "blockingAfterMinutes": 180
                 },
                 {
                   "current": "DC",
-                  "minKw": 150,
+                  "minKw": 50.1,
                   "pricePerKwh": 0.65,
                   "blockingFeePerMinute": 0.07,
                   "blockingAfterMinutes": 120
                 }
-              ]
+              ],
+              "notes": "Bis 50 kW Blockiergebühr ab Minute 181, darüber ab Minute 121."
             },
             {
               "kind": "ROAMING",
@@ -61,9 +62,9 @@
               "notes": "Partnernetz in Österreich (u. a. SMATRICS, Wien Energie, IONITY)."
             }
           ],
-          "notes": "Kein AC-Preis im eigenen Netz veröffentlicht.",
+          "notes": "Kein AC-Preis im eigenen Netz veröffentlicht; Leistungsgrenze 50 kW laut Tarifkalkulator der E-Control.",
           "sourceUrl": "https://www.omv.at/de/mobilitaet/e-mobilitaet/omv-emotion-tarife",
-          "sourceDate": null,
+          "sourceDate": "2025-07-04",
           "confidence": "MEDIUM"
         },
         {
@@ -86,16 +87,17 @@
                   "current": "DC",
                   "pricePerKwh": 0.52,
                   "blockingFeePerMinute": 0.07,
-                  "blockingAfterMinutes": 120
+                  "blockingAfterMinutes": 180
                 },
                 {
                   "current": "DC",
-                  "minKw": 150,
+                  "minKw": 50.1,
                   "pricePerKwh": 0.59,
                   "blockingFeePerMinute": 0.07,
                   "blockingAfterMinutes": 120
                 }
-              ]
+              ],
+              "notes": "Bis 50 kW Blockiergebühr ab Minute 181, darüber ab Minute 121."
             },
             {
               "kind": "ROAMING",
@@ -120,9 +122,9 @@
               "notes": "Partnernetz in Österreich (u. a. SMATRICS, Wien Energie, IONITY)."
             }
           ],
-          "notes": "Kein AC-Preis im eigenen Netz veröffentlicht.",
+          "notes": "Kein AC-Preis im eigenen Netz veröffentlicht; Leistungsgrenze 50 kW laut Tarifkalkulator der E-Control.",
           "sourceUrl": "https://www.omv.at/de/mobilitaet/e-mobilitaet/omv-emotion-tarife",
-          "sourceDate": null,
+          "sourceDate": "2025-07-04",
           "confidence": "MEDIUM"
         }
       ]
