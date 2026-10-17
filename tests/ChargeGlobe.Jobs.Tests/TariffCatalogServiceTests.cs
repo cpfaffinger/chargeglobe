@@ -159,6 +159,14 @@ public class TariffCatalogServiceTests
         Assert.Equal((TariffZoneKind.HOME, 0.57m), Of(Match("genol", "power", "AT*GNL", TariffCurrent.DC, 50)));
         Assert.Equal((TariffZoneKind.HOME, 0.44m), Of(Match("oeamtc", "epower", "AT*FTR")));
         Assert.Equal(TariffPricing.OPERATOR_AD_HOC, Match("smart-fuel-pass", "app", "AT*SNL")!.Zone.Pricing);
+        // IONITY packages of Kia: an amount per kWh off in Austria, abroad the base tariff with its session fee.
+        Assert.Equal((-0.25m, null), (Match("kia-charge", "easy-ionity-power", "AT*IOY", TariffCurrent.DC, 350)!.Zone.MarkupPerKwh, Match("kia-charge", "easy-ionity-power", "AT*IOY", TariffCurrent.DC, 350)!.Zone.MarkupSessionFee));
+        Assert.Equal((null, 0.59m), (Match("kia-charge", "easy-ionity-power", "DE*IOY", TariffCurrent.DC, 350)!.Zone.MarkupPerKwh, Match("kia-charge", "easy-ionity-power", "DE*IOY", TariffCurrent.DC, 350)!.Zone.MarkupSessionFee));
+        // DCS discounts only in Austria; Elli with the IONITY price of the country; Audi abroad unknown.
+        Assert.Equal(-15m, Match("charge-myhyundai", "smart", "AT*VIE")!.Zone.MarkupPercent);
+        Assert.Equal((null, 0.59m), (Match("charge-myhyundai", "smart", "DE*ION")!.Zone.MarkupPercent, Match("charge-myhyundai", "smart", "DE*ION")!.Zone.MarkupSessionFee));
+        Assert.Equal((TariffZoneKind.OPERATOR, 0.42m), Of(Match("elli", "ionity-ultra", "DE*IOY", TariffCurrent.DC, 350)));
+        Assert.Equal(TariffPricing.UNKNOWN, Match("audi-charging", "pro", "IT*ENX", TariffCurrent.DC, 150)!.Zone.Pricing);
     }
 
     private static async Task WaitUntilAsync(Func<bool> condition, string expectation)

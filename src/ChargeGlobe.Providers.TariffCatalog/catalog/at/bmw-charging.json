@@ -68,7 +68,10 @@
                   "blockingAfterMinutes": 30
                 }
               ],
-              "notes": "Preferred Partner Network laut Logos der Tarifseite."
+              "notes": "Preferred Partner Network laut Logos der Tarifseite.",
+              "countries": [
+                "AT"
+              ]
             },
             {
               "kind": "ROAMING",
@@ -78,7 +81,19 @@
               "prices": [],
               "notes": "Flexible Preise der übrigen Betreiber mit 15 % Rabatt.",
               "pricing": "OPERATOR_AD_HOC",
-              "markupPercent": -15
+              "markupPercent": -15,
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Ausland: flexible Preise ohne Rabatt und ohne Ladevorgangsgebühr.",
+              "pricing": "OPERATOR_AD_HOC"
             }
           ],
           "notes": "Zubuchbar: IONITY Plus (5,99 €/Monat, 0,45 €/kWh an IONITY), nicht abgebildet.",

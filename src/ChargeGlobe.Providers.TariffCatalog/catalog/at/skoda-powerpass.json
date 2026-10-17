@@ -65,6 +65,9 @@
                   "blockingStartTime": "06:00",
                   "blockingEndTime": "22:00"
                 }
+              ],
+              "countries": [
+                "AT"
               ]
             },
             {
@@ -115,6 +118,9 @@
                   "blockingStartTime": "06:00",
                   "blockingEndTime": "22:00"
                 }
+              ],
+              "countries": [
+                "AT"
               ]
             },
             {
@@ -155,6 +161,9 @@
                   "blockingFeePerMinute": 0.15,
                   "blockingAfterMinutes": 90
                 }
+              ],
+              "countries": [
+                "AT"
               ]
             },
             {
@@ -178,7 +187,10 @@
                   "blockingAfterMinutes": 90
                 }
               ],
-              "notes": "Selected Partners."
+              "notes": "Selected Partners.",
+              "countries": [
+                "AT"
+              ]
             },
             {
               "kind": "ROAMING",
@@ -200,7 +212,19 @@
                   "blockingFeePerMinute": 0.15,
                   "blockingAfterMinutes": 90
                 }
+              ],
+              "countries": [
+                "AT"
               ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Ausland: Preise je Land, für österreichische Verträge nicht (aktuell) veröffentlicht.",
+              "pricing": "UNKNOWN"
             }
           ],
           "notes": null,

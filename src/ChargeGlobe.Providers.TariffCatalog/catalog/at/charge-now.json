@@ -100,7 +100,10 @@
                   "blockingAfterMinutes": 60
                 }
               ],
-              "notes": "Preferred Partner Network, „aktuell ab“."
+              "notes": "Preferred Partner Network, „aktuell ab“.",
+              "countries": [
+                "AT"
+              ]
             },
             {
               "kind": "ROAMING",
@@ -120,7 +123,21 @@
                   "blockingFeePerMinute": 0.09,
                   "blockingAfterMinutes": 60
                 }
+              ],
+              "notes": "Einheitspreis in Österreich und Deutschland.",
+              "countries": [
+                "AT",
+                "DE"
               ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Übriges Ausland: flexible Preise (in HR, BG, IS und LT gelten die Urban-Bedingungen).",
+              "pricing": "OPERATOR_AD_HOC"
             }
           ],
           "notes": null,
