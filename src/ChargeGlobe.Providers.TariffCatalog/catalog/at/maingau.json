@@ -12,7 +12,7 @@
           "name": "MAINGAU Autostrom",
           "currency": "EUR",
           "monthlyFee": 0,
-          "prerequisites": "Kostenlose Registrierung (deutscher Anbieter, deutsche USt), App oder Karte.",
+          "prerequisites": "Neukunden nur mit Adresse in Deutschland; deutsche USt.",
           "markets": [
             "AT"
           ],
@@ -60,7 +60,7 @@
               "notes": "Standardpreis für alle übrigen Ladepunkte in Europa; Blockiergebühr max. 12 € je Ladevorgang."
             }
           ],
-          "notes": "Ob in Österreich wohnende Kunden abschließen können, ist nicht angegeben. Energiekunden von MAINGAU zahlen 10 ct/kWh weniger.",
+          "notes": "In Österreich wohnende Kunden können nicht abschließen; für deutsche Kunden auch in Österreich gültig. Energiekunden von MAINGAU zahlen 10 ct/kWh weniger.",
           "sourceUrl": "https://www.maingau-energie.de/e-mobilitaet/autostrom",
           "sourceDate": "2026-07-01",
           "confidence": "MEDIUM"

@@ -1,0 +1,70 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "stadtwerke-judenburg",
+      "name": "Stadtwerke Judenburg",
+      "website": "https://stadtwerke.co.at/service-fuer-mich/emobilitaet/",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "e-mobilitaetskarte",
+          "name": "E-Mobilitätskarte",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Nutzungsvertrag mit der Stadtwerke Judenburg AG, eine Karte inklusive.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "PARTNER",
+              "networks": [
+                "energie-steiermark"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.6,
+                  "blockingFeePerMinute": 0.08,
+                  "blockingAfterMinutes": 119
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.65,
+                  "blockingFeePerMinute": 0.15,
+                  "blockingAfterMinutes": 44
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.78,
+                  "blockingFeePerMinute": 0.08,
+                  "blockingAfterMinutes": 119
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.81,
+                  "blockingFeePerMinute": 0.15,
+                  "blockingAfterMinutes": 44
+                }
+              ],
+              "notes": "Roaming-Partner laut Energie-Steiermark-App."
+            }
+          ],
+          "notes": "Eigene Stationen (AC 0,50, DC 0,55 €/kWh) sind ohne Betreiber-ID in den Daten und deshalb nicht zugeordnet.",
+          "sourceUrl": "https://stadtwerke.co.at/wp-content/uploads/2024/12/Tarifblatt_Mobilitaetskarte_2025.pdf",
+          "sourceDate": "2025-01-01",
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}

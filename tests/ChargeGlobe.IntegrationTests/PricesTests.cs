@@ -186,7 +186,9 @@ public class PricesTests(IntegrationFactory factory) : IClassFixture<Integration
             .SingleAsync());
         var local = await PricesAsync(surrogate.ToString());
         Assert.Equal([("own", "HOME", 9.00m), ("every", "HOME", 21.00m)], Emps(local));
-        Assert.Equal(["flex", "other", "roam"], Unavailable(local).Order());
+        Assert.Equal(["flex", "other", "roam", "secret"], Unavailable(local).Order());
+        // The unpublished roaming price: usable, price unknown.
+        Assert.Equal(["secret"], available.GetProperty("data").GetProperty("priceUnknown").EnumerateArray().Select(tariff => tariff.GetProperty("emp").GetString()));
 
         // Without an ad-hoc price the operator's price is unknown: the card applies, but without a price.
         var location = await factory.WithDbAsync(db => db.Locations.Where(item => item.Name == "Teststation Stephansplatz").Select(item => item.Id).SingleAsync());
@@ -198,7 +200,8 @@ public class PricesTests(IntegrationFactory factory) : IClassFixture<Integration
         });
         var unpriced = (await PricesAsync(bare.Id.ToString())).GetProperty("data");
         Assert.Equal(["own", "roam", "every"], unpriced.GetProperty("emps").EnumerateArray().Select(emp => emp.GetProperty("emp").GetString()));
-        var unknown = Assert.Single(unpriced.GetProperty("priceUnknown").EnumerateArray());
+        var unknown = unpriced.GetProperty("priceUnknown").EnumerateArray().First();
+        Assert.Equal(["flex", "secret"], unpriced.GetProperty("priceUnknown").EnumerateArray().Select(tariff => tariff.GetProperty("emp").GetString()));
         Assert.Equal(("flex", "FLEX", "tarif", "Tarif", "ROAMING"), (
             unknown.GetProperty("emp").GetString(), unknown.GetProperty("empName").GetString(), unknown.GetProperty("tariffKey").GetString(),
             unknown.GetProperty("tariff").GetString(), unknown.GetProperty("zone").GetString()));

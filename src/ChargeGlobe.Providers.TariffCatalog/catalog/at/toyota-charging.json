@@ -1,0 +1,124 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "toyota-charging",
+      "name": "Toyota Charging Network",
+      "website": "https://www.toyota-charging-network.eu/web/de/toyota-at/service",
+      "country": "DE",
+      "tariffs": [
+        {
+          "key": "go",
+          "name": "Toyota Go",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "MyToyota App; Aktivierung 9,95 €.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Flexible Preise.",
+              "pricing": "OPERATOR_AD_HOC"
+            }
+          ],
+          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert.",
+          "sourceUrl": "https://www.toyota-charging-network.eu/api/public/v1/AT/tariffs/pdf?locale=de_AT",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "active",
+          "name": "Toyota Active",
+          "currency": "EUR",
+          "monthlyFee": 4.95,
+          "prerequisites": "MyToyota App.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "PARTNER",
+              "networks": [
+                "ionity",
+                "evn",
+                "electra",
+                "mer",
+                "kelag",
+                "shell",
+                "da-emobil",
+                "salzburg-ag"
+              ],
+              "prices": [],
+              "notes": "Preferred Partner Network: 15 % Rabatt (laut Preisliste DC).",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPercent": -15
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Übrige Ladepunkte: 5 % Rabatt.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPercent": -5
+            }
+          ],
+          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert.",
+          "sourceUrl": "https://www.toyota-charging-network.eu/api/public/v1/AT/tariffs/pdf?locale=de_AT",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "active-plus",
+          "name": "Toyota Active+",
+          "currency": "EUR",
+          "monthlyFee": 9.95,
+          "prerequisites": "MyToyota App.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "PARTNER",
+              "networks": [
+                "ionity",
+                "evn",
+                "electra",
+                "mer",
+                "kelag",
+                "shell",
+                "da-emobil",
+                "salzburg-ag"
+              ],
+              "prices": [],
+              "notes": "Preferred Partner Network: 25 % Rabatt (laut Preisliste DC).",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPercent": -25
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Übrige Ladepunkte: 10 % Rabatt.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPercent": -10
+            }
+          ],
+          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert.",
+          "sourceUrl": "https://www.toyota-charging-network.eu/api/public/v1/AT/tariffs/pdf?locale=de_AT",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "stromquelle",
+      "name": "Stromquelle",
+      "website": "https://www.stromquelle.at",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "free",
+          "name": "Stromquelle FREE",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Aktivierung 12 € je Karte, Ersatzkarte 30 €.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "stromquelle"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.6,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.7,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 90
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.6,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.7,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 90
+                }
+              ],
+              "notes": "Ein Preis je Stromart, auch bei den Roaming-Partnern (angenommen)."
+            }
+          ],
+          "notes": null,
+          "sourceUrl": "https://www.stromquelle.at/ladekarten/",
+          "sourceDate": "2025-01-01",
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}

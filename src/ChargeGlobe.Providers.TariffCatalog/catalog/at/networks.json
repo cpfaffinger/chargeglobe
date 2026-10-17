@@ -15,7 +15,8 @@
       "operators": [
         "AT*VIE",
         "AT*VNA",
-        "AT*VES"
+        "AT*VES",
+        "AT*ELA"
       ]
     },
     {
@@ -39,7 +40,8 @@
       "name": "Energie Graz",
       "country": "AT",
       "operators": [
-        "AT*EGG"
+        "AT*EGG",
+        "AT*6D6"
       ]
     },
     {
@@ -268,7 +270,8 @@
       "name": "Tulln Energie",
       "country": "AT",
       "operators": [
-        "AT*TLN"
+        "AT*TLN",
+        "AT*E37"
       ]
     },
     {

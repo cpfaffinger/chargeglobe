@@ -25,11 +25,15 @@ public enum TariffCurrent
     DC,
 }
 
-/// <summary>Where the price of a zone comes from: its own price elements, or the ad-hoc price of the EVSE's operator.</summary>
+/// <summary>
+/// Where the price of a zone comes from: its own price elements, the ad-hoc price of the EVSE's operator, or nowhere
+/// (the provider sets a price per charge point but does not publish it; the card works there at an unknown price).
+/// </summary>
 public enum TariffPricing
 {
     FIXED,
     OPERATOR_AD_HOC,
+    UNKNOWN,
 }
 
 /// <summary>How sure the curated values are: read from the provider's price sheet, derived, or unclear.</summary>
@@ -342,7 +346,7 @@ public sealed class TariffPlan
             .OrderBy(item => item.Kind)
             .ThenBy(item => item.Networks.Count + item.Operators.Count == 0)
             .FirstOrDefault(item => item.Covers(operatorId, members));
-        if (zone?.Pricing == TariffPricing.OPERATOR_AD_HOC)
+        if (zone is { Pricing: not TariffPricing.FIXED })
         {
             return new TariffMatch(zone, null);
         }

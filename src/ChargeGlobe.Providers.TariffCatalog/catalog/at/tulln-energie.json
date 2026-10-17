@@ -1,0 +1,109 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "tulln-energie",
+      "name": "Tulln Energie",
+      "website": "https://www.tulln.at/energie",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "adhoc",
+          "name": "Tulln Energie Ladekarte",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Eine Karte je Fahrzeug, ohne Bindung.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "tulln-energie"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.45
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.55
+                }
+              ]
+            }
+          ],
+          "notes": "Nur im eigenen Netz in Tulln; Preisblatt ohne Datum.",
+          "sourceUrl": "https://www.tulln.at/fileadmin/Content/Formulare/Umwelt/TullnEnergie/Stromtank_GmbH.pdf",
+          "sourceDate": null,
+          "confidence": "LOW"
+        },
+        {
+          "key": "l-charger",
+          "name": "Tulln Energie L Charger",
+          "currency": "EUR",
+          "monthlyFee": 15,
+          "prerequisites": "Eine Karte je Fahrzeug.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "tulln-energie"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.2
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.3
+                }
+              ]
+            }
+          ],
+          "notes": "Nur im eigenen Netz in Tulln; Preisblatt ohne Datum.",
+          "sourceUrl": "https://www.tulln.at/fileadmin/Content/Formulare/Umwelt/TullnEnergie/Stromtank_GmbH.pdf",
+          "sourceDate": null,
+          "confidence": "LOW"
+        },
+        {
+          "key": "xl-charger",
+          "name": "Tulln Energie XL Charger",
+          "currency": "EUR",
+          "monthlyFee": 50,
+          "prerequisites": "Eine Karte je Fahrzeug.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "tulln-energie"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.11
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.21
+                }
+              ]
+            }
+          ],
+          "notes": "Nur im eigenen Netz in Tulln; Preisblatt ohne Datum.",
+          "sourceUrl": "https://www.tulln.at/fileadmin/Content/Formulare/Umwelt/TullnEnergie/Stromtank_GmbH.pdf",
+          "sourceDate": null,
+          "confidence": "LOW"
+        }
+      ]
+    }
+  ]
+}

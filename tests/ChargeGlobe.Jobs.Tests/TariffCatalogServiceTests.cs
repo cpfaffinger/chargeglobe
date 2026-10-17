@@ -114,6 +114,12 @@ public class TariffCatalogServiceTests
         Assert.Equal(10m, Match("chargemap", "pass", "AT*VIE")!.Zone.MarkupPercent);
         Assert.Equal((TariffZoneKind.OPERATOR, 0.49m), Of(Match("mercedes-charge", "public-m", "AT*IOY", TariffCurrent.DC, 350)));
         Assert.Equal(-10m, Match("mercedes-charge", "public-m", "AT*LAG", TariffCurrent.DC, 150)!.Zone.MarkupPercent);
+        // EnBW: its price at SMATRICS EnBW, elsewhere a price per charge point that is not published.
+        Assert.Equal((TariffZoneKind.HOME, 0.56m), Of(Match("enbw", "ladetarif-s", "AT*SME", TariffCurrent.DC, 150)));
+        Assert.Equal(TariffPricing.UNKNOWN, Match("enbw", "ladetarif-s", "AT*EVN")!.Zone.Pricing);
+        // Energie Graz with both operator IDs, the session fee of Kia on the operator's price.
+        Assert.Equal((TariffZoneKind.HOME, 0.53m), Of(Match("energie-graz", "charge-public", "AT*6D6")));
+        Assert.Equal(0.59m, Match("kia-charge", "easy", "AT*VIE")!.Zone.MarkupSessionFee);
         Assert.Equal((TariffZoneKind.OPERATOR, 0.46m), Of(Match("elli", "premium", "AT*IOY", TariffCurrent.DC, 350)));
     }
 

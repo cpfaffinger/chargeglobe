@@ -1,0 +1,63 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "porsche-charging",
+      "name": "Porsche Charging Service",
+      "website": "https://www.porsche.at/elektromobilitaet/charging-service",
+      "country": "DE",
+      "tariffs": [
+        {
+          "key": "plus",
+          "name": "Porsche Charging Service Plus",
+          "currency": "EUR",
+          "monthlyFee": 16.99,
+          "prerequisites": "Porsche-Elektro- oder Hybridfahrzeug; für Neufahrzeuge bis zu 1 Jahr ohne Grundgebühr.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39
+                }
+              ],
+              "notes": "Preferred: IONITY, Porsche-Standorte; ohne Blockiergebühr."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.44,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 360
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.64,
+                  "blockingFeePerMinute": 0.2,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "AC-Blockiergebühr nur 8–24 Uhr, höchstens 500 Minuten."
+            }
+          ],
+          "notes": null,
+          "sourceUrl": "https://ask.porsche.com/at/de-AT/charging-service-price-list/",
+          "sourceDate": "2026-10-10",
+          "confidence": "HIGH"
+        }
+      ]
+    }
+  ]
+}

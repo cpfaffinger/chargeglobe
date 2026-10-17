@@ -1,0 +1,80 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "volvo-charging",
+      "name": "Volvo Public Charging",
+      "website": "https://volvocar-public-charging.com/web/de/volvo-at/tariffs",
+      "country": "DE",
+      "tariffs": [
+        {
+          "key": "small",
+          "name": "Volvo Small",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Elektrischer Volvo, Volvo Cars App; Karte gratis.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Flexible Preise.",
+              "pricing": "OPERATOR_AD_HOC"
+            }
+          ],
+          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert.",
+          "sourceUrl": "https://volvocar-public-charging.com/web/de/volvo-at/tariffs",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "large",
+          "name": "Volvo Large",
+          "currency": "EUR",
+          "monthlyFee": 9.99,
+          "prerequisites": "Elektrischer Volvo; Plug & Charge je nach Modell.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "PARTNER",
+              "networks": [
+                "ionity",
+                "evn",
+                "electra",
+                "mer",
+                "kelag",
+                "shell",
+                "da-emobil",
+                "salzburg-ag"
+              ],
+              "prices": [],
+              "notes": "Preferred Partner Network: 30 % Rabatt.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPercent": -30
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Übrige Ladepunkte zum flexiblen Preis.",
+              "pricing": "OPERATOR_AD_HOC"
+            }
+          ],
+          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert.",
+          "sourceUrl": "https://volvocar-public-charging.com/web/de/volvo-at/tariffs",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}

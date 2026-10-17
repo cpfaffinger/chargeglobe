@@ -66,9 +66,11 @@
 - [x] Routing: Compose-Service `routing` (Valhalla 3.9.1, OSM-Extrakt Österreich, Profil `routing`), `IRoutingEngine`, `POST /routes`, „Route hierher“ in der Infokarte mit Routenlinie auf der Karte
 - [ ] Routing-Extrakt automatisch aktualisieren (monatlich; Bau außerhalb des Live-Hosts)
 - [x] EMP-Tarife als Netze, Zonen und Katalog ([ADR-0013](adr/0013-ladetarife-netze-zonen-katalog.md)): Tabellen `emp`, `charging_network`, `tariff_plan` (versioniert, Zonen als `jsonb`), `ITariffSource` + Import (`PUT /tariff-sources/{source}/catalog`, Worker alle 6 h), `GET /emps`, `/networks`, `/tariffs`; Vergleich je Ladepunkt mit Zone und „hier nicht nutzbar“, Tabelle aller Karten in der Infokarte, Katalogansicht `/admin/tariffs`
-- [x] Kuratierter Tarifkatalog Österreich: 32 Anbieter, 36 Netze, 62 Tarife ([07](07-bestandsanalyse-apps-at.md), „Tarife der Anbieter“)
+- [x] Kuratierter Tarifkatalog Österreich: 50 Anbieter (Energieversorger, Roaming-Anbieter, HPC-Netze, Herstellerkarten), 36 Netze, 102 Tarife; Zonen mit nicht veröffentlichtem Preis (`UNKNOWN`) ([07](07-bestandsanalyse-apps-at.md), „Tarife der Anbieter“)
 - [x] Zonen mit dem Preis des Betreibers (`pricing` `OPERATOR_AD_HOC`, Aufschlag in % und je Ladevorgang, „Preis unbekannt“ ohne Ad-hoc-Preis): Electroverse, Plugsurfing, Chargemap, MB.CHARGE, BMW Charging, Elli, Wels Strom, Shell
-- [ ] Zeitfenster und Deckel, Auslandspreise; Tesla-Standortpreise als eigene Quelle
+- [ ] Zeitfenster und Deckel, Auslandspreise
+- [x] Tesla-Preise geprüft: findus-Standortseiten nicht automatisiert (Bot-Schutz, Website-Bedingungen), Ad-hoc-Preise aus der E-Control ([Endpunkt-Notiz](endpunkte/tesla-findus.md))
+- [ ] ladetarif.at (Tarifkalkulator der E-Control) als `ITariffSource` prüfen: Produkte strukturiert, Nutzungsbedingungen klären
 - [ ] Tarifkatalog regelmäßig prüfen (Stand je Tarif älter als 6 Monate melden), Preisblatt-Scraper als `ITariffSource` für die großen Anbieter
 
 ### Phase 2 – Preise & Tier-1/2-Quellen
@@ -110,7 +112,7 @@
 | **Karten-Kacheln selbst hosten** | öffentliche OpenFreeMap-Instanz / eigener Kachel-Service im Compose-Stack | öffentliche Instanz, solange sie zuverlässig ist; Wechsel über `map.style_url` ohne Codeänderung ([ADR-0007](adr/0007-karte-standort-routing.md)). |
 | **Identity-Provider** | nur lokale Konten / zusätzlich OIDC (GitHub, Google, Entra) | lokal im MVP; OIDC-Login später additiv über ASP.NET Core Identity External Logins. |
 | **Adresssuche (Geocoder)** für Start und Ziel der Route | entschieden: BEV-Adressregister in Postgres (`pg_trgm`) / eigener Photon- oder Nominatim-Dienst / externer Dienst | umgesetzt: die 2,5 Mio. Adressen des BEV-Adressregisters (amtlich, CC BY 4.0, halbjährlich) in den Tabellen `address_street` (Trigramm-Indizes) und `address`, zweistufige Suche unter 100 ms, Import im Worker, `GET /geocode` ([ADR-0007](adr/0007-karte-standort-routing.md), Punkt 8). Kein zusätzlicher Dienst und kein Bau auf einem anderen Host; externe Geocoder schieden aus, weil sie die gesuchten Adressen bekämen und die OSMF-Instanz Autocomplete verbietet. Orte ohne Adresse (Berggipfel, Sehenswürdigkeiten) findet die Suche nicht; dafür bliebe Photon. |
-| **Tesla-Quelle** | Tesla-Standortkarte (öffentlich) vs. Owner-API (Login) | nur öffentliche Standortdaten + Roaming-EVSE-IDs aus E-Control; keine Owner-API. |
+| **Tesla-Quelle** | findus-Standortseiten vs. Owner-API (Login) vs. E-Control | E-Control (Inventar und Ad-hoc-Preis); findus nur mit schriftlicher Erlaubnis von Tesla, keine Owner-API ([Endpunkt-Notiz](endpunkte/tesla-findus.md)). |
 
 ## Risiken
 

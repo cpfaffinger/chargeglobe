@@ -876,7 +876,7 @@ describe('LocationDetails with prices', () => {
     ]);
     expect(rows[0].querySelector('.zone-home')).not.toBeNull();
     expect(text(root(), '.unavailable')).toBe('Hier nicht nutzbar: Tesla · Supercharging, EVN · #Drive Easy');
-    expect(text(root(), '.price-unknown')).toBe('Zum Preis des Betreibers, hier unbekannt: Plugsurfing · Plugsurfing');
+    expect(text(root(), '.price-unknown')).toBe('Nutzbar, Preis hier unbekannt: Plugsurfing · Plugsurfing');
   });
 
   it('names the cheapest own card and the cheapest card overall if it is another one', async () => {

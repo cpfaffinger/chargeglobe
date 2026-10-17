@@ -1,0 +1,88 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "mobilize-charge-pass",
+      "name": "Mobilize Charge Pass",
+      "website": "https://www.renault.at/ladeloesungen/charge-pass.html",
+      "country": "FR",
+      "tariffs": [
+        {
+          "key": "basic",
+          "name": "Mobilize Charge Pass BASIC",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "My Renault, My Alpine oder My Dacia App mit Kreditkarte.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.73
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Übrige Netze: Preis je Betreiber laut App.",
+              "pricing": "OPERATOR_AD_HOC"
+            }
+          ],
+          "notes": null,
+          "sourceUrl": "https://cdn.group.renault.com/mob/at/mobilize-charge-pass-preisliste.pdf",
+          "sourceDate": "2026-01-28",
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "intense",
+          "name": "Mobilize Charge Pass INTENSE",
+          "currency": "EUR",
+          "monthlyFee": 4.99,
+          "prerequisites": "My Renault, My Alpine oder My Dacia App; monatlich kündbar.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Übrige Netze: 9 % Rabatt.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPercent": -9
+            }
+          ],
+          "notes": null,
+          "sourceUrl": "https://cdn.group.renault.com/mob/at/mobilize-charge-pass-preisliste.pdf",
+          "sourceDate": "2026-01-28",
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}

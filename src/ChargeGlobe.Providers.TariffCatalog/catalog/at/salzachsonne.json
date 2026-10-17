@@ -1,0 +1,48 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "salzachsonne",
+      "name": "SalzachSonne",
+      "website": "https://edriver.salzachsonne.at",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "ladetarif",
+          "name": "SalzachSonne Ladetarif",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "RFID-Karte 19,90 € oder Schlüsselanhänger 24,90 € einmalig.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "salzachsonne"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.59,
+                  "sessionFee": 1.8
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.83,
+                  "sessionFee": 1.8
+                }
+              ],
+              "notes": "Zutrittsgebühr 1,80 € je Ladung; Variante mit Blockiergebühr 0,04 €/min ab Minute 300."
+            }
+          ],
+          "notes": "Aus dem Tarifkalkulator der E-Control; ob die Zutrittsgebühr netto oder brutto ist, ist offen.",
+          "sourceUrl": "https://www.ladetarif.at/api/products/375",
+          "sourceDate": "2024-02-01",
+          "confidence": "LOW"
+        }
+      ]
+    }
+  ]
+}
