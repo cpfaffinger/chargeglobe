@@ -1740,6 +1740,9 @@ describe('HomePage (map)', () => {
       expect(actions().hidden).toBeFalse();
       expect(toggle().getAttribute('aria-expanded')).toBe('true');
       expect(toggle().getAttribute('aria-label')).toBe('Kartenfunktionen schließen');
+      // The actions unfold above the toggle, which keeps its place: the same spot closes them again.
+      expect(actions().compareDocumentPosition(toggle()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(root().querySelector('#home-menu .app-icon path')!.getAttribute('d')).not.toBe(root().querySelector('#actions-toggle .app-icon path')!.getAttribute('d'));
       toggle().click();
       await settle();
       expect(actions().hidden).toBeTrue();

@@ -465,16 +465,6 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
       }
     }
     <div id="map-actions">
-      @if (viewport.mobile()) {
-        <button matMiniFab type="button" id="actions-toggle" [attr.aria-expanded]="actionsOpen()"
-          [attr.aria-label]="actionsOpen() ? 'Kartenfunktionen schließen' : 'Weitere Kartenfunktionen'" (click)="actionsOpen.set(!actionsOpen())">
-          <app-icon [name]="actionsOpen() ? 'close' : 'more_vert'" />
-          <!-- Active filters stay visible while the filter button is folded away. -->
-          @if (!actionsOpen() && filterStore.count() > 0) {
-            <span class="filter-count fab-count" [attr.aria-label]="filterStore.count() + ' Filter aktiv'">{{ filterStore.count() }}</span>
-          }
-        </button>
-      }
       <div class="home-actions" [hidden]="viewport.mobile() && !actionsOpen()">
         @if (viewport.mobile()) {
           <button matMiniFab type="button" id="filter-toggle" title="Filter" aria-label="Filter" [attr.aria-expanded]="filtersOpen()" (click)="toggleFilters()">
@@ -494,13 +484,24 @@ const covers = (outer: Bbox, inner: Bbox): boolean =>
           <app-icon name="share" />
         </button>
         <button matMiniFab type="button" id="home-menu" title="Startposition festlegen" aria-label="Startposition festlegen" [matMenuTriggerFor]="homeMenu">
-          <app-icon name="more_vert" />
+          <app-icon name="edit_location" />
         </button>
         <mat-menu #homeMenu="matMenu">
           <button mat-menu-item type="button" id="set-home" [disabled]="!view()" (click)="setHome()">Aktuellen Ausschnitt als Startposition</button>
           <button mat-menu-item type="button" id="reset-home" [disabled]="!views.home()" (click)="views.resetHome()">Startposition zurücksetzen</button>
         </mat-menu>
       </div>
+      @if (viewport.mobile()) {
+        <!-- The toggle keeps its place below the unfolded actions, so that the same spot closes them again. -->
+        <button matMiniFab type="button" id="actions-toggle" [attr.aria-expanded]="actionsOpen()"
+          [attr.aria-label]="actionsOpen() ? 'Kartenfunktionen schließen' : 'Weitere Kartenfunktionen'" (click)="actionsOpen.set(!actionsOpen())">
+          <app-icon [name]="actionsOpen() ? 'close' : 'more_vert'" />
+          <!-- Active filters stay visible while the filter button is folded away. -->
+          @if (!actionsOpen() && filterStore.count() > 0) {
+            <span class="filter-count fab-count" [attr.aria-label]="filterStore.count() + ' Filter aktiv'">{{ filterStore.count() }}</span>
+          }
+        </button>
+      }
       @if (canRoute()) {
         <button matFab [extended]="!viewport.mobile()" type="button" id="reach" [disabled]="!handle() || reaching()" title="Reichweite"
           aria-label="Reichweite" (click)="showReach()">
