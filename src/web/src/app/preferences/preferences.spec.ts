@@ -86,6 +86,8 @@ describe('PreferencesService', () => {
       mapOptions: { clusterRadius: 80, clusterMaxZoom: 15 },
       cards: [],
       vehicle: { consumptionKwhPer100Km: 21, batteryKwh: 64, startSoc: null, arrivalSoc: null },
+      tariffs: [],
+      onlyOwnTariffs: true,
     });
     put.flush({ data: put.request.body, meta: { updatedAt: '2026-10-14T08:00:00Z' } });
     await flush();
@@ -141,22 +143,24 @@ describe('PreferencesService', () => {
   it('takes the own cards of the account, writes a changed choice and forgets them after the logout', async () => {
     setUp();
     await signIn();
-    respond({ home: null, filters: null, mapOptions: null, cards: ['smatrics'] });
+    respond({ home: null, filters: null, mapOptions: null, cards: ['smatrics'], tariffs: ['smatrics/charge-simple'], onlyOwnTariffs: false });
     await flush();
     const cards = TestBed.inject(CardsStore);
-    expect(cards.cards()).toEqual(['smatrics']);
+    expect([cards.cards(), cards.tariffs(), cards.onlyOwn(), cards.filtering()]).toEqual([['smatrics'], ['smatrics/charge-simple'], false, false]);
 
-    cards.toggle('oeamtc', true);
-    cards.toggle('smatrics', false);
+    cards.toggleTariff('oeamtc', 'epower', true);
+    cards.toggleTariff('smatrics', 'charge-simple', false);
+    cards.setOnlyOwn(true);
     await waitForWrite();
     const put = http.expectOne((request) => request.method === 'PUT');
-    expect(put.request.body.cards).toEqual(['oeamtc']);
+    expect([put.request.body.cards, put.request.body.tariffs, put.request.body.onlyOwnTariffs]).toEqual([['oeamtc'], ['oeamtc/epower'], true]);
+    expect([cards.filtering(), cards.ownKeys()]).toEqual([true, ['oeamtc/epower']]);
     put.flush({ data: put.request.body, meta: { updatedAt: '2026-10-15T08:00:00Z' } });
     await flush();
 
     auth.me.set(null);
     TestBed.tick();
-    expect(cards.cards()).toEqual([]);
+    expect([cards.cards(), cards.tariffs(), cards.ownKeys()]).toEqual([[], [], []]);
   });
 
   it('applies an account without values as defaults and keeps the filters of a shared link', async () => {

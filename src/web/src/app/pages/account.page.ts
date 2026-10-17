@@ -39,8 +39,11 @@ interface HealthResponse {
     @if (auth.hasPermission('price:read')) {
       <mat-card appearance="outlined" id="own-cards">
         <mat-card-content>
-          <h2>Meine Ladekarten</h2>
-          <p class="muted">Diese Karten und Apps hebt der Preisvergleich an jedem Ladepunkt hervor. Die Auswahl gilt für dein Konto.</p>
+          <h2>Meine Ladekarten und Tarife</h2>
+          <p class="muted">
+            Wähle je Anbieter die Tarife, die du abgeschlossen hast. Ladepunkte zeigen dann nur deine Tarife – alle Ladekarten und Apps
+            mit einem Klick. Die Auswahl gilt für dein Konto.
+          </p>
           <app-own-cards />
         </mat-card-content>
       </mat-card>

@@ -127,19 +127,30 @@ export interface PriceRow {
   own: boolean;
 }
 
-/** Ad-hoc price and cards by the cost of the example; empty without cards (nothing to compare). */
-export function comparison(data: EvsePricesResponse['data'], cards: readonly string[] = []): PriceRow[] {
+/**
+ * Whether the card is one of the user's: its tariff ("emp/tariff") or, for a provider chosen without tariff, its provider
+ * is among the own keys (CardsStore.ownKeys).
+ */
+export const isOwnCard = (card: Pick<EmpPrice, 'emp' | 'tariffKey'>, own: readonly string[]): boolean =>
+  own.includes(`${card.emp}/${card.tariffKey}`) || own.includes(card.emp);
+
+/** The cards of the list: all, or with onlyOwn only the user's. */
+export const shownCards = (emps: EmpPrice[], own: readonly string[], onlyOwn: boolean): EmpPrice[] =>
+  onlyOwn ? emps.filter((card) => isOwnCard(card, own)) : emps;
+
+/** Ad-hoc price and cards (with onlyOwn only the user's) by the cost of the example; empty without cards (nothing to compare). */
+export function comparison(data: EvsePricesResponse['data'], cards: readonly string[] = [], onlyOwn = false): PriceRow[] {
   if (data.emps.length === 0) {
     return [];
   }
   const rows = [
     ...(data.current && plausible(data.current.price) ? [{ key: 'ad-hoc', label: 'Ad-hoc (ohne Vertrag)', price: data.current.price, monthlyFee: null, own: false }] : []),
-    ...data.emps.map((emp) => ({
+    ...shownCards(data.emps, cards, onlyOwn).map((emp) => ({
       key: emp.tariffId,
       label: `${emp.empName} · ${emp.tariff} (${zoneText(emp)})`,
       price: emp.price,
       monthlyFee: emp.monthlyFee,
-      own: cards.includes(emp.emp),
+      own: isOwnCard(emp, cards),
     })),
   ].sort((left, right) => left.price.exampleCost - right.price.exampleCost);
   return rows.map((row) => ({ ...row, cheapest: row.price.exampleCost === rows[0].price.exampleCost }));

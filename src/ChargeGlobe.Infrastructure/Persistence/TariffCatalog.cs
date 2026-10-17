@@ -44,6 +44,12 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, IAppC
     public async Task<IReadOnlyCollection<string>> EmpKeysAsync(CancellationToken cancellationToken) =>
         await db.Emps.AsNoTracking().Select(emp => emp.Key).ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyCollection<string>> TariffKeysAsync(CancellationToken cancellationToken) =>
+        await db.TariffPlans.AsNoTracking()
+            .Join(db.Emps, plan => plan.EmpId, emp => emp.Id, (plan, emp) => emp.Key + "/" + plan.Key)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
     public async Task<IReadOnlyList<NetworkView>> NetworksAsync(CancellationToken cancellationToken) =>
         (await db.ChargingNetworks.AsNoTracking().OrderBy(network => network.Key).ToListAsync(cancellationToken))
         .Select(network => new NetworkView(network.Key, network.Name, network.Country, network.Operators, network.PriceNote, network.PriceUrl, network.Sites.Count))

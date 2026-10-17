@@ -1,6 +1,7 @@
 import { DatePipe, DecimalPipe, PercentPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -21,7 +22,7 @@ import {
 import { Segment, combine, faultSource, sourceName, statusOf, timeline } from './status';
 import { OccupancyHeatmap, StatusTimeline } from './status-charts';
 import { CardsStore } from '../preferences/cards.store';
-import { EmpPrice, EmpUnavailable, EvsePricesResponse, implausibleText, money, plausible, priceParts, sessionText, zoneText } from './prices';
+import { EmpPrice, EmpUnavailable, EvsePricesResponse, implausibleText, isOwnCard, money, plausible, priceParts, sessionText, shownCards, zoneText } from './prices';
 import { AVAILABILITY, busyText, tokenColor } from '../map/availability';
 import { connectorLabel, formatLabel } from './labels';
 import { LocationSummary } from '../map/locations.service';
@@ -59,6 +60,7 @@ type LoadState = 'loading' | 'error' | 'ready';
     AppIcon,
     DatePipe,
     DecimalPipe,
+    MatButtonModule,
     MatButtonToggleModule,
     MatCardModule,
     MatChipsModule,
@@ -234,14 +236,18 @@ type LoadState = 'loading' | 'error' | 'ready';
                       </p>
                     }
                     @let own = ownCheapest(pricing);
+                    @let onlyOwn = ownOnly(evse.id);
                     @if (own) {
                       <p class="price own-card">
                         deine günstigste Karte: {{ own.empName }} ({{ own.tariff }})
                         <span class="price-example">· {{ session(pricing.example) }}: {{ money(own.price.exampleCost, own.price.currency) }}</span>
                       </p>
                     }
+                    @if (onlyOwn && !own) {
+                      <p class="price own-card none">Keiner deiner Tarife hat hier einen bekannten Preis.</p>
+                    }
                     @if (pricing.emps[0]; as card) {
-                      @if (card !== own) {
+                      @if (card !== own && !onlyOwn) {
                         <p class="price cheapest-card">
                           günstigste Karte: {{ card.empName }} ({{ card.tariff }})
                           <span class="price-example">· {{ session(pricing.example) }}: {{ money(card.price.exampleCost, card.price.currency) }}</span>
@@ -249,11 +255,13 @@ type LoadState = 'loading' | 'error' | 'ready';
                       }
                     }
                     @if (pricing.emps.length > 0 || pricing.unavailable.length > 0 || pricing.priceUnknown.length > 0) {
-                      <details class="all-tariffs">
-                        <summary>Alle Ladekarten und Apps ({{ pricing.emps.length }})</summary>
+                      <details class="all-tariffs" [open]="onlyOwn">
+                        <summary>
+                          {{ onlyOwn ? 'Meine Tarife (' + shown(pricing, onlyOwn).length + ' von ' + pricing.emps.length + ')' : 'Alle Ladekarten und Apps (' + pricing.emps.length + ')' }}
+                        </summary>
                         <table class="tariff-table">
                           <tbody>
-                            @for (card of pricing.emps; track card.tariffId) {
+                            @for (card of shown(pricing, onlyOwn); track card.tariffId) {
                               <tr [class.own]="isOwn(card)">
                                 <th scope="row">{{ card.empName }} · {{ card.tariff }}</th>
                                 <td><span [class]="'zone zone-' + card.zone.toLowerCase()">{{ zoneLabel(card) }}</span></td>
@@ -264,11 +272,18 @@ type LoadState = 'loading' | 'error' | 'ready';
                             }
                           </tbody>
                         </table>
-                        @if (pricing.priceUnknown.length > 0) {
-                          <p class="price-unknown">Nutzbar, Preis hier unbekannt: {{ names(pricing.priceUnknown) }}</p>
+                        @let unknown = ownFilter(pricing.priceUnknown, onlyOwn);
+                        @if (unknown.length > 0) {
+                          <p class="price-unknown">Nutzbar, Preis hier unbekannt: {{ names(unknown) }}</p>
                         }
-                        @if (pricing.unavailable.length > 0) {
-                          <p class="unavailable">Hier nicht nutzbar: {{ names(pricing.unavailable) }}</p>
+                        @let unavailable = ownFilter(pricing.unavailable, onlyOwn);
+                        @if (unavailable.length > 0) {
+                          <p class="unavailable">Hier nicht nutzbar: {{ names(unavailable) }}</p>
+                        }
+                        @if (filtering()) {
+                          <button matButton type="button" class="show-all" (click)="toggleAll(evse.id)">
+                            {{ onlyOwn ? 'Alle anzeigen (' + pricing.emps.length + ')' : 'Nur meine Tarife' }}
+                          </button>
                         }
                         <p class="tariff-note">
                           {{ session(pricing.example) }} je Tarif; Grundgebühren kommen dazu. Preise nach den Preisblättern der Anbieter, Stand je Tarif
@@ -471,7 +486,40 @@ export class LocationDetails {
   protected readonly zoneLabel = zoneText;
 
   protected isOwn(card: EmpPrice): boolean {
-    return this.cards.cards().includes(card.emp);
+    return isOwnCard(card, this.cards.ownKeys());
+  }
+
+  /** The user has own tariffs and shows only these by default. */
+  protected readonly filtering = this.cards.filtering;
+
+  /** EVSEs whose price list shows every card although the user shows only own tariffs. */
+  private readonly allShown = signal<ReadonlySet<string>>(new Set());
+
+  /** Whether the price list of the EVSE shows only the own tariffs. */
+  protected ownOnly(evseId: string): boolean {
+    return this.filtering() && !this.allShown().has(evseId);
+  }
+
+  /** "Alle anzeigen" or back to the own tariffs, per EVSE. */
+  protected toggleAll(evseId: string): void {
+    this.allShown.update((shown) => {
+      const next = new Set(shown);
+      if (next.has(evseId)) {
+        next.delete(evseId);
+      } else {
+        next.add(evseId);
+      }
+      return next;
+    });
+  }
+
+  protected shown(pricing: EvsePricesResponse['data'], onlyOwn: boolean): EmpPrice[] {
+    return shownCards(pricing.emps, this.cards.ownKeys(), onlyOwn);
+  }
+
+  /** The tariffs of a list, with onlyOwn only the user's. */
+  protected ownFilter<T extends Pick<EmpPrice, 'emp' | 'tariffKey'>>(tariffs: T[], onlyOwn: boolean): T[] {
+    return onlyOwn ? tariffs.filter((tariff) => isOwnCard(tariff, this.cards.ownKeys())) : tariffs;
   }
 
   /** "EVN · Basic, Tesla · Supercharging". */
@@ -552,6 +600,7 @@ export class LocationDetails {
         this.parkOpen.set(false);
         this.parkShown.set(PARK_PAGE);
         this.parkQuery.set('');
+        this.allShown.set(new Set());
         void this.load(id);
       });
     });
@@ -624,8 +673,8 @@ export class LocationDetails {
 
   /** The cheapest of the user's own cards at the EVSE (the list is sorted by cost); undefined without one. */
   protected ownCheapest(pricing: EvsePricesResponse['data']): EmpPrice | undefined {
-    const cards = this.cards.cards();
-    return pricing.emps.find((emp) => cards.includes(emp.emp));
+    const own = this.cards.ownKeys();
+    return pricing.emps.find((emp) => isOwnCard(emp, own));
   }
 
   protected priceOf(evseId: string): EvsePricesResponse['data'] {

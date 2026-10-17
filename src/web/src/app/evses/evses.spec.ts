@@ -886,6 +886,28 @@ describe('LocationDetails with prices', () => {
     expect(text(root(), '.price-note')).toBe('Preis laut E-Control; Tesla verlangt je nach Tageszeit abweichende Preise. Preise des Betreibers');
     expect(root().querySelector<HTMLAnchorElement>('.price-note a')!.href).toBe('https://example.org/site');
     expect(text(root(), '.price-unknown')).toBe('Nutzbar, Preis hier unbekannt: Plugsurfing · Plugsurfing');
+    expect(root().querySelector('.show-all')).toBeNull();
+
+    // With own tariffs only these by default, all on demand per EVSE.
+    TestBed.inject(CardsStore).set(['own', 'evn'], ['own/basic', 'evn/drive-easy']);
+    await settle();
+    expect(text(root(), '.all-tariffs summary')).toBe('Meine Tarife (1 von 2)');
+    expect(Array.from(root().querySelectorAll('.tariff-table tr')).map((row) => text(row, 'th'))).toEqual(['OWN · Basic']);
+    expect(text(root(), '.unavailable')).toBe('Hier nicht nutzbar: EVN · #Drive Easy');
+    expect(root().querySelector('.price-unknown')).toBeNull();
+    expect(root().querySelector('.cheapest-card')).toBeNull();
+    root().querySelector<HTMLButtonElement>('.show-all')!.click();
+    await settle();
+    expect(text(root(), '.all-tariffs summary')).toBe('Alle Ladekarten und Apps (2)');
+    expect(text(root(), '.show-all')).toBe('Nur meine Tarife');
+    root().querySelector<HTMLButtonElement>('.show-all')!.click();
+    await settle();
+    expect(text(root(), '.show-all')).toBe('Alle anzeigen (2)');
+
+    // None of the own tariffs has a price here.
+    TestBed.inject(CardsStore).set(['evn'], ['evn/drive-easy']);
+    await settle();
+    expect(text(root(), '.own-card.none')).toBe('Keiner deiner Tarife hat hier einen bekannten Preis.');
   });
 
   it('names the cheapest own card and the cheapest card overall if it is another one', async () => {

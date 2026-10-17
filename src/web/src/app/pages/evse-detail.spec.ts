@@ -502,6 +502,20 @@ describe('EvseDetailPage with prices', () => {
     expect(text(rows[0], 'td:nth-child(2)')).toBe('0,45 €/kWh');
     expect(text(rows[0], 'td:nth-child(4)')).toBe('13,50 €');
     expect(page().querySelector('#price-history')).toBeNull();
+    expect(page().querySelector('#show-all')).toBeNull();
+
+    // With the own tariff: only it and the ad-hoc price, all on demand.
+    TestBed.inject(CardsStore).set(['t-2'], ['t-2/basic']);
+    await fixture.whenStable();
+    expect(text(page(), '#comparison-title')).toBe('Vergleich mit meinen Tarifen');
+    expect(Array.from(page().querySelectorAll('#price-comparison tbody tr')).map((row) => text(row, 'td:first-child'))).toEqual([
+      'Ad-hoc (ohne Vertrag) günstigste',
+      'ÖAMTC · Basic (Roaming) deine Karte',
+    ]);
+    page().querySelector<HTMLButtonElement>('#show-all')!.click();
+    await fixture.whenStable();
+    expect(page().querySelectorAll('#price-comparison tbody tr').length).toBe(3);
+    expect(text(page(), '#show-all')).toBe('Nur meine Tarife');
   });
 
   it('says when no price is known or it could not be loaded', async () => {
