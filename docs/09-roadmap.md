@@ -72,7 +72,8 @@
 - [ ] Wochentage und Zeitfenster der Blockiergebühr, Auslandspreise
 - [x] Tesla-Preise geprüft: findus-Standortseiten nicht automatisiert (Bot-Schutz, Website-Bedingungen), Ad-hoc-Preise aus der E-Control ([Endpunkt-Notiz](endpunkte/tesla-findus.md))
 - [ ] ladetarif.at (Tarifkalkulator der E-Control) als `ITariffSource` prüfen: Produkte strukturiert, Nutzungsbedingungen klären
-- [ ] Tarifkatalog regelmäßig prüfen (Stand je Tarif älter als 6 Monate melden), Preisblatt-Scraper als `ITariffSource` für die großen Anbieter
+- [x] Tarifkatalog prüfen: `stale` in `GET /tariffs` und „Stand prüfen“ in `/admin/tariffs` (Stand unbekannt oder älter als `tariff.stale_months`), tägliche Zahl im Worker-Log
+- [ ] Preisblatt-Scraper als `ITariffSource` für die großen Anbieter
 
 ### Phase 2 – Preise & Tier-1/2-Quellen
 - [ ] Analyse und Adapter je Anbieter nach Priorität aus [07](07-bestandsanalyse-apps-at.md) (Web-Karten zuerst)

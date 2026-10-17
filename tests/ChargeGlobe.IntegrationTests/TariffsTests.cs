@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using ChargeGlobe.Domain.Charging;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ChargeGlobe.IntegrationTests;
 
@@ -19,6 +20,9 @@ public class TariffsTests(IntegrationFactory factory)
         _adminToken ??= (await factory.LoginAsync(IntegrationFactory.AdminEmail, IntegrationFactory.AdminPassword)).AccessToken;
         return factory.Client(_adminToken);
     }
+
+    /// <summary>A "Stand" of a month ago: not stale.</summary>
+    private static readonly string RecentDate = DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(-1)).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
 
     private static string NewKey(string prefix) => $"{prefix}-{Guid.NewGuid():N}"[..20];
 
@@ -58,7 +62,7 @@ public class TariffsTests(IntegrationFactory factory)
         zones,
         notes = (string?)null,
         sourceUrl = "https://example.org/preise.pdf",
-        sourceDate = "2026-07-01",
+        sourceDate = RecentDate,
         confidence = "HIGH",
     })!;
 
@@ -109,7 +113,7 @@ public class TariffsTests(IntegrationFactory factory)
         var tariffs = await TariffsAsync(admin, $"?emp={emp}");
         Assert.Equal(["basic", "plus"], tariffs.Select(item => item.GetProperty("key").GetString()));
         var basic = tariffs[0];
-        Assert.Equal(("Basic", "EUR", "Stromkunde", "2026-07-01", "HIGH"), (
+        Assert.Equal(("Basic", "EUR", "Stromkunde", RecentDate, "HIGH"), (
             basic.GetProperty("name").GetString(), basic.GetProperty("currency").GetString(), basic.GetProperty("prerequisites").GetString(),
             basic.GetProperty("sourceDate").GetString(), basic.GetProperty("confidence").GetString()));
         Assert.Equal(JsonValueKind.Null, basic.GetProperty("validTo").ValueKind);
@@ -149,6 +153,24 @@ public class TariffsTests(IntegrationFactory factory)
 
         Assert.True(comparer.Equals(zones, comparer.Snapshot(zones)));
         Assert.Equal(1, comparer.GetHashCode(zones));
+    }
+
+    [Fact]
+    public async Task A_tariff_with_an_old_or_unknown_stand_is_stale()
+    {
+        var admin = await AdminAsync();
+        var emp = NewKey("emp");
+        var catalog = Catalog(NewKey("net"), emp);
+        var tariffs = catalog["emps"]![0]!["tariffs"]!.AsArray();
+        tariffs[0]!["sourceDate"] = DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(-7)).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+        tariffs[1]!["sourceDate"] = null;
+        await ImportAsync(admin, NewKey("src"), catalog);
+
+        Assert.Equal([true, true], (await TariffsAsync(admin, $"?emp={emp}")).Select(item => item.GetProperty("stale").GetBoolean()));
+        var fresh = Catalog(NewKey("net"), NewKey("emp"));
+        await ImportAsync(admin, NewKey("src"), fresh);
+        Assert.False((await TariffsAsync(admin, $"?emp={fresh["emps"]![0]!["key"]}"))[0].GetProperty("stale").GetBoolean());
+        Assert.True(await factory.WithScopeAsync(services => services.GetRequiredService<ChargeGlobe.Application.Tariffs.ITariffCatalog>().StaleCountAsync(CancellationToken.None)) >= 2);
     }
 
     [Fact]

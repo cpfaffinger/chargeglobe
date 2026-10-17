@@ -81,6 +81,7 @@ function tariff(overrides: Partial<Tariff> = {}): Tariff {
     confidence: 'HIGH',
     validFrom: '2026-10-17T06:00:00Z',
     validTo: null,
+    stale: false,
     ...overrides,
   };
 }
@@ -139,6 +140,7 @@ describe('AdminTariffsPage', () => {
         notes: null,
         sourceDate: null,
         confidence: 'LOW',
+        stale: true,
         zones: [
         { ...tariff().zones[0], excludedNetworks: [] },
         { ...tariff().zones[3], markupPercent: null, markupSessionFee: null },
@@ -188,7 +190,9 @@ describe('AdminTariffsPage', () => {
     expect(text(smart, 'p.muted')).toBe('Preisgarantie bis 31.12.2026.');
 
     const easy = root().querySelector<HTMLElement>('[data-tariff="drive-easy"]')!;
-    expect(text(easy, '.tariff-meta')).toContain('ohne Grundgebühr · Stand unbekannt (unsicher)');
+    expect(text(easy, '.tariff-meta')).toContain('ohne Grundgebühr · Stand unbekannt (unsicher) Stand prüfen');
+    expect(smart.querySelector('.stale')).toBeNull();
+    expect(text(root(), '#stale-summary')).toBe('1 Tarif mit altem oder unbekanntem Stand – bitte mit dem Preisblatt des Anbieters vergleichen.');
     expect(easy.querySelector('p.muted')).toBeNull();
     expect(text(root().querySelector<HTMLElement>('[data-tariff="epower"]')!, '.tariff-meta')).toContain('(abgeleitet)');
     expect(root().querySelector('#no-emps')).toBeNull();
@@ -206,5 +210,6 @@ describe('AdminTariffsPage', () => {
     await fixture.whenStable();
     expect(root().querySelector('.error')).toBeNull();
     expect(text(root(), '#no-emps')).toBe('Noch keine Tarife im Katalog.');
+    expect(root().querySelector('#stale-summary')).toBeNull();
   });
 });

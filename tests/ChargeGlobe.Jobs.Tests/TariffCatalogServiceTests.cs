@@ -54,6 +54,15 @@ public class TariffCatalogServiceTests
         time.Advance(TariffCatalogService.Interval);
         await WaitUntilAsync(() => leases.Releases == 2, "third run");
         Assert.Equal(["good", "bad", "good", "bad", "failing"], catalog.Imported);
+        const string stale = "Tariff catalog: 4 tariffs older than the setting tariff.stale_months or without date";
+        Assert.Equal(1, logger.Messages.Count(message => message == stale));
+
+        // The stale tariffs once a day: again after midnight (02:00), not at 08:00 of the same day.
+        time.Advance(TariffCatalogService.Interval);
+        await WaitUntilAsync(() => leases.Releases == 3, "next day");
+        time.Advance(TariffCatalogService.Interval);
+        await WaitUntilAsync(() => leases.Releases == 4, "same day");
+        Assert.Equal(2, logger.Messages.Count(message => message == stale));
         await service.StopAsync(CancellationToken.None);
     }
 
@@ -172,6 +181,8 @@ public class TariffCatalogServiceTests
         public Task<IReadOnlyList<NetworkView>> NetworksAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
 
         public Task<IReadOnlyList<TariffView>> TariffsAsync(string? emp, bool history, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task<int> StaleCountAsync(CancellationToken cancellationToken) => Task.FromResult(4);
 
         public Task<CatalogImportResult> ImportAsync(string sourceKey, TariffCatalogSnapshot snapshot, Actor? actor, CancellationToken cancellationToken)
         {

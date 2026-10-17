@@ -76,6 +76,8 @@ export interface Tariff {
   confidence: 'HIGH' | 'MEDIUM' | 'LOW';
   validFrom: string;
   validTo: string | null;
+  /** The "Stand" is unknown or older than the setting tariff.stale_months: the values need a check. */
+  stale: boolean;
 }
 
 /** German names of the zones, as the providers call them. */

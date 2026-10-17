@@ -26,6 +26,12 @@ const CONFIDENCE: Record<Tariff['confidence'], string> = { HIGH: 'aus dem Preisb
       im Repository (<code>src/ChargeGlobe.Providers.TariffCatalog/catalog</code>) oder über
       <code>PUT /api/v1/tariff-sources/&#123;source&#125;/catalog</code>.
     </p>
+    @if (staleCount() > 0) {
+      <p id="stale-summary" class="stale-summary">
+        {{ staleCount() === 1 ? '1 Tarif' : staleCount() + ' Tarife' }} mit altem oder unbekanntem Stand – bitte mit dem Preisblatt des
+        Anbieters vergleichen.
+      </p>
+    }
     <button matButton type="button" id="reload" [disabled]="loading()" (click)="load()"><app-icon name="refresh" />Aktualisieren</button>
     @for (error of errors(); track error) {
       <p class="error" role="alert">{{ error }}</p>
@@ -48,7 +54,11 @@ const CONFIDENCE: Record<Tariff['confidence'], string> = { HIGH: 'aus dem Preisb
                 @if (tariff.prerequisites) {
                   · {{ tariff.prerequisites }}
                 }
-                · Stand {{ tariff.sourceDate ? (tariff.sourceDate | date: 'dd.MM.yyyy') : 'unbekannt' }} ({{ confidence(tariff) }}) ·
+                · Stand {{ tariff.sourceDate ? (tariff.sourceDate | date: 'dd.MM.yyyy') : 'unbekannt' }} ({{ confidence(tariff) }})
+                @if (tariff.stale) {
+                  <span class="stale">Stand prüfen</span>
+                }
+                ·
                 <a [href]="tariff.sourceUrl" target="_blank" rel="noopener">Quelle</a>
               </p>
               <div class="table-box">
@@ -90,6 +100,7 @@ export class AdminTariffsPage {
   protected readonly networks = signal<Network[]>([]);
   protected readonly loading = signal(false);
   protected readonly errors = signal<string[]>([]);
+  protected readonly staleCount = computed(() => this.tariffs().filter((tariff) => tariff.stale).length);
   private readonly networkNames = computed(() => new Map(this.networks().map((network) => [network.key, network.name])));
 
   constructor() {
