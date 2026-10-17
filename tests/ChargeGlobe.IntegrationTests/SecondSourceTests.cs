@@ -259,7 +259,9 @@ public class SecondSourceTests(IntegrationFactory factory) : IClassFixture<Integ
         await factory.WithDbAsync(db => db.Database.ExecuteSqlAsync(
             $"UPDATE location SET park_id = {park} WHERE id IN (SELECT entity_id FROM source_record WHERE source_key = 'register' AND external_id IN ('far-1', 'far-2'))"));
         await IngestAsync("ocm", [farSite with { ExternalId = "far-site-2" }]);
-        Assert.Equal(((await RecordAsync("register", "far-2")).EntityId, IngestProcessor.GeoParkConfidence), ((await RecordAsync("ocm", "far-site-2")).EntityId, (await RecordAsync("ocm", "far-site-2")).MatchConfidence));
+        // The nearest of the park wins: far-1 lies 19 m from the site, far-2 20 m.
+        var parked = await RecordAsync("ocm", "far-site-2");
+        Assert.Equal(((await RecordAsync("register", "far-1")).EntityId, IngestProcessor.GeoParkConfidence), (parked.EntityId, parked.MatchConfidence));
 
         var mixed = facility with { OperatorName = "Mixed Test GmbH" };
         await IngestAsync("register", [mixed with { ExternalId = "mixed-1", Coordinates = new GeoPoint(48.32, 16.52) }]);
