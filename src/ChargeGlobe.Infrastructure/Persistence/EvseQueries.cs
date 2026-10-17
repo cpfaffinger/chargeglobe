@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using ChargeGlobe.Application.Evses;
 using ChargeGlobe.Application.Locations;
@@ -116,6 +117,7 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             .FirstOrDefaultAsync(cancellationToken);
         var evse = await TariffTargets(db.Evses.Where(item => item.Id == id)).SingleAsync(cancellationToken);
         var example = PriceScenario.From(config).At(evse.Current, evse.MaxPowerKw);
+        var catalog = await CurrentCatalogAsync(cancellationToken);
         // Prices change rarely: all observations of the EVSE, turned into periods per source.
         var observations = await db.PriceObservations.AsNoTracking()
             .Where(observation => observation.EvseId == id && observation.TariffKind == TariffKind.AD_HOC)
@@ -127,12 +129,11 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             {
                 var list = source.ToList();
                 return list.Select((observation, index) => new PricePeriod(
-                    View(observation.SourceKey, observation.Components, example), observation.Time, index + 1 < list.Count ? list[index + 1].Time : null));
+                    View(observation.SourceKey, observation.Components, example, catalog.LocalTime), observation.Time, index + 1 < list.Count ? list[index + 1].Time : null));
             })
             .Where(period => period.From < to && (period.To is null || period.To > from))
             .OrderBy(period => period.From)
             .ToList();
-        var catalog = await CurrentCatalogAsync(cancellationToken);
         var (prices, unknown) = EmpPrices(catalog, evse, example, current?.Components);
         var unavailable = catalog.Plans
             .Where(row => prices.All(price => price.TariffId != row.Plan.Id) && unknown.All(item => item.Plan.Id != row.Plan.Id))
@@ -142,7 +143,7 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             .ToList();
         return new EvsePrices(
             example,
-            current is null ? null : new CurrentPrice(View(current.SourceKey, current.Components, example), current.Since, current.ObservedAt),
+            current is null ? null : new CurrentPrice(View(current.SourceKey, current.Components, example, catalog.LocalTime), current.Since, current.ObservedAt),
             history,
             prices,
             unavailable,
@@ -175,7 +176,7 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             var cheapestAdHoc = here
                 .Where(evse => adHoc.ContainsKey(evse.Id))
                 .Select(evse => (evse.EvseId, Price: adHoc[evse.Id].Components, Session: Session(evse)))
-                .Select(item => new LocationAdHocPrice(item.Price.CostOf(item.Session.Kwh, item.Session.Minutes), item.Price.Currency, item.EvseId, item.Session.Minutes))
+                .Select(item => new LocationAdHocPrice(item.Price.CostOf(item.Session.Kwh, item.Session.Minutes, all.LocalTime), item.Price.Currency, item.EvseId, item.Session.Minutes))
                 .OrderBy(price => price.Cost)
                 .FirstOrDefault();
             var cheapestCard = here
@@ -214,8 +215,8 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
     private sealed record PlanRow(TariffPlan Plan, string Key, string Name);
 
     /// <summary>The current tariff versions with their EMP and the operators of every network; few rows, used in memory.</summary>
-    /// <param name="LocalTime">Now in Europe/Vienna: the start of the example session for prices with a time window.</param>
-    private sealed record CurrentCatalog(IReadOnlyList<PlanRow> Plans, IReadOnlyDictionary<string, IReadOnlyCollection<string>> Networks, TimeOnly LocalTime)
+    /// <param name="LocalTime">Now in Europe/Vienna: the start of the example session for prices with a time window or weekdays.</param>
+    private sealed record CurrentCatalog(IReadOnlyList<PlanRow> Plans, IReadOnlyDictionary<string, IReadOnlyCollection<string>> Networks, DateTime LocalTime)
     {
         public IReadOnlyCollection<string> Members(string network) => Networks.GetValueOrDefault(network) ?? [];
     }
@@ -248,7 +249,7 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             .ToListAsync(cancellationToken);
         var networks = await db.ChargingNetworks.AsNoTracking().ToDictionaryAsync(
             network => network.Key, network => (IReadOnlyCollection<string>)network.Operators, cancellationToken);
-        return new CurrentCatalog(plans, networks, TimeOnly.FromDateTime(TimeZoneInfo.ConvertTime(now, Vienna).DateTime));
+        return new CurrentCatalog(plans, networks, TimeZoneInfo.ConvertTime(now, Vienna).DateTime);
     }
 
     /// <summary>
@@ -278,7 +279,7 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
                 item.Zone.Kind.ToString(),
                 item.Zone.Pricing.ToString(),
                 item.Row.Plan.MonthlyFee,
-                View($"emp:{item.Row.Key}", item.Price!, example),
+                View($"emp:{item.Row.Key}", item.Price!, example, catalog.LocalTime),
                 item.Row.Plan.SourceUrl,
                 item.Row.Plan.SourceDate,
                 item.Row.Plan.Confidence.ToString()))
@@ -295,9 +296,11 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
 
     private sealed record UnknownPrice(TariffPlan Plan, string Key, string Name, TariffZoneKind Zone);
 
-    private static PriceView View(string source, PriceComponents price, SessionExample example) =>
+    private static PriceView View(string source, PriceComponents price, SessionExample example, DateTime? start) =>
         new(source, price.Currency, price.PricePerKwh, price.PricePerMinute, price.SessionFee, price.BlockingFeePerMinute,
-            price.BlockingAfterMinutes, price.FreeOfCharge, price.CostOf(example.Kwh, example.Minutes), price.BlockingFeeMax, price.BlockingFrom.ToString());
+            price.BlockingAfterMinutes, price.FreeOfCharge, price.CostOf(example.Kwh, example.Minutes, start), price.BlockingFeeMax, price.BlockingFrom.ToString(),
+            price.BlockingStartTime?.ToString("HH:mm", CultureInfo.InvariantCulture), price.BlockingEndTime?.ToString("HH:mm", CultureInfo.InvariantCulture),
+            price.BlockingMaxMinutes);
 
     public async Task<IReadOnlyList<StatusInterval>> StatusHistoryAsync(
         Guid id, DateTimeOffset from, DateTimeOffset to, string? source, CancellationToken cancellationToken)

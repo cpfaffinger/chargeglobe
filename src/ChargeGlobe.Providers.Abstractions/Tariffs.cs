@@ -87,6 +87,9 @@ public sealed record ZoneRecord(
 /// <param name="StartTime">With <paramref name="EndTime"/>: local time window "HH:mm" of the session start, e.g. 22:00–08:00 for a night price.</param>
 /// <param name="MaxBlockingFee">Highest blocking fee of a session.</param>
 /// <param name="BlockingFrom"><c>SESSION_START</c> (default) or <c>CHARGING_END</c>: from when <paramref name="BlockingAfterMinutes"/> count.</param>
+/// <param name="Days">ISO weekdays 1–7 of the session start; null for every day.</param>
+/// <param name="BlockingStartTime">With <paramref name="BlockingEndTime"/>: local window "HH:mm" in which blocked minutes are billed.</param>
+/// <param name="MaxBlockingMinutes">Highest number of billed blocking minutes of a session.</param>
 public sealed record PriceRecord(
     string Current,
     decimal? MinKw,
@@ -98,4 +101,8 @@ public sealed record PriceRecord(
     string? StartTime = null,
     string? EndTime = null,
     decimal? MaxBlockingFee = null,
-    string? BlockingFrom = null);
+    string? BlockingFrom = null,
+    IReadOnlyList<int>? Days = null,
+    string? BlockingStartTime = null,
+    string? BlockingEndTime = null,
+    int? MaxBlockingMinutes = null);

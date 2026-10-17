@@ -39,6 +39,12 @@ export interface PriceElement {
   maxBlockingFee?: number | null;
   /** CHARGING_END: blockingAfterMinutes count from the end of charging. */
   blockingFrom?: 'SESSION_START' | 'CHARGING_END';
+  /** ISO weekdays 1–7 of the session start; null for every day. */
+  days?: number[] | null;
+  /** Blocked minutes are billed only in this local window. */
+  blockingStartTime?: string | null;
+  blockingEndTime?: string | null;
+  maxBlockingMinutes?: number | null;
 }
 
 export interface Zone {

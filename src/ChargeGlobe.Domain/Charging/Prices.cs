@@ -22,6 +22,8 @@ public enum TariffKind
 /// <param name="FreeOfCharge">Charging costs nothing.</param>
 /// <param name="BlockingFeeMax">Highest blocking fee of a session; null without cap.</param>
 /// <param name="BlockingFrom">Whether <paramref name="BlockingAfterMinutes"/> counts from the start of the session or the end of charging.</param>
+/// <param name="BlockingStartTime">With <paramref name="BlockingEndTime"/>: only blocked minutes in this local daily window are billed (e.g. 08:00–23:00).</param>
+/// <param name="BlockingMaxMinutes">Highest number of billed blocking minutes of a session.</param>
 public sealed record PriceComponents(
     string Currency,
     decimal? PricePerKwh,
@@ -32,25 +34,44 @@ public sealed record PriceComponents(
     bool FreeOfCharge,
     // Left out of serialized prices when unset (ingest batches, replay fixtures of the sources).
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] decimal? BlockingFeeMax = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] TariffBlockingFrom BlockingFrom = TariffBlockingFrom.SESSION_START)
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] TariffBlockingFrom BlockingFrom = TariffBlockingFrom.SESSION_START,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] TimeOnly? BlockingStartTime = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] TimeOnly? BlockingEndTime = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? BlockingMaxMinutes = null)
 {
     /// <summary>
-    /// Cost of a session with <paramref name="kwh"/> charged in <paramref name="minutes"/> and unplugged at the end of
-    /// charging: session fee, energy and time price, and the blocking fee for the minutes after
-    /// <see cref="BlockingAfterMinutes"/> (none if it counts from the end of charging), at most <see cref="BlockingFeeMax"/>.
-    /// Unknown parts count as 0.
+    /// Cost of a session with <paramref name="kwh"/> charged in <paramref name="minutes"/>, starting at the local time
+    /// <paramref name="start"/> and unplugged at the end of charging: session fee, energy and time price, and the blocking
+    /// fee for the minutes after <see cref="BlockingAfterMinutes"/> (none if it counts from the end of charging) that lie
+    /// in the blocking window (all without known start), at most <see cref="BlockingMaxMinutes"/> minutes and
+    /// <see cref="BlockingFeeMax"/>. Unknown parts count as 0.
     /// </summary>
-    public decimal CostOf(decimal kwh, int minutes)
+    public decimal CostOf(decimal kwh, int minutes, DateTime? start = null)
     {
         if (FreeOfCharge)
         {
             return 0;
         }
 
-        var blockedMinutes = BlockingFrom == TariffBlockingFrom.SESSION_START && BlockingAfterMinutes is { } after ? Math.Max(0, minutes - after) : 0;
+        var blockedMinutes = BlockingFrom == TariffBlockingFrom.SESSION_START && BlockingAfterMinutes is { } after
+            ? Enumerable.Range(after, Math.Max(0, minutes - after)).Count(minute => InBlockingWindow(start?.AddMinutes(minute)))
+            : 0;
+        blockedMinutes = Math.Min(blockedMinutes, BlockingMaxMinutes ?? blockedMinutes);
         var blocking = blockedMinutes * (BlockingFeePerMinute ?? 0);
         return (SessionFee ?? 0) + (kwh * (PricePerKwh ?? 0)) + (minutes * (PricePerMinute ?? 0)) + Math.Min(blocking, BlockingFeeMax ?? blocking);
     }
+
+    /// <summary>Whether a blocked minute at the local <paramref name="time"/> is billed; without window or time always.</summary>
+    private bool InBlockingWindow(DateTime? time) =>
+        BlockingStartTime is not { } from || BlockingEndTime is not { } to || time is not { } at
+        || TimeWindow.Contains(from, to, TimeOnly.FromDateTime(at));
+}
+
+/// <summary>A local daily time window; it may span midnight (22:00–06:00).</summary>
+public static class TimeWindow
+{
+    public static bool Contains(TimeOnly from, TimeOnly to, TimeOnly time) =>
+        from < to ? time >= from && time < to : time >= from || time < to;
 }
 
 /// <summary>The example session at one EVSE that makes prices comparable.</summary>

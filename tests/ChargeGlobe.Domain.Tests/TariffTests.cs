@@ -153,15 +153,15 @@ public class TariffTests
         var fast = new TariffPriceElement(TariffCurrent.AC, 11.1m, null, 0.42m, null, null, null);
         var zone = Zone(TariffZoneKind.HOME, ["evn"], [], day, night, lunch, fast);
 
-        Assert.Equal(0.069m, zone.PriceFor(TariffCurrent.AC, 11, new TimeOnly(23, 30))!.PricePerMinute);
-        Assert.Equal(0.069m, zone.PriceFor(TariffCurrent.AC, 11, new TimeOnly(7, 59))!.PricePerMinute);
-        Assert.Equal(0.084m, zone.PriceFor(TariffCurrent.AC, 11, new TimeOnly(8, 0))!.PricePerMinute);
-        Assert.Equal(0.05m, zone.PriceFor(TariffCurrent.AC, 11, new TimeOnly(12, 30))!.PricePerMinute);
+        Assert.Equal(0.069m, zone.PriceFor(TariffCurrent.AC, 11, new DateTime(2026, 10, 17, 23, 30, 0))!.PricePerMinute);
+        Assert.Equal(0.069m, zone.PriceFor(TariffCurrent.AC, 11, new DateTime(2026, 10, 17, 7, 59, 0))!.PricePerMinute);
+        Assert.Equal(0.084m, zone.PriceFor(TariffCurrent.AC, 11, new DateTime(2026, 10, 17, 8, 0, 0))!.PricePerMinute);
+        Assert.Equal(0.05m, zone.PriceFor(TariffCurrent.AC, 11, new DateTime(2026, 10, 17, 12, 30, 0))!.PricePerMinute);
         Assert.Equal(0.084m, zone.PriceFor(TariffCurrent.AC, 11, null)!.PricePerMinute);
         // The power stage decides first; a stage with a window only has no price outside of it.
-        Assert.Equal(0.42m, zone.PriceFor(TariffCurrent.AC, 22, new TimeOnly(23, 30))!.PricePerMinute);
-        Assert.Null(Zone(TariffZoneKind.HOME, ["evn"], [], night).PriceFor(TariffCurrent.AC, 11, new TimeOnly(12, 0)));
-        Assert.Equal(0.069m, Plan(Zone(TariffZoneKind.HOME, ["evn"], [], day, night)).MatchAt("AT*EVN", true, TariffCurrent.AC, 11, Members, new TimeOnly(1, 0))!.Price!.PricePerMinute);
+        Assert.Equal(0.42m, zone.PriceFor(TariffCurrent.AC, 22, new DateTime(2026, 10, 17, 23, 30, 0))!.PricePerMinute);
+        Assert.Null(Zone(TariffZoneKind.HOME, ["evn"], [], night).PriceFor(TariffCurrent.AC, 11, new DateTime(2026, 10, 17, 12, 0, 0)));
+        Assert.Equal(0.069m, Plan(Zone(TariffZoneKind.HOME, ["evn"], [], day, night)).MatchAt("AT*EVN", true, TariffCurrent.AC, 11, Members, new DateTime(2026, 10, 17, 1, 0, 0))!.Price!.PricePerMinute);
 
         var capped = new TariffPriceElement(TariffCurrent.AC, null, 0.45m, null, null, 0.50m, 30, MaxBlockingFee: 30, BlockingFrom: TariffBlockingFrom.CHARGING_END);
         Assert.Equal((30m, TariffBlockingFrom.CHARGING_END), (capped.Components("EUR").BlockingFeeMax, capped.Components("EUR").BlockingFrom));
@@ -193,6 +193,23 @@ public class TariffTests
         Assert.Null(unchecked_.CheckedOn);
         unchecked_.Check(new DateOnly(2026, 10, 17));
         Assert.Equal(new DateOnly(2026, 10, 17), unchecked_.CheckedOn);
+    }
+
+    [Fact]
+    public void A_price_for_weekdays_applies_to_sessions_starting_on_them()
+    {
+        var always = new TariffPriceElement(TariffCurrent.AC, null, 0.45m, null, null, null, null);
+        var weekend = always with { PricePerKwh = 0.35m, Days = [6, 7] };
+        var zone = Zone(TariffZoneKind.HOME, ["evn"], [], always, weekend);
+
+        Assert.Equal(0.35m, zone.PriceFor(TariffCurrent.AC, 11, new DateTime(2026, 10, 18, 12, 0, 0))!.PricePerKwh);
+        Assert.Equal(0.35m, zone.PriceFor(TariffCurrent.AC, 11, new DateTime(2026, 10, 17, 12, 0, 0))!.PricePerKwh);
+        Assert.Equal(0.45m, zone.PriceFor(TariffCurrent.AC, 11, new DateTime(2026, 10, 19, 12, 0, 0))!.PricePerKwh);
+        Assert.Equal(0.45m, zone.PriceFor(TariffCurrent.AC, 11, null)!.PricePerKwh);
+
+        var windowed = always with { BlockingFeePerMinute = 0.07m, BlockingAfterMinutes = 210, BlockingStartTime = new TimeOnly(8, 0), BlockingEndTime = new TimeOnly(23, 0), MaxBlockingMinutes = 500 };
+        var components = windowed.Components("EUR");
+        Assert.Equal((new TimeOnly(8, 0), new TimeOnly(23, 0), 500), (components.BlockingStartTime!.Value, components.BlockingEndTime!.Value, components.BlockingMaxMinutes!.Value));
     }
 
     private static (TariffZoneKind, decimal?) Of(TariffMatch? match) => (match!.Zone.Kind, match.Price!.PricePerKwh);

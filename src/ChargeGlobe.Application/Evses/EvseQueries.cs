@@ -99,6 +99,8 @@ public static class PriceScenario
 /// <param name="BlockingAfterMinutes">Minute of the session from which the blocking fee applies.</param>
 /// <param name="BlockingFeeMax">Highest blocking fee of a session; null without cap.</param>
 /// <param name="BlockingFrom"><c>SESSION_START</c> or <c>CHARGING_END</c>: from when <paramref name="BlockingAfterMinutes"/> count.</param>
+/// <param name="BlockingStartTime">With <paramref name="BlockingEndTime"/>: blocked minutes are billed only in this local window "HH:mm".</param>
+/// <param name="BlockingMaxMinutes">Highest number of billed blocking minutes of a session.</param>
 /// <param name="ExampleCost">Cost of the example session of the EVSE (<see cref="SessionExample"/>), unknown parts counted as 0.</param>
 public sealed record PriceView(
     string Source,
@@ -111,7 +113,10 @@ public sealed record PriceView(
     bool FreeOfCharge,
     decimal ExampleCost,
     decimal? BlockingFeeMax,
-    string BlockingFrom);
+    string BlockingFrom,
+    string? BlockingStartTime,
+    string? BlockingEndTime,
+    int? BlockingMaxMinutes);
 
 /// <param name="Since">Since when the price is as it is.</param>
 /// <param name="ObservedAt">When the source last confirmed it.</param>
