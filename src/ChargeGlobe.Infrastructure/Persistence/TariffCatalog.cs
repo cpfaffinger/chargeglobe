@@ -32,10 +32,10 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, IAppC
 
     public async Task<IReadOnlyList<EmpView>> EmpsAsync(CancellationToken cancellationToken) =>
         await db.Emps.AsNoTracking()
+            .Where(emp => db.TariffPlans.Any(plan => plan.EmpId == emp.Id && plan.ValidTo == null))
             .OrderBy(emp => emp.Name)
             .ThenBy(emp => emp.Key)
             .Select(emp => new EmpView(emp.Key, emp.Name, emp.Website, emp.Country, db.TariffPlans.Count(plan => plan.EmpId == emp.Id && plan.ValidTo == null)))
-            .Where(emp => emp.Tariffs > 0)
             .ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyCollection<string>> EmpKeysAsync(CancellationToken cancellationToken) =>
