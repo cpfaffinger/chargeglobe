@@ -107,7 +107,7 @@ describe('TariffsService', () => {
 
     const tariffs = service.tariffs();
     http.expectOne('/api/v1/tariffs').flush({ data: [tariff()] });
-    expect((await tariffs)[0].zones.length).toBe(3);
+    expect((await tariffs)[0].zones.length).toBe(4);
   });
 });
 
