@@ -112,18 +112,21 @@ public sealed class EControlMapper
                 observedAt,
                 null));
 
-    /// <summary>Ad-hoc price per charge point; cent values become euros.</summary>
+    /// <summary>Ad-hoc price per charge point; cent values become euros. Points without any amount have none.</summary>
     public IEnumerable<ProviderPrice> ToPrices(StationDto station, JsonElement raw, DateTimeOffset observedAt) =>
         StationExternalId(station) is not { } externalId
             ? []
-            : Points(station).Select((point, index) => point.FreeOfCharge == true
+            : Points(station)
+                .Select((point, index) => (point, id: EvseExternalId(externalId, point, index)))
+                .Where(item => item.point.FreeOfCharge == true || !HasNoAmount(item.point))
+                .Select(item => item.point.FreeOfCharge == true
                 ? new ProviderPrice(
-                    EvseExternalId(externalId, point, index), point.EvseId, null, null, "EUR",
+                    item.id, item.point.EvseId, null, null, "EUR",
                     0m, null, 0m, null, null, null, "Ad-hoc (free of charge)", Url(station.PriceUrl), observedAt, raw)
                 : new ProviderPrice(
-                    EvseExternalId(externalId, point, index), point.EvseId, null, null, "EUR",
-                    Euro(point.PriceCentKwh), Euro(point.PriceCentMin), Euro(point.StartFeeCent),
-                    Euro(point.BlockingFeeCentMin), point.BlockingFeeFromMinute, null, "Ad-hoc", Url(station.PriceUrl), observedAt, raw));
+                    item.id, item.point.EvseId, null, null, "EUR",
+                    Euro(item.point.PriceCentKwh), Euro(item.point.PriceCentMin), Euro(item.point.StartFeeCent),
+                    Euro(item.point.BlockingFeeCentMin), item.point.BlockingFeeFromMinute, null, "Ad-hoc", Url(station.PriceUrl), observedAt, raw));
 
     /// <summary>A charging station has at most this many points; more under one station part name a site, not a station.</summary>
     public const int MaxPointsPerStation = 4;
@@ -166,15 +169,23 @@ public sealed class EControlMapper
             AdHocPrice(point));
     }
 
-    /// <summary>The ad-hoc price of a point in euros; null if the source tells none.</summary>
+    /// <summary>
+    /// The ad-hoc price of a point in euros; null if the source tells none – also when every amount is 0 or missing
+    /// without <c>freeOfCharge</c> (the register then sends <c>startFeeCent: 0</c> as a default, not as a price).
+    /// </summary>
     private static PriceComponents? AdHocPrice(PointDto point) =>
         point.FreeOfCharge == true
             ? new PriceComponents("EUR", null, null, null, null, null, true)
-            : point is { PriceCentKwh: null, PriceCentMin: null, StartFeeCent: null, BlockingFeeCentMin: null }
+            : HasNoAmount(point)
                 ? null
                 : new PriceComponents(
                     "EUR", Euro(point.PriceCentKwh), Euro(point.PriceCentMin), Euro(point.StartFeeCent), Euro(point.BlockingFeeCentMin),
                     point.BlockingFeeFromMinute, false);
+
+    /// <summary>Not free of charge and every amount 0 or missing: the register tells no price.</summary>
+    private static bool HasNoAmount(PointDto point) =>
+        point.FreeOfCharge != true
+        && (point.PriceCentKwh ?? 0) == 0 && (point.PriceCentMin ?? 0) == 0 && (point.StartFeeCent ?? 0) == 0 && (point.BlockingFeeCentMin ?? 0) == 0;
 
     private ProviderConnectorSnapshot ToConnector(string key, PowerType? powerType, decimal? maxPowerKw)
     {

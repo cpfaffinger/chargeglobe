@@ -363,7 +363,7 @@ describe('App with its routes', () => {
       expect(router.url).toBe('/admin/prices');
       expect(text(root(), 'h1')).toBe('Ad-hoc-Preise');
       expect(root().querySelector('#admin-tab-prices')).not.toBeNull();
-      http.expectOne('/api/v1/admin/prices/implausible').flush({ data: { at: '2026-10-17T08:00:00Z', minKwh: 0.05, maxKwh: 2, evses: 0, operators: [] } });
+      http.expectOne('/api/v1/admin/prices/implausible').flush({ data: { at: '2026-10-17T08:00:00Z', minKwh: 0.05, maxKwh: 2, evses: 0, noAmount: 0, belowMin: 0, aboveMax: 0, operators: [] } });
     });
 
     it('redirects anonymous visitors from /admin/mail to the login', async () => {

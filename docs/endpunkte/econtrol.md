@@ -69,7 +69,7 @@ Konfiguration (Config-Service, Scope `provider:econtrol`, Admin-UI `/admin/setti
 - `capacityKw` → `MaxPowerKw` (EVSE und Stecker); `electricityType` mit genau einem OCPI-Wert → `PowerType`, sonst `null`.
 - `authenticationMode(s)` → `AuthMethods` (Tabelle unten), `roaming` → `Roaming`.
 - `status` → `Status` (Tabelle unten), Rohwert in `StatusRaw`; ohne Status (Register) bleibt beides `null`, es entsteht keine Statusmeldung.
-- Preise: Cent → Euro (`priceCentKwh`, `priceCentMin`, `startFeeCent` → `SessionFee`, `blockingFeeCentMin`, `blockingFeeFromMinute`); `freeOfCharge: true` → 0 €/kWh und 0 € Sessiongebühr; immer Ad-hoc (`EmpKey = null`), Währung EUR, `TariffUrl` = Preis-URL der Station.
+- Preise: Cent → Euro (`priceCentKwh`, `priceCentMin`, `startFeeCent` → `SessionFee`, `blockingFeeCentMin`, `blockingFeeFromMinute`); `freeOfCharge: true` → 0 €/kWh und 0 € Sessiongebühr; alle Beträge 0 oder fehlend ohne `freeOfCharge` (häufig `startFeeCent: 0` als Vorgabe) → kein Preis; immer Ad-hoc (`EmpKey = null`), Währung EUR, `TariffUrl` = Preis-URL der Station.
 
 ### Abdeckung einer Fläche
 - **Register:** ein Lauf liest alle Seiten (`fromIndex` += Seitengröße, bis `totalResults` erreicht oder eine Seite leer ist; höchstens 1.000 Requests) und behält die Stationen in der Bounding Box des Plans. Der Inventar-Plan gilt für alle Regionen aus `provider.regions` gemeinsam (Region `AT-9,AT-3,AT-4,AT-1`, Box = umschließendes Rechteck), weil jeder Lauf ohnehin das ganze Register liest.

@@ -545,15 +545,7 @@
             "RFID_READER"
           ],
           "roaming": false,
-          "adHocPrice": {
-            "currency": "EUR",
-            "pricePerKwh": null,
-            "pricePerMinute": null,
-            "sessionFee": 0,
-            "blockingFeePerMinute": 0,
-            "blockingAfterMinutes": 0,
-            "freeOfCharge": false
-          }
+          "adHocPrice": null
         }
       ],
       "observedAt": "2026-10-14T08:00:00+00:00",
@@ -718,23 +710,6 @@
       "tariffElements": null,
       "tariffName": "Ad-hoc",
       "tariffUrl": "https://www.stromquelle.at/wp-content/uploads/SQ_Tarifblatt.pdf",
-      "observedAt": "2026-10-14T08:00:00+00:00",
-      "raw": null
-    },
-    {
-      "externalId": "AT*055*EEGT01",
-      "evseId": "AT*055*EEGT01",
-      "canonicalEvseId": null,
-      "empKey": null,
-      "currency": "EUR",
-      "pricePerKwh": null,
-      "pricePerMinute": null,
-      "sessionFee": 0,
-      "blockingFeePerMinute": 0,
-      "blockingAfterMinutes": 0,
-      "tariffElements": null,
-      "tariffName": "Ad-hoc",
-      "tariffUrl": null,
       "observedAt": "2026-10-14T08:00:00+00:00",
       "raw": null
     }

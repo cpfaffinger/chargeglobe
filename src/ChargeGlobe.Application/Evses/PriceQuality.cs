@@ -12,7 +12,27 @@ public static class PricePlausibility
 
 /// <summary>One price that occurs at implausible EVSEs of an operator.</summary>
 /// <param name="Evses">EVSEs of the operator with this price.</param>
-public sealed record PriceSample(decimal? PricePerKwh, decimal? PricePerMinute, decimal? SessionFee, int Evses);
+/// <param name="Reason"><c>NO_AMOUNT</c>, <c>BELOW_MIN</c> or <c>ABOVE_MAX</c>.</param>
+public sealed record PriceSample(decimal? PricePerKwh, decimal? PricePerMinute, decimal? SessionFee, int Evses, string Reason);
+
+/// <summary>One active EVSE with an implausible newest ad-hoc price, a row of the report for the source or the operator.</summary>
+/// <param name="EvseId">EVSE-ID as displayed, for EVSEs without one the surrogate.</param>
+/// <param name="Reason"><c>NO_AMOUNT</c>, <c>BELOW_MIN</c> or <c>ABOVE_MAX</c>.</param>
+/// <param name="Source">Key of the source that reported the price.</param>
+/// <param name="ObservedAt">When the source last reported it.</param>
+public sealed record ImplausibleEvse(
+    string? OperatorId,
+    string? OperatorName,
+    string EvseId,
+    string? LocationName,
+    string? City,
+    string Reason,
+    decimal? PricePerKwh,
+    decimal? PricePerMinute,
+    decimal? SessionFee,
+    decimal? BlockingFeePerMinute,
+    string Source,
+    DateTimeOffset ObservedAt);
 
 /// <summary>The implausible ad-hoc prices of one operator.</summary>
 /// <param name="OperatorId">Country and party of the EVSE-ID (<c>AT*F9B</c>), for surrogates the operator's; null if unknown.</param>
@@ -27,11 +47,18 @@ public sealed record OperatorImplausiblePrices(string? OperatorId, string? Name,
 /// <param name="MinKwh">Lower bound of a plausible energy price (<c>price.min_plausible_kwh</c>).</param>
 /// <param name="MaxKwh">Upper bound (<c>price.max_plausible_kwh</c>).</param>
 /// <param name="Evses">Implausible EVSEs in total.</param>
+/// <param name="NoAmount">Of these without any amount (the source tells no price).</param>
+/// <param name="BelowMin">Of these with an energy price below <paramref name="MinKwh"/>.</param>
+/// <param name="AboveMax">Of these with an energy price above <paramref name="MaxKwh"/>.</param>
 /// <param name="Operators">Per operator, most EVSEs first.</param>
-public sealed record ImplausiblePrices(DateTimeOffset At, decimal MinKwh, decimal MaxKwh, int Evses, IReadOnlyList<OperatorImplausiblePrices> Operators);
+public sealed record ImplausiblePrices(
+    DateTimeOffset At, decimal MinKwh, decimal MaxKwh, int Evses, int NoAmount, int BelowMin, int AboveMax, IReadOnlyList<OperatorImplausiblePrices> Operators);
 
 /// <summary>Checks of the ad-hoc prices of the register (docs/05, "Plausibilität der Ad-hoc-Preise").</summary>
 public interface IPriceQuality
 {
     Task<ImplausiblePrices> ImplausibleAsync(CancellationToken cancellationToken);
+
+    /// <summary>Every implausible EVSE, by operator and EVSE-ID: the rows of the CSV report.</summary>
+    Task<IReadOnlyList<ImplausibleEvse>> ImplausibleEvsesAsync(CancellationToken cancellationToken);
 }
