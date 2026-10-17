@@ -53,6 +53,9 @@
                   "current": "DC",
                   "pricePerKwh": 0.39
                 }
+              ],
+              "countries": [
+                "AT"
               ]
             },
             {
@@ -65,7 +68,7 @@
               "pricing": "OPERATOR_AD_HOC"
             }
           ],
-          "notes": "„Flexible Preise“ je Betreiber, angezeigt in der App; hier mit dem Ad-hoc-Preis angenähert.",
+          "notes": "„Flexible Preise“ je Betreiber, angezeigt in der App; hier mit dem Ad-hoc-Preis angenähert. IONITY im Ausland zu Preisen je Land (Preisblätter 6/2025, vermutlich veraltet).",
           "sourceUrl": "https://www.audi.at/elektromobilitaet/laden/unterwegs-laden",
           "sourceDate": null,
           "confidence": "MEDIUM",
@@ -91,6 +94,9 @@
                   "current": "DC",
                   "pricePerKwh": 0.39
                 }
+              ],
+              "countries": [
+                "AT"
               ]
             },
             {
@@ -104,7 +110,10 @@
                   "pricePerKwh": 0.59
                 }
               ],
-              "notes": "Selected Partner Network (HPC)."
+              "notes": "Selected Partner Network (HPC).",
+              "countries": [
+                "AT"
+              ]
             },
             {
               "kind": "ROAMING",
@@ -126,7 +135,19 @@
                   "blockingFeePerMinute": 0.15,
                   "blockingAfterMinutes": 90
                 }
+              ],
+              "countries": [
+                "AT"
               ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Ausland: Preise je Land, für österreichische Verträge nicht (aktuell) veröffentlicht.",
+              "pricing": "UNKNOWN"
             }
           ],
           "notes": "AC-Blockierfenster laut Website 9–21 Uhr (Preisblatt 6/2025: 8–23 Uhr).",

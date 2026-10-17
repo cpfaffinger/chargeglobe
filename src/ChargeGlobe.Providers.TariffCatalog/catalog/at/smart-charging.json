@@ -28,7 +28,7 @@
               "markupSessionFee": 0.44
             }
           ],
-          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert. IONITY-Pakete sind nicht abgebildet.",
+          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert. IONITY-Pakete als eigene Tarife.",
           "sourceUrl": "https://smart.charge-at-street.com/api/public/v1/AT/tariffs/pdf?locale=de_AT",
           "sourceDate": null,
           "confidence": "MEDIUM",
@@ -52,7 +52,203 @@
               "prices": [],
               "notes": "5 % Rabatt auf den flexiblen Preis.",
               "pricing": "OPERATOR_AD_HOC",
-              "markupPercent": -5
+              "markupPercent": -5,
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Ausland: flexible Preise ohne Rabatt.",
+              "pricing": "OPERATOR_AD_HOC"
+            }
+          ],
+          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert.",
+          "sourceUrl": "https://smart.charge-at-street.com/api/public/v1/AT/tariffs/pdf?locale=de_AT",
+          "sourceDate": null,
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
+        },
+        {
+          "key": "peak-ionity-flex",
+          "name": "smart Peak + IONITY Flex",
+          "currency": "EUR",
+          "monthlyFee": 6.99,
+          "prerequisites": "Basistarif Peak mit Paket IONITY Flex (6,99 €/Monat, Mindestlaufzeit 1 Monat)",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [],
+              "notes": "IONITY Flex: 0,25 €/kWh weniger als der flexible IONITY-Preis, ohne Gebühr je Ladevorgang, nur in Österreich.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPerKwh": -0.25,
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Flexible Preise plus 0,44 € je Ladevorgang.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupSessionFee": 0.44
+            }
+          ],
+          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert.",
+          "sourceUrl": "https://smart.charge-at-street.com/api/public/v1/AT/tariffs/pdf?locale=de_AT",
+          "sourceDate": null,
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
+        },
+        {
+          "key": "peak-ionity-max",
+          "name": "smart Peak + IONITY Max",
+          "currency": "EUR",
+          "monthlyFee": 11.99,
+          "prerequisites": "Basistarif Peak mit Paket IONITY Max (11,99 €/Monat, Mindestlaufzeit 1 Monat)",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [],
+              "notes": "IONITY Max: 0,35 €/kWh weniger als der flexible IONITY-Preis, ohne Gebühr je Ladevorgang, nur in Österreich.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPerKwh": -0.35,
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Flexible Preise plus 0,44 € je Ladevorgang.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupSessionFee": 0.44
+            }
+          ],
+          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert.",
+          "sourceUrl": "https://smart.charge-at-street.com/api/public/v1/AT/tariffs/pdf?locale=de_AT",
+          "sourceDate": null,
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
+        },
+        {
+          "key": "go-ionity-flex",
+          "name": "smart Go + IONITY Flex",
+          "currency": "EUR",
+          "monthlyFee": 11.93,
+          "prerequisites": "Basistarif Go mit Paket IONITY Flex (6,99 €/Monat, Mindestlaufzeit 1 Monat)",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [],
+              "notes": "IONITY Flex: 0,25 €/kWh weniger als der flexible IONITY-Preis, ohne Gebühr je Ladevorgang, nur in Österreich.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPerKwh": -0.25,
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "5 % Rabatt auf den flexiblen Preis.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPercent": -5,
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Ausland: flexible Preise ohne Rabatt.",
+              "pricing": "OPERATOR_AD_HOC"
+            }
+          ],
+          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert.",
+          "sourceUrl": "https://smart.charge-at-street.com/api/public/v1/AT/tariffs/pdf?locale=de_AT",
+          "sourceDate": null,
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
+        },
+        {
+          "key": "go-ionity-max",
+          "name": "smart Go + IONITY Max",
+          "currency": "EUR",
+          "monthlyFee": 16.93,
+          "prerequisites": "Basistarif Go mit Paket IONITY Max (11,99 €/Monat, Mindestlaufzeit 1 Monat)",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [],
+              "notes": "IONITY Max: 0,35 €/kWh weniger als der flexible IONITY-Preis, ohne Gebühr je Ladevorgang, nur in Österreich.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPerKwh": -0.35,
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "5 % Rabatt auf den flexiblen Preis.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPercent": -5,
+              "countries": [
+                "AT"
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Ausland: flexible Preise ohne Rabatt.",
+              "pricing": "OPERATOR_AD_HOC"
             }
           ],
           "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert.",
