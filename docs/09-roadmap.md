@@ -25,7 +25,9 @@
 - [x] Continuous Aggregate `evse_occupancy_hourly` (stündlich je EVSE, Real-Time-Aggregation, Refresh-Policy)
 - [x] Region-Seed: die neun Bundesländer aus OSM-Grenzen (`regions-at.geojson`, ODbL, Skript `scripts/regions/build-regions-at.sh`), Import beim API-Start, `location.region_code` wird neu berechnet; `RegionBounds` aus den Polygonen abgeleitet
 - [x] Matching-Heuristiken (Betreiber + 50 m → `GEO_OPERATOR`, eindeutig ≤ 25 m → `GEO_ONLY`, mehrdeutig → Konflikt `identity`), Quellen-Präzedenz je Attribut nach Tier, Konfliktliste `GET /conflicts` und `/admin/conflicts`
-- [x] Konflikte im Admin-UI entscheiden (`POST /conflicts/{id}/resolve`: zuordnen, eigener Standort, behalten; `match_decision`)
+- [x] Konflikte im Admin-UI entscheiden (`POST /conflicts/{id}/resolve`: zuordnen, eigener Standort, behalten, gleicher Ladepunkt; `match_decision`)
+- [x] Konflikte für Agenten entscheidbar: `GET /conflicts` mit Datensatz der Quelle, Kandidaten (Betreiber, Ladepunkte, Quellen) und Vorschlag, Filter und Cursor; `GET /conflicts/{id}`; `POST /conflicts/resolve` (Sammelentscheidung); `POST /conflicts/apply-suggestions` ([03](03-datenmodell.md), „Vorschläge“)
+- [ ] Surrogat-EVSEs einer Quelle mit den EVSE-IDs einer anderen Quelle am selben Standort zusammenführen (Bundesnetzagentur ohne EVSE-ID gegen MobiData BW mit EVSE-ID), damit zusammengeführte Standorte die Ladepunkte nicht doppelt zählen
 - [ ] Adaptive Intervalle, EVSEs von Hand zusammenführen (`POST /evses/{id}/merge`)
 - [x] Adapter **E-Control** (Inventar und Ad-hoc-Preis seitenweise aus dem Register `GET /search/stations` – ganz Österreich in 17 Requests, ein Inventar-Plan für alle Regionen –, Live-Status über `GET /search` je Abfragepunkt, Health-Probe im Crawler, Provider-Einstellungen je Quelle im Config-Service) – Tier 0. Die DATEX-II-Publikationen der Quelle sind live geprüft, der Status-Snapshot ist aber Stunden alt und wird nicht genutzt ([Endpunkt-Notiz](endpunkte/econtrol.md))
 - [x] Adapter **OpenChargeMap** (Inventar je Region, CC BY 4.0, ohne Status) – Tier 0 ([Endpunkt-Notiz](endpunkte/ocm.md))

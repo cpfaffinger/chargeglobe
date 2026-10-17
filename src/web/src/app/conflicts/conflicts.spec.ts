@@ -5,7 +5,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { provideRouter } from '@angular/router';
 import { AdminConflictsPage } from '../pages/admin-conflicts.page';
 import { flush, text } from '../testing';
-import { Conflict, ConflictsResponse, ConflictsService, describeConflict } from './conflicts.service';
+import { Conflict, ConflictCandidate, ConflictsResponse, ConflictsService, describeConflict } from './conflicts.service';
 
 function conflict(overrides: Partial<Conflict> = {}): Conflict {
   return {
@@ -19,11 +19,29 @@ function conflict(overrides: Partial<Conflict> = {}): Conflict {
     resolvedAt: null,
     resolution: null,
     candidates: [],
+    record: null,
+    suggestion: null,
     ...overrides,
   };
 }
 
-const response = (data: Conflict[], open = data.length): ConflictsResponse => ({ data, meta: { returned: data.length, limit: 200, open } });
+function candidate(overrides: Partial<ConflictCandidate> = {}): ConflictCandidate {
+  return {
+    locationId: 'loc-1',
+    label: 'Parkgarage Stephansplatz, Wien',
+    distanceMeters: 18.4,
+    operatorId: 'VIE',
+    operatorName: 'Wien Energie',
+    sameOperator: true,
+    evses: 2,
+    surrogateEvses: 0,
+    evseIds: ['AT*VIE*E1*1', 'AT*VIE*E1*2'],
+    sources: ['econtrol'],
+    ...overrides,
+  };
+}
+
+const response = (data: Conflict[], open = data.length): ConflictsResponse => ({ data, meta: { returned: data.length, limit: 200, open, nextCursor: null } });
 
 describe('ConflictsService', () => {
   it('asks for open or resolved conflicts', async () => {
@@ -55,9 +73,28 @@ describe('ConflictsService', () => {
 
   it('describes the values in short German', () => {
     expect(describeConflict(conflict())).toBe('ocm 148527 passt zu 2 Standorten');
-    expect(describeConflict(conflict({ attribute: 'evse_id', values: { stored: 'AT*TST*E1', ocm: 'AT-TST-E1', count: 2 } }))).toBe(
-      'stored: AT*TST*E1 · ocm: AT-TST-E1 · count: 2',
-    );
+    expect(
+      describeConflict(
+        conflict({
+          record: {
+            source: 'ocm',
+            externalId: '148527',
+            name: 'Parkgarage',
+            address: null,
+            postalCode: null,
+            city: null,
+            operatorId: 'VIE',
+            operatorName: 'Wien Energie',
+            latitude: 48.2,
+            longitude: 16.4,
+            evses: [{ evseId: null, maxPowerKw: 22 }],
+          },
+        }),
+      ),
+    ).toBe('ocm 148527 passt zu 2 Standorten (Parkgarage, Wien Energie; 1 Ladepunkte)');
+    expect(
+      describeConflict(conflict({ attribute: 'evse_id', values: { stored: 'AT*TST*E1', ocm: 'AT-TST-E1', count: 2, source: 'ocm', externalId: 'x', locationId: 'loc-1' } })),
+    ).toBe('stored: AT*TST*E1 · ocm: AT-TST-E1 · count: 2');
   });
 });
 
@@ -105,7 +142,7 @@ describe('AdminConflictsPage', () => {
       'other',
     ]);
     expect(text(root(), '[data-conflict="c-1"] td:nth-child(5)')).toBe('eigener Standort');
-    expect(text(root(), '[data-conflict="c-2"] td:nth-child(5)')).toBe('behalten');
+    expect(text(root(), '[data-conflict="c-2"] td:nth-child(5)')).toBe('gleicher Ladepunkt behalten');
 
     root().querySelectorAll<HTMLButtonElement>('#conflict-filter button')[1].click();
     await flush();
@@ -118,9 +155,9 @@ describe('AdminConflictsPage', () => {
   it('assigns a record to a candidate, keeps it separate or keeps an EVSE-ID, then reloads', async () => {
     const identity = conflict({
       candidates: [
-        { locationId: 'loc-1', label: 'Parkgarage Stephansplatz, Wien', distanceMeters: 18.4 },
-        { locationId: 'loc-2', label: 'Teststation Dom, Wien', distanceMeters: null },
-        { locationId: 'loc-3', label: null, distanceMeters: null },
+        candidate(),
+        candidate({ locationId: 'loc-2', label: 'Teststation Dom, Wien', distanceMeters: null, operatorName: null, operatorId: null, sameOperator: null, evses: 4, sources: ['econtrol', 'ocm'] }),
+        candidate({ locationId: 'loc-3', label: null, distanceMeters: null }),
       ],
     });
     const evseId = conflict({ id: 'c-2', entityType: 'EVSE', entityId: 'e-1', attribute: 'evse_id', values: { stored: 'AT*TST*E1*1' } });
@@ -128,15 +165,18 @@ describe('AdminConflictsPage', () => {
     service.resolve.and.resolveTo(conflict({ resolvedAt: '2026-10-16T08:00:00Z' }));
     await render();
 
-    const candidate = (id: string) => root().querySelector<HTMLElement>(`[data-candidate="${id}"]`)!;
-    expect(text(candidate('loc-1'), '.distance')).toBe('18 m');
-    expect(candidate('loc-2').querySelector('.distance')).toBeNull();
+    const candidateOf = (id: string) => root().querySelector<HTMLElement>(`[data-candidate="${id}"]`)!;
+    expect(text(candidateOf('loc-1'), '.distance')).toBe('18 m');
+    expect(text(candidateOf('loc-1'), '.details')).toBe('Wien Energie · 2 Ladepunkte · econtrol');
+    expect(candidateOf('loc-2').querySelector('.distance')).toBeNull();
+    expect(text(candidateOf('loc-2'), '.details')).toBe('Betreiber unbekannt · 4 Ladepunkte · econtrol, ocm');
     // A candidate that no longer exists cannot be chosen.
-    expect(text(candidate('loc-3'), 'a')).toBe('nicht mehr vorhanden');
-    expect(candidate('loc-3').querySelector('button')).toBeNull();
+    expect(text(candidateOf('loc-3'), 'a')).toBe('nicht mehr vorhanden');
+    expect(candidateOf('loc-3').querySelector('button')).toBeNull();
+    expect(candidateOf('loc-3').querySelector('.details')).toBeNull();
     expect(text(root(), '[data-conflict="c-3"] td:nth-child(5)')).toBe('–');
 
-    candidate('loc-2').querySelector<HTMLButtonElement>('.merge')!.click();
+    candidateOf('loc-2').querySelector<HTMLButtonElement>('.merge')!.click();
     await flush();
     await fixture.whenStable();
     expect(service.resolve).toHaveBeenCalledWith('c-1', 'merge', 'loc-2');
@@ -155,11 +195,37 @@ describe('AdminConflictsPage', () => {
     expect(service.resolve).toHaveBeenCalledWith('c-2', 'keep', null);
     expect(snackBar.open).toHaveBeenCalledWith('EVSE-ID bleibt wie gespeichert.', 'OK', { duration: 4000 });
 
+    root().querySelector<HTMLButtonElement>('[data-conflict="c-2"] .same')!.click();
+    await flush();
+    await fixture.whenStable();
+    expect(service.resolve).toHaveBeenCalledWith('c-2', 'same', null);
+    expect(snackBar.open).toHaveBeenCalledWith('Datensatz dem gespeicherten Ladepunkt zugeordnet.', 'OK', { duration: 4000 });
+
     service.resolve.and.rejectWith(new HttpErrorResponse({ status: 422, error: { title: 'Validation failed', errors: { targetId: ['Must be one of the candidates.'] } } }));
-    candidate('loc-1').querySelector<HTMLButtonElement>('.merge')!.click();
+    candidateOf('loc-1').querySelector<HTMLButtonElement>('.merge')!.click();
     await flush();
     await fixture.whenStable();
     expect(text(root(), '.error')).toBe('Must be one of the candidates.');
+  });
+
+  it('shows the suggestion of a conflict and applies it', async () => {
+    const suggested = conflict({
+      candidates: [candidate()],
+      suggestion: { action: 'merge', targetId: 'loc-1', confidence: 0.8, reason: 'The only candidate of the operator Wien Energie with the same number of charge points (2), 18 m away.' },
+    });
+    const decided = conflict({ id: 'c-9', resolvedAt: '2026-10-16T08:00:00Z', resolution: 'done', suggestion: { action: 'same', targetId: null, confidence: 0.95, reason: 'stale' } });
+    service.list.and.resolveTo(response([suggested, decided]));
+    service.resolve.and.resolveTo(conflict({ resolvedAt: '2026-10-16T08:00:00Z' }));
+    await render();
+
+    expect(text(root(), '[data-conflict="c-1"] .suggestion')).toContain('Vorschlag (80%): The only candidate');
+    expect(root().querySelector('[data-conflict="c-9"] .suggestion')).toBeNull();
+
+    root().querySelector<HTMLButtonElement>('[data-conflict="c-1"] .apply')!.click();
+    await flush();
+    await fixture.whenStable();
+    expect(service.resolve).toHaveBeenCalledWith('c-1', 'merge', 'loc-1');
+    expect(snackBar.open).toHaveBeenCalledWith('Datensatz dem Standort zugeordnet.', 'OK', { duration: 4000 });
   });
 
   it('says when there are none and shows errors', async () => {

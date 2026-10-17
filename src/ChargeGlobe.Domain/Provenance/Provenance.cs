@@ -291,6 +291,18 @@ public sealed class SourceConflict
         Resolution = Guard.NotBlank(resolution);
         ResolvedAt = at;
     }
+
+    /// <summary>The source raised the open conflict again: the values follow its latest record.</summary>
+    public void Refresh(Guid? entityId, string values)
+    {
+        if (ResolvedAt is not null)
+        {
+            throw new InvalidOperationException("The conflict is already resolved.");
+        }
+
+        EntityId = entityId;
+        Values = Guard.NotBlank(values);
+    }
 }
 
 internal static class Hash

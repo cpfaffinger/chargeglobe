@@ -1,4 +1,4 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe, PercentPipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
@@ -16,15 +16,17 @@ const DONE: Record<ConflictAction, string> = {
   merge: 'Datensatz dem Standort zugeordnet.',
   separate: 'Datensatz wird ein eigener Standort.',
   keep: 'EVSE-ID bleibt wie gespeichert.',
+  same: 'Datensatz dem gespeicherten Ladepunkt zugeordnet.',
 };
 
 /**
  * Disagreements between sources that the merge did not decide (conflict:resolve): open ones by default, resolved ones on
- * demand, each with the location or EVSE it concerns. An open identity conflict lists its candidates with distance and
- * can be assigned to one of them or kept as a location of its own; an evse_id conflict can be kept.
+ * demand, each with the location or EVSE it concerns. An open identity conflict lists its candidates with distance,
+ * operator and charge points and can be assigned to one of them or kept as a location of its own; an evse_id conflict
+ * can be kept or mapped to the stored charge point. A conflict with a suggestion offers to apply it.
  */
 @Component({
-  imports: [DatePipe, DecimalPipe, MatButtonModule, MatButtonToggleModule, RouterLink],
+  imports: [DatePipe, DecimalPipe, MatButtonModule, MatButtonToggleModule, PercentPipe, RouterLink],
   selector: 'app-admin-conflicts',
   styles: `
     .candidates {
@@ -79,6 +81,9 @@ const DONE: Record<ConflictAction, string> = {
                         @if (candidate.distanceMeters !== null) {
                           <span class="muted distance">{{ candidate.distanceMeters | number: '1.0-0' }} m</span>
                         }
+                        @if (candidate.label) {
+                          <span class="muted details">{{ candidate.operatorName ?? candidate.operatorId ?? 'Betreiber unbekannt' }} · {{ candidate.evses }} Ladepunkte · {{ candidate.sources.join(', ') }}</span>
+                        }
                         @if (!conflict.resolvedAt && candidate.label) {
                           <button matButton="tonal" type="button" class="merge" [disabled]="busy()" (click)="resolve(conflict, 'merge', candidate.locationId)">
                             diesem Standort zuordnen
@@ -88,6 +93,14 @@ const DONE: Record<ConflictAction, string> = {
                     }
                   </ul>
                 }
+                @if (!conflict.resolvedAt && conflict.suggestion; as suggestion) {
+                  <p class="suggestion muted">
+                    Vorschlag ({{ suggestion.confidence | percent }}): {{ suggestion.reason }}
+                    <button matButton="tonal" type="button" class="apply" [disabled]="busy()" (click)="resolve(conflict, suggestion.action, suggestion.targetId)">
+                      Vorschlag übernehmen
+                    </button>
+                  </p>
+                }
               </td>
               <td>
                 @if (conflict.resolvedAt) {
@@ -95,6 +108,7 @@ const DONE: Record<ConflictAction, string> = {
                 } @else if (conflict.attribute === 'identity') {
                   <button matButton type="button" class="separate" [disabled]="busy()" (click)="resolve(conflict, 'separate')">eigener Standort</button>
                 } @else if (conflict.attribute === 'evse_id') {
+                  <button matButton type="button" class="same" [disabled]="busy()" (click)="resolve(conflict, 'same')">gleicher Ladepunkt</button>
                   <button matButton type="button" class="keep" [disabled]="busy()" (click)="resolve(conflict, 'keep')">behalten</button>
                 } @else {
                   –

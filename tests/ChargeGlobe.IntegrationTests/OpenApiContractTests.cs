@@ -73,11 +73,11 @@ public class OpenApiContractTests(IntegrationFactory factory)
         Assert.Equal(
             new[]
             {
-                "addFavorite", "calculateReach", "calculateRoute", "changePassword", "confirmEmail", "createApiKey", "createInitialAdmin", "deleteMe", "deleteRole", "deleteUser", "exportEvses", "geocodeAddress", "getCrawlerFreshness", "getCrawlerStatus", "getEvse",
+                "addFavorite", "applyConflictSuggestions", "calculateReach", "calculateRoute", "changePassword", "confirmEmail", "createApiKey", "createInitialAdmin", "deleteMe", "deleteRole", "deleteUser", "exportEvses", "geocodeAddress", "getConflict", "getCrawlerFreshness", "getCrawlerStatus", "getEvse",
                 "getEvseOccupancy", "getEvsePrices", "getEvseStatusHistory", "getHealth", "getLocation", "getLocationOccupancy", "getMapConfig", "getMe", "getPreferences", "getSetting", "getSetupStatus", "getStats", "getUser", "importTariffCatalog",
                 "listApiKeys", "listAuditLog", "listConflicts", "listCrawlerRuns", "listEmps", "listEvses", "listFavorites", "listImplausiblePrices", "listLocationPrices", "listLocations", "listLocationsAlongRoute", "listLocationsInArea", "listMailOutbox", "listNetworks", "listOperators", "listPermissions", "listRoles", "listSettings",
                 "listTariffs", "listUserApiKeys", "listUsers", "login", "logout", "putPreferences", "putRole", "refreshToken", "register", "removeFavorite", "requestPasswordReset", "resendConfirmation",
-                "resetPassword", "resolveConflict", "revokeApiKey", "revokeUserApiKey", "search", "sendTestMail", "sendUserConfirmationMail", "setUserApproval", "setUserEnabled", "setUserPermissions",
+                "resetPassword", "resolveConflict", "resolveConflicts", "revokeApiKey", "revokeUserApiKey", "search", "sendTestMail", "sendUserConfirmationMail", "setUserApproval", "setUserEnabled", "setUserPermissions",
                 "setUserRoles", "updateSetting",
             },
             operationIds.Order(StringComparer.Ordinal));
