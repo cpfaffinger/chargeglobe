@@ -1,0 +1,70 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "energie-graz",
+      "name": "Energie Graz",
+      "website": "https://www.energie-graz.at/egg/energie-dienstleistungen/elektromobilitat/elektromobilitat-offentliches-laden",
+      "country": "AT",
+      "tariffs": [
+        {
+          "key": "charge-public",
+          "name": "Energie Graz Ladekarte (charge:public)",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Erste Karte gratis, Ersatzkarte 19,90 €, ohne Mindestlaufzeit.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "energie-graz"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.53,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 180
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.62,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 60
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.59,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 180
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.69,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "Partnerstationen in ganz Österreich laut Energie-Graz-App."
+            }
+          ],
+          "notes": "Preisblatt aus dem Tarifkalkulator der E-Control (ladetarif.at).",
+          "sourceUrl": "https://www.ladetarif.at/api/documents/f8912efa-906e-48ac-a634-6b52d02587cb/download",
+          "sourceDate": "2024-09-01",
+          "confidence": "HIGH"
+        }
+      ]
+    }
+  ]
+}

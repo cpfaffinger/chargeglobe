@@ -138,6 +138,8 @@ public class TariffTests
         var adHoc = new PriceComponents("EUR", 0.59m, 0.02m, null, 0.10m, 240, false);
         Assert.Equal(new PriceComponents("EUR", 0.649m, 0.022m, 0.39m, 0.11m, 240, false), zone.MarkUp(adHoc));
         Assert.Equal(adHoc with { SessionFee = 0.5m }, (zone with { MarkupPercent = null, MarkupSessionFee = null }).MarkUp(adHoc with { SessionFee = 0.5m }));
+        var unknown = new TariffZone(TariffZoneKind.ROAMING, [], [], [], [], [], "0,56–0,89 €/kWh je Betreiber", TariffPricing.UNKNOWN);
+        Assert.Equal((TariffPricing.UNKNOWN, null), (Plan(unknown).MatchAt("AT*EVN", true, TariffCurrent.AC, 11, Members)!.Zone.Pricing, Plan(unknown).MatchAt("AT*EVN", true, TariffCurrent.AC, 11, Members)!.Price));
         var free = new PriceComponents("EUR", null, null, null, null, null, true);
         Assert.Same(free, zone.MarkUp(free));
     }

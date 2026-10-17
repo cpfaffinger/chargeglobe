@@ -138,7 +138,11 @@ describe('AdminTariffsPage', () => {
         notes: null,
         sourceDate: null,
         confidence: 'LOW',
-        zones: [{ ...tariff().zones[0], excludedNetworks: [] }, { ...tariff().zones[3], markupPercent: null, markupSessionFee: null }],
+        zones: [
+        { ...tariff().zones[0], excludedNetworks: [] },
+        { ...tariff().zones[3], markupPercent: null, markupSessionFee: null },
+        { ...tariff().zones[3], pricing: 'UNKNOWN', markupPercent: null, markupSessionFee: null },
+      ],
       }),
       tariff({ id: 't-3', emp: 'oeamtc', key: 'epower', name: 'ePower', confidence: 'MEDIUM' }),
     ]);
@@ -177,6 +181,9 @@ describe('AdminTariffsPage', () => {
     expect(text(rows[1], 'td:nth-child(4)')).toBe('0,50 €/min, Start 1,00 €');
     expect(text(rows[2], '.covers')).toBe('unknown, AT*IOY');
     expect(easyOperatorPrice()).toBe('Preis des Betreibers');
+    expect(text(root().querySelector<HTMLElement>('[data-tariff="drive-easy"]')!, 'tbody tr:nth-child(3) td:nth-child(3)')).toBe(
+      'Preis je Ladepunkt, nicht veröffentlicht',
+    );
     expect(text(smart, 'p.muted')).toBe('Preisgarantie bis 31.12.2026.');
 
     const easy = root().querySelector<HTMLElement>('[data-tariff="drive-easy"]')!;

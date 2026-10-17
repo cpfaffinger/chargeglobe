@@ -1,0 +1,182 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "cupra-charging",
+      "name": "CUPRA Ladetarife",
+      "website": "https://www.cupraofficial.at/e-mobilitaet/ladetarife",
+      "country": "ES",
+      "tariffs": [
+        {
+          "key": "free",
+          "name": "CUPRA Free",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "MY CUPRA App.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Preise je Ladepunkt.",
+              "pricing": "OPERATOR_AD_HOC"
+            }
+          ],
+          "notes": "„Flexible Preise“ je Betreiber, angezeigt in der App; hier mit dem Ad-hoc-Preis angenähert.",
+          "sourceUrl": "https://www.cupraofficial.at/e-mobilitaet/ladetarife",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "ionity-flex",
+          "name": "CUPRA IONITY Flex",
+          "currency": "EUR",
+          "monthlyFee": 5.99,
+          "prerequisites": "MY CUPRA App.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.49
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Übrige wie Free.",
+              "pricing": "OPERATOR_AD_HOC"
+            }
+          ],
+          "notes": "„Flexible Preise“ je Betreiber, angezeigt in der App; hier mit dem Ad-hoc-Preis angenähert.",
+          "sourceUrl": "https://www.cupraofficial.at/e-mobilitaet/ladetarife",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "ionity-pro",
+          "name": "CUPRA IONITY Pro",
+          "currency": "EUR",
+          "monthlyFee": 11.99,
+          "prerequisites": "MY CUPRA App.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Übrige wie Free.",
+              "pricing": "OPERATOR_AD_HOC"
+            }
+          ],
+          "notes": "„Flexible Preise“ je Betreiber, angezeigt in der App; hier mit dem Ad-hoc-Preis angenähert.",
+          "sourceUrl": "https://www.cupraofficial.at/e-mobilitaet/ladetarife",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "premium",
+          "name": "CUPRA Premium",
+          "currency": "EUR",
+          "monthlyFee": 17.99,
+          "prerequisites": "MY CUPRA App.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39
+                }
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "mer"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.55
+                }
+              ],
+              "notes": "Selected Partner Network."
+            },
+            {
+              "kind": "OPERATOR",
+              "operators": [
+                "AT*SME"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.87
+                }
+              ],
+              "notes": "EnBW-Preis laut Tarifseite (Einheit abgeschnitten)."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.5
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.69
+                }
+              ]
+            }
+          ],
+          "notes": "Blockiergebühren nur in der App.",
+          "sourceUrl": "https://www.cupraofficial.at/e-mobilitaet/ladetarife",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}

@@ -261,7 +261,7 @@ public sealed class EvseQueries(AppDbContext db, IAppConfig config, TimeProvider
             .Where(item => item.Match is not null)
             .Select(item => (item.Row, Zone: item.Match!.Zone, Price: item.Match.Price is { } price
                 ? price.Components(item.Row.Plan.Currency)
-                : adHoc is null ? null : item.Match.Zone.MarkUp(adHoc)))
+                : item.Match.Zone.Pricing == TariffPricing.OPERATOR_AD_HOC && adHoc is not null ? item.Match.Zone.MarkUp(adHoc) : null))
             .ToList();
         List<EmpPrice> prices = [.. matches
             .Where(item => item.Price is not null)

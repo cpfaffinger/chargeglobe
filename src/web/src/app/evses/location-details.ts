@@ -253,7 +253,7 @@ type LoadState = 'loading' | 'error' | 'ready';
                           </tbody>
                         </table>
                         @if (pricing.priceUnknown.length > 0) {
-                          <p class="price-unknown">Zum Preis des Betreibers, hier unbekannt: {{ names(pricing.priceUnknown) }}</p>
+                          <p class="price-unknown">Nutzbar, Preis hier unbekannt: {{ names(pricing.priceUnknown) }}</p>
                         }
                         @if (pricing.unavailable.length > 0) {
                           <p class="unavailable">Hier nicht nutzbar: {{ names(pricing.unavailable) }}</p>

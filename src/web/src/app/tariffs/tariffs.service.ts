@@ -36,8 +36,8 @@ export interface PriceElement {
 
 export interface Zone {
   kind: ZoneKind;
-  /** FIXED: the prices of the zone; OPERATOR_AD_HOC: the ad-hoc price of the EVSE with the markups. */
-  pricing: 'FIXED' | 'OPERATOR_AD_HOC';
+  /** FIXED: the prices of the zone; OPERATOR_AD_HOC: the ad-hoc price of the EVSE with the markups; UNKNOWN: not published. */
+  pricing: 'FIXED' | 'OPERATOR_AD_HOC' | 'UNKNOWN';
   /** Percent on the operator's price (−10 = 10 % off). */
   markupPercent: number | null;
   /** Fee of the provider per session on top of the operator's price. */

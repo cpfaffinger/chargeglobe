@@ -50,7 +50,7 @@ Außerhalb Scope, aber relevant für Phase 2: **da emobil** (Tirol, Operator-ID 
 | Welle | Quelle | Was sie liefert | Aufwand | Zugangsweg |
 |---|---|---|---|---|
 | **P0** | E-Control-API | alles für AT: Inventar, EVSE-IDs, Status, Ad-hoc-Preis | gering (dokumentierte JSON-API) | API-Key, Terms |
-| **P1** | Tesla (`cua-api` + Guest-GraphQL) | Stall-Status, Ad-hoc- und Mitgliedspreise je Standort | gering–mittel (Endpunkte in evmap dokumentiert, anonym) | anonym; ToS prüfen |
+| – | Tesla (findus-Standortseiten) | Ad-hoc- und Mitgliedspreise je Standort mit Tageszeitfenstern | – | **nicht genutzt**: Bot-Schutz, Website-Bedingungen ([Endpunkt-Notiz](endpunkte/tesla-findus.md)); Preise aus der E-Control |
 | **P1** | ÖAMTC ePower | wichtigster EMP-Tarif in AT (Mitglied/Nichtmitglied, Partnernetz, Blockiergebühren) – Tarif ist **netzweit**, nicht je Ladepunkt → Katalogdatei mit Partnerliste als Zone; Roamingpartner-Liste als PDF | gering (Katalog) bis mittel (Web-Karte analysieren) | Tarif: öffentlich; Status: Web-Karte |
 | **P1** | Electroverse | Roamingpreise vieler AT-CPOs an einem Ort → beste Quelle für „Preis je Ladepunkt je EMP“ | mittel (Web-Karte electroverse.com/map per DevTools analysieren) | anonym? [U] |
 | **P1** | SMATRICS-Web-Karte | Status/Preise für SMATRICS, SMATRICS EnBW, ÖBB P&R, Verbund-Heimnetz | mittel | anonym? [U] |
@@ -86,15 +86,12 @@ Status-Rohwerte: AVAILABLE | CHARGING | RESERVED | BLOCKED | INOPERATIVE | OUTOF
 Preis: priceCentKwh / priceInCentPerKwh, freeOfCharge
 ```
 
-### Tesla (anonym, inoffiziell) – [ev-map/EVMap `api/availability/tesla`](https://github.com/ev-map/EVMap/tree/master/app/src/main/java/net/vonforst/evmap/api/availability)
+### Tesla – öffentliche Standortseiten ([Endpunkt-Notiz](endpunkte/tesla-findus.md))
 ```
-GET  https://www.tesla.com/cua-api/tesla-locations?translate=en_US&usetrt=true     # alle Standorte weltweit (cachen!)
-GET  https://www.tesla.com/cua-api/tesla-location?id={locationId}                   # liefert trtId
-POST https://www.tesla.com/de_DE/charging/guest/api/graphql                         # Operation GetSiteDetails
-     variables: siteId.byTrtId, chargingExperience: ADHOC|GUEST, programType: PTSCH, locale: de-DE
-     → Stall-Verfügbarkeit, publicStallCount, pricing.userRates (Ad-hoc / Mitglied)
+GET  https://www.tesla.com/de_AT/findus/list/superchargers/Austria                  # 55 Standorte mit Koordinaten (__NEXT_DATA__)
+GET  https://www.tesla.com/de_AT/findus/location/supercharger/<slug>                # effectivePricebooks: Fremdmarke/Tesla, Tageszeitfenster, Minutenstufen
 ```
-Die Owner-API (OAuth `auth.tesla.com`, GraphQL `akamai-apigateway-charging-ownership.tesla.com`) braucht einen Tesla-Account und wird **nicht** verwendet.
+Der frühere Endpunkt `cua-api/tesla-locations` antwortet nicht mehr (404). Die Seiten liegen hinter einem Bot-Schutz (Server-Clients bekommen 403), die Website-Bedingungen verbieten das Kopieren zur Weitergabe; chargeglobe liest sie deshalb **nicht** automatisiert. Die Owner-API und die Guest-GraphQL-API werden ebenfalls nicht verwendet.
 
 ### EnBW (anonym, aber mit eingebettetem Web-Key – inoffiziell) – evmap `EnBwAvailabilityDetector.kt`
 ```
@@ -143,8 +140,9 @@ GET https://app.chargecloud.de/emobility:ocpi/{operatorId}/app/2.0/locations?lat
 - **Für chargeglobe:** wenn die Web-Karte Preise je Ladepunkt liefert, ist das die effizienteste Quelle für EMP-Preise über viele CPOs.
 
 ### Tesla
-- 2022: 24–28 Standorte / ~260 Stalls in AT, Teil davon für Fremdmarken; aktuelle Zahl [U]. Fremdmarken-Mitgliedschaft 9,99 €/Monat bzw. 100 €/Jahr; kWh-Preise standort- und zeitabhängig (Ad-hoc vs. Mitglied) nur per App/GraphQL. Stall-Verfügbarkeit auch in Google Maps. [V]
-- Tesla-EVSE-IDs sind im E-Control-Verzeichnis zu erwarten (Meldepflicht), in Teslas eigenen Daten aber nicht → Matching per Operator + Geo + Stallanzahl (siehe 03).
+- 10/2026: 55 Supercharger-Standorte in Österreich, im E-Control-Verzeichnis 776 EVSEs (`AT*TSL*…`) an denselben 55 Standorten; 53 davon liegen innerhalb von 100 m der findus-Koordinaten, alle innerhalb von 250 m. [V]
+- Preise je Standort und Tageszeit für Fremdmarken (z. B. Wien-Wienerberg 0,39 €/kWh nachts, 0,56 €/kWh 8–23 Uhr), an älteren Standorten je Minute nach Leistungsstufe; Überlastungsgebühr bis 0,50 €/min; Mitgliedschaft für Fremdmarken nur in der App. [V]
+- **Entscheidung:** chargeglobe nutzt für Tesla die Ad-hoc-Preise der E-Control (Meldepflicht, für alle 776 EVSEs vorhanden). Sie sind ein fester Wert ohne Zeitfenster und weichen an einzelnen Standorten vom Fremdmarkenpreis ab (Wienerberg meldet den Tesla-Preis, St. Pölten nur die höchste Minutenstufe). Keine Ladekarte eines österreichischen Anbieters listet Supercharger als Roaming-Partner; im Tarifkatalog sind sie in den offenen Roamingzonen ausgeschlossen.
 
 ### Linz AG StromMOBIL
 - ~1.755 Ladepunkte an 680 Standorten (2025). Karte „LadeAtlas“ nur hinter Login. Tarife 02/2025 [V]: EASY POWER 0 €: 0,54 AC / 0,64 DC / 0,89 DC > 200 kW; MORE POWER 7,50 €: 0,39/0,49/0,74; Infrastrukturbelegung 0,12 €/min ab 241 (AC) / 91 (DC) min. Operator-ID `AT*LAG` [U].
@@ -188,14 +186,18 @@ Erhoben am 17.10.2026 aus Preisblättern und Tarifseiten, abgelegt im kuratierte
 | Roamingpreis je Betreiber | da emobil, TIWAG mobil | je Preisgruppe eine `ROAMING`-Zone mit Netzen; nicht gelistete Betreiber nicht nutzbar |
 | Roaming je Minute, Ausnahmen je kWh | Salzburg AG (PLUS-Partner IONITY, Shell, Mer, OMV je kWh), Burgenland Energie (benannte Partner je Minute) | benannte `ROAMING`-Zone vor der offenen |
 | Preis des Betreibers weitergereicht | Octopus Electroverse, Plugsurfing, Chargemap (+10 %, mit Boost 0 %), Wels Strom (Monta-Roaming), MB.CHARGE Public S/M/L (−0/−10/−15 % neben festen Preisen für Mercedes-HPC, IONITY und Partnernetz), BMW Charging Flex/Active, Elli Base/IONITY Boost/Ultra (+0,39 € je Ladevorgang), Shell-Roaming (+0,35 €) | Zone mit `pricing` `OPERATOR_AD_HOC` und Aufschlag auf den Ad-hoc-Preis des Ladepunkts |
+| Herstellerkarten (Digital Charging Solutions, Elli) | Kia Charge, Charge myHyundai, Volvo, Toyota, smart, CHARGE NOW (auch MG), MB.CHARGE, BMW (DCS: „flexible Preise“, Rabatte von 5–30 % und ein Preferred Partner Network aus IONITY, EVN, Electra, Mer, Kelag, Shell, da emobil, Salzburg AG); Audi, Škoda, CUPRA (Elli: flexible Preise, IONITY- und Premium-Tarife mit Festpreisen); Porsche, Polestar (Plugsurfing), Mobilize (Renault) | Betreiberpreis mit Rabatt, Festpreise für IONITY/Mer/Partner, Premium-Tarife als offene Roamingzone |
+| Preis je Ladepunkt nicht veröffentlicht | EnBW mobility+ außerhalb von SMATRICS EnBW (0,56–0,89 €/kWh) | Zone mit `pricing` `UNKNOWN`: nutzbar, Preis unbekannt |
 | nur eigenes Netz | EVN #Drive Easy, Kelag eStart, Energie Klagenfurt, Stadtwerke Kufstein, Wels Strom, IONITY, Shell, Mer, Electra, Allego, Lidl | nur `HOME` |
 
 Befunde:
 - **BEÖ**: kein gemeinsamer Partnerpreis der Landesenergieversorger; der Zugang läuft über Hubject/intercharge, jeder Anbieter bepreist die anderen in seiner eigenen Partner- oder Roamingzone (immer über dem Heimnetz). Nur IKB hat einen Partnerpreis für fast alle BEÖ-Mitglieder.
 - **Betreiber-weite Gültigkeit bestätigt**: Kein Anbieter unterscheidet innerhalb eines Partner- oder Roaming-Betreibers nach Standort; ein Betreiber in der Zone gilt für alle seine Ladepunkte. Ausnahmen sind Leistungsstufen (HPC ab 75/150/201 kW) und Sonderstandorte (da emobil „Alte Hauptpost“, Salzburg AG Parkgaragen-Partner) – als Hinweis vermerkt.
-- **Tesla** (`AT*TSL`): Preise je Standort und Tageszeit (0,35–0,65 €/kWh für Fremdmarken auf den öffentlichen Standortseiten), keine österreichische Ladekarte listet Supercharger als Roaming-Partner → in offenen Roamingzonen ausgeschlossen; eigener Adapter für die Standortpreise vorgesehen.
+- **Tesla** (`AT*TSL`, [Endpunkt-Notiz](endpunkte/tesla-findus.md)): Preise je Standort und Tageszeit (0,35–0,65 €/kWh für Fremdmarken auf den öffentlichen Standortseiten), keine österreichische Ladekarte listet Supercharger als Roaming-Partner → in offenen Roamingzonen ausgeschlossen; eigener Adapter für die Standortpreise vorgesehen.
 - **MAINGAU Autostrom** (deutscher Anbieter, Preise „für ganz Europa“ inkl. deutscher USt) ist mit Standard- und Hochpreis im Katalog; ob in Österreich wohnende Kunden abschließen können, ist offen.
-- **Nicht im Katalog**: EnBW mobility+ (Österreich-Preise unklar), Energie Graz (Preisblatt hinter einer Bot-Abfrage), MOON und ENIO (Preise je Standortbetreiber, Ad-hoc aus der E-Control), Tesla.
+- **Energie Graz**: Das Preisblatt auf energie-graz.at liegt hinter einer Bot-Abfrage; der Tarifkalkulator der E-Control (ladetarif.at) hat es als Dokument (gültig ab 1.9.2024), daraus stammt der Katalogeintrag. Weitere Präfixe aus den Daten: Energie Graz auch `AT*6D6`, Tulln Energie auch `AT*E37`; ella (`AT*ELA`) gehört seit 1.10.2026 zum Netz von Wien Energie.
+- **ladetarif.at** (Tarifkalkulator der E-Control) liefert die Produkte der österreichischen Anbieter strukturiert (`/api/products/<id>`, Preisblätter unter `/api/documents/<id>/download`); als offizielle Quelle für einen künftigen `ITariffSource`-Adapter vorgemerkt (Nutzungsbedingungen mit der E-Control klären).
+- **Nicht im Katalog**: MOON und ENIO (Preise je Standortbetreiber, Ad-hoc aus der E-Control), Tesla.
 - **Präfixe ohne Bestätigung**: Burgenland Energie `AT*EBM` (BE Solution), Wels Strom `AT*LNK`/`AT*WSG`; Leikermoser `AT*LME` ist noch in keinen Daten.
 
 ## Nächste Schritte aus der Bestandsanalyse

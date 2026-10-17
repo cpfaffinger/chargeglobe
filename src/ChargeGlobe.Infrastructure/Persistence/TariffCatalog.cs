@@ -183,11 +183,11 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, TimeP
                     Require((zone.Operators ?? []).Concat(zone.ExcludedOperators ?? []).All(IsOperator), $"{z}: operators must be IDs such as AT*EVN.");
                     Require(kind == TariffZoneKind.ROAMING || (zone.Networks ?? []).Count + (zone.Operators ?? []).Count > 0, $"{z}: the zone must name networks or operators.");
                     var pricing = TariffPricing.FIXED;
-                    Require(zone.Pricing is null || Enum.TryParse(zone.Pricing, false, out pricing), $"{z}: the pricing must be FIXED or OPERATOR_AD_HOC.");
-                    var byOperator = pricing == TariffPricing.OPERATOR_AD_HOC;
-                    Require(byOperator || zone.Prices is { Count: > 0 }, $"{z}: at least one price is required.");
-                    Require(!byOperator || zone.Prices is null or { Count: 0 }, $"{z}: a zone with the operator's price has no prices of its own.");
-                    Require(byOperator || zone.MarkupPercent is null && zone.MarkupSessionFee is null, $"{z}: markups need the pricing OPERATOR_AD_HOC.");
+                    Require(zone.Pricing is null || Enum.TryParse(zone.Pricing, false, out pricing), $"{z}: the pricing must be FIXED, OPERATOR_AD_HOC or UNKNOWN.");
+                    var fixedPrices = pricing == TariffPricing.FIXED;
+                    Require(!fixedPrices || zone.Prices is { Count: > 0 }, $"{z}: at least one price is required.");
+                    Require(fixedPrices || zone.Prices is null or { Count: 0 }, $"{z}: a zone with the operator's or an unknown price has no prices of its own.");
+                    Require(pricing == TariffPricing.OPERATOR_AD_HOC || zone.MarkupPercent is null && zone.MarkupSessionFee is null, $"{z}: markups need the pricing OPERATOR_AD_HOC.");
                     Require(zone.MarkupPercent is null or (>= MinMarkupPercent and <= MaxMarkupPercent), $"{z}: markupPercent must lie between {MinMarkupPercent} and {MaxMarkupPercent}.");
                     Require(zone.MarkupSessionFee is null or (>= 0 and <= MaxAmount), $"{z}: markupSessionFee must lie between 0 and {MaxAmount}.");
                     foreach (var price in zone.Prices ?? [])

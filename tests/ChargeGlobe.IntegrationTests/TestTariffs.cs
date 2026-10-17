@@ -40,7 +40,8 @@ public static class TestTariffs
     /// <summary>
     /// The cards of the fixture operator TST: "own" (home network, 5 €/month), "roam" (roaming with start fee), "every"
     /// (home price in the network "test-network" of TST, also without roaming), "other" (home network of another operator) and
-    /// "flex" (roaming at the operator's ad-hoc price plus 10 % and 0.39 € per session).
+    /// "flex" (roaming at the operator's ad-hoc price plus 10 % and 0.39 € per session) and "secret" (roaming at an
+    /// unpublished price).
     /// </summary>
     public static object[] Cards(decimal everyPrice = 0.70m) =>
     [
@@ -49,6 +50,7 @@ public static class TestTariffs
         Emp("every", null, new { kind = "HOME", networks = new[] { "test-network" }, prices = new[] { Price("AC", everyPrice), Price("DC", everyPrice) } }),
         Emp("other", null, Zone("HOME", ["AT*OTH"], Price("AC", 0.10m), Price("DC", 0.10m))),
         Emp("flex", null, new { kind = "ROAMING", prices = Array.Empty<object>(), pricing = "OPERATOR_AD_HOC", markupPercent = 10m, markupSessionFee = 0.39m }),
+        Emp("secret", null, new { kind = "ROAMING", pricing = "UNKNOWN" }),
     ];
 
     public static async Task ImportAsync(HttpClient admin, string source, object[] emps, object[]? networks = null)

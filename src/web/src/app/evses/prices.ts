@@ -81,7 +81,7 @@ export interface EvsePricesResponse {
     emps: EmpPrice[];
     /** Tariffs that cannot be used at the EVSE. */
     unavailable: EmpUnavailable[];
-    /** Tariffs at the operator's price without a known ad-hoc price of the EVSE. */
+    /** Tariffs usable at the EVSE at an unknown price: the operator's price without a known ad-hoc price, or unpublished. */
     priceUnknown: (EmpUnavailable & { zone: ZoneKind })[];
   };
   meta: { attribution: { source: string; text: string; license: string }[] };

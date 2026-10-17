@@ -1,0 +1,91 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "charge-myhyundai",
+      "name": "Charge myHyundai",
+      "website": "https://chargemyhyundai.com/web/de/hyundai-at",
+      "country": "DE",
+      "tariffs": [
+        {
+          "key": "flex",
+          "name": "Charge myHyundai Flex",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Hyundai-Fahrzeug; Aktivierung 7,49 €, Mindestlaufzeit 1 Monat.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [],
+              "notes": "IONITY zum flexiblen IONITY-Preis.",
+              "pricing": "OPERATOR_AD_HOC"
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Flexible Preise plus 0,59 € je Ladevorgang.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupSessionFee": 0.59
+            }
+          ],
+          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert. IONITY-Pakete (−0,25/−0,35 €/kWh) sind nicht abgebildet.",
+          "sourceUrl": "https://chargemyhyundai.com/web/de/hyundai-at/tariffs",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "smart",
+          "name": "Charge myHyundai Smart",
+          "currency": "EUR",
+          "monthlyFee": 9.98,
+          "prerequisites": "Hyundai-Fahrzeug, Mindestlaufzeit 1 Monat.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "PARTNER",
+              "networks": [
+                "ionity",
+                "evn",
+                "electra",
+                "mer",
+                "kelag",
+                "shell",
+                "da-emobil",
+                "salzburg-ag"
+              ],
+              "prices": [],
+              "notes": "Preferred Partner Network: 30 % Rabatt.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPercent": -30
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Übrige Ladepunkte: 15 % Rabatt.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPercent": -15
+            }
+          ],
+          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert.",
+          "sourceUrl": "https://chargemyhyundai.com/web/de/hyundai-at/tariffs",
+          "sourceDate": "2026-07-01",
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}

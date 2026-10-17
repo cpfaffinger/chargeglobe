@@ -116,6 +116,7 @@ Preise sind fachlich der schwierigste Teil, weil Apps sie unterschiedlich zeigen
 | EMP hat Tarif unabhängig vom Ladepunkt (Heimnetz, Partnernetz, Roaming, Preis je Betreiber) | Tarif mit Zonen über Betreiber-IDs im Tarifkatalog ([ADR-0013](adr/0013-ladetarife-netze-zonen-katalog.md)), Zuordnung über Regeln statt pro EVSE |
 | Preis nur in PDF/Website | kuratierte Katalogdatei je Anbieter (`src/ChargeGlobe.Providers.TariffCatalog/catalog/<land>/<emp>.json`) mit Quell-URL, Stand und Vertrauensstufe; später Preisblatt-Scraper als `ITariffSource` |
 | Ad-hoc-Preis per AFIR im NAP/Verzeichnis | Tier 0, höchste Präzedenz für Ad-hoc |
+| Preise nur auf einer geschützten Website des Betreibers (Tesla-Standortseiten: Bot-Schutz, Kopieren zur Weitergabe untersagt) | nicht automatisiert lesen; Ad-hoc-Preis aus dem Verzeichnis verwenden, Abweichungen der Meldestelle mitteilen ([Endpunkt-Notiz Tesla](endpunkte/tesla-findus.md)) |
 
 Poll-Frequenz: Preise ändern sich selten, aber zu Monatsanfang gehäuft → 1×/Tag je EVSE, zusätzlich am 1. und 2. jedes Monats 3×/Tag.
 

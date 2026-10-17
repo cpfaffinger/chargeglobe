@@ -131,6 +131,9 @@ export class AdminTariffsPage {
 
   /** The elements of one current, e.g. "0,59 €/kWh · ab 150 kW 0,79 €/kWh"; "–" without. */
   protected pricesOf(zone: Zone, current: PriceElement['current'], currency: string): string {
+    if (zone.pricing === 'UNKNOWN') {
+      return 'Preis je Ladepunkt, nicht veröffentlicht';
+    }
     if (zone.pricing === 'OPERATOR_AD_HOC') {
       return [
         'Preis des Betreibers',

@@ -1,0 +1,118 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "polestar-charge",
+      "name": "Polestar Charge",
+      "website": "https://plugsurfing.com/partners/polestar-charge-subscription/",
+      "country": "SE",
+      "tariffs": [
+        {
+          "key": "base",
+          "name": "Polestar Charge",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Polestar Charge App (Plugsurfing).",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Preis je Ladepunkt laut App.",
+              "pricing": "OPERATOR_AD_HOC"
+            }
+          ],
+          "notes": null,
+          "sourceUrl": "https://plugsurfing.com/partners/polestar-charge-subscription/",
+          "sourceDate": null,
+          "confidence": "LOW"
+        },
+        {
+          "key": "plus",
+          "name": "Polestar Charge Plus",
+          "currency": "EUR",
+          "monthlyFee": 7.99,
+          "prerequisites": "Polestar Charge App, monatlich kündbar.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "PARTNER",
+              "networks": [
+                "smatrics",
+                "evn",
+                "da-emobil",
+                "mer",
+                "shell"
+              ],
+              "prices": [],
+              "notes": "15 % Rabatt (laut Anbieter nur DC/HPC).",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPercent": -15
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Übrige Ladepunkte zum Standardpreis.",
+              "pricing": "OPERATOR_AD_HOC"
+            }
+          ],
+          "notes": "Der Rabatt gilt laut Anbieter nur für DC; abgebildet ist er auch für AC.",
+          "sourceUrl": "https://plugsurfing.com/partners/polestar-charge-subscription/",
+          "sourceDate": null,
+          "confidence": "LOW"
+        },
+        {
+          "key": "pro",
+          "name": "Polestar Charge Pro",
+          "currency": "EUR",
+          "monthlyFee": 14.99,
+          "prerequisites": "Polestar Charge App, monatlich kündbar.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "PARTNER",
+              "networks": [
+                "smatrics",
+                "evn",
+                "da-emobil",
+                "mer",
+                "shell",
+                "omv",
+                "ionity"
+              ],
+              "prices": [],
+              "notes": "30 % Rabatt (laut Anbieter nur DC/HPC).",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPercent": -30
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Übrige Ladepunkte zum Standardpreis.",
+              "pricing": "OPERATOR_AD_HOC"
+            }
+          ],
+          "notes": "Der Rabatt gilt laut Anbieter nur für DC; abgebildet ist er auch für AC.",
+          "sourceUrl": "https://plugsurfing.com/partners/polestar-charge-subscription/",
+          "sourceDate": null,
+          "confidence": "LOW"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,136 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "audi-charging",
+      "name": "Audi charging",
+      "website": "https://www.audi.at/elektromobilitaet/laden/unterwegs-laden",
+      "country": "DE",
+      "tariffs": [
+        {
+          "key": "basic",
+          "name": "Audi charging basic",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "myAudi App, Audi-Fahrzeug, Laufzeit 1 Monat.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Flexible Preise.",
+              "pricing": "OPERATOR_AD_HOC"
+            }
+          ],
+          "notes": "„Flexible Preise“ je Betreiber, angezeigt in der App; hier mit dem Ad-hoc-Preis angenähert.",
+          "sourceUrl": "https://www.audi.at/elektromobilitaet/laden/unterwegs-laden",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "plus",
+          "name": "Audi charging plus",
+          "currency": "EUR",
+          "monthlyFee": 11.99,
+          "prerequisites": "myAudi App, Audi-Fahrzeug, Laufzeit 1 Monat.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39
+                }
+              ]
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Übrige Betreiber zum flexiblen Preis.",
+              "pricing": "OPERATOR_AD_HOC"
+            }
+          ],
+          "notes": "„Flexible Preise“ je Betreiber, angezeigt in der App; hier mit dem Ad-hoc-Preis angenähert.",
+          "sourceUrl": "https://www.audi.at/elektromobilitaet/laden/unterwegs-laden",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "pro",
+          "name": "Audi charging pro",
+          "currency": "EUR",
+          "monthlyFee": 17.99,
+          "prerequisites": "myAudi App; für neue Audi-Elektroautos im ersten Jahr ohne Grundgebühr.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39
+                }
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "mer"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.59
+                }
+              ],
+              "notes": "Selected Partner Network (HPC)."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.69,
+                  "blockingFeePerMinute": 0.07,
+                  "blockingAfterMinutes": 210
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.74,
+                  "blockingFeePerMinute": 0.15,
+                  "blockingAfterMinutes": 90
+                }
+              ]
+            }
+          ],
+          "notes": "AC-Blockiergebühr nur 9–21 Uhr.",
+          "sourceUrl": "https://www.audi.at/elektromobilitaet/laden/unterwegs-laden",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}

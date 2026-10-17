@@ -1,0 +1,65 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "smart-charging",
+      "name": "smart charge@street",
+      "website": "https://smart.charge-at-street.com",
+      "country": "DE",
+      "tariffs": [
+        {
+          "key": "peak",
+          "name": "smart Peak",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Hello smart App.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Flexible Preise plus 0,44 € je Ladevorgang.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupSessionFee": 0.44
+            }
+          ],
+          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert. IONITY-Pakete sind nicht abgebildet.",
+          "sourceUrl": "https://smart.charge-at-street.com/api/public/v1/AT/tariffs/pdf?locale=de_AT",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "go",
+          "name": "smart Go",
+          "currency": "EUR",
+          "monthlyFee": 4.94,
+          "prerequisites": "Hello smart App.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "5 % Rabatt auf den flexiblen Preis.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupPercent": -5
+            }
+          ],
+          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert.",
+          "sourceUrl": "https://smart.charge-at-street.com/api/public/v1/AT/tariffs/pdf?locale=de_AT",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}

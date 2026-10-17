@@ -1,0 +1,151 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "enbw",
+      "name": "EnBW mobility+",
+      "website": "https://www.enbw.com/elektromobilitaet/produkte/ladetarife",
+      "country": "DE",
+      "tariffs": [
+        {
+          "key": "ladetarif-s",
+          "name": "EnBW mobility+ Ladetarif S",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "EnBW mobility+ App oder Karte (9,90 € einmalig).",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "smatrics"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.56,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.56,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 240
+                }
+              ],
+              "notes": "EnBW-Preis an SMATRICS EnBW; Blockiergebühr max. 12 €."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Übrige Betreiber 0,56–0,89 €/kWh je Ladepunkt, angezeigt in der App (nicht veröffentlicht).",
+              "pricing": "UNKNOWN"
+            }
+          ],
+          "notes": "Österreich-Preise laut EnBW-Presse 2023 und Community-Daten; keine offizielle Tabelle je Land.",
+          "sourceUrl": "https://www.enbw.com/elektromobilitaet/produkte/ladetarife",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "ladetarif-m",
+          "name": "EnBW mobility+ Ladetarif M",
+          "currency": "EUR",
+          "monthlyFee": 5.99,
+          "prerequisites": "EnBW mobility+ App oder Karte (9,90 € einmalig).",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "smatrics"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.46,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.46,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 240
+                }
+              ],
+              "notes": "EnBW-Preis an SMATRICS EnBW; Blockiergebühr max. 12 €."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Übrige Betreiber 0,56–0,89 €/kWh je Ladepunkt, angezeigt in der App (nicht veröffentlicht).",
+              "pricing": "UNKNOWN"
+            }
+          ],
+          "notes": "Österreich-Preise laut EnBW-Presse 2023 und Community-Daten; keine offizielle Tabelle je Land.",
+          "sourceUrl": "https://www.enbw.com/elektromobilitaet/produkte/ladetarife",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "ladetarif-l",
+          "name": "EnBW mobility+ Ladetarif L",
+          "currency": "EUR",
+          "monthlyFee": 11.99,
+          "prerequisites": "EnBW mobility+ App oder Karte (9,90 € einmalig).",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "HOME",
+              "networks": [
+                "smatrics"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.39,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 240
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.39,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 240
+                }
+              ],
+              "notes": "EnBW-Preis an SMATRICS EnBW; Blockiergebühr max. 12 €."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Übrige Betreiber 0,56–0,89 €/kWh je Ladepunkt, angezeigt in der App (nicht veröffentlicht).",
+              "pricing": "UNKNOWN"
+            }
+          ],
+          "notes": "Österreich-Preise laut EnBW-Presse 2023 und Community-Daten; keine offizielle Tabelle je Land.",
+          "sourceUrl": "https://www.enbw.com/elektromobilitaet/produkte/ladetarife",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}

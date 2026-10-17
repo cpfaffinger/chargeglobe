@@ -1,0 +1,197 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "skoda-powerpass",
+      "name": "Škoda Powerpass",
+      "website": "https://www.skoda.at/e-mobilitaet/powerpass",
+      "country": "CZ",
+      "tariffs": [
+        {
+          "key": "basic",
+          "name": "Charge Basic",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "MyŠkoda App, Karte gratis, Laufzeit 1 Monat.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Flexible Preise.",
+              "pricing": "OPERATOR_AD_HOC"
+            }
+          ],
+          "notes": "„Flexible Preise“ je Betreiber, angezeigt in der App; hier mit dem Ad-hoc-Preis angenähert.",
+          "sourceUrl": "https://tariffcalculator.skoda-auto.com/439/de-AT",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "ionity-boost",
+          "name": "IONITY Charge Boost",
+          "currency": "EUR",
+          "monthlyFee": 5.99,
+          "prerequisites": "MyŠkoda App.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.51
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.51,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "Keine Blockiergebühr 22–6 Uhr."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Übrige Betreiber wie Charge Basic.",
+              "pricing": "OPERATOR_AD_HOC"
+            }
+          ],
+          "notes": "„Flexible Preise“ je Betreiber, angezeigt in der App; hier mit dem Ad-hoc-Preis angenähert.",
+          "sourceUrl": "https://tariffcalculator.skoda-auto.com/439/de-AT",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "ionity-ultra",
+          "name": "IONITY Charge Ultra",
+          "currency": "EUR",
+          "monthlyFee": 11.99,
+          "prerequisites": "MyŠkoda App.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.41
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.41,
+                  "blockingFeePerMinute": 0.1,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "Keine Blockiergebühr 22–6 Uhr."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Übrige Betreiber wie Charge Basic.",
+              "pricing": "OPERATOR_AD_HOC"
+            }
+          ],
+          "notes": "„Flexible Preise“ je Betreiber, angezeigt in der App; hier mit dem Ad-hoc-Preis angenähert.",
+          "sourceUrl": "https://tariffcalculator.skoda-auto.com/439/de-AT",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "premium",
+          "name": "Charge Premium",
+          "currency": "EUR",
+          "monthlyFee": 17.99,
+          "prerequisites": "MyŠkoda App.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "ionity"
+              ],
+              "prices": [
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.41,
+                  "blockingFeePerMinute": 0.15,
+                  "blockingAfterMinutes": 90
+                }
+              ]
+            },
+            {
+              "kind": "OPERATOR",
+              "networks": [
+                "mer"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.59,
+                  "blockingFeePerMinute": 0.07,
+                  "blockingAfterMinutes": 210
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.59,
+                  "blockingFeePerMinute": 0.15,
+                  "blockingAfterMinutes": 90
+                }
+              ],
+              "notes": "Selected Partners."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.69,
+                  "blockingFeePerMinute": 0.07,
+                  "blockingAfterMinutes": 210
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.74,
+                  "blockingFeePerMinute": 0.15,
+                  "blockingAfterMinutes": 90
+                }
+              ]
+            }
+          ],
+          "notes": "AC-Blockiergebühr nicht 23–8 Uhr.",
+          "sourceUrl": "https://tariffcalculator.skoda-auto.com/439/de-AT",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}

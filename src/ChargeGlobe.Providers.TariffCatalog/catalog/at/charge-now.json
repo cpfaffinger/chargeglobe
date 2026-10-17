@@ -1,0 +1,133 @@
+{
+  "networks": [],
+  "emps": [
+    {
+      "key": "charge-now",
+      "name": "CHARGE NOW",
+      "website": "https://chargenow.com",
+      "country": "DE",
+      "tariffs": [
+        {
+          "key": "urban",
+          "name": "CHARGE NOW Urban",
+          "currency": "EUR",
+          "monthlyFee": 0,
+          "prerequisites": "Mindestlaufzeit 1 Monat; auch als MG-Ladekarte ausgegeben.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "PARTNER",
+              "networks": [
+                "ionity",
+                "evn",
+                "electra",
+                "mer",
+                "kelag",
+                "shell",
+                "da-emobil",
+                "salzburg-ag"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.49,
+                  "sessionFee": 0.35,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 180
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.69,
+                  "sessionFee": 0.35,
+                  "blockingFeePerMinute": 0.12,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "Preferred Partner Network, Preise „aktuell ab“."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [],
+              "notes": "Übrige Ladepunkte: flexible Preise plus 0,35 € je Ladevorgang.",
+              "pricing": "OPERATOR_AD_HOC",
+              "markupSessionFee": 0.35
+            }
+          ],
+          "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert.",
+          "sourceUrl": "https://chargenow.com/api/public/v1/AT/tariffs/pdf?locale=de_AT",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        },
+        {
+          "key": "prime",
+          "name": "CHARGE NOW Prime",
+          "currency": "EUR",
+          "monthlyFee": 9.95,
+          "prerequisites": "Unbefristet, 1 Monat Kündigungsfrist.",
+          "markets": [
+            "AT"
+          ],
+          "zones": [
+            {
+              "kind": "PARTNER",
+              "networks": [
+                "ionity",
+                "evn",
+                "electra",
+                "mer",
+                "kelag",
+                "shell",
+                "da-emobil",
+                "salzburg-ag"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.39,
+                  "blockingFeePerMinute": 0.09,
+                  "blockingAfterMinutes": 180
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.55,
+                  "blockingFeePerMinute": 0.09,
+                  "blockingAfterMinutes": 60
+                }
+              ],
+              "notes": "Preferred Partner Network, „aktuell ab“."
+            },
+            {
+              "kind": "ROAMING",
+              "excludedNetworks": [
+                "tesla"
+              ],
+              "prices": [
+                {
+                  "current": "AC",
+                  "pricePerKwh": 0.59,
+                  "blockingFeePerMinute": 0.09,
+                  "blockingAfterMinutes": 180
+                },
+                {
+                  "current": "DC",
+                  "pricePerKwh": 0.69,
+                  "blockingFeePerMinute": 0.09,
+                  "blockingAfterMinutes": 60
+                }
+              ]
+            }
+          ],
+          "notes": null,
+          "sourceUrl": "https://chargenow.com/api/public/v1/AT/tariffs/pdf?locale=de_AT",
+          "sourceDate": null,
+          "confidence": "MEDIUM"
+        }
+      ]
+    }
+  ]
+}
