@@ -61,7 +61,7 @@ import { Setting, SettingsService } from './settings.service';
               [placeholder]="placeholder()"
               [disabled]="!canManage()"
               [attr.aria-label]="setting().key"
-              autocomplete="off"
+              [attr.autocomplete]="isSecret() ? 'new-password' : 'off'"
               (input)="edit($event)"
             />
           </mat-form-field>

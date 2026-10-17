@@ -1417,6 +1417,18 @@ app-admin-settings mat-accordion {
   margin-top: 8px;
 }
 
+app-admin-settings .settings-section + .settings-section {
+  margin-top: 16px;
+}
+
+app-admin-settings .settings-section h2 {
+  margin: 8px 0 0;
+  padding-bottom: 4px;
+  border-bottom: 2px solid var(--mat-sys-primary);
+  color: var(--mat-sys-primary);
+  font: var(--mat-sys-title-small);
+}
+
 app-setting-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 400px);
