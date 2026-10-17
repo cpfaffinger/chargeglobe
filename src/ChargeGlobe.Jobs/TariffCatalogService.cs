@@ -20,6 +20,9 @@ public sealed class TariffCatalogService(
 
     public static readonly TimeSpan Interval = TimeSpan.FromHours(6);
 
+    /// <summary>Day (UTC) of the last log line about stale tariffs: once a day is enough.</summary>
+    private DateOnly? _staleLoggedOn;
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         using var timer = new PeriodicTimer(Interval, timeProvider);
@@ -71,6 +74,13 @@ public sealed class TariffCatalogService(
                             "Tariff catalog {Source}: {Networks} networks, {Emps} providers; tariffs {Created} new, {Changed} changed, {Closed} ended, {Unchanged} unchanged",
                             source.Key, result.Networks, result.Emps, result.Created, result.Changed, result.Closed, result.Unchanged);
                     }
+                }
+
+                var today = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+                if (_staleLoggedOn != today)
+                {
+                    logger.LogInformation("Tariff catalog: {Count} tariffs older than the setting tariff.stale_months or without date", await catalog.StaleCountAsync(stoppingToken));
+                    _staleLoggedOn = today;
                 }
             }
             finally

@@ -44,6 +44,7 @@ public sealed record ZoneView(
 /// <param name="SourceDate">Date the provider states for the prices ("Stand").</param>
 /// <param name="Confidence"><c>HIGH</c>, <c>MEDIUM</c> or <c>LOW</c>.</param>
 /// <param name="ValidTo">End of this version; null while it is current.</param>
+/// <param name="Stale">The "Stand" is unknown or older than the setting tariff.stale_months: the values need a check.</param>
 public sealed record TariffView(
     Guid Id,
     string Emp,
@@ -60,7 +61,8 @@ public sealed record TariffView(
     DateOnly? SourceDate,
     string Confidence,
     DateTimeOffset ValidFrom,
-    DateTimeOffset? ValidTo);
+    DateTimeOffset? ValidTo,
+    bool Stale);
 
 /// <summary>What an import changed; with <paramref name="Issues"/> nothing was imported.</summary>
 /// <param name="Created">Tariffs that are new.</param>
@@ -79,6 +81,9 @@ public interface ITariffCatalog
 
     /// <summary>The current tariffs (with <paramref name="history"/> also the ended versions), of one EMP if given.</summary>
     Task<IReadOnlyList<TariffView>> TariffsAsync(string? emp, bool history, CancellationToken cancellationToken);
+
+    /// <summary>The number of current tariffs that are stale (see <see cref="TariffView.Stale"/>).</summary>
+    Task<int> StaleCountAsync(CancellationToken cancellationToken);
 
     /// <summary>
     /// Takes over the whole catalog of a source: new and changed tariffs become new versions, tariffs the source no longer

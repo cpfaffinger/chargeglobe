@@ -37,6 +37,8 @@ public static class SettingsCatalog
     public const string PriceVehicleDcKw = "price.vehicle_dc_kw";
     public const string PriceDcTaperFactor = "price.dc_taper_factor";
 
+    public const string TariffStaleMonths = "tariff.stale_months";
+
     public const string ProviderEnabled = "provider.enabled";
     public const string ProviderApiKey = "provider.api_key";
     public const string ProviderReferer = "provider.referer";
@@ -176,6 +178,14 @@ public static class SettingsCatalog
         {
             Min = 1,
             Max = 3,
+        },
+
+        new(TariffStaleMonths, SettingType.Int, 6,
+            "A tariff counts as stale when the \"Stand\" of its price sheet (sourceDate) is older than this many months or " +
+            "unknown: listTariffs marks it, /admin/tariffs shows it, and the worker logs their number once a day.")
+        {
+            Min = 1,
+            Max = 36,
         },
 
         new(ProviderEnabled, SettingType.Bool, false,

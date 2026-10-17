@@ -1958,3 +1958,16 @@ app-favorites .favorite-actions {
   align-items: stretch;
   padding-left: 16px;
 }
+
+app-admin-tariffs .stale {
+  margin-left: 4px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+  font: var(--mat-sys-label-small);
+}
+
+app-admin-tariffs .stale-summary {
+  color: var(--mat-sys-error);
+}

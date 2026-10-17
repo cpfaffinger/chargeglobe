@@ -68,8 +68,11 @@ function groupsFor(rows: Row[]): Group[] {
     },
     {
       title: 'Preise',
-      summary: 'Beispielrechnung: Energie und Ladeleistung des Beispielautos',
-      sections: [{ title: 'Beispielsitzung', takes: keyIn('price') }],
+      summary: 'Beispielrechnung und Prüfung des Tarifkatalogs',
+      sections: [
+        { title: 'Beispielsitzung', takes: keyIn('price') },
+        { title: 'Tarifkatalog', takes: keyIn('tariff') },
+      ],
     },
     {
       title: 'Anmeldung und Konten',

@@ -200,6 +200,14 @@ Befunde:
 - **Nicht im Katalog**: MOON und ENIO (Preise je Standortbetreiber, Ad-hoc aus der E-Control), Tesla.
 - **Präfixe ohne Bestätigung**: Burgenland Energie `AT*EBM` (BE Solution), Wels Strom `AT*LNK`/`AT*WSG`; Leikermoser `AT*LME` ist noch in keinen Daten.
 
+### Abdeckung der Ladepunkte (Stand 17.10.2026)
+
+Abgleich der 40.868 aktiven Ladepunkte im Live-Bestand mit dem Katalog (50 Anbieter, 102 Tarife):
+- **37.909 Ladepunkte** sind mit mindestens einer Ladekarte nutzbar: je Betreiber 28–49 Tarife mit festem Preis und bis zu 42 mit Betreiberpreis oder unbekanntem Preis (z. B. EVN 42 + 38, Wien Energie 36 + 42, IONITY 49 + 30, ChargePoint 28 + 42).
+- **2.183 Ladepunkte** nehmen laut E-Control keine Fremdkarten an (`roaming = false`) und gehören zu Betreibern ohne eigene Ladekarte, vor allem Parkgaragen und Firmenstandorte (Best in Parking 455, Smart Fuel Pass 283, MGAtech 256, KWMS 16); dort gilt nur der Ad-hoc-Preis.
+- **776 Tesla-Ladepunkte**: keine Karte im Katalog (siehe oben), Ad-hoc-Preis aus der E-Control.
+- Ohne eigenes Netz im Katalog (nur über offene Roamingzonen erreichbar) sind die großen Betreiber ChargePoint (`AT*HTB`, `AT*CPI`), MOON (`AT*POW`), eCarUp (`CH*ECU`), e-sprit (`AT*EK6`), Wattif, Chargewell, Plenitude und E-Mobilitätszentrum: Sie haben keine eigene Ladekarte, ihre Apps rechnen den Ad-hoc-Preis ab.
+
 ## Nächste Schritte aus der Bestandsanalyse
 
 1. E-Control: Key liegt vor, Adapter `ChargeGlobe.Providers.EControl` existiert ([Endpunkt-Notiz](endpunkte/econtrol.md)). Offen: Swagger ist auch mit Key nicht lesbar, Bulk-Endpunkt und Status-Aktualisierungsrate unbekannt; Operator-IDs aller Scope-Betreiber aus den Daten ziehen.

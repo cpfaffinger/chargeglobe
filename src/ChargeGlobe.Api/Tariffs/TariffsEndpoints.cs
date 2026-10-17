@@ -51,7 +51,8 @@ public static class TariffsEndpoints
         new DateOnly(2026, 7, 1),
         "HIGH",
         ExampleTime,
-        null);
+        null,
+        false);
 
     public static IEndpointRouteBuilder MapTariffsEndpoints(this IEndpointRouteBuilder endpoints)
     {
@@ -86,7 +87,8 @@ public static class TariffsEndpoints
             .WithDescription(
                 "Returns the current tariffs (with `history=true` also the ended versions), optionally of one `emp`. A " +
                 "tariff has `monthlyFee`, `prerequisites`, `markets`, the `source` of the values (`sourceUrl`, `sourceDate` = " +
-                "\"Stand\" of the provider, `confidence` HIGH/MEDIUM/LOW) and `zones`: where it applies and what it costs. " +
+                "\"Stand\" of the provider, `confidence` HIGH/MEDIUM/LOW, `stale` = the \"Stand\" is unknown or older than the setting tariff.stale_months, " +
+                "default 6) and `zones`: where it applies and what it costs. " +
                 "An EVSE gets the first zone that covers its operator (the operator part of its EVSE-ID) in the order " +
                 "OPERATOR (special prices of single operators), HOME (own stations of the provider), PARTNER (partner " +
                 "networks), ROAMING (every other operator, only at EVSEs that accept cards of other providers; " +

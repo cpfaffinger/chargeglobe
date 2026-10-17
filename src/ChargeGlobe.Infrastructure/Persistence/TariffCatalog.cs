@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using ChargeGlobe.Application.Identity;
+using ChargeGlobe.Application.Settings;
 using ChargeGlobe.Application.Tariffs;
 using ChargeGlobe.Domain.Charging;
 using ChargeGlobe.Infrastructure.Identity;
@@ -16,7 +17,7 @@ namespace ChargeGlobe.Infrastructure.Persistence;
 /// one transaction per source: validate everything, then upsert networks and providers, open new tariff versions and end
 /// the replaced or vanished ones.
 /// </summary>
-public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, TimeProvider timeProvider) : ITariffCatalog
+public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, IAppConfig config, TimeProvider timeProvider) : ITariffCatalog
 {
     /// <summary>Highest amount of a price component; protects the comparison from typos such as 45 instead of 0.45.</summary>
     public const decimal MaxAmount = 1000;
@@ -45,12 +46,23 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, TimeP
             .Join(db.Emps, plan => plan.EmpId, item => item.Id, (plan, item) => new { Plan = plan, item.Key, item.Name })
             .Where(row => emp == null || row.Key == emp)
             .ToListAsync(cancellationToken);
+        var cutoff = StaleBefore();
         return [.. rows
             .OrderBy(row => row.Key, StringComparer.Ordinal)
             .ThenBy(row => row.Plan.Key, StringComparer.Ordinal)
             .ThenByDescending(row => row.Plan.ValidFrom)
-            .Select(row => View(row.Plan, row.Key, row.Name))];
+            .Select(row => View(row.Plan, row.Key, row.Name, cutoff))];
     }
+
+    public Task<int> StaleCountAsync(CancellationToken cancellationToken)
+    {
+        var cutoff = StaleBefore();
+        return db.TariffPlans.CountAsync(plan => plan.ValidTo == null && (plan.SourceDate == null || plan.SourceDate < cutoff), cancellationToken);
+    }
+
+    /// <summary>Tariffs whose "Stand" lies before this day are stale.</summary>
+    private DateOnly StaleBefore() =>
+        DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime).AddMonths(-config.Get<int>(SettingsCatalog.TariffStaleMonths));
 
     public async Task<CatalogImportResult> ImportAsync(string sourceKey, TariffCatalogSnapshot snapshot, Actor? actor, CancellationToken cancellationToken)
     {
@@ -261,7 +273,7 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, TimeP
     private static string Hash(TariffPlan.Content content) =>
         Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(content, TariffCatalogSnapshot.Json))));
 
-    private static TariffView View(TariffPlan plan, string emp, string empName) =>
+    private static TariffView View(TariffPlan plan, string emp, string empName, DateOnly staleBefore) =>
         new(
             plan.Id,
             emp,
@@ -287,7 +299,8 @@ public sealed partial class TariffCatalog(AppDbContext db, AuditLog audit, TimeP
             plan.SourceDate,
             plan.Confidence.ToString(),
             plan.ValidFrom,
-            plan.ValidTo);
+            plan.ValidTo,
+            plan.SourceDate is not { } date || date < staleBefore);
 
     [GeneratedRegex("^[A-Z]{3}$")]
     private static partial Regex CurrencyPattern();
