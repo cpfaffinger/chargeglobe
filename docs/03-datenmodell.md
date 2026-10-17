@@ -102,7 +102,7 @@ Operator (CPO) ─┬─ 1..n ─ Location ─ 1..n ─ ChargingStation? ─ 1..
 
 ### Preise
 
-Zwei Arten von Preisen (`TariffKind`): der **Ad-hoc-Preis** (`AD_HOC`, ohne Vertrag, von den Quellen je Ladepunkt gemeldet) und der **Tarif einer Ladekarte oder App** (`EMP`, aus dem Tarifkatalog). Beide werden in dieselben Preisbestandteile übersetzt (`PriceComponents`: kWh-Preis, Minutenpreis, Startgebühr, Blockiergebühr ab Minute X, kostenlos) und mit derselben Beispielrechnung verglichen: 30 kWh in 40 Minuten (`PriceExample`), Unbekanntes zählt 0.
+Zwei Arten von Preisen (`TariffKind`): der **Ad-hoc-Preis** (`AD_HOC`, ohne Vertrag, von den Quellen je Ladepunkt gemeldet) und der **Tarif einer Ladekarte oder App** (`EMP`, aus dem Tarifkatalog). Beide werden in dieselben Preisbestandteile übersetzt (`PriceComponents`: kWh-Preis, Minutenpreis, Startgebühr, Blockiergebühr ab Minute X, kostenlos) und mit derselben Beispielrechnung verglichen, Unbekanntes zählt 0. Die **Beispielsitzung** gilt je Ladepunkt (`ChargingScenario.At` → `SessionExample`): `price.example_kwh` (Default 30 kWh) so lange, wie sie bei der kleineren Leistung von Ladepunkt (höchste Leistung der Stecker) und Beispielauto dauert – AC mit `price.vehicle_ac_kw` (11 kW), DC mit `price.vehicle_dc_kw` (150 kW Spitze) und der Ladezeit × `price.dc_taper_factor` (1,3), aufgerundet auf Minuten. Beispiele: 22 kW AC 164 min (Auto begrenzt), 3,7 kW AC 487 min (Ladepunkt begrenzt), 50 kW DC 47 min, 300 kW DC 16 min. So werden Minuten- und kWh-Tarife an langsamen und schnellen Ladepunkten fair verglichen; die Einstellungen gelten ohne Neustart (`/admin/settings`, Gruppe „Preise“).
 
 | Tabelle | Spalten | Anmerkung |
 |---|---|---|
@@ -114,7 +114,7 @@ Zwei Arten von Preisen (`TariffKind`): der **Ad-hoc-Preis** (`AD_HOC`, ohne Vert
 
 Der Preisvergleich je Ladepunkt (`GET /evses/{evseId}/prices`, Felder `emps` und `unavailable`) rechnet zur Abfragezeit über alle offenen Tarifversionen: Betreiber des EVSE ist der Betreiberteil seiner EVSE-ID, bei Surrogat-IDs die Betreiber-ID (`operator.country*operator.operator_id`) des Betreibers von EVSE oder Standort; Stromart DC bei `power_type` DC (ohne Angabe bei einem DC-Stecker), sonst AC; Leistung = höchste Leistung der Stecker. Je Tarif gilt die erste passende Zone nach den Regeln von [ADR-0013](adr/0013-ladetarife-netze-zonen-katalog.md); Tarife ohne passende Zone stehen in `unavailable`. Die gültigen Tarife (wenige Hundert Zeilen) und Netze werden je Anfrage einmal geladen und im Speicher zugeordnet.
 
-Vorgesehen: Zonen mit dem Preis des jeweiligen Betreibers (Electroverse, Plugsurfing), Zeitfenster und Deckel nach OCPI-`TariffRestrictions`, Auslandspreise und wählbare Szenarien (AC 11 kW / 20 kWh / 2 h, DC 50 kW / 30 kWh / 40 min, HPC 150 kW / 40 kWh / 20 min).
+Vorgesehen: Zonen mit dem Preis des jeweiligen Betreibers (Electroverse, Plugsurfing), Zeitfenster und Deckel nach OCPI-`TariffRestrictions`, Auslandspreise und Szenarien je Fahrzeug des Kontos (Leistung und Energie aus dem Fahrzeug der Ladeplanung).
 
 ## Lebenszyklus
 

@@ -1,5 +1,7 @@
 using ChargeGlobe.Application.Locations;
+using ChargeGlobe.Application.Settings;
 using ChargeGlobe.Domain;
+using ChargeGlobe.Domain.Charging;
 using ChargeGlobe.Providers.Abstractions;
 
 namespace ChargeGlobe.Application.Evses;
@@ -82,16 +84,20 @@ public sealed record StatusInterval(string Status, DateTimeOffset From, DateTime
 /// <param name="Hour">Hour of the day in the requested time zone, 0–23.</param>
 public sealed record OccupancyCell(int Weekday, int Hour, long Charging, long Total);
 
-/// <summary>The session of the example cost that makes prices comparable: 30 kWh charged in 40 minutes.</summary>
-public static class PriceExample
+/// <summary>The scenario of the example cost from the settings <c>price.*</c> (docs/03, "Preise").</summary>
+public static class PriceScenario
 {
-    public const int Kwh = 30;
-    public const int Minutes = 40;
+    public static ChargingScenario From(IAppConfig config) =>
+        new(
+            (decimal)config.Get<double>(SettingsCatalog.PriceExampleKwh),
+            (decimal)config.Get<double>(SettingsCatalog.PriceVehicleAcKw),
+            (decimal)config.Get<double>(SettingsCatalog.PriceVehicleDcKw),
+            (decimal)config.Get<double>(SettingsCatalog.PriceDcTaperFactor));
 }
 
 /// <summary>Price components of one source in euros (or <paramref name="Currency"/>); null if the source does not tell.</summary>
 /// <param name="BlockingAfterMinutes">Minute of the session from which the blocking fee applies.</param>
-/// <param name="ExampleCost">Cost of the example session (<see cref="PriceExample"/>), unknown parts counted as 0.</param>
+/// <param name="ExampleCost">Cost of the example session of the EVSE (<see cref="SessionExample"/>), unknown parts counted as 0.</param>
 public sealed record PriceView(
     string Source,
     string Currency,
@@ -135,26 +141,30 @@ public sealed record EmpPrice(
 /// <summary>A tariff valid now that cannot be used at the EVSE (operator not covered, or no card acceptance).</summary>
 public sealed record EmpUnavailable(string Emp, string EmpName, string TariffKey, string Tariff);
 
+/// <param name="Example">The session all costs are for: the energy of the scenario at the power of this EVSE.</param>
 /// <param name="Current">The newest ad-hoc price of the sources; null if none is known.</param>
 /// <param name="Emps">Prices of the EMP tariffs that apply at the EVSE, cheapest example first.</param>
 /// <param name="Unavailable">Tariffs valid now that do not apply at the EVSE.</param>
-public sealed record EvsePrices(CurrentPrice? Current, IReadOnlyList<PricePeriod> History, IReadOnlyList<EmpPrice> Emps, IReadOnlyList<EmpUnavailable> Unavailable);
+public sealed record EvsePrices(SessionExample Example, CurrentPrice? Current, IReadOnlyList<PricePeriod> History, IReadOnlyList<EmpPrice> Emps, IReadOnlyList<EmpUnavailable> Unavailable);
 
 /// <summary>The lowest ad-hoc cost of a session at a location: the EVSE where it costs least.</summary>
 /// <param name="EvseId">EVSE-ID of that EVSE.</param>
-public sealed record LocationAdHocPrice(decimal Cost, string Currency, string EvseId);
+/// <param name="Minutes">Duration of the session there.</param>
+public sealed record LocationAdHocPrice(decimal Cost, string Currency, string EvseId, int Minutes);
 
 /// <summary>The charging card (EMP tariff valid now) with the lowest cost of a session at a location.</summary>
 /// <param name="Emp">Key of the EMP.</param>
 /// <param name="EvseId">EVSE-ID of the EVSE where it costs least.</param>
-public sealed record LocationCardPrice(string Emp, string EmpName, Guid TariffId, string Tariff, decimal Cost, string Currency, string EvseId);
+/// <param name="Minutes">Duration of the session there.</param>
+public sealed record LocationCardPrice(string Emp, string EmpName, Guid TariffId, string Tariff, decimal Cost, string Currency, string EvseId, int Minutes);
 
 /// <summary>The cheapest prices of a session at a location; null where none is known.</summary>
 public sealed record LocationPrices(Guid LocationId, LocationAdHocPrice? AdHoc, LocationCardPrice? CheapestCard);
 
 /// <param name="Locations">One entry per requested location, in the order of the request.</param>
+/// <param name="Kwh">Energy of the sessions.</param>
 /// <param name="Attribution">The sources of the ad-hoc prices.</param>
-public sealed record LocationPricesPage(IReadOnlyList<LocationPrices> Locations, IReadOnlyList<SourceAttribution> Attribution);
+public sealed record LocationPricesPage(decimal Kwh, IReadOnlyList<LocationPrices> Locations, IReadOnlyList<SourceAttribution> Attribution);
 
 /// <summary>Order of the EVSE search.</summary>
 public enum EvseSort
@@ -258,12 +268,13 @@ public interface IEvseQueries
     Task<EvsePrices> PricesAsync(Guid id, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken);
 
     /// <summary>
-    /// The cheapest ad-hoc price and the cheapest charging card of a session with <paramref name="kwh"/> charged in
-    /// <paramref name="minutes"/> at each of the locations, over their active EVSEs; the cards limited to the EMPs with the
-    /// keys <paramref name="cards"/> (null: all). Same rules as <see cref="PricesAsync"/>.
+    /// The cheapest ad-hoc price and the cheapest charging card of a session with <paramref name="kwh"/> (null: the
+    /// scenario's) charged in <paramref name="minutes"/> (null: as long as it takes at each EVSE, <see cref="ChargingScenario"/>)
+    /// at each of the locations, over their active EVSEs; the cards limited to the EMPs with the keys
+    /// <paramref name="cards"/> (null: all). Same rules as <see cref="PricesAsync"/>.
     /// </summary>
     Task<LocationPricesPage> LocationPricesAsync(
-        IReadOnlyList<Guid> locationIds, decimal kwh, int minutes, IReadOnlyCollection<string>? cards, CancellationToken cancellationToken);
+        IReadOnlyList<Guid> locationIds, decimal? kwh, int? minutes, IReadOnlyCollection<string>? cards, CancellationToken cancellationToken);
 
     /// <summary>The sources with a record for the EVSE, from the table <c>source</c>.</summary>
     Task<IReadOnlyList<SourceAttribution>> AttributionAsync(Guid id, CancellationToken cancellationToken);

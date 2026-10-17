@@ -13,7 +13,7 @@ import { LocationDetailPage } from '../pages/location-detail.page';
 import { ME, fakeAuth, flush, locationSummary, text } from '../testing';
 import { CardsStore } from '../preferences/cards.store';
 import { LocationDetails } from './location-details';
-import { EmpPrice, EvsePricesResponse, PriceView, comparison, money, priceParts } from './prices';
+import { EmpPrice, EvsePricesResponse, PriceView, comparison, duration, money, priceParts, sessionText } from './prices';
 import {
   EvseDetail,
   EvsesService,
@@ -773,7 +773,7 @@ describe('LocationDetails with prices', () => {
     ...overrides,
   });
   const prices = (current: EvsePricesResponse['data']['current'], emps: EmpPrice[] = []): EvsePricesResponse => ({
-    data: { id: 'e', evseId: 'e', tariffKind: 'AD_HOC', from: '', to: '', example: { kwh: 30, minutes: 40 }, current, history: [], emps, unavailable: [] },
+    data: { id: 'e', evseId: 'e', tariffKind: 'AD_HOC', from: '', to: '', example: { kwh: 30, minutes: 40, powerKw: null, basis: 'REQUEST' }, current, history: [], emps, unavailable: [] },
     meta: { attribution: [] },
   });
 
@@ -931,6 +931,8 @@ describe('price texts', () => {
     expect(priceParts({ ...base, pricePerKwh: null, pricePerMinute: null, sessionFee: null, blockingFeePerMinute: null })).toEqual(['keine Angaben']);
     expect(money(0.1234, 'EUR')).toBe('0,1234\u00a0€');
     expect(money(19, 'EUR')).toBe('19,00\u00a0€');
+    expect([duration(16), duration(120), duration(164)]).toEqual(['16 min', '2 h', '2 h 44 min']);
+    expect(sessionText({ kwh: 22.5, minutes: 164, powerKw: 11, basis: 'VEHICLE' })).toBe('22,5 kWh in 2 h 44 min');
   });
 
   it('compares the ad-hoc price with the cards by the cost of the example and marks the cheapest', () => {
@@ -964,7 +966,7 @@ describe('price texts', () => {
       tariffKind: 'AD_HOC',
       from: '',
       to: '',
-      example: { kwh: 30, minutes: 40 },
+      example: { kwh: 30, minutes: 40, powerKw: null, basis: 'REQUEST' },
       current,
       history: [],
       emps,

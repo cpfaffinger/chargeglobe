@@ -32,6 +32,11 @@ public static class SettingsCatalog
 
     public const string StatusFaultGraceMinutes = "status.fault_grace_minutes";
 
+    public const string PriceExampleKwh = "price.example_kwh";
+    public const string PriceVehicleAcKw = "price.vehicle_ac_kw";
+    public const string PriceVehicleDcKw = "price.vehicle_dc_kw";
+    public const string PriceDcTaperFactor = "price.dc_taper_factor";
+
     public const string ProviderEnabled = "provider.enabled";
     public const string ProviderApiKey = "provider.api_key";
     public const string ProviderReferer = "provider.referer";
@@ -143,6 +148,34 @@ public static class SettingsCatalog
         {
             Min = 0,
             Max = 240,
+        },
+
+        new(PriceExampleKwh, SettingType.Number, 30.0,
+            "Energy of the example session that makes the prices of an EVSE comparable (ad-hoc price and every charging " +
+            "card): the cost of charging this many kWh at the EVSE.")
+        {
+            Min = 1,
+            Max = 200,
+        },
+        new(PriceVehicleAcKw, SettingType.Number, 11.0,
+            "Charging power of the example car at AC (on-board charger) in kW. The example session at an AC EVSE lasts as " +
+            "long as the energy takes at the lower of this and the power of the EVSE.")
+        {
+            Min = 1,
+            Max = 43,
+        },
+        new(PriceVehicleDcKw, SettingType.Number, 150.0,
+            "Peak charging power of the example car at DC in kW; at a DC EVSE the lower of this and the power of the EVSE " +
+            "counts, stretched by price.dc_taper_factor.")
+        {
+            Min = 10,
+            Max = 500,
+        },
+        new(PriceDcTaperFactor, SettingType.Number, 1.3,
+            "Factor on the DC charging time, because the power falls with the state of charge (1 = constant peak power).")
+        {
+            Min = 1,
+            Max = 3,
         },
 
         new(ProviderEnabled, SettingType.Bool, false,

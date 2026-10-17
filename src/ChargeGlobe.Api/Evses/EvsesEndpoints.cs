@@ -42,9 +42,6 @@ public sealed record OccupancyData(
 
 public sealed record OccupancyResponse(OccupancyData Data, AttributionMeta Meta);
 
-/// <summary>The session of <c>exampleCost</c>.</summary>
-public sealed record PriceExampleSession(decimal Kwh, int Minutes);
-
 /// <param name="TariffKind">AD_HOC: <paramref name="Current"/> and <paramref name="History"/> are the price without contract or app account.</param>
 /// <param name="Emps">Prices of the charging cards and apps (EMP tariffs valid now) at this EVSE, cheapest example first.</param>
 public sealed record EvsePricesData(
@@ -53,7 +50,7 @@ public sealed record EvsePricesData(
     string TariffKind,
     DateTimeOffset From,
     DateTimeOffset To,
-    PriceExampleSession Example,
+    SessionExample Example,
     CurrentPrice? Current,
     IReadOnlyList<PricePeriod> History,
     IReadOnlyList<EmpPrice> Emps,
@@ -162,7 +159,10 @@ public static class EvsesEndpoints
                 "oldest first, not clipped (`to: null` = still valid). Each price has `source`, `currency`, `pricePerKwh`, " +
                 "`pricePerMinute`, `sessionFee`, `blockingFeePerMinute` with `blockingAfterMinutes` (minute of the session from " +
                 "which it applies), `freeOfCharge` (amounts null if the source does not tell) and `exampleCost`: the cost of " +
-                "charging 30 kWh in 40 minutes (`example`), unknown parts counted as 0. `emps` compares charging cards and " +
+                "the example session `example` at this EVSE, unknown parts counted as 0. `example` has `kwh` (setting " +
+                "price.example_kwh, default 30), `minutes` (how long that takes here: at the lower of the power of the EVSE " +
+                "and of the example car, default AC 11 kW and DC 150 kW peak with DC time × 1.3, rounded up), `powerKw` " +
+                "and `basis` (EVSE or VEHICLE: which power limits). `emps` compares charging cards and " +
                 "apps: per tariff valid now that applies at the EVSE (rules in `listTariffs`: the zone of the operator part of " +
                 "the EVSE-ID, then the price element for its current – DC if the EVSE or a connector is DC – and its maximum " +
                 "power) `emp` (key), `empName`, `tariffId`, `tariffKey`, `tariff`, `zone` (OPERATOR, HOME, PARTNER or " +
@@ -182,7 +182,7 @@ public static class EvsesEndpoints
                         nameof(TariffKind.AD_HOC),
                         At("2026-07-16T08:15:00Z"),
                         At("2026-10-14T08:15:00Z"),
-                        new PriceExampleSession(PriceExample.Kwh, PriceExample.Minutes),
+                        new SessionExample(30, 164, 11, SessionExample.ByVehicle),
                         new CurrentPrice(ExamplePrice, At("2026-09-01T06:00:00Z"), At("2026-10-14T06:00:00Z")),
                         [
                             new PricePeriod(ExamplePrice with { PricePerKwh = 0.49m, ExampleCost = 14.70m }, At("2026-05-01T06:00:00Z"), At("2026-09-01T06:00:00Z")),
@@ -322,7 +322,7 @@ public static class EvsesEndpoints
         var prices = await queries.PricesAsync(evse.Id, start!.Value, end!.Value, cancellationToken);
         return Results.Ok(new EvsePricesResponse(
             new EvsePricesData(
-                evse.Id, evse.EvseId, nameof(TariffKind.AD_HOC), start.Value, end.Value, new PriceExampleSession(PriceExample.Kwh, PriceExample.Minutes),
+                evse.Id, evse.EvseId, nameof(TariffKind.AD_HOC), start.Value, end.Value, prices.Example,
                 prices.Current, prices.History, prices.Emps, prices.Unavailable),
             new AttributionMeta(await queries.AttributionAsync(evse.Id, cancellationToken))));
     }

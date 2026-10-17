@@ -86,16 +86,16 @@ export function stopsSummary(count: number): string {
   return count === 0 ? '' : ` · ${count} ${count === 1 ? 'Ladestopp' : 'Ladestopps'}`;
 }
 
-/** Cheapest prices of a session at a location (POST /api/v1/locations/prices, default 30 kWh in 40 minutes). */
+/** Cheapest prices of a session at a location (POST /api/v1/locations/prices, 30 kWh as long as they take at each EVSE). */
 export interface LocationPrices {
   locationId: string;
-  adHoc: { cost: number; currency: string; evseId: string } | null;
-  cheapestCard: { emp: string; empName: string; tariffId: string; tariff: string; cost: number; currency: string; evseId: string } | null;
+  adHoc: { cost: number; currency: string; evseId: string; minutes: number } | null;
+  cheapestCard: { emp: string; empName: string; tariffId: string; tariff: string; cost: number; currency: string; evseId: string; minutes: number } | null;
 }
 
 export interface LocationPricesResponse {
   data: LocationPrices[];
-  meta: { session: { kwh: number; minutes: number }; attribution: { source: string; text: string; license: string }[] };
+  meta: { session: { kwh: number; minutes: number | null }; attribution: { source: string; text: string; license: string }[] };
 }
 
 /** Energy of the session the prices along a route are for. */

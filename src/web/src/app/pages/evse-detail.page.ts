@@ -21,7 +21,7 @@ import {
 } from '../evses/labels';
 import { Segment, faultSource, sourceName, statusOf, timeline } from '../evses/status';
 import { OccupancyHeatmap, StatusTimeline } from '../evses/status-charts';
-import { EvsePricesResponse, comparison, money, priceParts } from '../evses/prices';
+import { EvsePricesResponse, comparison, money, priceParts, sessionText } from '../evses/prices';
 import { MapLink, ShareResult } from '../map/map-link';
 import { CardsStore } from '../preferences/cards.store';
 
@@ -204,7 +204,7 @@ const SHARE_MESSAGES: Record<ShareResult, string | null> = {
                   @if (pricing.current; as current) {
                     <p id="price-current">{{ parts(current.price).join(' · ') }}</p>
                     <p id="price-example">
-                      {{ pricing.example.kwh }} kWh in {{ pricing.example.minutes }} min:
+                      {{ session(pricing.example) }}:
                       <strong>{{ money(current.price.exampleCost, current.price.currency) }}</strong>
                     </p>
                     <p class="lead" id="price-since">
@@ -221,7 +221,7 @@ const SHARE_MESSAGES: Record<ShareResult, string | null> = {
                       <thead>
                         <tr>
                           <th scope="col">Tarif</th><th scope="col">Preis</th><th scope="col">Grundgebühr/Monat</th>
-                          <th scope="col">{{ pricing.example.kwh }} kWh / {{ pricing.example.minutes }} min</th>
+                          <th scope="col">{{ session(pricing.example) }}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -248,7 +248,7 @@ const SHARE_MESSAGES: Record<ShareResult, string | null> = {
                     <h3>Verlauf des Ad-hoc-Preises</h3>
                     <table id="price-history" class="data-table">
                       <thead>
-                        <tr><th scope="col">von</th><th scope="col">bis</th><th scope="col">Preis</th><th scope="col">{{ pricing.example.kwh }} kWh / {{ pricing.example.minutes }} min</th></tr>
+                        <tr><th scope="col">von</th><th scope="col">bis</th><th scope="col">Preis</th><th scope="col">{{ session(pricing.example) }}</th></tr>
                       </thead>
                       <tbody>
                         @for (period of pricing.history; track period.from + period.price.source) {
@@ -421,6 +421,7 @@ export class EvseDetailPage {
   protected readonly yesNo = yesNo;
   protected readonly parts = priceParts;
   protected readonly money = money;
+  protected readonly session = sessionText;
   protected readonly compare = comparison;
   protected readonly cards = inject(CardsStore);
   /** The ad-hoc price needs price:read. */

@@ -1240,13 +1240,13 @@ describe('HomePage (map)', () => {
           card: number | null = null,
         ): LocationPrices => ({
           locationId,
-          adHoc: adHoc === null ? null : { cost: adHoc, currency: 'EUR', evseId: 'AT*TST*E1*1' },
+          adHoc: adHoc === null ? null : { cost: adHoc, currency: 'EUR', evseId: 'AT*TST*E1*1', minutes: 164 },
           cheapestCard:
             card === null
               ? null
-              : { emp: 'smatrics', empName: 'SMATRICS', tariffId: 't-1', tariff: 'Basic', cost: card, currency: 'EUR', evseId: 'AT*TST*E1*1' },
+              : { emp: 'smatrics', empName: 'SMATRICS', tariffId: 't-1', tariff: 'Basic', cost: card, currency: 'EUR', evseId: 'AT*TST*E1*1', minutes: 164 },
         });
-        const pricesOf = (data: LocationPrices[]) => ({ data, meta: { session: { kwh: 30, minutes: 40 }, attribution: [] } });
+        const pricesOf = (data: LocationPrices[]) => ({ data, meta: { session: { kwh: 30, minutes: null }, attribution: [] } });
         const names = () => Array.from(root().querySelectorAll<HTMLElement>('#route-stops li .open-stop')).map((button) => text(button, '.stop-name'));
         const prices = () =>
           Array.from(root().querySelectorAll<HTMLElement>('#route-stops li .open-stop')).map((button) => text(button, '.stop-price') ?? null);
@@ -2012,14 +2012,14 @@ describe('RoutesService', () => {
     const prices = TestBed.inject(RoutesService).prices(['loc-1'], ['smatrics']);
     const request = http.expectOne('/api/v1/locations/prices');
     expect([request.request.method, request.request.body]).toEqual(['POST', { locationIds: ['loc-1'], cards: ['smatrics'] }]);
-    request.flush({ data: [], meta: { session: { kwh: 30, minutes: 40 }, attribution: [] } });
+    request.flush({ data: [], meta: { session: { kwh: 30, minutes: null }, attribution: [] } });
     expect((await prices).meta.session.kwh).toBe(30);
     http.verify();
   });
 
   it('takes the lower of ad-hoc price and card and sorts stops by it', () => {
-    const card = { emp: 'e', empName: 'Karte', tariffId: 't', tariff: 'T', currency: 'EUR', evseId: 'E' };
-    const adHoc = { currency: 'EUR', evseId: 'E' };
+    const card = { emp: 'e', empName: 'Karte', tariffId: 't', tariff: 'T', currency: 'EUR', evseId: 'E', minutes: 16 };
+    const adHoc = { currency: 'EUR', evseId: 'E', minutes: 16 };
     expect(cheapest({ locationId: 'a', adHoc: { ...adHoc, cost: 10 }, cheapestCard: { ...card, cost: 8 } })).toEqual({ cost: 8, currency: 'EUR', label: 'Karte' });
     expect(cheapest({ locationId: 'a', adHoc: { ...adHoc, cost: 8 }, cheapestCard: { ...card, cost: 8 } })).toEqual({ cost: 8, currency: 'EUR', label: 'ohne Vertrag' });
     expect(cheapest({ locationId: 'a', adHoc: null, cheapestCard: { ...card, cost: 5 } })!.label).toBe('Karte');

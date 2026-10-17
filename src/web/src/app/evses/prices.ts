@@ -40,6 +40,26 @@ export interface EmpUnavailable {
   tariff: string;
 }
 
+/** The session of exampleCost at the EVSE: the energy as long as it takes at the lower power of EVSE and example car. */
+export interface SessionExample {
+  kwh: number;
+  minutes: number;
+  powerKw: number | null;
+  basis: 'EVSE' | 'VEHICLE' | 'REQUEST';
+}
+
+/** "16 min", "2 h", "2 h 44 min". */
+export function duration(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return hours === 0 ? `${rest} min` : rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
+}
+
+/** "30 kWh in 2 h 44 min". */
+export function sessionText(example: SessionExample): string {
+  return `${new Intl.NumberFormat('de-DE').format(example.kwh)} kWh in ${duration(example.minutes)}`;
+}
+
 export interface EvsePricesResponse {
   data: {
     id: string;
@@ -47,7 +67,7 @@ export interface EvsePricesResponse {
     tariffKind: string;
     from: string;
     to: string;
-    example: { kwh: number; minutes: number };
+    example: SessionExample;
     current: { price: PriceView; since: string; observedAt: string } | null;
     history: { price: PriceView; from: string; to: string | null }[];
     /** The cards and apps that apply at the EVSE, cheapest example first. */
