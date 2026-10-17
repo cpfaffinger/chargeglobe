@@ -43,12 +43,13 @@ public static class TariffsEndpoints
         null,
         ["AT"],
         [
-            new ZoneView("HOME", ["evn"], [], [], [], [new PriceElementView("AC", null, 0.45m, null, null, 0.10m, 240, null, null, 30m, "SESSION_START"), new PriceElementView("DC", null, 0.65m, null, null, 0.20m, 60, null, null, null, "SESSION_START")], null, "FIXED", null, null),
-            new ZoneView("ROAMING", [], [], [], ["AT*TSL"], [new PriceElementView("AC", null, 0.59m, null, null, null, null, null, null, null, "SESSION_START"), new PriceElementView("DC", 100, 0.89m, null, null, null, null, null, null, null, "SESSION_START")], null, "FIXED", null, null),
+            new ZoneView("HOME", ["evn"], [], [], [], [new PriceElementView("AC", null, 0.45m, null, null, 0.10m, 240, null, null, 30m, "SESSION_START"), new PriceElementView("DC", null, 0.65m, null, null, 0.20m, 60, null, null, null, "SESSION_START")], null, "FIXED", null, null, null),
+            new ZoneView("ROAMING", [], [], [], ["AT*TSL"], [new PriceElementView("AC", null, 0.59m, null, null, null, null, null, null, null, "SESSION_START"), new PriceElementView("DC", 100, 0.89m, null, null, null, null, null, null, null, "SESSION_START")], null, "FIXED", null, null, null),
         ],
         null,
         "https://www.evn.at/laden",
         new DateOnly(2026, 7, 1),
+        new DateOnly(2026, 10, 17),
         "HIGH",
         ExampleTime,
         null,
@@ -87,15 +88,16 @@ public static class TariffsEndpoints
             .WithDescription(
                 "Returns the current tariffs (with `history=true` also the ended versions), optionally of one `emp`. A " +
                 "tariff has `monthlyFee`, `prerequisites`, `markets`, the `source` of the values (`sourceUrl`, `sourceDate` = " +
-                "\"Stand\" of the provider, `confidence` HIGH/MEDIUM/LOW, `stale` = the \"Stand\" is unknown or older than the setting tariff.stale_months, " +
-                "default 6) and `zones`: where it applies and what it costs. " +
+                "\"Stand\" of the provider, `confidence` HIGH/MEDIUM/LOW, `checkedOn` = last check of the values against the source, `stale` = neither the \"Stand\" nor the last check " +
+                "lies within the setting tariff.stale_months, default 6) and `zones`: where it applies and what it costs. " +
                 "An EVSE gets the first zone that covers its operator (the operator part of its EVSE-ID) in the order " +
                 "OPERATOR (special prices of single operators), HOME (own stations of the provider), PARTNER (partner " +
                 "networks), ROAMING (every other operator, only at EVSEs that accept cards of other providers; " +
                 "`excludedNetworks`/`excludedOperators` are left out). Within the zone the price element with the current " +
                 "(AC/DC) and the highest `minKw` the EVSE reaches applies. A zone with `pricing` OPERATOR_AD_HOC has no prices " +
                 "of its own: it charges the ad-hoc price of the EVSE (from the register) with `markupPercent` on every amount " +
-                "and `markupSessionFee` per session (providers that pass on the operator's price, e.g. Electroverse); " +
+                "and `markupSessionFee` per session (providers that pass on the operator's price, e.g. Electroverse); `currents` " +
+                "(AC and/or DC) limits a zone to EVSEs of these currents, otherwise the next zone applies; " +
                 "`pricing` FIXED uses the price elements. A price element may have a local time window `startTime`–`endTime` " +
                 "(\"HH:mm\" in Europe/Vienna, may span midnight): it applies to sessions starting then and goes before the element " +
                 "without window of the same stage. `maxBlockingFee` caps the blocking fee of a session; `blockingFrom` CHARGING_END " +

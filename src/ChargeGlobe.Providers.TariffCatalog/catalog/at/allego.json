@@ -42,7 +42,8 @@
           "notes": "HPC: Standgebühr 0,248 €/min ab Minute 45, nur für Minuten ohne Laden (nicht abgebildet).",
           "sourceUrl": "https://www.allego.eu/pricing/",
           "sourceDate": null,
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "plus",
@@ -79,7 +80,8 @@
           "notes": "HPC: Standgebühr 0,248 €/min ab Minute 45, nur für Minuten ohne Laden (nicht abgebildet).",
           "sourceUrl": "https://www.allego.eu/pricing/",
           "sourceDate": null,
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

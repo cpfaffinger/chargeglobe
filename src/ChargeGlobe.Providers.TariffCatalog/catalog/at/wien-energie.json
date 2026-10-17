@@ -66,7 +66,8 @@
           "notes": "Standzeitzuschlag nach 5 h (City/Spot), 12 h (Parking) bzw. 3 h (DC), nachts 22–8 Uhr an City/Spot frei. Die kWh-Preise werden am 1.4. und 1.10. angepasst.",
           "sourceUrl": "https://dokumente.wienenergie.at/link/tarifblatt-tanke-kwh-go-smart-pro/",
           "sourceDate": "2026-10-01",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "tanke-kwh-smart",
@@ -127,7 +128,8 @@
           "notes": "Standzeitzuschlag nach 5 h (City/Spot), 12 h (Parking) bzw. 3 h (DC), nachts 22–8 Uhr an City/Spot frei. Die kWh-Preise werden am 1.4. und 1.10. angepasst.",
           "sourceUrl": "https://dokumente.wienenergie.at/link/tarifblatt-tanke-kwh-go-smart-pro/",
           "sourceDate": "2026-10-01",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "tanke-kwh-pro",
@@ -188,7 +190,8 @@
           "notes": "Standzeitzuschlag nach 5 h (City/Spot), 12 h (Parking) bzw. 3 h (DC), nachts 22–8 Uhr an City/Spot frei. Die kWh-Preise werden am 1.4. und 1.10. angepasst.",
           "sourceUrl": "https://dokumente.wienenergie.at/link/tarifblatt-tanke-kwh-go-smart-pro/",
           "sourceDate": "2026-10-01",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "tanke-zeit",
@@ -263,7 +266,8 @@
           "notes": "Abrechnung je Minute vom Anstecken bis zum Abstecken nach der Leistung des Ladepunkts; keine Standzeitzuschläge.",
           "sourceUrl": "https://dokumente.wienenergie.at/link/tarifblatt-tanke-zeit/",
           "sourceDate": "2026-04-01",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

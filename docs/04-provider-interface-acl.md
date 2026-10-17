@@ -175,12 +175,14 @@ public sealed record NetworkRecord(string Key, string Name, string Country, IRea
 public sealed record EmpRecord(string Key, string Name, string? Website, string Country, IReadOnlyList<TariffRecord> Tariffs);
 public sealed record TariffRecord(string Key, string Name, string Currency, decimal? MonthlyFee, string? Prerequisites,
     IReadOnlyList<string> Markets, IReadOnlyList<ZoneRecord> Zones, string? Notes, string SourceUrl, DateOnly? SourceDate,
-    string Confidence);                                    // HIGH | MEDIUM | LOW
+    string Confidence,                                     // HIGH | MEDIUM | LOW
+    DateOnly? CheckedOn = null);                           // letzte Prüfung gegen die Quelle (keine neue Version)
 public sealed record ZoneRecord(string Kind, IReadOnlyList<string>? Networks, IReadOnlyList<string>? Operators,
     IReadOnlyList<string>? ExcludedNetworks, IReadOnlyList<string>? ExcludedOperators,
     IReadOnlyList<PriceRecord>? Prices, string? Notes,     // Kind: OPERATOR | HOME | PARTNER | ROAMING
     string? Pricing = null,                                // FIXED (Default) | OPERATOR_AD_HOC (Ad-hoc-Preis des Ladepunkts) | UNKNOWN
-    decimal? MarkupPercent = null, decimal? MarkupSessionFee = null);   // nur mit OPERATOR_AD_HOC
+    decimal? MarkupPercent = null, decimal? MarkupSessionFee = null,   // nur mit OPERATOR_AD_HOC
+    IReadOnlyList<string>? Currents = null);               // AC und/oder DC: Zone nur für diese Stromart
 public sealed record PriceRecord(string Current, decimal? MinKw, decimal? PricePerKwh, decimal? PricePerMinute,
     decimal? SessionFee, decimal? BlockingFeePerMinute, int? BlockingAfterMinutes,   // Current: AC | DC
     string? StartTime = null, string? EndTime = null,      // Zeitfenster "HH:mm" (Ortszeit Wien), z. B. 22:00–08:00
@@ -196,7 +198,7 @@ public sealed record PriceRecord(string Current, decimal? MinKw, decimal? PriceP
 Checkliste „Tarif oder Anbieter ergänzen“:
 1. Preisblatt oder Tarifseite des Anbieters lesen; Stand (gültig ab), Grundgebühr, Voraussetzungen, Heim-, Partner- und Roamingpreise je AC/DC/HPC, Blockiergebühr und Partner- bzw. Roamingliste notieren.
 2. Betreiber-IDs der Netze aus den Daten prüfen (`select operator_id, name from operator`, EVSE-ID-Präfixe); fehlende Netze in `catalog/<land>/networks.json` ergänzen.
-3. Datei `catalog/<land>/<emp>.json` anlegen oder ändern: je Tarif `sourceUrl`, `sourceDate`, `confidence` (`HIGH` nur bei Werten direkt aus dem Preisblatt), Blockiergebühr „ab der 241. Minute“ als `blockingAfterMinutes: 240` („30 min nach Ladeende“ als `30` mit `blockingFrom: "CHARGING_END"`, „max. 12 €“ als `maxBlockingFee: 12`), Nachtpreise als zweites Element mit `startTime`/`endTime`, Leistungsklassen „bis 11 kW“/„über 11 kW“ als Stufen `minKw` (über 11 kW → `11.1`), Anbieter, die den Preis des Betreibers weiterreichen, als Zone mit `pricing: "OPERATOR_AD_HOC"` (ohne `prices`, mit `markupPercent`/`markupSessionFee`), nicht veröffentlichte Preise je Ladepunkt als Zone mit `pricing: "UNKNOWN"` und der Spanne in `notes`, Nicht-Abbildbares als `notes`. Tarifschlüssel haben mindestens 2 Zeichen (`ladetarif-s`, nicht `s`).
+3. Datei `catalog/<land>/<emp>.json` anlegen oder ändern: je Tarif `sourceUrl`, `sourceDate`, `confidence` (`HIGH` nur bei Werten direkt aus dem Preisblatt), Blockiergebühr „ab der 241. Minute“ als `blockingAfterMinutes: 240` („30 min nach Ladeende“ als `30` mit `blockingFrom: "CHARGING_END"`, „max. 12 €“ als `maxBlockingFee: 12`), Nachtpreise als zweites Element mit `startTime`/`endTime`, Leistungsklassen „bis 11 kW“/„über 11 kW“ als Stufen `minKw` (über 11 kW → `11.1`), Anbieter, die den Preis des Betreibers weiterreichen, als Zone mit `pricing: "OPERATOR_AD_HOC"` (ohne `prices`, mit `markupPercent`/`markupSessionFee`), nicht veröffentlichte Preise je Ladepunkt als Zone mit `pricing: "UNKNOWN"` und der Spanne in `notes`, Nicht-Abbildbares als `notes`. Nach jeder Prüfung gegen die Quelle `checkedOn` setzen (auch wenn sich nichts geändert hat). Tarifschlüssel haben mindestens 2 Zeichen (`ladetarif-s`, nicht `s`).
 4. `dotnet test tests/ChargeGlobe.Jobs.Tests --filter TariffCatalog` prüft alle Dateien mit den Regeln des Imports und Stichproben der Zuordnung; nach dem Deploy meldet der Worker `Tariff catalog tariff-catalog: … tariffs … new, … changed …`.
 
 ## Checkliste „neuen Provider anbinden“

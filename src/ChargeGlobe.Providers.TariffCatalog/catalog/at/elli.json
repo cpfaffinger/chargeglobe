@@ -31,7 +31,8 @@
           "notes": "Der Aufschlag von Elli auf den Betreiberpreis ist nicht veröffentlicht; abgebildet ist der Betreiberpreis plus Transaktionsgebühr.",
           "sourceUrl": "https://www.elli.eco/de/privatkunden/produkte/ladetarife?country=AT",
           "sourceDate": null,
-          "confidence": "LOW"
+          "confidence": "LOW",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "ionity-boost",
@@ -72,7 +73,8 @@
           "notes": null,
           "sourceUrl": "https://www.elli.eco/de/privatkunden/produkte/ladetarife?country=AT",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "ionity-ultra",
@@ -113,7 +115,8 @@
           "notes": null,
           "sourceUrl": "https://www.elli.eco/de/privatkunden/produkte/ladetarife?country=AT",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "premium",
@@ -184,7 +187,8 @@
           "notes": "AC-Blockiergebühr nur 8–23 Uhr.",
           "sourceUrl": "https://www.elli.eco/de/privatkunden/produkte/ladetarife?country=AT",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

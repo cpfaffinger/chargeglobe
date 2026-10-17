@@ -30,7 +30,8 @@
           "notes": "Ob ein Betreiber erreichbar ist und welche Rabatte gelten, zeigt nur die App; Idle-Gebühren sind die des Betreibers.",
           "sourceUrl": "https://electroverse.com/de-AT",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

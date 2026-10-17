@@ -36,7 +36,8 @@ public sealed record ZoneView(
     string? Notes,
     string Pricing,
     decimal? MarkupPercent,
-    decimal? MarkupSessionFee);
+    decimal? MarkupSessionFee,
+    IReadOnlyList<string>? Currents);
 
 /// <summary>One version of a tariff of an EMP with its zones; amounts in <paramref name="Currency"/> incl. VAT.</summary>
 /// <param name="Emp">Key of the EMP.</param>
@@ -44,7 +45,8 @@ public sealed record ZoneView(
 /// <param name="SourceDate">Date the provider states for the prices ("Stand").</param>
 /// <param name="Confidence"><c>HIGH</c>, <c>MEDIUM</c> or <c>LOW</c>.</param>
 /// <param name="ValidTo">End of this version; null while it is current.</param>
-/// <param name="Stale">The "Stand" is unknown or older than the setting tariff.stale_months: the values need a check.</param>
+/// <param name="CheckedOn">When the values were last checked against the source.</param>
+/// <param name="Stale">Neither the "Stand" nor the last check lies within the setting tariff.stale_months: the values need a check.</param>
 public sealed record TariffView(
     Guid Id,
     string Emp,
@@ -59,6 +61,7 @@ public sealed record TariffView(
     string? Notes,
     string SourceUrl,
     DateOnly? SourceDate,
+    DateOnly? CheckedOn,
     string Confidence,
     DateTimeOffset ValidFrom,
     DateTimeOffset? ValidTo,

@@ -49,6 +49,8 @@ export interface Zone {
   markupPercent: number | null;
   /** Fee of the provider per session on top of the operator's price. */
   markupSessionFee: number | null;
+  /** The zone applies only to EVSEs of these currents; null for both. */
+  currents?: ('AC' | 'DC')[] | null;
   networks: string[];
   operators: string[];
   excludedNetworks: string[];
@@ -73,6 +75,8 @@ export interface Tariff {
   sourceUrl: string;
   /** "Stand" of the provider (ISO date). */
   sourceDate: string | null;
+  /** When the values were last checked against the source (ISO date). */
+  checkedOn?: string | null;
   confidence: 'HIGH' | 'MEDIUM' | 'LOW';
   validFrom: string;
   validTo: string | null;

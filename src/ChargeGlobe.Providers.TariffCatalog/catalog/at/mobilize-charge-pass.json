@@ -42,7 +42,8 @@
           "notes": null,
           "sourceUrl": "https://cdn.group.renault.com/mob/at/mobilize-charge-pass-preisliste.pdf",
           "sourceDate": "2026-01-28",
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "intense",
@@ -80,7 +81,8 @@
           "notes": null,
           "sourceUrl": "https://cdn.group.renault.com/mob/at/mobilize-charge-pass-preisliste.pdf",
           "sourceDate": "2026-01-28",
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

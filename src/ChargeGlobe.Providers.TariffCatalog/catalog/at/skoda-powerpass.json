@@ -30,7 +30,8 @@
           "notes": "„Flexible Preise“ je Betreiber, angezeigt in der App; hier mit dem Ad-hoc-Preis angenähert.",
           "sourceUrl": "https://tariffcalculator.skoda-auto.com/439/de-AT",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "ionity-boost",
@@ -74,7 +75,8 @@
           "notes": "„Flexible Preise“ je Betreiber, angezeigt in der App; hier mit dem Ad-hoc-Preis angenähert.",
           "sourceUrl": "https://tariffcalculator.skoda-auto.com/439/de-AT",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "ionity-ultra",
@@ -118,7 +120,8 @@
           "notes": "„Flexible Preise“ je Betreiber, angezeigt in der App; hier mit dem Ad-hoc-Preis angenähert.",
           "sourceUrl": "https://tariffcalculator.skoda-auto.com/439/de-AT",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "premium",
@@ -189,7 +192,8 @@
           "notes": "AC-Blockiergebühr nicht 23–8 Uhr.",
           "sourceUrl": "https://tariffcalculator.skoda-auto.com/439/de-AT",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

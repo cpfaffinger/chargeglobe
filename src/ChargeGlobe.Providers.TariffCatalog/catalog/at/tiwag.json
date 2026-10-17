@@ -380,7 +380,8 @@
           "notes": "Roaming mit eigenem Preis je Betreiber (Liste Stand 26.6.2026); nicht gelistete Betreiber (u. a. Tesla, Energie Graz, OMV, Shell, Lidl) sind nicht nutzbar.",
           "sourceUrl": "https://www.tiwag.at/uploads/tx_bh/2241/produktblatt_tiwag_mobil.pdf",
           "sourceDate": "2025-06-02",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

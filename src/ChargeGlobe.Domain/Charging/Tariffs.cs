@@ -187,6 +187,7 @@ public sealed record TariffPriceElement(
 /// </summary>
 /// <param name="MarkupPercent">With operator pricing: percent on every amount of the ad-hoc price (−10 = 10 % off).</param>
 /// <param name="MarkupSessionFee">With operator pricing: fee of the provider per session on top.</param>
+/// <param name="Currents">The zone applies only to EVSEs of these currents (e.g. a discount of the operator's price for DC only); null for both.</param>
 public sealed record TariffZone(
     TariffZoneKind Kind,
     IReadOnlyList<string> Networks,
@@ -198,7 +199,8 @@ public sealed record TariffZone(
     // Left out of the stored JSON when unset, so that fixed zones keep their content hash.
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] TariffPricing Pricing = TariffPricing.FIXED,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] decimal? MarkupPercent = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] decimal? MarkupSessionFee = null)
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] decimal? MarkupSessionFee = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<TariffCurrent>? Currents = null)
 {
     /// <summary>
     /// The price of an operator-priced zone from the ad-hoc price of the EVSE: every amount with <see cref="MarkupPercent"/>,
@@ -302,6 +304,9 @@ public sealed class TariffPlan
     /// <summary>Date the provider states for the prices ("Stand", "gültig ab").</summary>
     public DateOnly? SourceDate { get; private set; }
 
+    /// <summary>When the values were last checked against the source; not part of the content (a check is no new version).</summary>
+    public DateOnly? CheckedOn { get; private set; }
+
     public TariffConfidence Confidence { get; private set; }
 
     public DateTimeOffset ValidFrom { get; private set; }
@@ -326,7 +331,7 @@ public sealed class TariffPlan
         DateOnly? SourceDate,
         TariffConfidence Confidence);
 
-    public static TariffPlan Create(Guid empId, string sourceKey, Content content, string contentHash, DateTimeOffset validFrom) =>
+    public static TariffPlan Create(Guid empId, string sourceKey, Content content, string contentHash, DateTimeOffset validFrom, DateOnly? checkedOn = null) =>
         new()
         {
             Id = Guid.CreateVersion7(),
@@ -342,10 +347,20 @@ public sealed class TariffPlan
             SourceKey = Guard.NotBlank(sourceKey),
             SourceUrl = Guard.NotBlank(content.SourceUrl),
             SourceDate = content.SourceDate,
+            CheckedOn = checkedOn,
             Confidence = content.Confidence,
             ContentHash = Guard.NotBlank(contentHash),
             ValidFrom = validFrom,
         };
+
+    /// <summary>Records a newer check of the unchanged values against the source.</summary>
+    public void Check(DateOnly? checkedOn)
+    {
+        if (checkedOn > CheckedOn || CheckedOn is null)
+        {
+            CheckedOn = checkedOn ?? CheckedOn;
+        }
+    }
 
     public bool IsValidAt(DateTimeOffset at) => ValidFrom <= at && (ValidTo is null || at < ValidTo);
 
@@ -369,7 +384,7 @@ public sealed class TariffPlan
     {
         // Within a kind, zones for named networks or operators (e.g. a roaming price per operator) go before the open one.
         var zone = Zones
-            .Where(item => item.Kind != TariffZoneKind.ROAMING || roaming != false)
+            .Where(item => (item.Kind != TariffZoneKind.ROAMING || roaming != false) && (item.Currents is null || item.Currents.Contains(current)))
             .OrderBy(item => item.Kind)
             .ThenBy(item => item.Networks.Count + item.Operators.Count == 0)
             .FirstOrDefault(item => item.Covers(operatorId, members));

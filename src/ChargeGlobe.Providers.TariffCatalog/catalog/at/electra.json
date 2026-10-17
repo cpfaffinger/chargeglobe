@@ -33,7 +33,8 @@
           "notes": "Blockiergebühr 0,40 €/min nur ab 80 % Ladestand an voll belegten Stationen (nicht abgebildet).",
           "sourceUrl": "https://www.electrive.net/2026/05/19/electra-halbiert-abo-preis-und-senkt-kwh-tarif/",
           "sourceDate": "2026-05-18",
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "essential",
@@ -61,7 +62,8 @@
           "notes": "Blockiergebühr 0,40 €/min nur ab 80 % Ladestand an voll belegten Stationen (nicht abgebildet).",
           "sourceUrl": "https://www.electrive.net/2026/05/19/electra-halbiert-abo-preis-und-senkt-kwh-tarif/",
           "sourceDate": "2026-05-18",
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "smart",
@@ -89,7 +91,8 @@
           "notes": "Blockiergebühr 0,40 €/min nur ab 80 % Ladestand an voll belegten Stationen (nicht abgebildet).",
           "sourceUrl": "https://www.electrive.net/2026/05/19/electra-halbiert-abo-preis-und-senkt-kwh-tarif/",
           "sourceDate": "2026-05-18",
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

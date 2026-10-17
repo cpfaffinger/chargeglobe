@@ -30,7 +30,8 @@
           "notes": "Ob eine Servicegebühr dazukommt, ist nicht veröffentlicht.",
           "sourceUrl": "https://www.plugsurfing.com",
           "sourceDate": null,
-          "confidence": "LOW"
+          "confidence": "LOW",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

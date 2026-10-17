@@ -62,7 +62,8 @@
           "notes": null,
           "sourceUrl": "https://www.ladetarif.at/api/documents/d41d2689-de43-46fd-a781-cca28bcf9abb/download",
           "sourceDate": "2026-04-15",
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "ladetarif-s",
@@ -120,7 +121,8 @@
           "notes": "Netiqs-Ladestationen mit eigenen Blockierzeiten sind ohne Betreiber-ID in den Daten und nicht gesondert abgebildet.",
           "sourceUrl": "https://www.ladetarif.at/api/documents/d41d2689-de43-46fd-a781-cca28bcf9abb/download",
           "sourceDate": "2026-04-15",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "ladetarif-m",
@@ -178,7 +180,8 @@
           "notes": "Netiqs-Ladestationen mit eigenen Blockierzeiten sind ohne Betreiber-ID in den Daten und nicht gesondert abgebildet.",
           "sourceUrl": "https://www.ladetarif.at/api/documents/d41d2689-de43-46fd-a781-cca28bcf9abb/download",
           "sourceDate": "2026-04-23",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "ladetarif-l",
@@ -236,7 +239,8 @@
           "notes": "Netiqs-Ladestationen mit eigenen Blockierzeiten sind ohne Betreiber-ID in den Daten und nicht gesondert abgebildet.",
           "sourceUrl": "https://www.ladetarif.at/api/documents/d41d2689-de43-46fd-a781-cca28bcf9abb/download",
           "sourceDate": "2026-04-23",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

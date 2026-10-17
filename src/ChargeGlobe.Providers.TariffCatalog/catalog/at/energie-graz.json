@@ -62,7 +62,8 @@
           "notes": "Preisblatt aus dem Tarifkalkulator der E-Control (ladetarif.at).",
           "sourceUrl": "https://www.ladetarif.at/api/documents/f8912efa-906e-48ac-a634-6b52d02587cb/download",
           "sourceDate": "2024-09-01",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

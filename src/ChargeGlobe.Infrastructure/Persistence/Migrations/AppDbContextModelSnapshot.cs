@@ -696,6 +696,10 @@ namespace ChargeGlobe.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<DateOnly?>("CheckedOn")
+                        .HasColumnType("date")
+                        .HasColumnName("checked_on");
+
                     b.Property<string>("Confidence")
                         .IsRequired()
                         .HasColumnType("text")

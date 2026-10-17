@@ -44,6 +44,7 @@ function tariff(overrides: Partial<Tariff> = {}): Tariff {
         operators: [],
         excludedNetworks: ['tesla'],
         excludedOperators: ['AT*XYZ'],
+        currents: ['DC'],
         prices: [{ current: 'DC', minKw: null, pricePerKwh: null, pricePerMinute: 0.5, sessionFee: 1, blockingFeePerMinute: null, blockingAfterMinutes: null }],
         notes: null,
         pricing: 'FIXED',
@@ -78,6 +79,7 @@ function tariff(overrides: Partial<Tariff> = {}): Tariff {
     notes: 'Preisgarantie bis 31.12.2026.',
     sourceUrl: 'https://www.evn.at/preise.pdf',
     sourceDate: '2026-07-01',
+    checkedOn: '2026-10-17',
     confidence: 'HIGH',
     validFrom: '2026-10-17T06:00:00Z',
     validTo: null,
@@ -139,6 +141,7 @@ describe('AdminTariffsPage', () => {
         prerequisites: null,
         notes: null,
         sourceDate: null,
+        checkedOn: null,
         confidence: 'LOW',
         stale: true,
         zones: [
@@ -170,7 +173,7 @@ describe('AdminTariffsPage', () => {
     const meta = text(smart, '.tariff-meta')!;
     expect(meta).toContain('Grundgebühr 4,95');
     expect(meta).toContain('EVN-Ladekarte');
-    expect(meta).toContain('Stand 01.07.2026 (aus dem Preisblatt)');
+    expect(meta).toContain('Stand 01.07.2026 (aus dem Preisblatt) · geprüft 17.10.2026');
     expect(smart.querySelector<HTMLAnchorElement>('.tariff-meta a')!.href).toBe('https://www.evn.at/preise.pdf');
     const rows = Array.from(smart.querySelectorAll('tbody tr'));
     expect(rows.map((row) => text(row, 'td:nth-child(1)'))).toEqual(['Heimnetz', 'Roaming', 'Partnernetz', 'Roaming']);
@@ -179,7 +182,7 @@ describe('AdminTariffsPage', () => {
     expect(text(rows[0], '.covers')).toBe('EVN');
     expect(text(rows[0], 'td:nth-child(3)')).toBe('0,45 €/kWh, Blockieren 0,10 €/min ab Min. 240 · 22:00–08:00 Uhr 0,39 €/kWh, Blockieren 0,50 €/min ab Min. 30 nach Ladeende (max. 30,00 €)');
     expect(text(rows[0], 'td:nth-child(4)')).toBe('0,47 €/kWh · ab 150 kW 0,49 €/kWh, Blockieren 0,50 €/min');
-    expect(text(rows[1], '.covers')).toBe('alle Betreiber mit Fremdkarten-Annahme (außer Tesla Supercharger, AT*XYZ)');
+    expect(text(rows[1], '.covers')).toBe('alle Betreiber mit Fremdkarten-Annahme – nur DC (außer Tesla Supercharger, AT*XYZ)');
     expect(text(rows[1], 'td:nth-child(3)')).toBe('–');
     expect(text(rows[1], 'td:nth-child(4)')).toBe('0,50 €/min, Start 1,00 €');
     expect(text(rows[2], '.covers')).toBe('unknown, AT*IOY');

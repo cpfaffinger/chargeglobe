@@ -30,7 +30,8 @@
           "notes": null,
           "sourceUrl": "https://plugsurfing.com/partners/polestar-charge-subscription/",
           "sourceDate": null,
-          "confidence": "LOW"
+          "confidence": "LOW",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "plus",
@@ -52,9 +53,12 @@
                 "shell"
               ],
               "prices": [],
-              "notes": "15 % Rabatt (laut Anbieter nur DC/HPC).",
+              "notes": "15 % Rabatt auf DC/HPC.",
               "pricing": "OPERATOR_AD_HOC",
-              "markupPercent": -15
+              "markupPercent": -15,
+              "currents": [
+                "DC"
+              ]
             },
             {
               "kind": "ROAMING",
@@ -66,10 +70,11 @@
               "pricing": "OPERATOR_AD_HOC"
             }
           ],
-          "notes": "Der Rabatt gilt laut Anbieter nur für DC; abgebildet ist er auch für AC.",
+          "notes": null,
           "sourceUrl": "https://plugsurfing.com/partners/polestar-charge-subscription/",
           "sourceDate": null,
-          "confidence": "LOW"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "pro",
@@ -93,9 +98,12 @@
                 "ionity"
               ],
               "prices": [],
-              "notes": "30 % Rabatt (laut Anbieter nur DC/HPC).",
+              "notes": "30 % Rabatt auf DC/HPC.",
               "pricing": "OPERATOR_AD_HOC",
-              "markupPercent": -30
+              "markupPercent": -30,
+              "currents": [
+                "DC"
+              ]
             },
             {
               "kind": "ROAMING",
@@ -107,10 +115,11 @@
               "pricing": "OPERATOR_AD_HOC"
             }
           ],
-          "notes": "Der Rabatt gilt laut Anbieter nur für DC; abgebildet ist er auch für AC.",
+          "notes": null,
           "sourceUrl": "https://plugsurfing.com/partners/polestar-charge-subscription/",
           "sourceDate": null,
-          "confidence": "LOW"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

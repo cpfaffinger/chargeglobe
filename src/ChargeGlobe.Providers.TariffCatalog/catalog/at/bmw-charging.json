@@ -30,7 +30,8 @@
           "notes": "Zubuchbar: IONITY Plus (5,99 €/Monat, 0,45 €/kWh an IONITY), nicht abgebildet.",
           "sourceUrl": "https://bmw-public-charging.com/web/de/bmw-at/tariffs",
           "sourceDate": null,
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "active",
@@ -83,7 +84,8 @@
           "notes": "Zubuchbar: IONITY Plus (5,99 €/Monat, 0,45 €/kWh an IONITY), nicht abgebildet.",
           "sourceUrl": "https://bmw-public-charging.com/web/de/bmw-at/tariffs",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

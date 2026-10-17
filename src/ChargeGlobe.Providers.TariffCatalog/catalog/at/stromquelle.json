@@ -62,7 +62,8 @@
           "notes": null,
           "sourceUrl": "https://www.stromquelle.at/ladekarten/",
           "sourceDate": "2025-01-01",
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

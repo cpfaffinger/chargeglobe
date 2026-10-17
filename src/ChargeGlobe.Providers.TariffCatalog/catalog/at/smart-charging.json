@@ -31,7 +31,8 @@
           "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert. IONITY-Pakete sind nicht abgebildet.",
           "sourceUrl": "https://smart.charge-at-street.com/api/public/v1/AT/tariffs/pdf?locale=de_AT",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "go",
@@ -57,7 +58,8 @@
           "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert.",
           "sourceUrl": "https://smart.charge-at-street.com/api/public/v1/AT/tariffs/pdf?locale=de_AT",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

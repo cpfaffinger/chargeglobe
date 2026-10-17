@@ -101,7 +101,8 @@
           "notes": null,
           "sourceUrl": "https://www.ladetarif.at/api/products/355",
           "sourceDate": "2023-11-01",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "e-mobilitaetstarif",
@@ -197,7 +198,8 @@
           "notes": "BE Destination Charger: Blockiergebühr erst ab Minute 721.",
           "sourceUrl": "https://www.burgenlandenergie.at/de/privat/e-mobilitaetstarif/",
           "sourceDate": "2023-11-01",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

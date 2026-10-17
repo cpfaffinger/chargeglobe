@@ -40,7 +40,8 @@
           "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert. IONITY-Pakete (−0,25/−0,35 €/kWh) sind nicht abgebildet.",
           "sourceUrl": "https://chargemyhyundai.com/web/de/hyundai-at/tariffs",
           "sourceDate": null,
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "smart",
@@ -83,7 +84,8 @@
           "notes": "„Flexible Preise“ je Ladepunkt aus dem Roamingpreis des Betreibers, vor dem Laden in der App angezeigt; hier mit dem Ad-hoc-Preis angenähert.",
           "sourceUrl": "https://chargemyhyundai.com/web/de/hyundai-at/tariffs",
           "sourceDate": "2026-07-01",
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

@@ -80,7 +80,8 @@
           "notes": null,
           "sourceUrl": "https://www.linzag.at/media/dokumente/e_mobilitaet_1/agb_tarife/ladetarife.pdf",
           "sourceDate": "2025-03-04",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "more-power",
@@ -155,7 +156,8 @@
           "notes": null,
           "sourceUrl": "https://www.linzag.at/media/dokumente/e_mobilitaet_1/agb_tarife/ladetarife.pdf",
           "sourceDate": "2025-03-04",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         },
         {
           "key": "partner",
@@ -230,7 +232,8 @@
           "notes": null,
           "sourceUrl": "https://www.linzag.at/media/dokumente/e_mobilitaet_1/agb_tarife/ladetarife.pdf",
           "sourceDate": "2025-03-04",
-          "confidence": "HIGH"
+          "confidence": "HIGH",
+          "checkedOn": "2026-10-17"
         }
       ]
     }

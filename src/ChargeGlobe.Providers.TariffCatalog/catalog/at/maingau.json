@@ -67,7 +67,8 @@
           "notes": "In Österreich wohnende Kunden können nicht abschließen; für deutsche Kunden auch in Österreich gültig. Energiekunden von MAINGAU zahlen 10 ct/kWh weniger.",
           "sourceUrl": "https://www.maingau-energie.de/e-mobilitaet/autostrom",
           "sourceDate": "2026-07-01",
-          "confidence": "MEDIUM"
+          "confidence": "MEDIUM",
+          "checkedOn": "2026-10-17"
         }
       ]
     }
